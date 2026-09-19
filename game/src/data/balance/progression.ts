@@ -1,0 +1,26 @@
+
+export const PROGRESSION_BALANCE = {
+  attributesPerLevel: 5,
+  resetAttributePoints: 1000,
+  evolutions: {
+    Mortal: { minLevel: 1, maxLevel: 400 },
+    Arch: { minLevel: 1, maxLevel: 400 },
+    Cele: { minLevel: 1, maxLevel: 200 },
+  },
+  
+  xpToLevel(level: number): number {
+    return 40 + level * 18;
+  },
+  
+  attackFromFor(for_: number): number {
+    return 8 + for_;
+  },
+  maxHpFromCons(cons: number): number {
+    return 80 + cons * 4;
+  },
+  defenseFromCons(cons: number): number {
+    return 2 + Math.floor(cons / 4);
+  },
+} as const;
+
+export type EvolutionId = keyof typeof PROGRESSION_BALANCE.evolutions;

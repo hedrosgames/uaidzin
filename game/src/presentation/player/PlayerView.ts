@@ -1,0 +1,443 @@
+import {
+  AnimationAction,
+  AnimationMixer,
+  Bone,
+  Box3,
+  DoubleSide,
+  Group,
+  LoopOnce,
+  LoopRepeat,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  Object3D,
+  SkinnedMesh,
+  Vector3,
+} from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { ArmorAura } from "./ArmorAura";
+
+const GHOST_NAME = "PlayerOcclusionGhost";
+
+export type PlayerAnim =
+  | "idle"
+  | "run"
+  | "attack"
+  | "cast"
+  | "hit_gut"
+  | "hit_right"
+  | "death";
+
+export type PlayerClassId = "TK" | "FM" | "BM" | "HT";
+
+const CLASS_MODEL: Record<PlayerClassId, string> = {
+  TK: "/models/player/TK/TK.glb",
+  FM: "/models/player/FM/FM.glb",
+  BM: "/models/player/BM/BM.glb",
+  HT: "/models/player/HT/HT.glb",
+};
+
+const AXE_URL = "/weapons/axe/axe.glb";
+
+const AXE_GRIP: Record<"left" | "right", { pos: [number, number, number]; rot: [number, number, number] }> = {
+  left: { pos: [0.01, 0.02, -0.01], rot: [0, 0, Math.PI] },
+  right: { pos: [0.01, 0.02, -0.01], rot: [0, 0, 0] },
+};
+
+const ANIM_URLS: Record<Exclude<PlayerAnim, "idle">, string> = {
+  run: "/models/player/shared/anims/run.glb",
+  attack: "/models/player/shared/anims/attack.glb",
+  cast: "/models/player/shared/anims/cast.glb",
+  hit_gut: "/models/player/shared/anims/hit_gut.glb",
+  hit_right: "/models/player/shared/anims/hit_right.glb",
+  death: "/models/player/shared/anims/death.glb",
+};
+
+const ONE_SHOT: ReadonlySet<PlayerAnim> = new Set([
+  "attack",
+  "cast",
+  "hit_gut",
+  "hit_right",
+  "death",
+]);
+
+const TARGET_HEIGHT = 1.72 * 1.1;
+
+export function isPlayerClassId(id: string): id is PlayerClassId {
+  return id === "TK" || id === "FM" || id === "BM" || id === "HT";
+}
+
+export class PlayerView {
+  readonly root = new Group();
+  private readonly loader = new GLTFLoader();
+  private mixer: AnimationMixer | null = null;
+  private readonly actions = new Map<PlayerAnim, AnimationAction>();
+  private model: Object3D | null = null;
+  private current: PlayerAnim | "" = "";
+  private busyUntil = 0;
+  private dead = false;
+  private hitFlip = false;
+  private moving = false;
+  private classId: PlayerClassId = "TK";
+  private readonly armorAura = new ArmorAura();
+  private readonly ghosts: Mesh[] = [];
+  private readonly handSockets: Group[] = [];
+  private axePrototype: Object3D | null = null;
+  ready = false;
+
+  constructor() {
+    this.root.name = "PlayerRoot";
+  }
+
+  async load(classId: string = "TK"): Promise<void> {
+    const id: PlayerClassId = isPlayerClassId(classId) ? classId : "TK";
+    this.classId = id;
+    this.ready = false;
+    this.dead = false;
+    this.current = "";
+    this.busyUntil = 0;
+    this.actions.clear();
+    this.mixer = null;
+    this.clearGhosts();
+
+    const base = await this.loader.loadAsync(CLASS_MODEL[id]);
+    const model = base.scene;
+    model.name = id;
+    this.hardenMaterials(model);
+
+    if (this.model) {
+      this.disposeObject(this.model);
+      this.root.remove(this.model);
+    }
+    this.model = model;
+    this.root.add(model);
+
+    this.mixer = new AnimationMixer(model);
+
+    const idleClip = base.animations[0];
+    if (idleClip) {
+      idleClip.name = "idle";
+      this.actions.set("idle", this.mixer.clipAction(idleClip));
+    }
+
+    const entries = Object.entries(ANIM_URLS) as Array<
+      [Exclude<PlayerAnim, "idle">, string]
+    >;
+    const loaded = await Promise.all(
+      entries.map(async ([name, url]) => {
+        const gltf = await this.loader.loadAsync(url);
+        const clip = gltf.animations[0] ?? null;
+        this.disposeObject(gltf.scene);
+        return [name, clip] as const;
+      }),
+    );
+
+    for (const [name, clip] of loaded) {
+      if (!clip || !this.mixer) continue;
+      clip.name = name;
+      this.actions.set(name, this.mixer.clipAction(clip));
+    }
+
+    this.play("idle", true);
+    for (let i = 0; i < 20; i++) this.mixer.update(1 / 30);
+    this.fitStandingHeight(model);
+    this.buildGhosts(model);
+    await this.attachHandWeapons(model);
+    this.ready = true;
+  }
+
+  setArmorAuraEnabled(on: boolean): void {
+    this.armorAura.setEnabled(on);
+  }
+
+  isArmorAuraEnabled(): boolean {
+    return this.armorAura.isEnabled();
+  }
+
+  getArmorAuraShellCount(): number {
+    return this.armorAura.getShellCount();
+  }
+
+  setOcclusionGhostVisible(visible: boolean): void {
+    for (const ghost of this.ghosts) ghost.visible = visible;
+  }
+
+  getClassId(): PlayerClassId {
+    return this.classId;
+  }
+
+  setPose(x: number, z: number, facing: number, moving: boolean): void {
+    this.root.position.set(x, 0, z);
+    this.root.rotation.set(0, facing, 0);
+    this.moving = moving;
+    if (!this.ready || this.dead) return;
+    if (performance.now() < this.busyUntil) return;
+    const want: PlayerAnim = moving ? "run" : "idle";
+    if (this.current !== want) this.play(want, true);
+  }
+
+  playAttack(): void {
+    this.playOneShot("attack");
+  }
+
+  playCast(): void {
+    this.playOneShot("cast");
+  }
+
+  playHit(): void {
+    this.hitFlip = !this.hitFlip;
+    this.playOneShot(this.hitFlip ? "hit_gut" : "hit_right");
+  }
+
+  playDeath(): void {
+    this.dead = true;
+    this.playOneShot("death");
+  }
+
+  update(dt: number): void {
+    this.mixer?.update(dt);
+    this.armorAura.update(dt);
+    if (
+      this.busyUntil > 0 &&
+      performance.now() >= this.busyUntil &&
+      !this.dead &&
+      this.current !== "idle" &&
+      this.current !== "run"
+    ) {
+      this.busyUntil = 0;
+      this.play(this.moving ? "run" : "idle", true);
+    }
+  }
+
+  private fitStandingHeight(model: Object3D): void {
+    model.scale.setScalar(1);
+    model.position.set(0, 0, 0);
+    model.updateMatrixWorld(true);
+    if (this.mixer) {
+      for (let i = 0; i < 10; i++) this.mixer.update(1 / 30);
+    }
+    model.updateMatrixWorld(true);
+
+    const boneBox = new Box3();
+    const tip = new Vector3();
+    let found = false;
+    model.traverse((obj) => {
+      if (!(obj as Bone).isBone) return;
+      obj.getWorldPosition(tip);
+      if (!found) {
+        boneBox.set(tip.clone(), tip.clone());
+        found = true;
+      } else {
+        boneBox.expandByPoint(tip);
+      }
+    });
+    if (!found) boneBox.setFromObject(model);
+
+    const height = Math.max(boneBox.max.y - boneBox.min.y, 0.001);
+    const scale = TARGET_HEIGHT / height;
+    model.scale.setScalar(scale);
+    model.position.y = -boneBox.min.y * scale;
+    model.updateMatrixWorld(true);
+  }
+
+  private clearGhosts(): void {
+    for (const ghost of this.ghosts) {
+      ghost.removeFromParent();
+      const mat = ghost.material;
+      if (mat && !Array.isArray(mat)) mat.dispose();
+    }
+    this.ghosts.length = 0;
+  }
+
+  private async loadAxePrototype(): Promise<Object3D | null> {
+    if (this.axePrototype) return this.axePrototype;
+    try {
+      const gltf = await this.loader.loadAsync(AXE_URL);
+      this.hardenMaterials(gltf.scene);
+      this.axePrototype = gltf.scene;
+      return this.axePrototype;
+    } catch {
+      return null;
+    }
+  }
+
+  private findHandBone(model: Object3D, side: "Left" | "Right"): Object3D | null {
+    const want = `${side}Hand`;
+    let hit: Object3D | null = null;
+    model.traverse((obj) => {
+      if (hit) return;
+      const n = obj.name;
+      if (n === want || n === `mixamorig:${want}` || n === `mixamorig${want}`) hit = obj;
+    });
+    return hit;
+  }
+
+  private detachHandWeapons(): void {
+    for (const socket of this.handSockets) socket.removeFromParent();
+    this.handSockets.length = 0;
+  }
+
+  private async attachHandWeapons(model: Object3D): Promise<void> {
+    this.detachHandWeapons();
+    const axe = await this.loadAxePrototype();
+    console.info("[weapons] prototype", !!axe);
+    if (!axe) return;
+
+    const names: string[] = [];
+    model.traverse((obj) => {
+      if ((obj as Bone).isBone || /hand/i.test(obj.name)) names.push(`${obj.type}:${obj.name}`);
+    });
+    console.info("[weapons] handish", names);
+
+    for (const side of ["left", "right"] as const) {
+      const hand = this.findHandBone(model, side === "left" ? "Left" : "Right");
+      console.info("[weapons] hand", side, hand?.name ?? "missing");
+      if (!hand) continue;
+      hand.updateWorldMatrix(true, false);
+      const hs = new Vector3();
+      hand.getWorldScale(hs);
+      console.info("[weapons] hand scale", side, hs.toArray());
+      const grip = AXE_GRIP[side];
+      const socket = new Group();
+      socket.name = `weapon-socket-${side}`;
+      socket.position.set(...grip.pos);
+      socket.rotation.set(...grip.rot);
+      const inv = hs.x !== 0 ? 1 / hs.x : 1;
+      socket.scale.setScalar(inv);
+      const inst = axe.clone(true);
+      inst.name = `axe-${side}`;
+      socket.add(inst);
+      hand.add(socket);
+      this.handSockets.push(socket);
+    }
+  }
+
+  private buildGhosts(model: Object3D): void {
+    this.clearGhosts();
+    model.traverse((obj) => {
+      const mesh = obj as Mesh;
+      if (!mesh.isMesh || !mesh.geometry) return;
+      if (mesh.name === GHOST_NAME) return;
+
+      const mat = new MeshBasicMaterial({
+        color: 0x7ec8ff,
+        transparent: true,
+        opacity: 0.42,
+        depthTest: false,
+        depthWrite: false,
+        fog: false,
+        toneMapped: false,
+      });
+
+      let ghost: Mesh;
+      if ((mesh as SkinnedMesh).isSkinnedMesh) {
+        const skinned = mesh as SkinnedMesh;
+        const s = new SkinnedMesh(skinned.geometry, mat);
+        s.bind(skinned.skeleton, skinned.bindMatrix);
+        s.bindMode = skinned.bindMode;
+        s.frustumCulled = false;
+        ghost = s;
+      } else {
+        ghost = new Mesh(mesh.geometry, mat);
+      }
+
+      ghost.name = GHOST_NAME;
+      ghost.renderOrder = 30;
+      ghost.visible = false;
+      ghost.castShadow = false;
+      ghost.receiveShadow = false;
+      ghost.position.copy(mesh.position);
+      ghost.quaternion.copy(mesh.quaternion);
+      ghost.scale.copy(mesh.scale);
+      const parent = mesh.parent ?? model;
+      parent.add(ghost);
+      this.ghosts.push(ghost);
+    });
+  }
+
+  private hardenMaterials(model: Object3D): void {
+    model.traverse((obj) => {
+      const mesh = obj as Mesh;
+      if (!mesh.isMesh) return;
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const next: MeshStandardMaterial[] = [];
+      for (const mat of mats) {
+        if (!mat) continue;
+        const src = mat as MeshStandardMaterial;
+        const std = new MeshStandardMaterial({
+          map: src.map ?? null,
+          color: src.color?.clone?.() ?? 0xffffff,
+          normalMap: src.normalMap ?? null,
+          roughnessMap: "roughnessMap" in src ? src.roughnessMap : null,
+          aoMap: src.aoMap ?? null,
+          side: DoubleSide,
+          transparent: false,
+          opacity: 1,
+          depthWrite: true,
+          metalness: 0,
+          roughness: 0.75,
+        });
+        if (std.map) {
+          std.map.colorSpace = "srgb";
+          std.map.needsUpdate = true;
+        }
+        src.dispose();
+        next.push(std);
+      }
+      mesh.material = next.length === 1 ? next[0]! : next;
+      if ((mesh as SkinnedMesh).isSkinnedMesh) {
+        (mesh as SkinnedMesh).frustumCulled = false;
+      }
+    });
+  }
+
+  private disposeObject(root: Object3D): void {
+    root.traverse((obj) => {
+      const mesh = obj as Mesh;
+      if (!mesh.isMesh) return;
+      if (mesh.name === GHOST_NAME) {
+        const mat = mesh.material;
+        if (mat && !Array.isArray(mat)) mat.dispose();
+        return;
+      }
+      mesh.geometry?.dispose();
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const mat of mats) {
+        if (!mat) continue;
+        const std = mat as MeshStandardMaterial;
+        std.map?.dispose();
+        std.dispose();
+      }
+    });
+  }
+
+  private playOneShot(name: PlayerAnim): void {
+    if (!this.ready || (this.dead && name !== "death")) return;
+    const action = this.actions.get(name);
+    if (!action) return;
+    this.play(name, false);
+    const clip = action.getClip();
+    const durationMs = Math.max(0.2, clip.duration / Math.max(action.timeScale, 0.01)) * 1000;
+    this.busyUntil = performance.now() + durationMs * 0.92;
+  }
+
+  private play(name: PlayerAnim, loop: boolean): void {
+    const next = this.actions.get(name);
+    if (!next || !this.mixer) return;
+    const prevName = this.current;
+    const prev = prevName ? this.actions.get(prevName) : undefined;
+    next.reset();
+    next.setLoop(loop && !ONE_SHOT.has(name) ? LoopRepeat : LoopOnce, Infinity);
+    next.clampWhenFinished = ONE_SHOT.has(name);
+    next.enabled = true;
+    if (prev && prev !== next) {
+      next.crossFadeFrom(prev, 0.15, false);
+    } else {
+      next.fadeIn(0.1);
+    }
+    next.play();
+    this.current = name;
+  }
+}

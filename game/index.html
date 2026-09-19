@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UAIDZIN</title>
+    <style>
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #100c08;
+        color: #f0e6d0;
+      }
+      #app {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: #100c08;
+      }
+      #game-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: #100c08;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game-canvas" aria-label="Área do jogo"></canvas>
+      <div id="ui-root" class="ui-root">
+        <div id="debug-hud" class="debug-hud" hidden></div>
+
+        <div id="hud-tools" class="hud-tools" data-ui-block-click="true" hidden>
+          <div class="speed-bar" role="group" aria-label="Velocidade">
+            <button type="button" class="speed-btn on" data-speed="1">1×</button>
+            <button type="button" class="speed-btn" data-speed="2">2×</button>
+            <button type="button" class="speed-btn" data-speed="4">4×</button>
+            <button type="button" class="speed-btn" data-speed="10">10×</button>
+          </div>
+          <button type="button" class="btn-opt-hud" id="btn-settings" aria-label="Opções">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.61.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.61.22l2.39-.96c.49.38 1.03.7 1.62.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.48 0 .61-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="overlay" id="overlay-settings" role="dialog" aria-modal="true" aria-labelledby="set-title">
+          <div class="settings">
+            <svg class="corner tl" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
+            <svg class="corner tr" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
+            <svg class="corner bl" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
+            <svg class="corner br" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
+
+            <h2 id="set-title">Opções</h2>
+            <div class="sub">Áudio · vídeo · controles</div>
+
+            <div class="set-row">
+              <span class="k">Volume mestre</span>
+              <div class="ctrl">
+                <input type="range" id="vol-master" min="0" max="100" value="80">
+                <span class="vol-val" id="vol-master-val">80</span>
+              </div>
+            </div>
+            <div class="set-row">
+              <span class="k">Música</span>
+              <div class="ctrl">
+                <input type="range" id="vol-music" min="0" max="100" value="60">
+                <span class="vol-val" id="vol-music-val">60</span>
+              </div>
+            </div>
+            <div class="set-row">
+              <span class="k">Efeitos</span>
+              <div class="ctrl">
+                <input type="range" id="vol-sfx" min="0" max="100" value="90">
+                <span class="vol-val" id="vol-sfx-val">90</span>
+              </div>
+            </div>
+            <div class="set-row">
+              <span class="k">Tela cheia</span>
+              <div class="ctrl">
+                <input type="checkbox" class="toggle" id="opt-fullscreen">
+              </div>
+            </div>
+            <div class="set-row">
+              <span class="k">Mostrar FPS</span>
+              <div class="ctrl">
+                <input type="checkbox" class="toggle" id="opt-fps">
+              </div>
+            </div>
+            <div class="set-row">
+              <span class="k">Sombras</span>
+              <div class="ctrl">
+                <input type="checkbox" class="toggle" id="opt-shadows" checked>
+              </div>
+            </div>
+            <div class="set-row">
+              <span class="k">Aura da armadura</span>
+              <div class="ctrl">
+                <input type="checkbox" class="toggle" id="opt-armor-aura">
+              </div>
+            </div>
+
+            <div class="set-session">
+              <button type="button" class="btn-ghost" id="btn-change-character">Trocar personagem</button>
+              <button type="button" class="btn-ghost danger" id="btn-logout">Sair da conta</button>
+            </div>
+
+            <div class="btn-row">
+              <button type="button" class="btn-ghost" id="btn-settings-cancel">Fechar</button>
+              <button type="button" class="btn-gold-sm" id="btn-settings-save">Salvar</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="dungeon-timer" class="dungeon-timer" hidden>10:00</div>
+        <div id="farm-stats" class="farm-stats" hidden></div>
+        <div id="ui-toast" class="ui-toast" hidden></div>
+
+        <div id="player-frame" class="player-frame" data-ui-block-click="true" hidden>
+          <div class="player-face">
+            <img id="player-face-img" src="/faces/face-tk.png" alt="" width="56" height="56" />
+          </div>
+          <div class="player-meta">
+            <div class="player-title">
+              <span id="player-name">—</span>
+              <span id="player-level">Lv 1</span>
+            </div>
+            <div class="stat-bar hp">
+              <div id="hp-fill" class="stat-fill"></div>
+              <span id="hp-text" class="stat-text">120 / 120</span>
+            </div>
+            <div class="stat-bar mp">
+              <div id="mp-fill" class="stat-fill"></div>
+              <span id="mp-text" class="stat-text">100 / 100</span>
+            </div>
+            <div class="stat-bar xp">
+              <div id="xp-fill" class="stat-fill"></div>
+              <span id="xp-text" class="stat-text">0 / 0</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="skill-bar" class="skill-bar" data-ui-block-click="true" hidden></div>
+
+        <div id="interaction-hint" class="interaction-hint" hidden></div>
+
+        <div
+          id="interaction-panel"
+          class="interaction-panel"
+          hidden
+          role="dialog"
+          aria-labelledby="interaction-title"
+        >
+          <h2 id="interaction-title">—</h2>
+          <p id="interaction-body">—</p>
+          <div class="interaction-actions">
+            <button type="button" id="interaction-action" class="btn primary">Falar</button>
+            <button type="button" id="interaction-close" class="btn">Fechar</button>
+          </div>
+        </div>
+
+        <div id="game-panels" class="game-panels" hidden></div>
+        <div id="wire-ui" class="wire-ui" hidden></div>
+
+        <div id="death-overlay" class="death-overlay" hidden>
+          <strong>Você foi derrotado</strong>
+          <p>Retornando a Aurelion…</p>
+        </div>
+
+        <div id="result-overlay" class="result-overlay" hidden></div>
+
+        <div class="help-bar" hidden>
+          <kbd>C</kbd> personagem · <kbd>K</kbd> skills · <kbd>I</kbd> inventário · <kbd>B</kbd> baú
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

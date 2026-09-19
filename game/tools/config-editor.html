@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>UAIDZIN — Configurações</title>
+<style>
+  :root {
+    --bg: #0f1218;
+    --panel: #161b24;
+    --panel-2: #1a2130;
+    --line: #2a3140;
+    --ink: #e8ecf2;
+    --muted: #9aa3b2;
+    --gold: #d4a017;
+    --green: #5ecf8f;
+    --red: #c45c26;
+    --blue: #6b7cff;
+    --input: #1c2330;
+    --sidebar-w: clamp(148px, 12vw, 200px);
+    --header-h: 52px;
+    --gap: 12px;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font: 13px/1.45 Inter, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    height: var(--header-h);
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    z-index: 10;
+  }
+  header h1 {
+    font-size: 15px;
+    margin: 0;
+    color: var(--gold);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  header .spacer { flex: 1; min-width: 8px; }
+  header .btn { white-space: nowrap; }
+
+  .layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    min-height: 0;
+    overflow: hidden;
+  }
+  nav {
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+  }
+  nav button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  nav button:hover { color: var(--ink); background: var(--input); }
+  nav button.active {
+    color: var(--gold);
+    background: var(--input);
+    border-color: var(--gold);
+  }
+
+  main {
+    padding: 14px 18px 28px;
+    overflow: auto;
+    min-width: 0;
+  }
+  main > .page-head {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  main h2 { margin: 0; font-size: 17px; }
+  .sub { color: var(--muted); margin: 2px 0 0; font-size: 12px; }
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .btn {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: var(--input);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 7px 11px;
+    font-size: 12.5px;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn:hover { border-color: var(--gold); }
+  .btn.primary { background: var(--gold); border-color: var(--gold); color: #0f1218; font-weight: 650; }
+  .btn.danger { color: var(--red); }
+  .btn.tiny { padding: 4px 8px; font-size: 11.5px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .card-head strong { flex: 1; min-width: 120px; }
+
+  .table-wrap {
+    overflow: auto;
+    max-height: min(58vh, 640px);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel-2);
+  }
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 12.5px;
+    min-width: 960px;
+  }
+  .table-wrap.narrow table { min-width: 520px; }
+  th, td {
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  th {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    position: sticky;
+    top: 0;
+    background: #1e2533;
+    z-index: 1;
+  }
+  tbody tr:hover td { background: rgba(212, 160, 23, 0.04); }
+  td code {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  input, select {
+    background: var(--input);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 5px 7px;
+    font: inherit;
+    font-size: 12.5px;
+    width: 100%;
+    min-width: 0;
+  }
+  td input[type="number"] { width: 72px; }
+  td input[type="text"], td select { min-width: 90px; max-width: 160px; }
+  input[type="color"] { width: 40px; height: 30px; padding: 2px; cursor: pointer; }
+  input:focus, select:focus, button:focus { outline: 1px solid var(--gold); outline-offset: 0; }
+  input[type="checkbox"] { width: auto; accent-color: var(--gold); cursor: pointer; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px 12px;
+  }
+  label.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  label.field input, label.field select { text-transform: none; letter-spacing: 0; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .badge.boss { color: var(--red); border-color: var(--red); }
+  .row-actions { display: flex; gap: 4px; }
+
+  .spawn-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 12px;
+  }
+  .arena {
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 10px;
+    background: rgba(0,0,0,0.12);
+    min-width: 0;
+  }
+  .hint { color: var(--muted); font-size: 11.5px; margin: 8px 0 0; }
+
+  .toast {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    background: var(--panel);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 10px 14px;
+    border-radius: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+    z-index: 20;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .toast.show { opacity: 1; }
+
+  .list-drops {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .drop-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) 96px 72px auto;
+    gap: 8px;
+    align-items: center;
+  }
+  .empty { color: var(--muted); font-style: italic; padding: 14px; }
+  .tree-block { margin-bottom: 14px; }
+  .tree-block h3 {
+    margin: 0;
+    font-size: 13px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* 16:9 widescreen — usa a largura sem esticar demais */
+  @media (min-width: 1440px) {
+    main { padding: 16px 24px 32px; }
+    .table-wrap { max-height: min(62vh, 720px); }
+    .spawn-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .form-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+  }
+  @media (min-width: 1920px) {
+    main { max-width: 1800px; }
+  }
+
+  /* 16:9 curto / laptop */
+  @media (max-height: 800px) {
+    :root { --header-h: 48px; }
+    nav button { padding: 8px 10px; }
+    .table-wrap { max-height: min(52vh, 520px); }
+  }
+
+  /* tablet / janela estreita */
+  @media (max-width: 1100px) {
+    .spawn-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    nav {
+      flex-direction: row;
+      flex-wrap: wrap;
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+      overflow: visible;
+    }
+    nav button { width: auto; flex: 1 1 auto; text-align: center; padding: 8px 10px; }
+    .spawn-grid { grid-template-columns: 1fr; }
+    .drop-row { grid-template-columns: 1fr 80px 64px auto; }
+  }
+  @media (max-width: 640px) {
+    header { flex-wrap: wrap; height: auto; padding: 10px 12px; }
+    header h1 { width: 100%; }
+    main { padding: 12px; }
+    .drop-row { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>UAIDZIN · Configurações</h1>
+  <span class="badge" id="version-badge">v1</span>
+  <div class="spacer"></div>
+  <button class="btn" id="btn-reset">Seed padrão</button>
+  <button class="btn" id="btn-import">Importar JSON</button>
+  <button class="btn primary" id="btn-export">Exportar JSON</button>
+  <input type="file" id="file-import" accept="application/json,.json" hidden />
+</header>
+
+<div class="layout">
+  <nav id="tabs">
+    <button data-tab="monsters" class="active">Monstros</button>
+    <button data-tab="dungeons">Dungeons</button>
+    <button data-tab="skills">Skills</button>
+    <button data-tab="drops">Drops</button>
+    <button data-tab="items">Itens</button>
+    <button data-tab="shops">Lojas</button>
+  </nav>
+  <main id="main"></main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ========== SEED (espelha o jogo atual) ========== */
+const TREE = (prefix, names) =>
+  names.map((name, i) => ({
+    id: `${prefix}_${i + 1}`,
+    name,
+    damageMultiplier: +(1.2 + i * 0.15).toFixed(2),
+    range: +(2.5 + (i % 3) * 0.3).toFixed(1),
+    cooldown: +(3 + (i % 4) * 0.5).toFixed(1),
+    auto: i < 2,
+  }));
+
+function seedConfig() {
+  const monsters = {};
+  const addM = (o) => { monsters[o.id] = o; };
+  addM({
+    id: "fixed", name: "Guarda Estático", archetype: "fixed", level: 5,
+    maxHp: 40, attack: 8, defense: 2, range: 1.6, attackInterval: 1.2,
+    speed: 0, xp: 8, gold: 3, color: "#c45c26", isBoss: false, leashRadius: 2.5,
+    drops: [
+      { itemId: "poeira_ori", chance: 0.22, qty: 1 },
+      { itemId: "espada_curta", chance: 0.06, qty: 1 },
+    ],
+  });
+  addM({
+    id: "chaser", name: "Perseguidor", archetype: "chaser", level: 8,
+    maxHp: 55, attack: 10, defense: 3, range: 1.5, attackInterval: 1.1,
+    speed: 3.2, xp: 12, gold: 4, color: "#e23b3b", isBoss: false,
+    drops: [
+      { itemId: "poeira_ori", chance: 0.2, qty: 1 },
+      { itemId: "armadura_leve", chance: 0.08, qty: 1 },
+    ],
+  });
+  addM({
+    id: "ranged", name: "Atirador", archetype: "ranged", level: 10,
+    maxHp: 35, attack: 9, defense: 1, range: 6, attackInterval: 1.6,
+    speed: 2.4, xp: 10, gold: 4, color: "#c45cff", isBoss: false,
+    preferred: 5, retreatIfCloserThan: 2.5,
+    drops: [
+      { itemId: "poeira_ori", chance: 0.18, qty: 1 },
+      { itemId: "anel_cobre", chance: 0.05, qty: 1 },
+    ],
+  });
+  addM({
+    id: "boss", name: "Chefe da Arena", archetype: "chaser", level: 15,
+    maxHp: 220, attack: 16, defense: 6, range: 1.6, attackInterval: 1.0,
+    speed: 2.8, xp: 40, gold: 25, color: "#e23b3b", isBoss: true,
+    drops: [
+      { itemId: "espada_curta", chance: 0.4, qty: 1 },
+      { itemId: "poeira_lac", chance: 0.35, qty: 1 },
+      { itemId: "anel_ferro", chance: 0.15, qty: 1 },
+    ],
+  });
+
+  const items = {
+    espada_curta: { id: "espada_curta", name: "Espada Curta", slot: "weapon", rarity: "Comum", attackBonus: 4, defenseBonus: 0, sellValue: 8, desc: "Ataque +4" },
+    machado_leve: { id: "machado_leve", name: "Machado Leve", slot: "weapon", rarity: "Comum", attackBonus: 5, defenseBonus: 0, sellValue: 10, desc: "Ataque +5" },
+    armadura_leve: { id: "armadura_leve", name: "Armadura Leve", slot: "armor", rarity: "Comum", attackBonus: 0, defenseBonus: 3, sellValue: 8, desc: "Defesa +3" },
+    capacete: { id: "capacete", name: "Capacete", slot: "head", rarity: "Comum", attackBonus: 0, defenseBonus: 2, sellValue: 6, desc: "Defesa +2" },
+    anel_cobre: { id: "anel_cobre", name: "Anel de Cobre", slot: "ring1", rarity: "Comum", attackBonus: 1, defenseBonus: 1, sellValue: 5, desc: "Ataque +1 · Defesa +1" },
+    anel_ferro: { id: "anel_ferro", name: "Anel de Ferro", slot: "ring2", rarity: "Incomum", attackBonus: 2, defenseBonus: 2, sellValue: 14, desc: "Ataque +2 · Defesa +2" },
+    colar_simples: { id: "colar_simples", name: "Colar Simples", slot: "neck", rarity: "Comum", attackBonus: 1, defenseBonus: 1, sellValue: 5, desc: "Ataque +1 · Defesa +1" },
+    brinco_osso: { id: "brinco_osso", name: "Brinco de Osso", slot: "ear", rarity: "Comum", attackBonus: 1, defenseBonus: 0, sellValue: 4, desc: "Ataque +1" },
+    poeira_ori: { id: "poeira_ori", name: "Poeira de Ori", slot: "material", rarity: "Comum", attackBonus: 0, defenseBonus: 0, sellValue: 2, desc: "Material de reforço até +5." },
+    poeira_lac: { id: "poeira_lac", name: "Poeira de Lac", slot: "material", rarity: "Comum", attackBonus: 0, defenseBonus: 0, sellValue: 8, desc: "Material de reforço de +6 a +10." },
+  };
+
+  const shops = {
+    merchant: {
+      id: "merchant",
+      label: "Mercador",
+      slots: [
+        { itemId: "poeira_ori", qty: 50, price: 25 },
+        { itemId: "poeira_lac", qty: 10, price: 120 },
+        { itemId: "espada_curta", qty: 5, price: 80 },
+        { itemId: "machado_leve", qty: 5, price: 95 },
+        { itemId: "armadura_leve", qty: 5, price: 75 },
+        { itemId: "capacete", qty: 5, price: 55 },
+        { itemId: "anel_cobre", qty: 8, price: 40 },
+        { itemId: "colar_simples", qty: 8, price: 45 },
+        { itemId: "brinco_osso", qty: 8, price: 35 },
+      ],
+    },
+    blacksmith: {
+      id: "blacksmith",
+      label: "Ferreiro",
+      slots: [
+        { itemId: "poeira_ori", qty: 99, price: 20 },
+        { itemId: "poeira_lac", qty: 20, price: 100 },
+        { itemId: "espada_curta", qty: 3, price: 70 },
+        { itemId: "machado_leve", qty: 3, price: 85 },
+        { itemId: "armadura_leve", qty: 3, price: 70 },
+        { itemId: "capacete", qty: 3, price: 50 },
+        { itemId: "anel_ferro", qty: 4, price: 160 },
+      ],
+    },
+  };
+
+  function makeDungeon(index, minLevel, maxLevel, needsItem) {
+    const z0 = 0, z1 = -24, z2 = -48;
+    const tag = `d${index}`;
+    return {
+      id: `dungeon-${index}`,
+      name: `Dungeon ${index}`,
+      minLevel, maxLevel,
+      durationSeconds: 600,
+      entryItemId: needsItem ? `entry_${tag}` : null,
+      arenas: [
+        {
+          id: `${tag}-a1`, centerX: 0, centerZ: z0, halfSize: 9,
+          spawns: [
+            { id: `${tag}-a1-f1`, monsterId: "fixed", x: 5, z: -5 },
+            { id: `${tag}-a1-f2`, monsterId: "fixed", x: -5, z: -5 },
+            { id: `${tag}-a1-c1`, monsterId: "chaser", x: 4, z: 4 },
+          ],
+        },
+        {
+          id: `${tag}-a2`, centerX: 0, centerZ: z1, halfSize: 9,
+          spawns: [
+            { id: `${tag}-a2-f1`, monsterId: "fixed", x: 5, z: z1 - 5 },
+            { id: `${tag}-a2-c1`, monsterId: "chaser", x: -5, z: z1 - 3 },
+            { id: `${tag}-a2-r1`, monsterId: "ranged", x: -4, z: z1 - 7 },
+          ],
+        },
+        {
+          id: `${tag}-a3`, centerX: 0, centerZ: z2, halfSize: 10,
+          spawns: [
+            { id: `${tag}-a3-c1`, monsterId: "chaser", x: 5, z: z2 + 2 },
+            { id: `${tag}-a3-r1`, monsterId: "ranged", x: 0, z: z2 - 7 },
+            { id: `${tag}-a3-boss`, monsterId: "boss", x: 0, z: z2 - 2 },
+          ],
+        },
+      ],
+    };
+  }
+
+  const dungeons = [
+    makeDungeon(1, 1, 40, false),
+    makeDungeon(2, 35, 90, false),
+    makeDungeon(3, 80, 150, false),
+    makeDungeon(4, 140, 220, true),
+    makeDungeon(5, 200, 280, true),
+    makeDungeon(6, 260, 330, true),
+    makeDungeon(7, 310, 370, true),
+    makeDungeon(8, 350, 400, true),
+  ];
+
+  const classes = {
+    TK: {
+      id: "TK", name: "Thegn Knight", primary: "FOR",
+      trees: {
+        controle: TREE("tk_ctrl", ["Provocação", "Postura", "Rugido", "Muralha", "Âncora", "Desafio", "Guarda", "Bastião"]),
+        magia: TREE("tk_mag", ["Benção", "Selo", "Aura", "Escudo Sagrado", "Julgamento", "Luz", "Purificar", "Tribunal"]),
+        fisica: TREE("tk_fis", ["Golpe", "Corte", "Investida", "Machado", "Quebra", "Fúria", "Avalanche", "Colosso"]),
+      },
+    },
+    FM: {
+      id: "FM", name: "Frost Maiden", primary: "INT",
+      trees: {
+        controle: TREE("fm_ctrl", ["Laço", "Silêncio", "Rede", "Cadeia", "Prisão", "Véu", "Estase", "Domínio"]),
+        magia: TREE("fm_mag", ["Faísca", "Dardo", "Bola", "Lança", "Tempestade", "Cometa", "Vórtice", "Ruína"]),
+        fisica: TREE("fm_fis", ["Bastão", "Toque", "Golpe Arcano", "Lâmina", "Impacto", "Ruptura", "Eco", "Colapso"]),
+      },
+    },
+    BM: {
+      id: "BM", name: "Beast Master", primary: "INT",
+      trees: {
+        controle: TREE("bm_ctrl", ["Chamado", "Ameaça", "Bando", "Cerco", "Ordem", "Domínio", "Legião", "Soberano"]),
+        magia: TREE("bm_mag", ["Elo", "Eco", "Canal", "Pacto", "Vínculo", "Ritual", "Essência", "Absoluto"]),
+        fisica: TREE("bm_fis", ["Presas", "Garra", "Mordida", "Investida", "Feras", "Matilha", "Caçada", "Apex"]),
+      },
+    },
+    HT: {
+      id: "HT", name: "Huntress", primary: "DES",
+      trees: {
+        controle: TREE("ht_ctrl", ["Armadilha", "Corda", "Rede", "Silêncio", "Marca", "Canto", "Trilha", "Cerco"]),
+        magia: TREE("ht_mag", ["Farol", "Sinal", "Bênção", "Vento", "Lua", "Estrela", "Aurora", "Eclipse"]),
+        fisica: TREE("ht_fis", ["Tiro", "Perfuração", "Rajada", "Flecha Dupla", "Chuva", "Precisão", "Salva", "Tempestade"]),
+      },
+    },
+  };
+
+  return { version: 1, monsters, items, dungeons, classes, shops };
+}
+
+/* ========== STATE ========== */
+const KEY = "uaidzin-config-v1";
+let state = load();
+let tab = "monsters";
+let selectedDungeonId = state.dungeons[0]?.id || null;
+let selectedClassId = "TK";
+let selectedMonsterId = Object.keys(state.monsters)[0] || null;
+let selectedShopId = "merchant";
+const SHOP_SLOT_MAX = 16;
+
+function ensureShops(st) {
+  if (!st.shops || !st.shops.merchant || !st.shops.blacksmith) {
+    st.shops = seedConfig().shops;
+  }
+  for (const shop of Object.values(st.shops)) {
+    if (!Array.isArray(shop.slots)) shop.slots = [];
+    if (shop.slots.length > SHOP_SLOT_MAX) shop.slots = shop.slots.slice(0, SHOP_SLOT_MAX);
+  }
+  for (const it of Object.values(st.items || {})) {
+    if (it.desc == null) it.desc = "";
+  }
+  return st;
+}
+state = ensureShops(state);
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (_) {}
+  return seedConfig();
+}
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(state));
+}
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove("show"), 1800);
+}
+function uid(prefix) {
+  return `${prefix}_${Math.random().toString(36).slice(2, 8)}`;
+}
+function num(v, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/* ========== RENDER ========== */
+function render() {
+  document.querySelectorAll("#tabs button").forEach((b) => {
+    b.classList.toggle("active", b.dataset.tab === tab);
+  });
+  const main = document.getElementById("main");
+  if (tab === "monsters") main.innerHTML = viewMonsters();
+  else if (tab === "dungeons") main.innerHTML = viewDungeons();
+  else if (tab === "skills") main.innerHTML = viewSkills();
+  else if (tab === "drops") main.innerHTML = viewDrops();
+  else if (tab === "items") main.innerHTML = viewItems();
+  else if (tab === "shops") main.innerHTML = viewShops();
+  bindView();
+}
+
+function monsterOptions(sel) {
+  return Object.values(state.monsters)
+    .map((m) => `<option value="${m.id}" ${m.id === sel ? "selected" : ""}>${m.name} (${m.id})</option>`)
+    .join("");
+}
+function itemOptions(sel) {
+  return Object.values(state.items)
+    .map((i) => `<option value="${i.id}" ${i.id === sel ? "selected" : ""}>${i.name}</option>`)
+    .join("");
+}
+
+/* --- Monstros --- */
+function viewMonsters() {
+  const rows = Object.values(state.monsters)
+    .map((m) => {
+      const dropN = (m.drops || []).length;
+      return `
+      <tr data-id="${m.id}">
+        <td><input data-f="id" value="${m.id}" disabled /></td>
+        <td><input data-f="name" value="${escapeAttr(m.name)}" /></td>
+        <td>
+          <select data-f="archetype">
+            ${["fixed", "chaser", "ranged"].map((a) => `<option ${a === m.archetype ? "selected" : ""}>${a}</option>`).join("")}
+          </select>
+        </td>
+        <td><input type="number" data-f="level" value="${m.level}" min="1" /></td>
+        <td><input type="number" data-f="maxHp" value="${m.maxHp}" min="1" /></td>
+        <td><input type="number" data-f="attack" value="${m.attack}" min="0" /></td>
+        <td><input type="number" data-f="defense" value="${m.defense}" min="0" /></td>
+        <td><input type="number" data-f="range" value="${m.range}" min="0" step="0.1" /></td>
+        <td><input type="number" data-f="attackInterval" value="${m.attackInterval}" min="0.1" step="0.1" /></td>
+        <td><input type="number" data-f="speed" value="${m.speed ?? 0}" min="0" step="0.1" /></td>
+        <td><input type="number" data-f="xp" value="${m.xp}" min="0" /></td>
+        <td><input type="number" data-f="gold" value="${m.gold}" min="0" /></td>
+        <td><input type="color" data-f="color" value="${m.color || "#c45c26"}" /></td>
+        <td><input type="checkbox" data-f="isBoss" ${m.isBoss ? "checked" : ""} /></td>
+        <td><span class="badge">${dropN} drops</span></td>
+        <td class="row-actions">
+          <button class="btn tiny" data-act="goto-drops" data-id="${m.id}">Drops</button>
+          <button class="btn tiny danger" data-act="del-monster" data-id="${m.id}">Del</button>
+        </td>
+      </tr>`;
+    })
+    .join("");
+
+  return `
+    <div class="page-head">
+      <div>
+        <h2>Monstros</h2>
+        <p class="sub">Catálogo de monstros usados nos spawns das dungeons. Força, XP, gold e drops.</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" id="add-monster">+ Novo monstro</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>id</th><th>Nome</th><th>Tipo</th><th>Lv</th><th>HP</th><th>ATQ</th><th>DEF</th>
+              <th>Range</th><th>CD</th><th>Speed</th><th>XP</th><th>Gold</th><th>Cor</th><th>Boss</th><th>Drops</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="monster-rows">${rows || `<tr><td colspan="16" class="empty">Nenhum monstro</td></tr>`}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+/* --- Dungeons --- */
+function viewDungeons() {
+  const d = state.dungeons.find((x) => x.id === selectedDungeonId) || state.dungeons[0];
+  if (!d) return `<h2>Dungeons</h2><p class="empty">Nenhuma dungeon</p>`;
+  selectedDungeonId = d.id;
+
+  const list = state.dungeons
+    .map(
+      (x) =>
+        `<option value="${x.id}" ${x.id === d.id ? "selected" : ""}>${x.name} · Lv ${x.minLevel}-${x.maxLevel}</option>`,
+    )
+    .join("");
+
+  const arenas = d.arenas
+    .map((a) => {
+      const spawns = a.spawns
+        .map((s) => {
+          return `
+          <tr data-arena="${a.id}" data-spawn="${s.id}">
+            <td><code>${s.id}</code></td>
+            <td>
+              <select data-f="monsterId">${monsterOptions(s.monsterId)}</select>
+            </td>
+            <td><input type="number" data-f="x" value="${s.x}" step="0.5" /></td>
+            <td><input type="number" data-f="z" value="${s.z}" step="0.5" /></td>
+            <td><button class="btn tiny danger" data-act="del-spawn" data-arena="${a.id}" data-id="${s.id}">Del</button></td>
+          </tr>`;
+        })
+        .join("");
+      return `
+      <div class="arena">
+        <div class="card-head">
+          <strong>Arena ${a.id}</strong>
+          <button class="btn tiny" data-act="add-spawn" data-arena="${a.id}">+ Spawn</button>
+        </div>
+        <div class="table-wrap narrow" style="max-height:220px">
+          <table>
+            <thead><tr><th>id</th><th>Monstro</th><th>x</th><th>z</th><th></th></tr></thead>
+            <tbody>${spawns || `<tr><td colspan="5" class="empty">Sem spawns</td></tr>`}</tbody>
+          </table>
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  return `
+    <div class="page-head">
+      <div>
+        <h2>Dungeons</h2>
+        <p class="sub">Escolha quais monstros aparecem em cada arena e onde eles nascem.</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <select id="dungeon-pick" style="max-width:min(320px,100%)">${list}</select>
+      <button class="btn" id="add-dungeon">+ Dungeon</button>
+      <button class="btn danger" id="del-dungeon">Excluir dungeon</button>
+    </div>
+    <div class="card">
+      <div class="form-grid">
+        <label class="field">Nome<input id="d-name" value="${escapeAttr(d.name)}" /></label>
+        <label class="field">Nível mín<input id="d-min" type="number" value="${d.minLevel}" min="1" /></label>
+        <label class="field">Nível máx<input id="d-max" type="number" value="${d.maxLevel}" min="1" /></label>
+        <label class="field">Duração (s)<input id="d-dur" type="number" value="${d.durationSeconds}" min="30" /></label>
+      </div>
+    </div>
+    <div class="spawn-grid">${arenas}</div>
+    <p class="hint">Spawn id é estável no save; ao adicionar, o editor gera um id único.</p>`;
+}
+
+/* --- Skills --- */
+function viewSkills() {
+  const c = state.classes[selectedClassId] || state.classes.TK;
+  selectedClassId = c.id;
+  const classTabs = Object.keys(state.classes)
+    .map((id) => {
+      const cl = state.classes[id];
+      return `<button class="btn tiny ${id === c.id ? "primary" : ""}" data-act="pick-class" data-id="${id}">${cl.id}</button>`;
+    })
+    .join("");
+
+  const trees = ["controle", "magia", "fisica"]
+    .map((treeId) => {
+      const skills = c.trees[treeId] || [];
+      const rows = skills
+        .map((s, i) => {
+          return `
+          <tr data-tree="${treeId}" data-index="${i}">
+            <td>${i + 1}</td>
+            <td><code>${s.id}</code></td>
+            <td><input data-f="name" value="${escapeAttr(s.name)}" /></td>
+            <td><input type="number" data-f="damageMultiplier" value="${s.damageMultiplier}" step="0.05" min="0" /></td>
+            <td><input type="number" data-f="range" value="${s.range}" step="0.1" min="0" /></td>
+            <td><input type="number" data-f="cooldown" value="${s.cooldown}" step="0.1" min="0" /></td>
+            <td><input type="checkbox" data-f="auto" ${s.auto ? "checked" : ""} /></td>
+            <td><button class="btn tiny danger" data-act="del-skill" data-tree="${treeId}" data-index="${i}">Del</button></td>
+          </tr>`;
+        })
+        .join("");
+      return `
+      <div class="tree-block card">
+        <div class="card-head">
+          <h3 style="flex:1">${treeId}</h3>
+          <button class="btn tiny" data-act="add-skill" data-tree="${treeId}">+ Skill</button>
+        </div>
+        <div class="table-wrap narrow">
+          <table>
+            <thead><tr><th>#</th><th>id</th><th>Nome</th><th>Multi</th><th>Range</th><th>CD</th><th>Auto</th><th></th></tr></thead>
+            <tbody>${rows || `<tr><td colspan="8" class="empty">Vazio</td></tr>`}</tbody>
+          </table>
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  return `
+    <div class="page-head">
+      <div>
+        <h2>Skills</h2>
+        <p class="sub">Configura cada skill das 3 árvores por classe (8ª skill = especialização no jogo).</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      ${classTabs}
+    </div>
+    <div class="card">
+      <div class="form-grid" style="max-width:520px">
+        <label class="field">Nome da classe
+          <input id="c-name" value="${escapeAttr(c.name)}" />
+        </label>
+        <label class="field">Atributo primário
+          <select id="c-primary">
+            ${["FOR", "DES", "CONS", "INT"].map((a) => `<option ${a === c.primary ? "selected" : ""}>${a}</option>`).join("")}
+          </select>
+        </label>
+      </div>
+    </div>
+    ${trees}`;
+}
+
+/* --- Drops --- */
+function viewDrops() {
+  const m = state.monsters[selectedMonsterId] || Object.values(state.monsters)[0];
+  if (!m) return `<h2>Drops</h2><p class="empty">Crie um monstro primeiro</p>`;
+  selectedMonsterId = m.id;
+  const drops = m.drops || [];
+  const sum = drops.reduce((a, d) => a + (Number(d.chance) || 0), 0);
+
+  const rows = drops
+    .map((d, i) => {
+      return `
+      <div class="drop-row" data-index="${i}">
+        <select data-f="itemId">${itemOptions(d.itemId)}</select>
+        <input type="number" data-f="chance" value="${d.chance}" min="0" max="1" step="0.01" title="chance 0–1" />
+        <input type="number" data-f="qty" value="${d.qty || 1}" min="1" step="1" />
+        <button class="btn tiny danger" data-act="del-drop" data-index="${i}">Del</button>
+      </div>`;
+    })
+    .join("");
+
+  return `
+    <div class="page-head">
+      <div>
+        <h2>Drops por monstro</h2>
+        <p class="sub">Tabela de loot estilo WYD: cada monstro rola sua própria lista.</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <select id="drop-monster" style="max-width:min(320px,100%)">${monsterOptions(m.id)}</select>
+      <button class="btn primary" id="add-drop">+ Drop</button>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <strong>${escapeAttr(m.name)}</strong>
+        <span class="badge ${m.isBoss ? "boss" : ""}">${m.isBoss ? "BOSS" : m.archetype}</span>
+        <span class="badge">soma chances: ${(sum * 100).toFixed(0)}%</span>
+      </div>
+      <div class="list-drops" id="drop-list">
+        ${rows || `<div class="empty">Sem drops — clique em + Drop</div>`}
+      </div>
+      <p class="hint">Chance 0–1 (ex.: 0.08 = 8%). Soma acima de 1 é permitida (rolls independentes).</p>
+    </div>`;
+}
+
+/* --- Itens --- */
+function viewItems() {
+  const rows = Object.values(state.items)
+    .map((it) => {
+      return `
+      <tr data-id="${it.id}">
+        <td><code>${it.id}</code></td>
+        <td><input data-f="name" value="${escapeAttr(it.name)}" /></td>
+        <td>
+          <select data-f="slot">
+            ${["weapon", "head", "armor", "ring1", "ring2", "neck", "ear", "material", "misc"]
+              .map((s) => `<option ${s === it.slot ? "selected" : ""}>${s}</option>`)
+              .join("")}
+          </select>
+        </td>
+        <td>
+          <select data-f="rarity">
+            ${["Comum", "Incomum", "Raro", "Épico", "Lendário"]
+              .map((r) => `<option ${r === it.rarity ? "selected" : ""}>${r}</option>`)
+              .join("")}
+          </select>
+        </td>
+        <td><input type="number" data-f="attackBonus" value="${it.attackBonus}" min="0" /></td>
+        <td><input type="number" data-f="defenseBonus" value="${it.defenseBonus}" min="0" /></td>
+        <td><input type="number" data-f="sellValue" value="${it.sellValue}" min="0" /></td>
+        <td><input data-f="desc" value="${escapeAttr(it.desc || "")}" /></td>
+        <td><button class="btn tiny danger" data-act="del-item" data-id="${it.id}">Del</button></td>
+      </tr>`;
+    })
+    .join("");
+
+  return `
+    <div class="page-head">
+      <div>
+        <h2>Itens</h2>
+        <p class="sub">Catálogo de loot referenciado nas tabelas de drop e lojas.</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" id="add-item">+ Item</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>id</th><th>Nome</th><th>Slot</th><th>Raridade</th><th>ATQ</th><th>DEF</th><th>Venda</th><th>Descrição</th><th></th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="9" class="empty">Vazio</td></tr>`}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function viewShops() {
+  ensureShops(state);
+  const shop = state.shops[selectedShopId] || state.shops.merchant;
+  const rows = (shop.slots || [])
+    .map((slot, index) => {
+      return `
+      <tr data-index="${index}">
+        <td>${index + 1}</td>
+        <td><select data-f="itemId">${itemOptions(slot.itemId)}</select></td>
+        <td><input type="number" data-f="qty" value="${slot.qty}" min="1" max="999" /></td>
+        <td><input type="number" data-f="price" value="${slot.price}" min="0" max="2000000000" /></td>
+        <td><button class="btn tiny danger" data-act="del-shop-slot" data-index="${index}">Del</button></td>
+      </tr>`;
+    })
+    .join("");
+
+  return `
+    <div class="page-head">
+      <div>
+        <h2>Lojas</h2>
+        <p class="sub">Estoque do Mercador e do Ferreiro. Máximo 16 itens por loja (item, quantidade e preço).</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <label>Loja
+        <select id="shop-pick">
+          ${Object.values(state.shops)
+            .map((sh) => `<option value="${sh.id}" ${sh.id === selectedShopId ? "selected" : ""}>${sh.label}</option>`)
+            .join("")}
+        </select>
+      </label>
+      <span class="badge">${(shop.slots || []).length} / ${SHOP_SLOT_MAX}</span>
+      <button class="btn primary" id="add-shop-slot" ${(shop.slots || []).length >= SHOP_SLOT_MAX ? "disabled" : ""}>+ Slot</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Item</th><th>Qtd</th><th>Preço</th><th></th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="5" class="empty">Vazio</td></tr>`}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function escapeAttr(s) {
+  return String(s).replace(/"/g, "&quot;");
+}
+
+/* ========== BINDINGS ========== */
+function bindView() {
+  // tabs
+  document.querySelectorAll("#tabs button").forEach((b) => {
+    b.onclick = () => {
+      tab = b.dataset.tab;
+      render();
+    };
+  });
+
+  if (tab === "monsters") {
+    document.getElementById("add-monster").onclick = () => {
+      const id = uid("mon");
+      state.monsters[id] = {
+        id, name: "Novo Monstro", archetype: "chaser", level: 1,
+        maxHp: 40, attack: 8, defense: 2, range: 1.5, attackInterval: 1.2,
+        speed: 3, xp: 10, gold: 3, color: "#c45c26", isBoss: false,
+        drops: [],
+      };
+      save();
+      render();
+      toast("Monstro criado");
+    };
+    document.getElementById("monster-rows").addEventListener("change", onMonsterField);
+    document.getElementById("monster-rows").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-act]");
+      if (!btn) return;
+      if (btn.dataset.act === "del-monster") {
+        if (!confirm(`Excluir monstro ${btn.dataset.id}?`)) return;
+        delete state.monsters[btn.dataset.id];
+        // limpa refs
+        for (const d of state.dungeons) {
+          for (const a of d.arenas) a.spawns = a.spawns.filter((s) => s.monsterId !== btn.dataset.id);
+        }
+        save();
+        render();
+        toast("Monstro removido");
+      }
+      if (btn.dataset.act === "goto-drops") {
+        selectedMonsterId = btn.dataset.id;
+        tab = "drops";
+        render();
+      }
+    });
+  }
+
+  if (tab === "dungeons") {
+    const d = state.dungeons.find((x) => x.id === selectedDungeonId);
+    document.getElementById("dungeon-pick").onchange = (e) => {
+      selectedDungeonId = e.target.value;
+      render();
+    };
+    document.getElementById("add-dungeon").onclick = () => {
+      const n = state.dungeons.length + 1;
+      const id = `dungeon-${n}-${uid("x").slice(2, 5)}`;
+      state.dungeons.push({
+        id, name: `Dungeon ${n}`, minLevel: 1, maxLevel: 40, durationSeconds: 600,
+        entryItemId: null,
+        arenas: [{ id: "a1", centerX: 0, centerZ: 0, halfSize: 9, spawns: [] }],
+      });
+      selectedDungeonId = id;
+      save();
+      render();
+    };
+    document.getElementById("del-dungeon").onclick = () => {
+      if (state.dungeons.length <= 1) return toast("Pelo menos 1 dungeon");
+      if (!confirm("Excluir dungeon?")) return;
+      state.dungeons = state.dungeons.filter((x) => x.id !== selectedDungeonId);
+      selectedDungeonId = state.dungeons[0].id;
+      save();
+      render();
+    };
+    const applyMeta = () => {
+      if (!d) return;
+      d.name = document.getElementById("d-name").value;
+      d.minLevel = num(document.getElementById("d-min").value, 1);
+      d.maxLevel = num(document.getElementById("d-max").value, 40);
+      d.durationSeconds = num(document.getElementById("d-dur").value, 600);
+      save();
+    };
+    ["d-name", "d-min", "d-max", "d-dur"].forEach((id) => {
+      document.getElementById(id).addEventListener("change", () => {
+        applyMeta();
+        toast("Dungeon salva");
+      });
+    });
+    document.getElementById("main").addEventListener("change", (e) => {
+      const tr = e.target.closest("tr[data-spawn]");
+      if (!tr) return;
+      const arena = d?.arenas.find((a) => a.id === tr.dataset.arena);
+      const spawn = arena?.spawns.find((s) => s.id === tr.dataset.spawn);
+      if (!spawn) return;
+      const f = e.target.dataset.f;
+      if (f === "monsterId") spawn.monsterId = e.target.value;
+      if (f === "x") spawn.x = num(e.target.value);
+      if (f === "z") spawn.z = num(e.target.value);
+      save();
+      toast("Spawn atualizado");
+    });
+    document.getElementById("main").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-act]");
+      if (!btn || !d) return;
+      if (btn.dataset.act === "add-spawn") {
+        const arena = d.arenas.find((a) => a.id === btn.dataset.arena);
+        const mons = Object.keys(state.monsters);
+        if (!mons.length) return toast("Crie um monstro");
+        arena.spawns.push({
+          id: uid("sp"),
+          monsterId: mons[0],
+          x: 0,
+          z: (arena.centerZ || 0) - 4,
+        });
+        save();
+        render();
+      }
+      if (btn.dataset.act === "del-spawn") {
+        const arena = d.arenas.find((a) => a.id === btn.dataset.arena);
+        arena.spawns = arena.spawns.filter((s) => s.id !== btn.dataset.id);
+        save();
+        render();
+      }
+    });
+  }
+
+  if (tab === "skills") {
+    document.querySelectorAll('[data-act="pick-class"]').forEach((b) => {
+      b.onclick = () => {
+        selectedClassId = b.dataset.id;
+        render();
+      };
+    });
+    const c = state.classes[selectedClassId];
+    document.getElementById("c-name").onchange = (e) => {
+      c.name = e.target.value;
+      save();
+    };
+    document.getElementById("c-primary").onchange = (e) => {
+      c.primary = e.target.value;
+      save();
+    };
+    document.getElementById("main").addEventListener("change", (e) => {
+      const tr = e.target.closest("tr[data-tree]");
+      if (!tr) return;
+      const skill = c.trees[tr.dataset.tree][+tr.dataset.index];
+      const f = e.target.dataset.f;
+      if (f === "name") skill.name = e.target.value;
+      if (f === "damageMultiplier") skill.damageMultiplier = num(e.target.value, skill.damageMultiplier);
+      if (f === "range") skill.range = num(e.target.value, skill.range);
+      if (f === "cooldown") skill.cooldown = num(e.target.value, skill.cooldown);
+      if (f === "auto") skill.auto = e.target.checked;
+      save();
+    });
+    document.getElementById("main").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-act]");
+      if (!btn) return;
+      if (btn.dataset.act === "add-skill") {
+        const tree = btn.dataset.tree;
+        const arr = c.trees[tree];
+        const n = arr.length + 1;
+        arr.push({
+          id: `${c.id.toLowerCase()}_${tree.slice(0, 3)}_${n}`,
+          name: `Skill ${n}`,
+          damageMultiplier: 1.2, range: 2.5, cooldown: 3, auto: false,
+        });
+        save();
+        render();
+      }
+      if (btn.dataset.act === "del-skill") {
+        c.trees[btn.dataset.tree].splice(+btn.dataset.index, 1);
+        save();
+        render();
+      }
+    });
+  }
+
+  if (tab === "drops") {
+    document.getElementById("drop-monster").onchange = (e) => {
+      selectedMonsterId = e.target.value;
+      render();
+    };
+    document.getElementById("add-drop").onclick = () => {
+      const m = state.monsters[selectedMonsterId];
+      m.drops = m.drops || [];
+      const firstItem = Object.keys(state.items)[0];
+      if (!firstItem) return toast("Crie um item");
+      m.drops.push({ itemId: firstItem, chance: 0.1, qty: 1 });
+      save();
+      render();
+    };
+    document.getElementById("drop-list").addEventListener("change", (e) => {
+      const row = e.target.closest(".drop-row");
+      if (!row) return;
+      const m = state.monsters[selectedMonsterId];
+      const d = m.drops[+row.dataset.index];
+      const f = e.target.dataset.f;
+      if (f === "itemId") d.itemId = e.target.value;
+      if (f === "chance") d.chance = Math.max(0, Math.min(1, num(e.target.value)));
+      if (f === "qty") d.qty = Math.max(1, num(e.target.value, 1));
+      save();
+      render();
+    });
+    document.getElementById("drop-list").addEventListener("click", (e) => {
+      const btn = e.target.closest('[data-act="del-drop"]');
+      if (!btn) return;
+      state.monsters[selectedMonsterId].drops.splice(+btn.dataset.index, 1);
+      save();
+      render();
+    });
+  }
+
+  if (tab === "items") {
+    document.getElementById("add-item").onclick = () => {
+      const id = uid("item");
+      state.items[id] = {
+        id, name: "Novo Item", slot: "weapon", rarity: "Comum",
+        attackBonus: 1, defenseBonus: 0, sellValue: 5, desc: "",
+      };
+      save();
+      render();
+    };
+    document.getElementById("main").addEventListener("change", (e) => {
+      const tr = e.target.closest("tr[data-id]");
+      if (!tr) return;
+      const it = state.items[tr.dataset.id];
+      const f = e.target.dataset.f;
+      if (f === "name") it.name = e.target.value;
+      if (f === "slot") it.slot = e.target.value;
+      if (f === "rarity") it.rarity = e.target.value;
+      if (f === "attackBonus") it.attackBonus = num(e.target.value);
+      if (f === "defenseBonus") it.defenseBonus = num(e.target.value);
+      if (f === "sellValue") it.sellValue = num(e.target.value);
+      if (f === "desc") it.desc = e.target.value;
+      save();
+    });
+    document.getElementById("main").addEventListener("click", (e) => {
+      const btn = e.target.closest('[data-act="del-item"]');
+      if (!btn) return;
+      delete state.items[btn.dataset.id];
+      save();
+      render();
+    });
+  }
+
+  if (tab === "shops") {
+    ensureShops(state);
+    document.getElementById("shop-pick").onchange = (e) => {
+      selectedShopId = e.target.value;
+      render();
+    };
+    document.getElementById("add-shop-slot").onclick = () => {
+      const shop = state.shops[selectedShopId];
+      if (!shop || shop.slots.length >= SHOP_SLOT_MAX) return;
+      const firstItem = Object.keys(state.items)[0] || "poeira_ori";
+      shop.slots.push({ itemId: firstItem, qty: 1, price: 10 });
+      save();
+      render();
+      toast("Slot adicionado");
+    };
+    document.getElementById("main").addEventListener("change", (e) => {
+      const tr = e.target.closest("tr[data-index]");
+      if (!tr) return;
+      const shop = state.shops[selectedShopId];
+      const slot = shop.slots[+tr.dataset.index];
+      if (!slot) return;
+      const f = e.target.dataset.f;
+      if (f === "itemId") slot.itemId = e.target.value;
+      if (f === "qty") slot.qty = Math.max(1, Math.min(999, num(e.target.value, 1)));
+      if (f === "price") slot.price = Math.max(0, Math.min(2000000000, num(e.target.value)));
+      save();
+    });
+    document.getElementById("main").addEventListener("click", (e) => {
+      const btn = e.target.closest('[data-act="del-shop-slot"]');
+      if (!btn) return;
+      state.shops[selectedShopId].slots.splice(+btn.dataset.index, 1);
+      save();
+      render();
+    });
+  }
+}
+
+function onMonsterField(e) {
+  const tr = e.target.closest("tr[data-id]");
+  if (!tr) return;
+  const m = state.monsters[tr.dataset.id];
+  const f = e.target.dataset.f;
+  if (!f || f === "id") return;
+  if (f === "name") m.name = e.target.value;
+  else if (f === "archetype") m.archetype = e.target.value;
+  else if (f === "color") m.color = e.target.value;
+  else if (f === "isBoss") m.isBoss = e.target.checked;
+  else m[f] = num(e.target.value, m[f]);
+  save();
+}
+
+/* ========== HEADER ========== */
+document.getElementById("btn-export").onclick = () => {
+  save();
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "game-config.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("game-config.json exportado");
+};
+
+document.getElementById("btn-import").onclick = () => {
+  document.getElementById("file-import").click();
+};
+document.getElementById("file-import").onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.monsters || !data.dungeons || !data.classes) throw new Error("schema inválido");
+    state = ensureShops(data);
+    selectedDungeonId = state.dungeons[0]?.id;
+    selectedClassId = Object.keys(state.classes)[0];
+    selectedMonsterId = Object.keys(state.monsters)[0];
+    save();
+    render();
+    toast("JSON importado");
+  } catch (err) {
+    alert("Falha ao importar: " + err.message);
+  }
+  e.target.value = "";
+};
+
+document.getElementById("btn-reset").onclick = () => {
+  if (!confirm("Restaurar seed padrão? Perde edições locais.")) return;
+  state = seedConfig();
+  selectedDungeonId = state.dungeons[0].id;
+  selectedClassId = "TK";
+  selectedMonsterId = Object.keys(state.monsters)[0];
+  save();
+  render();
+  toast("Seed restaurado");
+};
+
+render();
+</script>
+</body>
+</html>

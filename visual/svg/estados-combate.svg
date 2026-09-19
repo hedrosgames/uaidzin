@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 260" width="100%" height="auto" role="img" aria-labelledby="t-estados-do-personagem-no-combate" style="max-width:100%;display:block;background:transparent"><title id="t-estados-do-personagem-no-combate">Estados do personagem no combate</title>
+<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d4a017"/></marker></defs>
+<rect x="40" y="90" width="180" height="70" rx="10" fill="#161b24" stroke="#c45c26" stroke-width="1.5"/>
+<text x="130.0" y="118" fill="#c45c26" font-family="-apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="central">Movendo</text>
+<text x="130.0" y="140" fill="#9aa3b2" font-family="-apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11.5" font-weight="400" text-anchor="middle" dominant-baseline="central">Sem ataque básico</text>
+<rect x="250" y="90" width="180" height="70" rx="10" fill="#161b24" stroke="#d4a017" stroke-width="1.5"/>
+<text x="340.0" y="118" fill="#d4a017" font-family="-apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="central">Parado</text>
+<text x="340.0" y="140" fill="#9aa3b2" font-family="-apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11.5" font-weight="400" text-anchor="middle" dominant-baseline="central">Ataque básico auto</text>
+<rect x="460" y="90" width="180" height="70" rx="10" fill="#161b24" stroke="#3d9a6a" stroke-width="1.5"/>
+<text x="550.0" y="118" fill="#3d9a6a" font-family="-apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="central">Skills</text>
+<text x="550.0" y="140" fill="#9aa3b2" font-family="-apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="11.5" font-weight="400" text-anchor="middle" dominant-baseline="central">Auto ou manual</text>
+<line x1="220" y1="125" x2="246" y2="125" stroke="#d4a017" stroke-width="1.5" marker-end="url(#ar)" stroke-linecap="round"/>
+<line x1="430" y1="125" x2="456" y2="125" stroke="#d4a017" stroke-width="1.5" marker-end="url(#ar)" stroke-linecap="round"/>
+<path d="M 340 160 C 340 200, 130 200, 130 164" fill="none" stroke="#6b7382" stroke-width="1.2" marker-end="url(#ar)" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="235" y="210" fill="#6b7382" font-family="-apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="10" font-weight="400" text-anchor="middle" dominant-baseline="central">jogador move</text>
+<path d="M 340 90 C 340 50, 130 50, 130 86" fill="none" stroke="#6b7382" stroke-width="1.2" marker-end="url(#ar)" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="235" y="42" fill="#6b7382" font-family="-apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="10" font-weight="400" text-anchor="middle" dominant-baseline="central">parar para atacar</text>
+<rect x="40" y="220" width="600" height="28" rx="6" fill="#1c2330" stroke="#2a3140" stroke-width="1"/>
+<text x="340" y="234" fill="#9aa3b2" font-family="-apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="12" font-weight="500" text-anchor="middle" dominant-baseline="central">Autofarm = personagem para no local e continua atacando · não anda sozinho</text>
+</svg>

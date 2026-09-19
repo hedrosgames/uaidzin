@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UAIDZIN — Limpar Save</title>
+  <style>
+    :root {
+      --bg0: #100c08;
+      --bg1: #241c14;
+      --gold: #d4a017;
+      --blood: #a33b3b;
+      --ink: #f0e6d0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Georgia, "Times New Roman", serif;
+      background: radial-gradient(circle at 30% 20%, #2a2016, var(--bg0));
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: min(520px, 100%);
+      background: var(--bg1);
+      border: 2px solid #3a2e22;
+      box-shadow: 0 0 0 1px var(--gold), 0 12px 40px rgba(0,0,0,.55);
+      padding: 28px 24px;
+      border-radius: 2px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.4rem;
+      color: var(--gold);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    p { margin: 0 0 18px; opacity: 0.85; line-height: 1.45; }
+    label { display: block; margin: 12px 0 6px; font-size: 0.9rem; }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #4a3c2c;
+      background: var(--bg0);
+      color: var(--ink);
+      border-radius: 2px;
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+    button {
+      border: 1px solid var(--gold);
+      background: #1a140e;
+      color: var(--ink);
+      padding: 10px 14px;
+      border-radius: 2px;
+      cursor: pointer;
+      font: inherit;
+    }
+    button.danger {
+      border-color: var(--blood);
+      color: #f0cfcf;
+    }
+    button:hover { filter: brightness(1.1); }
+    #log {
+      margin-top: 18px;
+      min-height: 64px;
+      padding: 10px;
+      background: #0a0806;
+      border: 1px solid #3a2e22;
+      white-space: pre-wrap;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+    a { color: var(--gold); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Limpar Save</h1>
+    <p>Remove progresso local do UAIDZIN neste navegador.</p>
+    <label for="profileId">Profile ID (ex. admin:slot:0)</label>
+    <input id="profileId" value="admin:slot:0" />
+    <label for="userId">Conta</label>
+    <input id="userId" value="admin" />
+    <div class="row">
+      <button type="button" id="btnProfile">Limpar profile</button>
+      <button type="button" id="btnAccount" class="danger">Limpar conta</button>
+      <button type="button" id="btnAll" class="danger">Limpar tudo</button>
+    </div>
+    <p style="margin-top:16px"><a href="/">Voltar ao jogo</a></p>
+    <div id="log"></div>
+  </div>
+  <script>
+    const log = document.getElementById("log");
+    function say(msg) { log.textContent = String(msg); }
+
+    function lsRemovePrefix(prefix) {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(prefix)) keys.push(k);
+      }
+      keys.forEach((k) => localStorage.removeItem(k));
+    }
+
+    function clearProfile(profileId) {
+      localStorage.removeItem("uaidzin.save." + profileId);
+      localStorage.removeItem("uaidzin.save." + profileId + ":prev");
+      return new Promise((resolve) => {
+        const req = indexedDB.open("uaidzin", 1);
+        req.onerror = () => resolve();
+        req.onsuccess = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains("save")) { resolve(); return; }
+          const tx = db.transaction("save", "readwrite");
+          tx.objectStore("save").delete("profile:" + profileId);
+          tx.objectStore("save").delete("profile:" + profileId + ":prev");
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => resolve();
+        };
+      });
+    }
+
+    async function clearIdbAll() {
+      return new Promise((resolve) => {
+        const req = indexedDB.open("uaidzin", 1);
+        req.onerror = () => resolve();
+        req.onsuccess = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains("save")) { resolve(); return; }
+          const tx = db.transaction("save", "readwrite");
+          tx.objectStore("save").clear();
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => resolve();
+        };
+      });
+    }
+
+    document.getElementById("btnProfile").onclick = async () => {
+      const id = document.getElementById("profileId").value.trim();
+      await clearProfile(id);
+      try {
+        const raw = localStorage.getItem("uaidzin_save_v1_admin");
+        void raw;
+      } catch (_) {}
+      say("Profile limpo: " + id);
+    };
+
+    document.getElementById("btnAccount").onclick = async () => {
+      const user = document.getElementById("userId").value.trim() || "admin";
+      for (let i = 0; i < 4; i++) await clearProfile(user + ":slot:" + i);
+      localStorage.removeItem("uaidzin_save_v1_" + user);
+      const acc = JSON.parse(localStorage.getItem("uaidzin_accounts_v1") || "{}");
+      delete acc[user];
+      localStorage.setItem("uaidzin_accounts_v1", JSON.stringify(acc));
+      sessionStorage.removeItem("uaidzin_session_v1");
+      sessionStorage.removeItem("uaidzin_active_char");
+      say("Conta limpa (slots + baú compartilhado): " + user);
+    };
+
+    document.getElementById("btnAll").onclick = async () => {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith("uaidzin") && k !== "uaidzin_settings") keys.push(k);
+      }
+      keys.forEach((k) => localStorage.removeItem(k));
+      sessionStorage.removeItem("uaidzin_session_v1");
+      sessionStorage.removeItem("uaidzin_active_char");
+      await clearIdbAll();
+      say("Storage UAIDZIN limpo (settings preservados).");
+    };
+  </script>
+</body>
+</html>
