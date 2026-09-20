@@ -105,7 +105,7 @@ export class PlayerRuntime {
       }
       this.x = next.x;
       this.z = next.z;
-      this.isMoving = moved || inputX !== 0 || inputZ !== 0 || !!this.moveTarget;
+      this.isMoving = moved;
       if (this.moveTarget && !moved) this.moveTarget = null;
     } else {
       this.isMoving = false;

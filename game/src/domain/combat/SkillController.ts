@@ -31,9 +31,9 @@ export class SkillController {
     let slot: LoadoutSlot | null = null;
     if (manualSlotIndex >= 0) {
       const s = this.loadout.slots[manualSlotIndex];
-      if (s && s.cd <= 0) slot = s;
-    }
-    if (!slot) {
+      if (!s || s.cd > 0) return null;
+      slot = s;
+    } else {
       slot = this.loadout.bestReadyAuto();
     }
     if (!slot) return null;

@@ -83,21 +83,17 @@ export class SkillLoadout {
       picked.push({ skill: c.skill, tree: c.tree, level: c.level, auto: true });
     }
 
-    if (!picked.length) {
-      const stub = CLASSES[st.classId].trees.fisica[0];
-      picked.push({ skill: stub, tree: "fisica", level: 1, auto: true });
-    }
-
     const prevCd = new Map(this.slots.map((s) => [s.skill.id, s.cd] as const));
     this.slots = picked.map((c) => {
       const cdScale = specFactor(st.specialization[c.tree]);
       const cooldown = Math.max(0.4, c.skill.cooldown * cdScale);
+      const remaining = prevCd.get(c.skill.id);
       return {
         skill: c.skill,
         tree: c.tree,
         level: c.level,
         cooldown,
-        cd: Math.min(cooldown, prevCd.get(c.skill.id) ?? 0),
+        cd: remaining === undefined ? 0 : Math.min(cooldown, remaining),
         auto: c.auto,
       };
     });

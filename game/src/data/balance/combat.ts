@@ -1,5 +1,4 @@
 export const COMBAT_BALANCE = {
-  hitChance: 0.95,
   dodgeChance: 0.05,
   minDamage: 1,
   player: {
