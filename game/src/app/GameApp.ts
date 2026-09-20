@@ -877,6 +877,7 @@ export class GameApp {
       });
     } catch (error) {
       this.errors.report(error, "GameApp.tick");
+      this.showToast("Erro no jogo — veja o console", "dungeon");
       this.loop.stop();
     }
   }
