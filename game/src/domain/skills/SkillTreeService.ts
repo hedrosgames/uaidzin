@@ -17,6 +17,12 @@ export interface SkillTreeState {
 
 
 
+let boundForReset: SkillTreeService | null = null;
+
+export function resetBoundSkillCycle(): void {
+  boundForReset?.resetSkills();
+}
+
 export class SkillTreeService {
   readonly state: SkillTreeState = {
     classId: "TK",
@@ -26,6 +32,10 @@ export class SkillTreeService {
     skillPoints: 0,
     specPoints: SKILL_BALANCE.specializationTotal,
   };
+
+  constructor() {
+    boundForReset = this;
+  }
 
   setClass(id: ClassId): void {
     this.state.classId = id;
@@ -85,5 +95,8 @@ export class SkillTreeService {
   resetSkills(): void {
     this.state.levels = {};
     this.state.eighthTree = null;
+    this.state.skillPoints = 0;
+    this.state.specPoints = SKILL_BALANCE.specializationTotal;
+    this.state.specialization = { controle: 0, magia: 0, fisica: 0 };
   }
 }

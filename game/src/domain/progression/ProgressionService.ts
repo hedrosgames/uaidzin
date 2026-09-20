@@ -1,6 +1,7 @@
 import { PROGRESSION_BALANCE, type EvolutionId } from "../../data/balance/progression";
 import { DUNGEONS_MORTAL } from "../../data/dungeons/dungeons-mortal";
 import type { CharacterModel } from "../character/CharacterModel";
+import { resetBoundSkillCycle } from "../skills/SkillTreeService";
 
 const DUNGEONS_BY_EVOLUTION: Partial<Record<EvolutionId, readonly unknown[]>> = {
   Mortal: DUNGEONS_MORTAL,
@@ -121,6 +122,7 @@ export class ProgressionService {
     this.state.bonusAttributePoints += PROGRESSION_BALANCE.resetAttributePoints;
     this.state.unspentAttributePoints += PROGRESSION_BALANCE.resetAttributePoints;
     this.character.level = 1;
+    resetBoundSkillCycle();
     this.recomputeCombatStats();
     return true;
   }

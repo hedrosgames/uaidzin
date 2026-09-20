@@ -8,6 +8,7 @@ export const ECONOMY_BALANCE = {
   equipDropChance: 0.22,
   materialDropChance: 0.18,
   oriShare: 0.75,
+  oriUntilDungeon: 4,
   equipStatLevelDivisor: 8,
   weaponAttackMultiplier: 2,
   rarities: ["Comum", "Incomum", "Raro", "Épico", "Lendário"] as const,

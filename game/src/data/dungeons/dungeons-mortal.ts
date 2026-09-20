@@ -35,7 +35,7 @@ function arenasIntro(tag: string): ArenaDef[] {
       spawns: [
         { id: `${tag}-a3-c1`, archetype: "chaser", x: 5, z: z2 + 2 },
         { id: `${tag}-a3-r1`, archetype: "ranged", x: 0, z: z2 - 7 },
-        { id: `${tag}-a3-boss`, archetype: "chaser", x: 0, z: z2 - 2, isBoss: true },
+        { id: `${tag}-a3-boss`, archetype: "fixed", x: 0, z: z2 - 2, isBoss: true },
       ],
     },
   ];
