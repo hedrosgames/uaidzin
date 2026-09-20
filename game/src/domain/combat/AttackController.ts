@@ -11,8 +11,13 @@ export interface AttackTarget {
 
 export class AttackController {
   private cooldown = 0;
-  private readonly range = COMBAT_BALANCE.player.attackRange;
-  private readonly interval = COMBAT_BALANCE.player.attackInterval;
+  private range = COMBAT_BALANCE.player.attackRange;
+  private interval = COMBAT_BALANCE.player.attackInterval;
+
+  setReach(range: number, interval: number): void {
+    this.range = range;
+    this.interval = interval;
+  }
 
   tick(dt: number, moving: boolean, targets: AttackTarget[], playerX: number, playerZ: number): AttackTarget | null {
     this.cooldown = Math.max(0, this.cooldown - dt);

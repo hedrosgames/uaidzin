@@ -1,4 +1,5 @@
 import { ECONOMY_BALANCE, type Rarity } from "../../data/balance/economy";
+import { COMBAT_BALANCE } from "../../data/balance/combat";
 import { nextItemUid, type ItemInstance } from "./ItemModel";
 
 const NAMES = {
@@ -32,6 +33,13 @@ export function createEquipDrop(level: number, random: () => number = Math.rando
   const names = NAMES[slot];
   const name = names[Math.floor(random() * names.length)];
   const base = ECONOMY_BALANCE.equipBaseStat(level, ri);
+  const reach =
+    slot === "weapon"
+      ? COMBAT_BALANCE.weapon.byName[name as keyof typeof COMBAT_BALANCE.weapon.byName] || {
+          attackRange: COMBAT_BALANCE.weapon.attackRange,
+          attackInterval: COMBAT_BALANCE.weapon.attackInterval,
+        }
+      : null;
   return {
     uid: nextItemUid(),
     defId: `${slot}_${rarity.toLowerCase()}`,
@@ -43,6 +51,8 @@ export function createEquipDrop(level: number, random: () => number = Math.rando
     defenseBonus: slot === "weapon" ? 0 : ECONOMY_BALANCE.equipDefenseBonus(base, ri),
     stack: 1,
     sellValue: ECONOMY_BALANCE.sellValueByRarity[ri] + base,
+    attackRange: reach?.attackRange,
+    attackInterval: reach?.attackInterval,
   };
 }
 

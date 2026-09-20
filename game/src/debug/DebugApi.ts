@@ -131,6 +131,7 @@ export function installDebugApi(app: DebugHost): void {
     },
     setClass: (id: string) => {
       app.session.skillTree.setClass(id as never);
+      app.session.progression.setClassId(id as never);
       void app.session.persistSave();
       if (app.wireUi) app.wireUi.close();
       else app.panels.close();

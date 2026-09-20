@@ -26,6 +26,22 @@ export const COMBAT_BALANCE = {
     preferredRangeFactor: 0.8,
     respawnAttackCooldown: 0.5,
   },
+  weapon: {
+    attackRange: 2.2,
+    attackInterval: 0.85,
+    byName: {
+      "Espada Curta": { attackRange: 2.2, attackInterval: 0.85 },
+      "Machado Leve": { attackRange: 2.0, attackInterval: 0.95 },
+      "Cajado Rústico": { attackRange: 2.8, attackInterval: 1.05 },
+      "Arco Curto": { attackRange: 5.5, attackInterval: 1.15 },
+    },
+  },
+  primary: {
+    FOR: { attackPerPoint: 0.5, hpPerPoint: 0 },
+    DES: { attackPerPoint: 0.35, hpPerPoint: 0 },
+    CONS: { attackPerPoint: 0, hpPerPoint: 2 },
+    INT: { attackPerPoint: 0.25, hpPerPoint: 0 },
+  },
 };
 
 export type EnemyArchetype = "fixed" | "chaser" | "ranged";

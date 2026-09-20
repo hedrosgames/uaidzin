@@ -25,6 +25,8 @@ function asItem(raw: Record<string, unknown>): ItemInstance | null {
     defenseBonus: Number(raw.defenseBonus) || 0,
     stack: Number(raw.stack) || 1,
     sellValue: Number(raw.sellValue) || 0,
+    attackRange: Number(raw.attackRange) || undefined,
+    attackInterval: Number(raw.attackInterval) || undefined,
   };
 }
 

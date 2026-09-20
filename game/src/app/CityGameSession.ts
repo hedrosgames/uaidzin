@@ -251,6 +251,7 @@ export class CityGameSession {
     this.inventory.gold = 0;
     this.inventory.items.length = 0;
     this.skillTree.setClass("TK");
+    this.progression.setClassId("TK");
     this.skillTree.resetSkills();
     this.skillLoadout.refresh();
     this.progression.state.evolution = "Mortal";
@@ -298,7 +299,7 @@ export class CityGameSession {
             y: i.kind === "chest" ? 1.35 : 2.2,
           })),
       );
-      this.effects.setRangeIndicator(0, 0, COMBAT_BALANCE.player.attackRange, false);
+      this.effects.setRangeIndicator(0, 0, this.weaponReach().attackRange, false);
       this.dungeonRun.reset();
       this.character.healFull();
       this.character.isDead = false;
@@ -436,6 +437,7 @@ export class CityGameSession {
     this.character.name = character.name;
     const classId = character.classId as ClassId;
     this.skillTree.setClass(classId);
+    this.progression.setClassId(classId);
     this.skillTree.resetSkills();
     const p = this.progression.state;
     p.level = Math.max(1, character.level || 1);
@@ -491,6 +493,7 @@ export class CityGameSession {
     const s = this.skillTree.state;
     const classId = (data.character.classId || data.skills.classId) as typeof s.classId;
     s.classId = classId;
+    this.progression.setClassId(classId);
     s.levels = data.skills.levels;
     s.eighthTree = data.skills.eighthTree as typeof s.eighthTree;
     s.specialization = { ...data.skills.specialization } as typeof s.specialization;
@@ -634,7 +637,7 @@ export class CityGameSession {
     }
 
 
-    this.effects.setRangeIndicator(0, 0, COMBAT_BALANCE.player.attackRange, false);
+    this.effects.setRangeIndicator(0, 0, this.weaponReach().attackRange, false);
 
     this.renderer.render(this.camera.camera);
     const el = this.renderer.renderer.domElement;
@@ -749,9 +752,19 @@ export class CityGameSession {
     });
   }
 
+  private weaponReach(): { attackRange: number; attackInterval: number } {
+    const weapon = this.equipment.equipped.weapon;
+    return {
+      attackRange: weapon?.attackRange ?? COMBAT_BALANCE.player.attackRange,
+      attackInterval: weapon?.attackInterval ?? COMBAT_BALANCE.player.attackInterval,
+    };
+  }
+
   private updateCombat(dt: number): void {
     this.enemies.updateRespawns(dt);
     const targets = this.enemies.aliveTargets();
+    const reach = this.weaponReach();
+    this.attack.setReach(reach.attackRange, reach.attackInterval);
 
     const hitTarget = this.attack.tick(
       dt,

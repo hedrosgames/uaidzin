@@ -11,6 +11,8 @@ export interface ItemInstance {
   defenseBonus: number;
   stack: number;
   sellValue: number;
+  attackRange?: number;
+  attackInterval?: number;
 }
 
 let uidSeq = 1;

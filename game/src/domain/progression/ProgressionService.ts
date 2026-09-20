@@ -1,4 +1,6 @@
 import { PROGRESSION_BALANCE, type EvolutionId } from "../../data/balance/progression";
+import { COMBAT_BALANCE } from "../../data/balance/combat";
+import { CLASSES, type ClassId } from "../../data/classes/class-definitions";
 import { DUNGEONS_MORTAL } from "../../data/dungeons/dungeons-mortal";
 import type { CharacterModel } from "../character/CharacterModel";
 import { resetBoundSkillCycle } from "../skills/SkillTreeService";
@@ -15,6 +17,7 @@ export interface ProgressionState {
   unspentAttributePoints: number;
   resetsInEvolution: number;
   bonusAttributePoints: number;
+  classId: ClassId;
 }
 
 
@@ -28,9 +31,15 @@ export class ProgressionService {
     unspentAttributePoints: 0,
     resetsInEvolution: 0,
     bonusAttributePoints: 0,
+    classId: "TK",
   };
 
   constructor(private readonly character: CharacterModel) {
+    this.recomputeCombatStats();
+  }
+
+  setClassId(id: ClassId): void {
+    this.state.classId = id;
     this.recomputeCombatStats();
   }
 
@@ -140,9 +149,14 @@ export class ProgressionService {
 
   recomputeCombatStats(): void {
     const a = this.character.attributes;
-    this.character.baseAttack = PROGRESSION_BALANCE.attackFromFor(a.FOR);
+    const primary = CLASSES[this.state.classId].primary;
+    const bonus = COMBAT_BALANCE.primary[primary];
+    const primaryValue = a[primary];
+    const extraAttack = Math.floor(primaryValue * (bonus.attackPerPoint ?? 0));
+    const extraHp = Math.floor(primaryValue * (bonus.hpPerPoint ?? 0));
+    this.character.baseAttack = PROGRESSION_BALANCE.attackFromFor(a.FOR) + extraAttack;
     this.character.baseDefense = PROGRESSION_BALANCE.defenseFromCons(a.CONS);
-    const maxHp = PROGRESSION_BALANCE.maxHpFromCons(a.CONS);
+    const maxHp = PROGRESSION_BALANCE.maxHpFromCons(a.CONS) + extraHp;
     const ratio = this.character.maxHp > 0 ? this.character.hp / this.character.maxHp : 1;
     this.character.maxHp = maxHp;
     this.character.hp = this.character.isDead ? 0 : Math.max(1, Math.round(maxHp * Math.min(1, ratio)));
