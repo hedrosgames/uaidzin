@@ -80,7 +80,7 @@ Legenda de status da cena: `Em spec` · `Em implementação` · `Validando` · `
 | 2.7 | Status à direita por personagem | Novo char: status do **padrão da classe**; char salvo: dados da conta | `[ ]` |
 | 2.8 | **Bug:** delete 2º + clicar 1º → painel direito vazio | Depois do delete, selecionar o sobrevivente preenche nome/atributos/status | `[ ]` |
 | 2.9 | Criar/excluir grava na conta **na hora** | create/delete → reload da página mantém o estado; sem “salvar depois” | `[ ]` |
-| 2.10 | Fade in/out preto entre cenas | Login→seleção e seleção→cidade (e retorno, se houver) com overlay preto fade-in/fade-out | `[ ]` |
+| 2.10 | Fade in/out preto entre cenas (transversal) | Login↔seleção↔cidade↔dungeon com overlay preto — mesma regra que S6/D fade | `[ ]` |
 | 2.11 | Idle do **TK** = idle do **BM** | No roster/modal 3D, TK toca a mesma animação de idle do BM (não o clip embutido atual do TK) | `[ ]` |
 | 2.12 | **Deslogar** no Settings da seleção | Opções → botão Deslogar → limpa sessão e volta ao login | `[ ]` hoje só Fechar/Salvar |
 
@@ -122,19 +122,160 @@ Legenda de status da cena: `Em spec` · `Em implementação` · `Validando` · `
 
 ---
 
-## Cena 3 — (aguardando)
+## Cena 3 — Cidade
+
+**Status:** Em spec (backlog — 5 mensagens do Felipe)  
+**Runtime:** hub 3D Aurelion + painéis + NPCs  
+**Tarefas:** `TAREFAS-ABERTAS.md` → C1–C26
+
+### Funcionalidades (aceite)
+
+| # | Item | Como validar | Estado |
+|---|---|---|---|
+| 3.1 | Mestre de quests **faz algo** | UI de quests definida + implementada (não NPC morto) | `[ ]` |
+| 3.2 | Personagem nasce com **skills zeradas** | Char novo: árvores 0, sem skill herdada | `[ ]` |
+| 3.3 | Save acompanha **evolução** | Skills/atributos/nível gravam; reload mantém | `[ ]` |
+| 3.4 | Atributos e tela **espelham o save** | Painéis/HUD leem do slot ativo, não de mock | `[ ]` |
+| 3.5 | Classe na UI = classe do personagem | TK não aparece escrito **Huntress** | `[ ]` bug |
+| 3.6 | Wipe de dados + telas alinhadas ao save | Reset limpa lixo; create→cidade usa só save | `[ ]` |
+| 3.7 | Sábio **não** abre equipamento junto | Só a tela do Sábio | `[ ]` |
+| 3.8 | Compositor: **fórmulas** + implementação | Composição com regras reais | `[ ]` |
+| 3.9 | Árvores **fora** da cidade substituídas | Novo modelo no lugar das árvores placeholder | `[ ]` |
+| 3.10 | Início **sem item equipado e sem ouro** | Equip vazio, gold 0 (hoje create usa `gold: 100`) | `[ ]` |
+| 3.11 | Ferreiro com **lista de itens** | Catálogo real no painel | `[ ]` |
+| 3.12 | **Todo item** com ícone | Nenhum item sem PNG/SVG | `[ ]` |
+| 3.13 | Fonte central: **shader** ajustado | Visual da fonte ok | `[ ]` |
+| 3.14 | Chão: textura **centro + geral** | Textura revisada no hub e redondeza | `[ ]` |
+| 3.15 | Mercador: **lista montada** | Loja com itens/preços | `[ ]` |
+| 3.16 | Click à distância no NPC | Clicar longe → anda; ao chegar **abre a UI** se já clicou | `[ ]` |
+| 3.17 | Scroll menu dungeon no **padrão** do jogo | Guarda → lista com scrollbar do tema | `[ ]` |
+| 3.18 | Entrada **consome itens** | Debita item; bloqueia se faltar | `[ ]` |
+| 3.19 | Tela dungeon: **cards com info** + wire | Cards ricos (nível, item, tempo…); wire → implementar | `[ ]` |
+| 3.20 | Toggle “não perguntar mais” | Visual no jogo + Settings para **restaurar** a escolha | `[ ]` |
+| 3.21 | Textos do **Sábio** revisados | Fala/UI do Sábio: acentos, sentido, sem lixo de mockup | `[ ]` |
+| 3.22 | Click-to-move **não trava** andando no lugar | Clicar destino com obstáculo no caminho → recupera, desvia ou **para**; nunca “anda eterno” no mesmo ponto | `[ ]` |
+| 3.23 | **Escudo** encaixa na mão sem clipar | Equipar/com shield visível: mesh não corta nem “come” braço/corpo do personagem | `[ ]` |
+| 3.24 | **NPCs** com personagens reais | Nenhum placeholder genérico no hub (quests, sábio, ferreiro, mercador, guarda…) | `[ ]` |
+| 3.25 | **Cápsulas → monstros** | Placeholder de cápsula substituído por mesh de monstro no mundo/arena | `[ ]` |
+| 3.26 | **Colisão da fonte** | Andar/click-to-move: personagem **não** entra na base da fonte; colisor = mesh | `[ ]` |
+| 3.27 | **Visual da fonte** definido e aprovado | Área central coerente (base/plataforma/chão + shader C12–C13); Felipe aprova o look | `[ ]` |
+
+### Comportamento detalhado esperado
+
+1. **Save é fonte** — UI nunca inventa classe/nome/skills/ouro. Char novo: zeros. Evolução grava na conta.
+2. **NPC** — click longe = andar + fila; no raio, abre a UI daquele NPC.
+3. **Portão dungeon** — lista no padrão; entrada valida e consome item; confirmação controlada pelo toggle.
+4. **Mundo** — árvores novas; fonte e chão no direction aprovado.
+5. **Colisão** — se o navmesh/path bloquear: slide na superfície, repath curto ou **stop** com o personagem estável (animação de andar não pode continuar se a velocidade real for ~0).
+
+### Validação (quando implementar)
+
+- [ ] Novo: skills 0, sem equip, ouro 0, classe/nome corretos na UI.
+- [ ] Sábio só a tela dele; ferreiro/mercador com listas; ícones completos.
+- [ ] Click longe abre ao chegar; scroll no padrão; entrada consome item.
+- [ ] Felipe valida: fonte, chão, árvores, cards dungeon, toggle.
 
 ---
 
-## Cena N — (aguardando)
+## Cena 4 — Dungeon
 
-Template ao receber a próxima cena:
+**Status:** Em spec  
+**Tarefas:** `TAREFAS-ABERTAS.md` → D1–D13 · X4
+
+### Funcionalidades (aceite)
+
+| # | Item | Como validar | Estado |
+|---|---|---|---|
+| 4.1 | Dungeon **não** abre preta | Mundo/luz/arena visíveis na entrada | `[ ]` |
+| 4.2 | Morte: anim **na dungeon**, depois teleporte | Death no local → espera → cidade (não anim na cidade) | `[ ]` |
+| 4.3 | Fade **entrada e saída** | Overlay preto nos dois sentidos | `[ ]` |
+| 4.4 | Animação de morte **repetível** | Morrer de novo roda de novo | `[ ]` |
+| 4.5 | Dungeon 1 **mais fácil** | Balance D1 (GDD ou provisório anotado) | `[ ]` |
+| 4.6 | X-ray obstáculo **só no jogador** | Monstros não entram no reveal | `[ ]` |
+| 4.7 | Drops no **canto inferior esquerdo** | Lista tipo log debugável | `[ ]` |
+| 4.8 | Level up: **fanfarra** + HP/MP full | Feedback curto + bares cheios | `[ ]` |
+| 4.9 | Textos com **acentos/símbolos** ok | Revisão pt-BR da UI/dungeon | `[ ]` |
+| 4.10 | Sem andar **atacando / tomando dano** | Movimento bloqueado no hit/ataque (janela do design) | `[ ]` |
+| 4.11 | Política de **F5** por cena | Reload vs login; sem perder save | `[ ]` decisão |
+| 4.12 | **Documentar** save/load | Doc: quando grava/carrega + F5 | `[ ]` |
+| 4.13 | **Iluminação + assets + level design** por dungeon | Cada dungeon legível (luz), com assets finais no lugar de placeholder e layout montado (D1 primeiro) | `[ ]` |
+| 4.14 | **Animações por arma** (transversal X4) | Personagens usam anim coerente com a arma equipada (idle/ataque/run) | `[ ]` |
+
+### Comportamento detalhado esperado
+
+1. **Morte** — anim local → teleporte → fade → cidade; anim reseta no próximo combate/enter.
+2. **Render** — dungeon iluminada; x-ray só player; loot log inferior esquerdo.
+3. **Up** — fanfarra + full HP/MP; save da evolução (liga em C3.3).
+4. **Input** — ataque/hit lock no movimento, sem lock eterno.
+5. **Persistência** — doc cobrindo create, enter, up, loot, sair/morrer, F5, wipe.
+
+### Validação (quando implementar)
+
+- [ ] Dungeon visível; morte → anim na dungeon → fade → cidade; morte de novo ok.
+- [ ] Monstro sem x-ray; loot canto esquerdo; up com fanfarra + full bars.
+- [ ] Acentos ok; lock de movimento conforme regra; F5 testado sem corromper save.
+- [ ] Doc save/load escrito.
+
+---
+
+## Cena 5 — Editor e métricas (planejar)
+
+**Status:** Em spec — planejar antes de codar  
+**Tarefas:** `TAREFAS-ABERTAS.md` → E1–E4
+
+| # | Item | Como validar | Estado |
+|---|---|---|---|
+| 5.1 | **Plano** do editor (classes, itens, equip, monstros, dungeons, lojas) | Doc de modelo de dados + como o runtime consome | `[ ]` |
+| 5.2 | Editor em fases | CRUD/validação; export no formato do jogo | `[ ]` |
+| 5.3 | **Plano** planilha + dashboard de progressão | Métricas, fonte (save/logs), layout do dashboard | `[ ]` |
+| 5.4 | **Fluxo do jogador nível 1 → 400** documentado e planejado | Doc Mortal 1–400: marcos, unlocks (dungeon/skill/equip/reset), o que o save guarda em cada faixa; alinhado ao GDD `05`/`28` | `[ ]` |
+
+Não implementar editor/dashboard antes do plano aprovado. 5.4 é documento de progressão — base para balance (D4) e para o editor (E2).
+
+---
+
+## Inventários de conteúdo (transversal)
+
+**Status:** Em spec  
+**Tarefas:** `TAREFAS-ABERTAS.md` → I1–I14
+
+Entregáveis: um md (ou pasta `docs/inventarios/`) por lista, no formato `id | nome | onde vive | uso | status (final/placeholder/falta)`.
+
+| # | Lista | Aceite mínimo | Estado |
+|---|---|---|---|
+| I1 / 6.1 | **Animações** | Personagens, armas, NPC, monstros — clip, GLB de origem, quem usa | `[ ]` |
+| I2 / 6.2 | **VFX** | Skill, ambiente, up, morte, hit — onde roda | `[ ]` |
+| I3 / 6.3 | **Skills** | Todas as árvores das 4 classes + 8ª + livros; efeito e status | `[ ]` |
+| I4 / 6.4 | **Inimigos** | Comum/elite/boss, dungeon, AI, drops | `[ ]` |
+| I5 / 6.5 | **Assets do jogo (geral)** | models, textures, icons, audio, shaders, UI, anims, VFX — caminho + placeholder? | `[ ]` |
+| I6 / 6.6 | **Itens** | Consumíveis, entrada de dungeon, materiais; ícone sempre presente | `[ ]` |
+| I7 / 6.7 | **Equipamentos** | Slots, tiers, req. classe, refine | `[ ]` |
+| I8 / 6.8 | **Dungeons** | D1–D8: nível, inimigos, tempo, item de entrada, LD | `[ ]` |
+| I9 / 6.9 | **Lojas / NPCs comerciais** | Catálogo ferreiro/mercador vs I6 | `[ ]` |
+| I10 / 6.10 | **Classes** | Attrs base, árvores, armas/anims (liga X4) | `[ ]` |
+| I11 / 6.11 | **Áudios** | BGM/SFX por cena | `[ ]` |
+| I12 / 6.12 | **Shaders / efeitos** | Fonte, x-ray, dungeon, fade | `[ ]` |
+| I13 / 6.13 | **Textos UI / falas** | NPC, shops, quests — acentos ok | `[ ]` |
+| I14 / 6.14 | **Modelos 3D do mundo** | Cidade + fora; colisores; placeholder? | `[ ]` |
+
+Os inventários **alimentam** E1–E2 (editor), E4 (fluxo 1–400), C10–C11 (lojas/ícones), D13 (LD), X4 (animações). Pode sair em paralelo com a implementação das cenas.
+
+---
+
+## Registro — backlog das msgs que não entraram
+
+Coberto agora: Cidade p1 e p2 · Dungeon · Editor/métricas · reclamação de não processamento.
+
+---
+
+## Template ao receber a próxima cena
 
 ```markdown
 ## Cena N — <nome>
 
 **Status:** Em spec
 **Tela / runtime:** …
+**Tarefas:** TAREFAS-ABERTAS.md → IDs
 
 ### Funcionalidades (aceite)
 | # | Item | Como validar | Estado |
@@ -142,8 +283,5 @@ Template ao receber a próxima cena:
 | N.1 | … | … | `[ ]` |
 
 ### Comportamento detalhado esperado
-…
-
-### Lacunas no código (hoje)
 …
 ```

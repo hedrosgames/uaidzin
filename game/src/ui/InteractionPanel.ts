@@ -30,11 +30,20 @@ export class InteractionPanel {
     const body = this.root.querySelector("#interaction-body");
     const action = this.root.querySelector<HTMLButtonElement>("#interaction-action");
     if (title) title.textContent = prompt.label;
-    if (body) body.textContent = prompt.body;
+    if (body) {
+      body.textContent = prompt.body;
+      (body as HTMLElement).hidden = !prompt.body;
+    }
     if (action) {
-      if (prompt.kind === "portal") action.textContent = "Entrar na dungeon";
-      else if (prompt.kind === "portal-exit") action.textContent = "Voltar para Aurelion";
-      else action.textContent = "Falar (stub)";
+      if (prompt.kind === "portal") {
+        action.hidden = false;
+        action.textContent = "Entrar na dungeon";
+      } else if (prompt.kind === "portal-exit") {
+        action.hidden = false;
+        action.textContent = "Voltar para Aurelion";
+      } else {
+        action.hidden = true;
+      }
     }
     this.root.hidden = false;
   }

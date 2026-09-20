@@ -121,42 +121,6 @@ textarea,
   border-color: var(--gold);
 }
 
-.speed-bar {
-  display: flex;
-  border: 1px solid var(--iron-hi);
-  border-radius: 2px;
-  background: rgba(16, 12, 8, 0.9);
-  overflow: hidden;
-}
-
-.speed-btn {
-  appearance: none;
-  border: 0;
-  border-right: 1px solid var(--iron-hi);
-  background: transparent;
-  color: var(--ink-dim);
-  padding: 8px 10px;
-  font-family: var(--font-num);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  min-width: 38px;
-}
-
-.speed-btn:last-child {
-  border-right: 0;
-}
-
-.speed-btn:hover {
-  color: var(--ink);
-  background: rgba(212, 160, 23, 0.08);
-}
-
-.speed-btn.on {
-  color: var(--gold);
-  background: rgba(212, 160, 23, 0.16);
-}
-
 .btn-opt-hud {
   width: 36px;
   height: 36px;

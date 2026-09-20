@@ -738,10 +738,10 @@ export class CityGameSession {
     const ss = Math.floor(result.elapsedSeconds % 60);
     const text =
       reason === "timer"
-        ? `Tempo esgotado!\nNível ${this.progression.state.level} ${this.progression.state.evolution}\nKills: ${result.kills}\nXP da sessão: ${this.sessionXp}\nPontos livres: ${this.progression.state.unspentAttributePoints}\nDuração: ${mm}m ${ss}s\nRetornando a Aurelion…`
+        ? `Tempo esgotado!\nNível ${this.progression.state.level} ${this.progression.state.evolution}\nAbates: ${result.kills}\nXP da sessão: ${this.sessionXp}\nPontos livres: ${this.progression.state.unspentAttributePoints}\nDuração: ${mm}m ${ss}s\nRetornando a Aurelion…`
         : reason === "death"
-          ? `Derrotado.\nNível ${this.progression.state.level} ${this.progression.state.evolution}\nKills: ${result.kills}\nXP da sessão: ${this.sessionXp}\nRetornando a Aurelion…`
-          : `Expedição encerrada.\nNível ${this.progression.state.level} ${this.progression.state.evolution}\nKills: ${result.kills}\nXP da sessão: ${this.sessionXp}\nRetornando a Aurelion…`;
+          ? `Derrotado.\nNível ${this.progression.state.level} ${this.progression.state.evolution}\nAbates: ${result.kills}\nXP da sessão: ${this.sessionXp}\nRetornando a Aurelion…`
+          : `Expedição encerrada.\nNível ${this.progression.state.level} ${this.progression.state.evolution}\nAbates: ${result.kills}\nXP da sessão: ${this.sessionXp}\nRetornando a Aurelion…`;
     this.onResult(text);
     this.onModeChange("RESULT");
     this.resultHold = 2.6;
@@ -989,6 +989,10 @@ export class CityGameSession {
   private tryInteract(def: InteractableDef): void {
     if (this.player.distanceTo(def.x, def.z) > INTERACT_RANGE) return;
     if (this.openNpcService(def.id)) return;
+    if (def.kind === "portal-exit") {
+      this.confirmInteraction(def.id);
+      return;
+    }
     this.openInteraction(def);
   }
 

@@ -312,7 +312,7 @@ export function buildTestDungeonWorld(): BuiltWorld {
       x: 0,
       z: 7,
       color: 0x44c0ff,
-      body: "Encerra a expedição e retorna a Aurelion. [E]",
+      body: "",
     },
     true,
   );
@@ -340,7 +340,7 @@ export function buildTestDungeonWorld(): BuiltWorld {
         x: 0,
         z: 7,
         color: 0x44c0ff,
-        body: "Encerra a expedição e retorna a Aurelion. [E]",
+        body: "",
       },
     ],
     spawn: { x: 0, z: 2 },

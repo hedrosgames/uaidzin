@@ -64,7 +64,6 @@ export type DebugHost = {
   enterGame(): void;
   showToast(text: string, kind?: "skill" | "attr" | "level" | "dungeon"): void;
   pulseFrame(): void;
-  applyTimeScale(scale: 1 | 2 | 4 | 10, toast: boolean): void;
   currentViewModel(): CharacterViewModel;
 };
 
@@ -210,7 +209,7 @@ export function installDebugApi(app: DebugHost): void {
       return result;
     },
     setTimeScale: (n: number) => {
-      app.applyTimeScale(normalizeTimeScale(n), false);
+      app.timeScale = normalizeTimeScale(n);
       return app.timeScale;
     },
     getTimeScale: () => app.timeScale,

@@ -19,7 +19,7 @@ export const CITY_INTERACTABLES: InteractableDef[] = [
     x: 0,
     z: -10,
     color: 0xd4a017,
-    body: "Seleciona e entra em dungeons.",
+    body: "",
   },
   {
     id: "npc-merchant",
@@ -28,7 +28,7 @@ export const CITY_INTERACTABLES: InteractableDef[] = [
     x: 11.9,
     z: 0.9,
     color: 0x3d9a6a,
-    body: "Compra e venda de itens. Loja completa na Fase 7.",
+    body: "",
   },
   {
     id: "npc-blacksmith",
@@ -37,7 +37,7 @@ export const CITY_INTERACTABLES: InteractableDef[] = [
     x: 10.2,
     z: 10.9,
     color: 0xc45c26,
-    body: "Refinamento de equipamentos. Sistema na Fase 7.",
+    body: "",
   },
   {
     id: "npc-skill-master",
@@ -46,7 +46,7 @@ export const CITY_INTERACTABLES: InteractableDef[] = [
     x: -9.1,
     z: -10.1,
     color: 0x6b7cff,
-    body: "Skills, especialização e livros. Sistema na Fase 8.",
+    body: "",
   },
   {
     id: "npc-sage",
@@ -55,7 +55,7 @@ export const CITY_INTERACTABLES: InteractableDef[] = [
     x: -4.2,
     z: -2.6,
     color: 0xb07cff,
-    body: "Evolução e reset. Sistema na Fase 6.",
+    body: "",
   },
   {
     id: "npc-composer",
@@ -64,7 +64,7 @@ export const CITY_INTERACTABLES: InteractableDef[] = [
     x: -9.9,
     z: 10.9,
     color: 0x8aa0b8,
-    body: "Composição de itens.",
+    body: "",
   },
   {
     id: "vault-chest",
@@ -73,7 +73,7 @@ export const CITY_INTERACTABLES: InteractableDef[] = [
     x: 2.6,
     z: 11.4,
     color: 0xc4a35a,
-    body: "Inventário e baú da conta.",
+    body: "",
   },
   {
     id: "npc-quest",
@@ -82,7 +82,7 @@ export const CITY_INTERACTABLES: InteractableDef[] = [
     x: 5.7,
     z: -12.6,
     color: 0xe8c547,
-    body: "Quests. Sistema na Fase 11.",
+    body: "",
   },
 ];
 
@@ -103,5 +103,5 @@ export const DUNGEON_EXIT: InteractableDef = {
   x: 0,
   z: 0,
   color: 0x44c0ff,
-  body: "Retorna para Aurelion. [E] para sair",
+    body: "",
 };

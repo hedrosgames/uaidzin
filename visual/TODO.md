@@ -10,7 +10,11 @@ Planos antigos: `planos-arquivados/`.
 ## Aberto
 
 - [ ] Cena 1 Login — `TAREFAS-ABERTAS.md` L1–L5
-- [ ] Cena 2 Seleção — `TAREFAS-ABERTAS.md` S1–S8 (3D idle no criar, nome 3–12, bug painel vazio, persist, fade, idle TK=BM, deslogar)
+- [ ] Cena 2 Seleção — `TAREFAS-ABERTAS.md` S1–S8
+- [ ] Cena 3 Cidade — `TAREFAS-ABERTAS.md` C1–C26
+- [ ] Cena 4 Dungeon — `TAREFAS-ABERTAS.md` D1–D13 + X4 (iluminação/assets/LD, anim por arma)
+- [ ] Cena 5 Editor/métricas — E1–E4 (inclui fluxo jogador 1→400)
+- [ ] Inventários de conteúdo — `TAREFAS-ABERTAS.md` I1–I14 (anims, VFX, skills, inimigos, assets…)
 - [ ] Portar wire C/K/I/B para `GamePanels` real (dados de save/sessão; hoje é overlay de protótipo sobre o gameplay)
 - [ ] HUD dungeon final com HP world bar (verde ≥40%, vermelho &lt;40%) no jogo real
 - [ ] Cards de item / loot (lab reprovou as opções)

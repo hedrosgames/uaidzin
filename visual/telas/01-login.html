@@ -410,7 +410,6 @@ input[type="range"]::-webkit-slider-thumb{
           <input type="checkbox" id="saveCreds">
           <span>Salvar credenciais</span>
         </label>
-        <button type="button" class="link-btn" id="btnForgot">Esqueci a senha</button>
       </div>
 
       <button type="submit" class="btn-shield" id="btnLogin" disabled>Entrar</button>
@@ -459,7 +458,6 @@ input[type="range"]::-webkit-slider-thumb{
     <svg class="corner br" viewBox="0 0 18 18" style="position:absolute;bottom:6px;right:6px;width:18px;height:18px;stroke:#d4a017;fill:none;stroke-width:1.6;transform:scale(-1)"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
 
     <h2 id="setTitle">Opções</h2>
-    <div class="sub">Áudio · vídeo · controles</div>
 
     <div class="set-row">
       <span class="k">Volume mestre</span>
@@ -486,12 +484,6 @@ input[type="range"]::-webkit-slider-thumb{
       <span class="k">Tela cheia</span>
       <div class="ctrl">
         <input type="checkbox" class="toggle" id="optFullscreen">
-      </div>
-    </div>
-    <div class="set-row">
-      <span class="k">Mostrar FPS</span>
-      <div class="ctrl">
-        <input type="checkbox" class="toggle" id="optFps">
       </div>
     </div>
     <div class="set-row">
@@ -613,10 +605,6 @@ input[type="range"]::-webkit-slider-thumb{
       });
   });
 
-  $("btnForgot").addEventListener("click", () => {
-    showMsg(msgInfo, msgInfoText, "Fale com o Guarda do Portal para recuperar o acesso.");
-  });
-
   $("btnGoogle").addEventListener("click", () => {
     hideMsgs();
     btnLogin.disabled = true;
@@ -653,7 +641,6 @@ input[type="range"]::-webkit-slider-thumb{
         if (s[r] != null) { $(r).value = s[r]; $(v).textContent = s[r]; }
       });
       if (s.optFullscreen != null) $("optFullscreen").checked = s.optFullscreen;
-      if (s.optFps != null) $("optFps").checked = s.optFps;
       if (s.optShadows != null) $("optShadows").checked = s.optShadows;
     } catch (_) {}
   }
@@ -661,7 +648,6 @@ input[type="range"]::-webkit-slider-thumb{
     const s = {};
     ranges.forEach(([r]) => { s[r] = Number($(r).value); });
     s.optFullscreen = $("optFullscreen").checked;
-    s.optFps = $("optFps").checked;
     s.optShadows = $("optShadows").checked;
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
   }

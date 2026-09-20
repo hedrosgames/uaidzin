@@ -58,13 +58,6 @@ const SETTINGS_KEY = "uaidzin_settings";
 
 type TimeScale = 1 | 2 | 4 | 10;
 
-function normalizeTimeScale(n: number): TimeScale {
-  if (n >= 10) return 10;
-  if (n >= 4) return 4;
-  if (n >= 2) return 2;
-  return 1;
-}
-
 export class GameApp {
   readonly bus = new EventBus();
   readonly state = new GameStateStore();
@@ -264,13 +257,8 @@ export class GameApp {
       this.bus.emit("game:state-changed", { mode: state.mode });
     });
 
-    this.bus.on("player:near-interactable", ({ label, kind }) => {
-      if (!label || kind === "npc" || kind === "chest") {
-        this.hint.hidden = true;
-        return;
-      }
-      this.hint.hidden = false;
-      this.hint.textContent = `[E] ${label}`;
+    this.bus.on("player:near-interactable", () => {
+      this.hint.hidden = true;
     });
 
     this.loop = new GameLoop((dt) => this.tick(dt));
@@ -281,7 +269,6 @@ export class GameApp {
     this.bindDebugTimer();
     this.bindDebugProgression();
     this.bindPanels();
-    this.bindSpeedToggle();
     this.bindWeaponToggle();
     this.bindSettings();
     this.bindJuiceToasts();
@@ -316,26 +303,6 @@ export class GameApp {
       if (!slot) return;
       const index = Number(slot.getAttribute("data-skill-slot"));
       if (Number.isFinite(index)) this.session.forceSkillSlot(index);
-    });
-  }
-
-  private applyTimeScale(scale: TimeScale, toast: boolean): void {
-    this.timeScale = scale;
-    this.speedToggle.querySelectorAll<HTMLButtonElement>("[data-speed]").forEach((btn) => {
-      const value = Number(btn.getAttribute("data-speed"));
-      btn.classList.toggle("on", value === scale);
-    });
-    if (toast) {
-      this.showToast(`Velocidade ${scale}Ã—`, scale > 1 ? "dungeon" : "skill");
-    }
-  }
-
-  private bindSpeedToggle(): void {
-    this.speedToggle.addEventListener("click", (event) => {
-      const btn = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-speed]");
-      if (!btn) return;
-      const scale = normalizeTimeScale(Number(btn.getAttribute("data-speed")));
-      this.applyTimeScale(scale, true);
     });
   }
 
@@ -376,7 +343,6 @@ export class GameApp {
           "vol-music": "volMusic",
           "vol-sfx": "volSfx",
           "opt-fullscreen": "optFullscreen",
-          "opt-fps": "optFps",
           "opt-shadows": "optShadows",
           "opt-armor-aura": "optArmorAura",
         };
@@ -391,7 +357,7 @@ export class GameApp {
             if (label) label.textContent = String(value);
           }
         });
-        (["opt-fullscreen", "opt-fps", "opt-shadows"] as const).forEach((id) => {
+        (["opt-fullscreen", "opt-shadows"] as const).forEach((id) => {
           const el = document.getElementById(id) as HTMLInputElement | null;
           const key = map[id];
           if (!el || !key || data[key] == null) return;
@@ -419,11 +385,9 @@ export class GameApp {
         if (id === "vol-sfx") data.volSfx = Number(el.value);
       });
       const fullscreen = document.getElementById("opt-fullscreen") as HTMLInputElement | null;
-      const fps = document.getElementById("opt-fps") as HTMLInputElement | null;
       const shadows = document.getElementById("opt-shadows") as HTMLInputElement | null;
       const armorAura = document.getElementById("opt-armor-aura") as HTMLInputElement | null;
       if (fullscreen) data.optFullscreen = fullscreen.checked;
-      if (fps) data.optFps = fps.checked;
       if (shadows) data.optShadows = shadows.checked;
       if (armorAura) data.optArmorAura = armorAura.checked;
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
@@ -441,7 +405,7 @@ export class GameApp {
       });
     });
 
-    (["opt-fullscreen", "opt-fps", "opt-shadows", "opt-armor-aura"] as const).forEach((id) => {
+    (["opt-fullscreen", "opt-shadows", "opt-armor-aura"] as const).forEach((id) => {
       const el = document.getElementById(id) as HTMLInputElement | null;
       el?.addEventListener("change", () => {
         saveSettings();
@@ -546,7 +510,7 @@ export class GameApp {
       this.pulseFrame();
     });
     this.bus.on("dungeon:entered", ({ dungeonId }) => {
-      this.showToast(`${dungeonId} Â· ${this.timeScale}Ã—`, "dungeon");
+      this.showToast(dungeonId, "dungeon");
     });
   }
 
@@ -679,7 +643,7 @@ export class GameApp {
 
     this.farmStats.hidden = hud.timer == null;
     if (hud.timer != null) {
-      this.farmStats.textContent = `Kills ${hud.kills} Â· XP ${hud.xp} Â· ${hud.arenaHint ?? ""}`;
+      this.farmStats.textContent = `Abates ${hud.kills} · XP ${hud.xp} · ${hud.arenaHint ?? ""}`;
     }
 
     if (hud.lootToast) this.showToast(hud.lootToast, hud.uiToastKind);

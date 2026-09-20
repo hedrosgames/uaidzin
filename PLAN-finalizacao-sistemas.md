@@ -39,11 +39,16 @@ Felipe dita status + expectativa da cena
 
 ## Cena em andamento
 
-| Cena | Status |
-|---|---|
-| 1 — Login | Em spec · tarefas L1–L5 em `TAREFAS-ABERTAS.md` |
-| 2 — Seleção de personagem | Em spec · tarefas S1–S8 em `TAREFAS-ABERTAS.md` |
-| 3+ | Aguardando Felipe |
+| Cena | Status | IDs tarefas |
+|---|---|---|
+| 1 — Login | Em spec | L1–L5 |
+| 2 — Seleção | Em spec | S1–S8 |
+| 3 — Cidade | Em spec | C1–C26 |
+| 4 — Dungeon | Em spec | D1–D13 + X4 |
+| 5 — Editor + métricas + fluxo 1–400 | Em spec — **planejar antes de codar** | E1–E4 |
+| Inventários de conteúdo | Em spec — listagens/auditorias | I1–I14 |
+
+Implementação de código: **ainda não iniciada** nesta fase do plano (só spec/checklist/tarefas). Go do Felipe define a ordem (sugestão: cenas 1–2 antes de cidade/dungeon, editor só após plano E1).
 
 ## Lacunas conhecidas (resumo)
 

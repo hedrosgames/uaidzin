@@ -910,7 +910,6 @@ input[type="range"]::-webkit-slider-thumb{
         <div class="set-row"><span>Música</span><div class="ctrl"><input type="range" id="v2" min="0" max="100" value="60"><span class="vol-val" id="v2v">60</span></div></div>
         <div class="set-row"><span>Efeitos</span><div class="ctrl"><input type="range" id="v3" min="0" max="100" value="90"><span class="vol-val" id="v3v">90</span></div></div>
         <div class="set-row"><span>Tela cheia</span><div class="ctrl"><input type="checkbox" class="toggle" id="optFullscreen"></div></div>
-        <div class="set-row"><span>Mostrar FPS</span><div class="ctrl"><input type="checkbox" class="toggle" id="optFps"></div></div>
         <div class="set-row"><span>Sombras</span><div class="ctrl"><input type="checkbox" class="toggle" id="optShadows" checked></div></div>
         <div class="btn-row">
           <button type="button" class="btn-iron" id="btnSettingsCancel">Fechar</button>
@@ -1379,7 +1378,6 @@ input[type="range"]::-webkit-slider-thumb{
         if (s[r] != null) { $(r).value = s[r]; $(v).textContent = s[r]; }
       });
       if (s.optFullscreen != null) $("optFullscreen").checked = s.optFullscreen;
-      if (s.optFps != null) $("optFps").checked = s.optFps;
       if (s.optShadows != null) $("optShadows").checked = s.optShadows;
     } catch(_){}
   }
@@ -1389,7 +1387,6 @@ input[type="range"]::-webkit-slider-thumb{
       v2: Number($("v2").value),
       v3: Number($("v3").value),
       optFullscreen: $("optFullscreen").checked,
-      optFps: $("optFps").checked,
       optShadows: $("optShadows").checked
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
