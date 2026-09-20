@@ -87,7 +87,7 @@ function loadPrototype(id: CityPropId): Promise<Object3D> {
     pending = loader.loadAsync(CITY_PROP_SPECS[id].url).then((gltf) => {
       hardenPropMaterials(gltf.scene);
       return gltf.scene;
-    });
+    }).catch(() => new Group());
     prototypes.set(id, pending);
   }
   return pending;
@@ -114,7 +114,14 @@ export function spawnCityProp(
   anchor.scale.set(placement.scaleX ?? placement.scale, placement.scale, placement.scale);
   parent.add(anchor);
   void loadPrototype(placement.id).then((proto) => {
+    if (!proto) return;
     const clone = proto.clone(true);
+    clone.traverse((obj) => {
+      const mesh = obj as Mesh;
+      if (!mesh.isMesh) return;
+      mesh.visible = true;
+      mesh.frustumCulled = false;
+    });
     anchor.add(clone);
     onReady?.(clone);
   });
