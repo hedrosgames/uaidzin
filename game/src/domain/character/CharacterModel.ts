@@ -16,15 +16,32 @@ export class CharacterModel {
   mp: number;
   maxMp: number;
   attributes: CharacterAttributes = { FOR: 10, DES: 10, CONS: 10, INT: 10 };
-  attack: number;
-  defense: number;
   isDead = false;
+
+  /**
+   * attack/defense são derivados: base (atributos) + equipamento.
+   * Os dois donos escrevem campos distintos — ProgressionService só mexe em
+   * base*, EquipmentService só em equip* — então nenhuma ordem de chamada faz
+   * um apagar o outro.
+   */
+  baseAttack: number;
+  baseDefense: number;
+  equipAttack = 0;
+  equipDefense = 0;
+
+  get attack(): number {
+    return this.baseAttack + this.equipAttack;
+  }
+
+  get defense(): number {
+    return this.baseDefense + this.equipDefense;
+  }
 
   constructor(init: { maxHp: number; attack: number; defense: number }) {
     this.maxHp = init.maxHp;
     this.hp = init.maxHp;
-    this.attack = init.attack;
-    this.defense = init.defense;
+    this.baseAttack = init.attack;
+    this.baseDefense = init.defense;
     this.maxMp = this.computeMaxMp(1, this.attributes.INT);
     this.mp = this.maxMp;
   }

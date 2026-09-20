@@ -200,6 +200,54 @@ async function main() {
     if (fxIdleEnd === fxIdleStart) ok(`cidade sem VFX novo parado (fxCount estável em ${fxIdleEnd})`);
     else fail(`cidade gerou VFX parada: fxCount ${fxIdleStart} → ${fxIdleEnd}`);
 
+    // 4b. EQUIPAMENTO — bônus tem de sobreviver a recomputeCombatStats().
+    // Regressão: base e equipamento já escreveram o mesmo campo, então subir de
+    // nível apagava o bônus e desequipar deixava o atributo abaixo do base.
+    const equipResult = await page.evaluate(() => {
+      const s = window.__UAIDZIN__.session;
+      const base = { attack: s.character.attack, defense: s.character.defense };
+      const item = {
+        uid: "smoke_weapon_1",
+        defId: "smoke_sword",
+        name: "Espada de Teste",
+        rarity: "comum",
+        slot: "weapon",
+        refine: 0,
+        attackBonus: 10,
+        defenseBonus: 3,
+        stack: 1,
+        sellValue: 1,
+      };
+      if (!s.inventory.add(item)) return { error: "inventário cheio" };
+      if (!s.equipment.equip(item.uid)) return { error: "equip falhou" };
+      const equipped = { attack: s.character.attack, defense: s.character.defense };
+      s.progression.recomputeCombatStats();
+      const afterRecompute = { attack: s.character.attack, defense: s.character.defense };
+      s.equipment.unequip("weapon");
+      const afterUnequip = { attack: s.character.attack, defense: s.character.defense };
+      return { base, equipped, afterRecompute, afterUnequip };
+    });
+
+    if (equipResult.error) {
+      fail(`equipamento: ${equipResult.error}`);
+    } else {
+      const { base, equipped, afterRecompute, afterUnequip } = equipResult;
+      if (equipped.attack === base.attack + 10) ok(`equipar somou ataque (${base.attack} → ${equipped.attack})`);
+      else fail(`equipar: ataque esperado ${base.attack + 10}, recebido ${equipped.attack}`);
+
+      if (afterRecompute.attack === base.attack + 10) ok("bônus sobrevive a recomputeCombatStats");
+      else fail(`recompute apagou o bônus: ataque esperado ${base.attack + 10}, recebido ${afterRecompute.attack}`);
+
+      if (afterRecompute.defense === base.defense + 3) ok("bônus de defesa sobrevive a recomputeCombatStats");
+      else fail(`recompute apagou a defesa: esperado ${base.defense + 3}, recebido ${afterRecompute.defense}`);
+
+      if (afterUnequip.attack === base.attack) ok(`desequipar volta ao base (${afterUnequip.attack})`);
+      else fail(`desequipar: ataque esperado ${base.attack}, recebido ${afterUnequip.attack}`);
+
+      if (afterUnequip.defense === base.defense) ok(`desequipar volta defesa ao base (${afterUnequip.defense})`);
+      else fail(`desequipar: defesa esperada ${base.defense}, recebida ${afterUnequip.defense}`);
+    }
+
     // 5. SAVE — round-trip exato a partir do estado estável da cidade.
     // Feito na cidade (sem combate correndo) para que o valor não mude sob o teste.
     const before = await snap();

@@ -21,7 +21,6 @@ export class EquipmentService {
     const current = this.equipped[slot];
 
     if (current) {
-      this.removeBonus(current);
       const ok = this.inventory.add(current);
       if (!ok) return false;
       delete this.equipped[slot];
@@ -29,7 +28,7 @@ export class EquipmentService {
 
     this.inventory.remove(uid);
     this.equipped[slot] = item;
-    this.applyBonus(item);
+    this.recalcEquipBonus();
     return true;
   }
 
@@ -38,8 +37,8 @@ export class EquipmentService {
     if (!item) return false;
     const ok = this.inventory.add(item);
     if (!ok) return false;
-    this.removeBonus(item);
     delete this.equipped[slot];
+    this.recalcEquipBonus();
     return true;
   }
 
@@ -47,39 +46,38 @@ export class EquipmentService {
     return ["weapon", "head", "armor", "ring1", "ring2", "neck", "ear"].includes(slot);
   }
 
-  private applyBonus(item: ItemInstance): void {
-    const refineBonus = item.refine;
-    this.character.attack += item.attackBonus + refineBonus;
-    this.character.defense += item.defenseBonus + refineBonus;
-  }
-
-  private removeBonus(item: ItemInstance): void {
-    const refineBonus = item.refine;
-    this.character.attack -= item.attackBonus + refineBonus;
-    this.character.defense -= item.defenseBonus + refineBonus;
-  }
-
-  onItemRefined(item: ItemInstance): void {
+  /**
+   * Recalcula o bônus total a partir do que está equipado agora.
+   * Declarar o total (em vez de somar/subtrair incrementos) impede que um
+   * remove sem o apply correspondente deixe o personagem abaixo do base.
+   */
+  private recalcEquipBonus(): void {
+    let attack = 0;
+    let defense = 0;
     for (const slot of Object.keys(this.equipped) as EquipSlot[]) {
-      if (this.equipped[slot]?.uid === item.uid) {
-        this.character.attack += 1;
-        this.character.defense += 1;
-      }
+      const item = this.equipped[slot];
+      if (!item) continue;
+      attack += item.attackBonus + item.refine;
+      defense += item.defenseBonus + item.refine;
     }
+    this.character.equipAttack = attack;
+    this.character.equipDefense = defense;
+  }
+
+  onItemRefined(_item: ItemInstance): void {
+    this.recalcEquipBonus();
   }
 
   restoreEquipped(equipped: Partial<Record<EquipSlot, ItemInstance>>): void {
     for (const slot of Object.keys(this.equipped) as EquipSlot[]) {
-      const item = this.equipped[slot];
-      if (item) this.removeBonus(item);
       delete this.equipped[slot];
     }
     for (const slot of Object.keys(equipped) as EquipSlot[]) {
       const item = equipped[slot];
       if (!item) continue;
       this.equipped[slot] = { ...item };
-      this.applyBonus(this.equipped[slot]!);
     }
+    this.recalcEquipBonus();
   }
 
   snapshotEquipped(): Partial<Record<EquipSlot, ItemInstance>> {

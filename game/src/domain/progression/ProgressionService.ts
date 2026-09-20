@@ -110,8 +110,8 @@ export class ProgressionService {
 
   recomputeCombatStats(): void {
     const a = this.character.attributes;
-    this.character.attack = PROGRESSION_BALANCE.attackFromFor(a.FOR);
-    this.character.defense = PROGRESSION_BALANCE.defenseFromCons(a.CONS);
+    this.character.baseAttack = PROGRESSION_BALANCE.attackFromFor(a.FOR);
+    this.character.baseDefense = PROGRESSION_BALANCE.defenseFromCons(a.CONS);
     const maxHp = PROGRESSION_BALANCE.maxHpFromCons(a.CONS);
     const ratio = this.character.maxHp > 0 ? this.character.hp / this.character.maxHp : 1;
     this.character.maxHp = maxHp;
