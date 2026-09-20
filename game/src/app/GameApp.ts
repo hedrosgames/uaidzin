@@ -117,6 +117,59 @@ export class GameApp {
       void this.session.persistSave(true);
     }
   };
+  private readonly onWindowResize = (): void => {
+    const canvas = this.renderer.renderer.domElement;
+    const parent = canvas.parentElement;
+    const width = parent?.clientWidth || window.innerWidth;
+    const height = parent?.clientHeight || window.innerHeight;
+    this.renderer.resize(width, height);
+  };
+  private readonly onKeyPanels = (event: KeyboardEvent): void => {
+    if (event.repeat) return;
+    if (!this.entered) return;
+    if (this.wireUi) return;
+    const mode = this.state.getMode();
+    if (mode === "DUNGEON" || mode === "DEAD") return;
+    if (event.code === "KeyC") this.panels.toggle("person");
+    if (event.code === "KeyK") this.panels.toggle("skills");
+    if (event.code === "KeyI") this.panels.toggle("inv");
+  };
+  private readonly onKeyDebugProgression = (event: KeyboardEvent): void => {
+    if (event.key === "F2") {
+      event.preventDefault();
+      this.session.debugAddLevels(1);
+    }
+    if (event.key === "F3") {
+      event.preventDefault();
+      this.session.debugSpendAll("FOR");
+    }
+    if (event.key === "F5") {
+      event.preventDefault();
+      const ok = this.session.debugTryReset();
+      console.info("[UAIDZIN] reset", ok ? "ok" : "bloqueado");
+    }
+    if (event.key === "F6") {
+      event.preventDefault();
+      const evolved = this.session.debugTryEvolve();
+      if (!evolved.ok && evolved.reason) this.showToast(evolved.reason, "dungeon");
+    }
+  };
+  private readonly onKeyDebugToggle = (event: KeyboardEvent): void => {
+    if (event.key === "F1") {
+      event.preventDefault();
+      this.state.setDebugHudVisible(!this.state.getState().debugHudVisible);
+    }
+  };
+  private readonly onKeyEscape = (event: KeyboardEvent): void => {
+    if (event.key !== "Escape") return;
+    this.dismissUiLikeEscape();
+  };
+  private readonly onKeyDebugTimer = (event: KeyboardEvent): void => {
+    if (event.key === "F9") {
+      event.preventDefault();
+      this.session.debugSetTimer(3);
+    }
+  };
 
   private modeAllowsSave(): boolean {
     const mode = this.state.getMode();
@@ -717,39 +770,11 @@ export class GameApp {
   }
 
   private bindPanels(): void {
-    window.addEventListener("keydown", (event) => {
-      if (event.repeat) return;
-      if (!this.entered) return;
-      if (this.wireUi) return;
-      const mode = this.state.getMode();
-      if (mode === "DUNGEON" || mode === "DEAD") return;
-      if (event.code === "KeyC") this.panels.toggle("person");
-      if (event.code === "KeyK") this.panels.toggle("skills");
-      if (event.code === "KeyI") this.panels.toggle("inv");
-    });
+    window.addEventListener("keydown", this.onKeyPanels);
   }
 
   private bindDebugProgression(): void {
-    window.addEventListener("keydown", (event) => {
-      if (event.key === "F2") {
-        event.preventDefault();
-        this.session.debugAddLevels(1);
-      }
-      if (event.key === "F3") {
-        event.preventDefault();
-        this.session.debugSpendAll("FOR");
-      }
-      if (event.key === "F5") {
-        event.preventDefault();
-        const ok = this.session.debugTryReset();
-        console.info("[UAIDZIN] reset", ok ? "ok" : "bloqueado");
-      }
-      if (event.key === "F6") {
-        event.preventDefault();
-        const evolved = this.session.debugTryEvolve();
-        if (!evolved.ok && evolved.reason) this.showToast(evolved.reason, "dungeon");
-      }
-    });
+    window.addEventListener("keydown", this.onKeyDebugProgression);
   }
 
   start(character: BootCharacter): void {
@@ -793,6 +818,12 @@ export class GameApp {
     }
     window.removeEventListener("pagehide", this.onPageHide);
     document.removeEventListener("visibilitychange", this.onVisibility);
+    window.removeEventListener("resize", this.onWindowResize);
+    window.removeEventListener("keydown", this.onKeyPanels);
+    window.removeEventListener("keydown", this.onKeyDebugProgression);
+    window.removeEventListener("keydown", this.onKeyDebugToggle);
+    window.removeEventListener("keydown", this.onKeyEscape);
+    window.removeEventListener("keydown", this.onKeyDebugTimer);
     this.session.dispose();
     this.renderer.dispose();
   }
@@ -883,27 +914,16 @@ export class GameApp {
   }
 
   private bindResize(canvas: HTMLCanvasElement): void {
-    const apply = (): void => {
-      const parent = canvas.parentElement;
-      const width = parent?.clientWidth || window.innerWidth;
-      const height = parent?.clientHeight || window.innerHeight;
-      this.renderer.resize(width, height);
-    };
-    apply();
-    window.addEventListener("resize", apply);
+    this.onWindowResize();
+    window.addEventListener("resize", this.onWindowResize);
     if (typeof ResizeObserver !== "undefined") {
-      this.resizeObserver = new ResizeObserver(apply);
+      this.resizeObserver = new ResizeObserver(this.onWindowResize);
       if (canvas.parentElement) this.resizeObserver.observe(canvas.parentElement);
     }
   }
 
   private bindDebugToggle(): void {
-    window.addEventListener("keydown", (event) => {
-      if (event.key === "F1") {
-        event.preventDefault();
-        this.state.setDebugHudVisible(!this.state.getState().debugHudVisible);
-      }
-    });
+    window.addEventListener("keydown", this.onKeyDebugToggle);
   }
 
   private dismissUiLikeEscape(): void {
@@ -921,18 +941,10 @@ export class GameApp {
   }
 
   private bindEscape(): void {
-    window.addEventListener("keydown", (event) => {
-      if (event.key !== "Escape") return;
-      this.dismissUiLikeEscape();
-    });
+    window.addEventListener("keydown", this.onKeyEscape);
   }
 
   private bindDebugTimer(): void {
-    window.addEventListener("keydown", (event) => {
-      if (event.key === "F9") {
-        event.preventDefault();
-        this.session.debugSetTimer(3);
-      }
-    });
+    window.addEventListener("keydown", this.onKeyDebugTimer);
   }
 }
