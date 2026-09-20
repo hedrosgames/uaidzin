@@ -98,6 +98,7 @@ Rode typecheck antes de commitar mudança em `src/`.
 | Personagem | C |
 | Skills | K |
 | Inventário | I |
+| Baú | B |
 | Fechar painel | Esc |
 | Velocidade 1×/10× | botão no HUD (canto superior direito) |
 | Debug HUD | F1 |
@@ -107,7 +108,7 @@ Rode typecheck antes de commitar mudança em `src/`.
 | Reset (nível máx) | F5 |
 | Evoluir (nível máx) | F6 |
 
-C, K e I abrem os painéis no HTML da wire UI. Com `wireUi` montada, `bindPanels` em `GameApp.ts` retorna sem tratar teclas. Não há `KeyB` nem `KeyN`.
+C, K, I e B abrem os painéis da wire UI. Não há tecla de classe.
 
 ---
 

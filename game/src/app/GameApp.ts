@@ -127,9 +127,14 @@ export class GameApp {
   private readonly onKeyPanels = (event: KeyboardEvent): void => {
     if (event.repeat) return;
     if (!this.entered) return;
-    if (this.wireUi) return;
+    const target = event.target as HTMLElement | null;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
     const mode = this.state.getMode();
     if (mode === "DUNGEON" || mode === "DEAD") return;
+    if (this.wireUi) {
+      if (event.code === "KeyB") this.wireUi.toggle("vault");
+      return;
+    }
     if (event.code === "KeyC") this.panels.toggle("person");
     if (event.code === "KeyK") this.panels.toggle("skills");
     if (event.code === "KeyI") this.panels.toggle("inv");

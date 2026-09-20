@@ -143,6 +143,28 @@ async function main() {
     if (logged && logged.ok === true) ok("sessão de conta admin");
     else fail(`login admin/admin falhou: ${logged && logged.error ? logged.error : "sem retorno"}`);
 
+    const shortcuts = [
+      { key: "KeyC", id: "p-person", label: "C personagem" },
+      { key: "KeyK", id: "p-skills", label: "K skills" },
+      { key: "KeyI", id: "p-inv", label: "I inventário" },
+      { key: "KeyB", id: "p-vault", label: "B baú" },
+    ];
+    for (const sc of shortcuts) {
+      await page.evaluate(() => {
+        document.querySelectorAll("#wire-ui .win").forEach((win) => win.classList.add("is-closed"));
+      });
+      await page.keyboard.press(sc.key);
+      await page.waitForTimeout(200);
+      const open = await page.evaluate((id) => {
+        const el = document.querySelector("#wire-ui #" + id);
+        return !!el && !el.classList.contains("is-closed");
+      }, sc.id);
+      if (open) ok(`atalho ${sc.label} abriu o painel`);
+      else fail(`atalho ${sc.label} não abriu #${sc.id}`);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(150);
+    }
+
     await page.evaluate(() => {
       window.__UAIDZIN__.session.progression.state.evolution = "Arch";
     });
