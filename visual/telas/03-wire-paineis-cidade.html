@@ -1500,9 +1500,9 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
         mp: row[3],
         cd: row[4],
         icon: "assets/skills/" + tree + "-" + (i + 1) + ".svg",
-        pointsCost: 1,
-        goldCost: (i + 1) * 250,
-        upCost: Math.max(1, i),
+        pointsCost: (window.__UAIDZIN_ECONOMY__ && window.__UAIDZIN_ECONOMY__.skillPointsCost()) || 0,
+        goldCost: (window.__UAIDZIN_ECONOMY__ && window.__UAIDZIN_ECONOMY__.skillGoldCost(i)) || 0,
+        upCost: (window.__UAIDZIN_ECONOMY__ && window.__UAIDZIN_ECONOMY__.skillUpCost(i)) || 0,
       };
     });
   });
@@ -1547,7 +1547,11 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   function canAffordSkill(sk) {
     if (!sk) return false;
-    return skillPoints >= sk.pointsCost && playerGold >= sk.goldCost;
+    const eco = window.__UAIDZIN_ECONOMY__;
+    if (eco && typeof eco.canAffordSkill === "function") {
+      return eco.canAffordSkill(skillPoints, playerGold, sk.pointsCost, sk.goldCost);
+    }
+    return false;
   }
 
   function canBuySkill(sk) {
@@ -3001,47 +3005,10 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   let activeShopId = "merchant";
 
   const SHOP_FALLBACK = {
-    items: {
-      espada_curta: { id: "espada_curta", name: "Espada Curta", slot: "weapon", rarity: "Comum", desc: "Ataque +4" },
-      machado_leve: { id: "machado_leve", name: "Machado Leve", slot: "weapon", rarity: "Comum", desc: "Ataque +5" },
-      armadura_leve: { id: "armadura_leve", name: "Armadura Leve", slot: "armor", rarity: "Comum", desc: "Defesa +3" },
-      capacete: { id: "capacete", name: "Capacete", slot: "head", rarity: "Comum", desc: "Defesa +2" },
-      anel_cobre: { id: "anel_cobre", name: "Anel de Cobre", slot: "ring1", rarity: "Comum", desc: "Ataque +1 · Defesa +1" },
-      anel_ferro: { id: "anel_ferro", name: "Anel de Ferro", slot: "ring2", rarity: "Incomum", desc: "Ataque +2 · Defesa +2" },
-      colar_simples: { id: "colar_simples", name: "Colar Simples", slot: "neck", rarity: "Comum", desc: "Ataque +1 · Defesa +1" },
-      brinco_osso: { id: "brinco_osso", name: "Brinco de Osso", slot: "ear", rarity: "Comum", desc: "Ataque +1" },
-      poeira_ori: { id: "poeira_ori", name: "Poeira de Ori", slot: "material", rarity: "Comum", desc: "Material de reforço até +5." },
-      poeira_lac: { id: "poeira_lac", name: "Poeira de Lac", slot: "material", rarity: "Comum", desc: "Material de reforço de +6 a +10." },
-    },
+    items: {},
     shops: {
-      merchant: {
-        id: "merchant",
-        label: "Mercador",
-        slots: [
-          { itemId: "poeira_ori", qty: 50, price: 25 },
-          { itemId: "poeira_lac", qty: 10, price: 120 },
-          { itemId: "espada_curta", qty: 5, price: 80 },
-          { itemId: "machado_leve", qty: 5, price: 95 },
-          { itemId: "armadura_leve", qty: 5, price: 75 },
-          { itemId: "capacete", qty: 5, price: 55 },
-          { itemId: "anel_cobre", qty: 8, price: 40 },
-          { itemId: "colar_simples", qty: 8, price: 45 },
-          { itemId: "brinco_osso", qty: 8, price: 35 },
-        ],
-      },
-      blacksmith: {
-        id: "blacksmith",
-        label: "Ferreiro",
-        slots: [
-          { itemId: "poeira_ori", qty: 99, price: 20 },
-          { itemId: "poeira_lac", qty: 20, price: 100 },
-          { itemId: "espada_curta", qty: 3, price: 70 },
-          { itemId: "machado_leve", qty: 3, price: 85 },
-          { itemId: "armadura_leve", qty: 3, price: 70 },
-          { itemId: "capacete", qty: 3, price: 50 },
-          { itemId: "anel_ferro", qty: 4, price: 160 },
-        ],
-      },
+      merchant: { id: "merchant", label: "Mercador", slots: [] },
+      blacksmith: { id: "blacksmith", label: "Ferreiro", slots: [] },
     },
   };
 
@@ -3092,13 +3059,11 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   async function ensureShopConfig() {
     if (shopConfig) return shopConfig;
-    try {
-      const res = await fetch("/data/game-config.json");
-      if (res.ok) {
-        shopConfig = await res.json();
-        return shopConfig;
-      }
-    } catch (_) {}
+    const eco = window.__UAIDZIN_ECONOMY__;
+    if (eco && typeof eco.getShopCatalog === "function") {
+      shopConfig = eco.getShopCatalog();
+      return shopConfig;
+    }
     shopConfig = SHOP_FALLBACK;
     return shopConfig;
   }

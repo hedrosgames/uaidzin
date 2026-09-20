@@ -1,5 +1,6 @@
 import type { CharacterViewModel } from "../persistence/SaveTypes";
 import { bindWirePanels } from "./CharacterUiBinder";
+import { SHOP_CATALOG, SKILL_TRAINING } from "../data/balance/economy";
 
 export type WirePanelName =
   | "person"
@@ -140,6 +141,15 @@ export class WireUi {
     host.querySelectorAll(".win").forEach((win) => {
       win.classList.add("is-closed");
     });
+
+    (window as unknown as { __UAIDZIN_ECONOMY__?: unknown }).__UAIDZIN_ECONOMY__ = {
+      getShopCatalog: () => SHOP_CATALOG,
+      skillPointsCost: () => SKILL_TRAINING.pointsCost,
+      skillGoldCost: (index: number) => SKILL_TRAINING.goldCost(index),
+      skillUpCost: (index: number) => SKILL_TRAINING.upCost(index),
+      canAffordSkill: (skillPoints: number, gold: number, pointsCost: number, goldCost: number) =>
+        SKILL_TRAINING.canAfford(skillPoints, gold, pointsCost, goldCost),
+    };
 
     const code = rewriteAssetUrls(scriptEl?.textContent || "");
     const run = document.createElement("script");
