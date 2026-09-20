@@ -39,40 +39,6 @@ export type CharacterLoadResult =
   | { status: "missing" }
   | { status: "unreadable" };
 
-const DEFAULT_DEMO_SLOTS = (): Array<SlotSummary | null> => [
-  {
-    profileId: "admin:slot:0",
-    classId: "TK",
-    name: "Bjorn",
-    level: 42,
-    evolution: "Mortal",
-    gold: 12840,
-    resets: 0,
-    attrs: { FOR: 28, DES: 14, CONS: 22, INT: 8 },
-  },
-  {
-    profileId: "admin:slot:1",
-    classId: "FM",
-    name: "Ylva",
-    level: 18,
-    evolution: "Mortal",
-    gold: 3200,
-    resets: 0,
-    attrs: { FOR: 8, DES: 16, CONS: 12, INT: 24 },
-  },
-  null,
-  {
-    profileId: "admin:slot:3",
-    classId: "HT",
-    name: "Sigrid",
-    level: 91,
-    evolution: "Mortal",
-    gold: 48220,
-    resets: 2,
-    attrs: { FOR: 18, DES: 32, CONS: 16, INT: 14 },
-  },
-];
-
 export class SaveVault {
   readonly auth = new AccountAuth();
   readonly store = new SaveStore();
@@ -209,17 +175,10 @@ export class SaveVault {
   async loadAccount(session: AuthSession): Promise<AccountSave> {
     const raw = this.store.readAccountBlob(session.user);
     if (!raw) {
-      const slots =
-        session.user === "admin" ? DEFAULT_DEMO_SLOTS() : Array.from({ length: SLOT_COUNT }, () => null);
-      for (let i = 0; i < slots.length; i++) {
-        if (slots[i] && !slots[i]!.profileId) {
-          slots[i]!.profileId = profileIdFor(session.user, i);
-        }
-      }
       const account: AccountSave = {
         version: ACCOUNT_SAVE_VERSION,
         user: session.user,
-        slots: normalizeSlots(slots),
+        slots: normalizeSlots(Array.from({ length: SLOT_COUNT }, () => null)),
         vault: emptyVault(),
         updatedAt: Date.now(),
       };

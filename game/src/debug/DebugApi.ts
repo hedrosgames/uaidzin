@@ -1,4 +1,5 @@
 import { isWirePanelName } from "../ui/WireUi";
+import { WEAPON_SET_IDS, isWeaponSetId } from "../presentation/player/WeaponRig";
 import { dungeonEnterMessage } from "../app/CityGameSession";
 import { clearBootCharacter } from "../app/BootFlow";
 import { saveVault } from "../persistence/SaveVault";
@@ -107,6 +108,12 @@ export function installDebugApi(app: DebugHost): void {
     setArmorAuraEnabled: (on: boolean) => {
       app.session.setArmorAuraEnabled(on);
     },
+    setWeaponSet: (id: string) => {
+      if (!isWeaponSetId(id)) return WEAPON_SET_IDS;
+      void app.renderer.playerView.setWeaponSet(id);
+      return id;
+    },
+    getWeaponSet: () => app.renderer.playerView.getWeaponSet(),
     openPanel: (name: string, title?: string, shopId?: string) => {
       if (app.wireUi) {
         if (isWirePanelName(name)) {

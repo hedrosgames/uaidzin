@@ -1,153 +1,75 @@
 ﻿import {
-  CanvasTexture,
+  BufferAttribute,
+  BufferGeometry,
   Color,
+  DoubleSide,
+  Line,
+  LineBasicMaterial,
   Mesh,
   MeshStandardMaterial,
-  NearestFilter,
-  NoColorSpace,
   Object3D,
+  Vector3,
   type IUniform,
-  type Texture,
   type WebGLProgramParametersWithUniforms,
 } from "three";
 
-type BodyUniforms = {
-  uArmorAura: IUniform<number>;
+type AuraUniforms = {
+  uAura: IUniform<number>;
   uTime: IUniform<number>;
   uAuraColor: IUniform<Color>;
 };
 
-const BODY_CACHE = "uaidzin-aura-body-v39-emap";
+type Bolt = {
+  line: Line;
+  life: number;
+  maxLife: number;
+};
 
-function srgbToLin(c: number): number {
-  const x = c / 255;
-  return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
-}
-
-function smoothstep(e0: number, e1: number, x: number): number {
-  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
-  return t * t * (3 - 2 * t);
-}
-
-function goldScoreLin(r: number, g: number, b: number): number {
-  let score = smoothstep(0.055, 0.12, g - b);
-  score *= smoothstep(0.12, 0.25, r - b);
-  score *= 1 - smoothstep(0.11, 0.2, b);
-  score *= smoothstep(0.12, 0.22, r);
-  score *= smoothstep(0.08, 0.16, g);
-  score *= 1 - smoothstep(0.12, 0.22, r - g);
-  score *= 1 - smoothstep(0.45, 0.7, b / Math.max(r, 1e-4));
-  return Math.min(1, Math.max(0, score));
-}
-
-function buildGoldMaskTexture(source: Texture): Texture | null {
-  const img = source.image as
-    | HTMLImageElement
-    | HTMLCanvasElement
-    | ImageBitmap
-    | { width: number; height: number }
-    | undefined;
-  if (!img || !("width" in img) || !img.width) return null;
-
-  const w = img.width;
-  const h = img.height;
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) return null;
-
-  try {
-    ctx.drawImage(img as CanvasImageSource, 0, 0);
-  } catch {
-    return null;
-  }
-
-  const imageData = ctx.getImageData(0, 0, w, h);
-  const src = imageData.data;
-  const raw = new Float32Array(w * h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = (y * w + x) * 4;
-      raw[y * w + x] = goldScoreLin(
-        srgbToLin(src[i]!),
-        srgbToLin(src[i + 1]!),
-        srgbToLin(src[i + 2]!),
-      );
-    }
-  }
-
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = (y * w + x) * 4;
-      let keep = raw[y * w + x]! > 0.35;
-      if (keep) {
-        let neighbors = 0;
-        let count = 0;
-        for (let oy = -2; oy <= 2; oy++) {
-          for (let ox = -2; ox <= 2; ox++) {
-            const xx = x + ox;
-            const yy = y + oy;
-            if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
-            count++;
-            if (raw[yy * w + xx]! > 0.28) neighbors++;
-          }
-        }
-        keep = neighbors >= Math.floor(count * 0.7);
-      }
-      const v = keep ? 255 : 0;
-      src[i] = v;
-      src[i + 1] = v;
-      src[i + 2] = v;
-      src[i + 3] = 255;
-    }
-  }
-  ctx.putImageData(imageData, 0, 0);
-
-  const mask = new CanvasTexture(canvas);
-  mask.colorSpace = NoColorSpace;
-  mask.flipY = source.flipY;
-  mask.wrapS = source.wrapS;
-  mask.wrapT = source.wrapT;
-  mask.offset.copy(source.offset);
-  mask.repeat.copy(source.repeat);
-  mask.center.copy(source.center);
-  mask.rotation = source.rotation;
-  mask.magFilter = NearestFilter;
-  mask.minFilter = NearestFilter;
-  mask.generateMipmaps = false;
-  mask.needsUpdate = true;
-  return mask;
-}
+const CACHE_KEY = "uaidzin-weapon-aura-v2";
+const BOLT_POOL = 14;
+const BOLT_SPAWN_CHANCE = 0.48;
 
 export class ArmorAura {
-  private readonly bodyUniforms: BodyUniforms[] = [];
-  private readonly maskTextures: Texture[] = [];
+  private readonly uniforms: AuraUniforms[] = [];
+  private readonly roots: Object3D[] = [];
+  private readonly bolts: Bolt[] = [];
   private enabled = false;
   private time = 0;
+  private spawnAcc = 0;
   private readonly auraColor = new Color(0xff1a1a);
+  private readonly boltMat: LineBasicMaterial;
+  private readonly tmpA = new Vector3();
+  private readonly tmpC = new Vector3();
 
-  apply(model: Object3D): void {
-    this.disposeMasks();
-    this.bodyUniforms.length = 0;
-    model.traverse((obj) => {
-      const mesh = obj as Mesh;
-      if (!mesh.isMesh) return;
-      if (mesh.name === "ArmorAuraShell") {
-        mesh.removeFromParent();
-        const mat = mesh.material;
-        if (mat && !Array.isArray(mat)) mat.dispose();
-        return;
-      }
-      if (!mesh.geometry) return;
-      this.hookBody(mesh);
+  constructor() {
+    this.boltMat = new LineBasicMaterial({
+      color: 0xff2200,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
+      toneMapped: false,
     });
+  }
+
+  apply(roots: Object3D[]): void {
+    this.clearBolts();
+    this.uniforms.length = 0;
+    this.roots.length = 0;
+    for (const root of roots) {
+      this.roots.push(root);
+      root.traverse((obj) => {
+        const mesh = obj as Mesh;
+        if (!mesh.isMesh || !mesh.geometry) return;
+        this.hookMesh(mesh);
+      });
+    }
     this.syncEnabled();
   }
 
   setEnabled(on: boolean): void {
     this.enabled = on;
     this.syncEnabled();
+    if (!on) this.clearBolts();
   }
 
   isEnabled(): boolean {
@@ -161,49 +83,124 @@ export class ArmorAura {
   update(dt: number): void {
     if (!this.enabled) return;
     this.time += dt;
-    for (const u of this.bodyUniforms) u.uTime.value = this.time;
-  }
-
-  private disposeMasks(): void {
-    for (const t of this.maskTextures) t.dispose();
-    this.maskTextures.length = 0;
+    for (const u of this.uniforms) u.uTime.value = this.time;
+    this.updateBolts(dt);
+    this.spawnAcc += dt;
+    if (this.spawnAcc >= 0.05) {
+      this.spawnAcc = 0;
+      if (Math.random() < BOLT_SPAWN_CHANCE) this.trySpawnBolt();
+    }
   }
 
   private syncEnabled(): void {
     const v = this.enabled ? 1 : 0;
-    for (const u of this.bodyUniforms) u.uArmorAura.value = v;
+    for (const u of this.uniforms) u.uAura.value = v;
   }
 
-  private hookBody(source: Mesh): void {
-    const mats = Array.isArray(source.material) ? source.material : [source.material];
+  private clearBolts(): void {
+    for (const b of this.bolts) {
+      b.line.removeFromParent();
+      b.line.geometry.dispose();
+      const mat = b.line.material as LineBasicMaterial;
+      mat.dispose();
+    }
+    this.bolts.length = 0;
+  }
+
+  private updateBolts(dt: number): void {
+    for (let i = this.bolts.length - 1; i >= 0; i--) {
+      const b = this.bolts[i]!;
+      b.life += dt;
+      const t = b.life / b.maxLife;
+      const mat = b.line.material as LineBasicMaterial;
+      mat.opacity = (1 - t) * (0.55 + 0.45 * Math.sin(this.time * 40 + i));
+      if (b.life >= b.maxLife) {
+        b.line.removeFromParent();
+        b.line.geometry.dispose();
+        mat.dispose();
+        this.bolts.splice(i, 1);
+      }
+    }
+  }
+
+  private trySpawnBolt(): void {
+    if (this.bolts.length >= BOLT_POOL || this.roots.length === 0) return;
+    const root = this.roots[(Math.random() * this.roots.length) | 0]!;
+
+    const len = 0.28 + Math.random() * 0.5;
+    const dir = this.tmpC.set(
+      Math.random() * 2 - 1,
+      Math.random() * 1.6 - 0.1,
+      Math.random() * 2 - 1,
+    ).normalize();
+    const origin = this.tmpA.set(
+      (Math.random() - 0.5) * 0.12,
+      Math.random() * 0.55,
+      (Math.random() - 0.5) * 0.12,
+    );
+
+    const segs = 6 + ((Math.random() * 4) | 0);
+    const positions = new Float32Array((segs + 1) * 3);
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      const jitter = i === 0 || i === segs ? 0 : 0.035 + Math.random() * 0.06;
+      positions[i * 3] = origin.x + dir.x * len * t + (Math.random() * 2 - 1) * jitter;
+      positions[i * 3 + 1] = origin.y + dir.y * len * t + (Math.random() * 2 - 1) * jitter;
+      positions[i * 3 + 2] = origin.z + dir.z * len * t + (Math.random() * 2 - 1) * jitter;
+    }
+
+    const geo = new BufferGeometry();
+    geo.setAttribute("position", new BufferAttribute(positions, 3));
+    const line = new Line(geo, this.boltMat.clone());
+    line.frustumCulled = false;
+    line.renderOrder = 40;
+    root.add(line);
+
+    this.bolts.push({
+      line,
+      life: 0,
+      maxLife: 0.07 + Math.random() * 0.11,
+    });
+  }
+
+  private hookMesh(mesh: Mesh): void {
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const next: MeshStandardMaterial[] = [];
     for (const mat of mats) {
-      if (!mat || !(mat instanceof MeshStandardMaterial)) continue;
-      if (!mat.map) continue;
+      if (!mat) continue;
+      const std =
+        mat instanceof MeshStandardMaterial
+          ? mat.clone()
+          : new MeshStandardMaterial({
+              color: 0xffffff,
+              side: DoubleSide,
+              roughness: 0.45,
+              metalness: 0.15,
+            });
+      this.hookMaterial(std);
+      next.push(std);
+    }
+    if (next.length === 0) return;
+    mesh.material = next.length === 1 ? next[0]! : next;
+  }
 
-      const maskTex = buildGoldMaskTexture(mat.map);
-      if (!maskTex) continue;
-      this.maskTextures.push(maskTex);
+  private hookMaterial(mat: MeshStandardMaterial): void {
+    const local: AuraUniforms = {
+      uAura: { value: this.enabled ? 1 : 0 },
+      uTime: { value: this.time },
+      uAuraColor: { value: this.auraColor.clone() },
+    };
+    this.uniforms.push(local);
 
-      mat.emissiveMap = maskTex;
-      mat.emissive.set(0, 0, 0);
-      mat.emissiveIntensity = 1;
+    mat.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms) => {
+      shader.uniforms.uAura = local.uAura;
+      shader.uniforms.uTime = local.uTime;
+      shader.uniforms.uAuraColor = local.uAuraColor;
 
-      const local: BodyUniforms = {
-        uArmorAura: { value: this.enabled ? 1 : 0 },
-        uTime: { value: this.time },
-        uAuraColor: { value: this.auraColor.clone() },
-      };
-      this.bodyUniforms.push(local);
-
-      mat.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms) => {
-        shader.uniforms.uArmorAura = local.uArmorAura;
-        shader.uniforms.uTime = local.uTime;
-        shader.uniforms.uAuraColor = local.uAuraColor;
-
-        shader.fragmentShader = shader.fragmentShader.replace(
-          "void main() {",
-          `
-uniform float uArmorAura;
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "void main() {",
+        `
+uniform float uAura;
 uniform float uTime;
 uniform vec3 uAuraColor;
 float auraHash(vec2 p) {
@@ -222,46 +219,41 @@ float auraNoise(vec2 p) {
 float auraFbm(vec2 p) {
   float v = 0.0;
   float a = 0.5;
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 4; i++) {
     v += a * auraNoise(p);
-    p = p * 2.15 + vec2(7.1, 3.3);
+    p = p * 2.2 + vec2(9.2, 4.1);
     a *= 0.5;
   }
   return v;
 }
 void main() {
 `,
-        );
+      );
 
-        shader.fragmentShader = shader.fragmentShader.replace(
-          "#include <emissivemap_fragment>",
-          `#include <emissivemap_fragment>
-if (uArmorAura > 0.001) {
-#if defined( USE_EMISSIVEMAP )
-  float goldM = texture2D( emissiveMap, vEmissiveMapUv ).r;
-#else
-  float goldM = 0.0;
-#endif
-  if (goldM > 0.5) {
-    vec3 nDir = normalize(normal);
-    vec3 vDir = normalize(vViewPosition);
-    float facing = clamp(dot(vDir, nDir), 0.0, 1.0);
-    float plate = smoothstep(0.05, 0.5, facing);
-    vec2 nUv = vEmissiveMapUv * 16.0;
-    nUv.y -= uTime * 1.35;
-    float n1 = auraFbm(nUv);
-    float n2 = auraFbm(nUv * 1.7 + vec2(uTime * 0.3, -uTime * 0.22));
-    float swirl = smoothstep(0.25, 0.75, n1 * 0.6 + n2 * 0.5);
-    float glow = plate * (0.7 + swirl * 1.6);
-    float rim = pow(1.0 - facing, 2.8) * plate;
-    totalEmissiveRadiance += uAuraColor * goldM * (glow * 3.2 + rim * 1.6);
-  }
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <emissivemap_fragment>",
+        `#include <emissivemap_fragment>
+if (uAura > 0.001) {
+  vec3 nDir = normalize(normal);
+  vec3 vDir = normalize(vViewPosition);
+  float facing = clamp(abs(dot(vDir, nDir)), 0.0, 1.0);
+  float rim = pow(1.0 - facing, 1.8);
+  vec2 flow = vec2(uTime * 2.6, -uTime * 3.4);
+  float n1 = auraFbm(vViewPosition.xy * 0.7 + flow);
+  float n2 = auraFbm(vViewPosition.xy * 1.45 - flow.yx * 1.5 + vec2(uTime * 0.4));
+  float n3 = auraFbm(vViewPosition.yz * 0.9 + flow.yx * 0.8);
+  float pulse = 0.5 + 0.5 * sin(uTime * 8.0 + n1 * 10.0);
+  float vein = smoothstep(0.28, 0.78, n1 * 0.4 + n2 * 0.35 + n3 * 0.35);
+  float arc = smoothstep(0.55, 0.9, abs(sin(n1 * 14.0 + uTime * 12.0))) * vein;
+  float surge = smoothstep(0.7, 0.95, n2) * (0.6 + 0.4 * sin(uTime * 18.0));
+  float body = 0.85 + vein * 1.6 + arc * 2.6 + surge * 1.4;
+  totalEmissiveRadiance += uAuraColor * (body * pulse + rim * 2.4);
+  diffuseColor.rgb = mix(diffuseColor.rgb, uAuraColor * 0.75, 0.72 + vein * 0.2);
 }
 `,
-        );
-      };
-      mat.customProgramCacheKey = () => BODY_CACHE;
-      mat.needsUpdate = true;
-    }
+      );
+    };
+    mat.customProgramCacheKey = () => CACHE_KEY;
+    mat.needsUpdate = true;
   }
 }

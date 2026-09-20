@@ -16,6 +16,7 @@ import {
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { ArmorAura } from "./ArmorAura";
+import { WeaponRig, type WeaponSetId } from "./WeaponRig";
 
 const GHOST_NAME = "PlayerOcclusionGhost";
 
@@ -37,11 +38,11 @@ const CLASS_MODEL: Record<PlayerClassId, string> = {
   HT: "/models/player/HT/HT.glb",
 };
 
-const AXE_URL = "/weapons/axe/axe.glb";
-
-const AXE_GRIP: Record<"left" | "right", { pos: [number, number, number]; rot: [number, number, number] }> = {
-  left: { pos: [0.01, 0.02, -0.01], rot: [0, 0, Math.PI] },
-  right: { pos: [0.01, 0.02, -0.01], rot: [0, 0, 0] },
+const CLASS_WEAPON_SET: Record<PlayerClassId, WeaponSetId> = {
+  TK: "axe-shield",
+  FM: "greatstaff",
+  BM: "dual-gloves",
+  HT: "dual-sword",
 };
 
 const ANIM_URLS: Record<Exclude<PlayerAnim, "idle">, string> = {
@@ -81,8 +82,8 @@ export class PlayerView {
   private classId: PlayerClassId = "TK";
   private readonly armorAura = new ArmorAura();
   private readonly ghosts: Mesh[] = [];
-  private readonly handSockets: Group[] = [];
-  private axePrototype: Object3D | null = null;
+  private readonly weaponRig = new WeaponRig();
+  private weaponSet: WeaponSetId | null = null;
   ready = false;
 
   constructor() {
@@ -142,8 +143,21 @@ export class PlayerView {
     for (let i = 0; i < 20; i++) this.mixer.update(1 / 30);
     this.fitStandingHeight(model);
     this.buildGhosts(model);
-    await this.attachHandWeapons(model);
+    this.weaponRig.bindModel(model);
+    await this.weaponRig.equip(this.root, this.weaponSet ?? CLASS_WEAPON_SET[id]);
+    this.armorAura.apply(this.weaponRig.getVisualRoots());
     this.ready = true;
+  }
+
+  async setWeaponSet(set: WeaponSetId): Promise<void> {
+    this.weaponSet = set;
+    if (!this.model) return;
+    await this.weaponRig.equip(this.root, set);
+    this.armorAura.apply(this.weaponRig.getVisualRoots());
+  }
+
+  getWeaponSet(): WeaponSetId | null {
+    return this.weaponRig.getSet();
   }
 
   setArmorAuraEnabled(on: boolean): void {
@@ -197,6 +211,7 @@ export class PlayerView {
   update(dt: number): void {
     this.mixer?.update(dt);
     this.armorAura.update(dt);
+    this.weaponRig.sync(this.root);
     if (
       this.busyUntil > 0 &&
       performance.now() >= this.busyUntil &&
@@ -247,60 +262,6 @@ export class PlayerView {
       if (mat && !Array.isArray(mat)) mat.dispose();
     }
     this.ghosts.length = 0;
-  }
-
-  private async loadAxePrototype(): Promise<Object3D | null> {
-    if (this.axePrototype) return this.axePrototype;
-    try {
-      const gltf = await this.loader.loadAsync(AXE_URL);
-      this.hardenMaterials(gltf.scene);
-      this.axePrototype = gltf.scene;
-      return this.axePrototype;
-    } catch {
-      return null;
-    }
-  }
-
-  private findHandBone(model: Object3D, side: "Left" | "Right"): Object3D | null {
-    const want = `${side}Hand`;
-    let hit: Object3D | null = null;
-    model.traverse((obj) => {
-      if (hit) return;
-      const n = obj.name;
-      if (n === want || n === `mixamorig:${want}` || n === `mixamorig${want}`) hit = obj;
-    });
-    return hit;
-  }
-
-  private detachHandWeapons(): void {
-    for (const socket of this.handSockets) socket.removeFromParent();
-    this.handSockets.length = 0;
-  }
-
-  private async attachHandWeapons(model: Object3D): Promise<void> {
-    this.detachHandWeapons();
-    const axe = await this.loadAxePrototype();
-    if (!axe) return;
-
-    for (const side of ["left", "right"] as const) {
-      const hand = this.findHandBone(model, side === "left" ? "Left" : "Right");
-      if (!hand) continue;
-      hand.updateWorldMatrix(true, false);
-      const hs = new Vector3();
-      hand.getWorldScale(hs);
-      const grip = AXE_GRIP[side];
-      const socket = new Group();
-      socket.name = `weapon-socket-${side}`;
-      socket.position.set(...grip.pos);
-      socket.rotation.set(...grip.rot);
-      const inv = hs.x !== 0 ? 1 / hs.x : 1;
-      socket.scale.setScalar(inv);
-      const inst = axe.clone(true);
-      inst.name = `axe-${side}`;
-      socket.add(inst);
-      hand.add(socket);
-      this.handSockets.push(socket);
-    }
   }
 
   private buildGhosts(model: Object3D): void {

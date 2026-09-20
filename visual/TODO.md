@@ -2,8 +2,15 @@
 
 Lista viva do que foi pedido. Marcar `x` quando fechar. Atualizar sempre que o Felipe pedir algo novo.
 
+**Plano ativo de sistemas:** `PLAN-finalizacao-sistemas.md`  
+**Checklist cena a cena:** `CHECKLIST-CENAS.md`  
+**Tarefas em aberto:** `TAREFAS-ABERTAS.md`  
+Planos antigos: `planos-arquivados/`.
+
 ## Aberto
 
+- [ ] Cena 1 Login — `TAREFAS-ABERTAS.md` L1–L5
+- [ ] Cena 2 Seleção — `TAREFAS-ABERTAS.md` S1–S8 (3D idle no criar, nome 3–12, bug painel vazio, persist, fade, idle TK=BM, deslogar)
 - [ ] Portar wire C/K/I/B para `GamePanels` real (dados de save/sessão; hoje é overlay de protótipo sobre o gameplay)
 - [ ] HUD dungeon final com HP world bar (verde ≥40%, vermelho &lt;40%) no jogo real
 - [ ] Cards de item / loot (lab reprovou as opções)

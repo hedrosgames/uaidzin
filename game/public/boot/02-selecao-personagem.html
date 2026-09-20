@@ -1107,18 +1107,7 @@ window.__mountCharPreview = mountCharPreview;
   }
 
   const MAX_SLOTS = 4;
-  const DEFAULT_SLOTS = [
-    { profileId:"admin:slot:0", classId:"TK", name:"Bjorn", level:42, gold:12840,
-      attrs:{ FOR:48, DES:22, CONS:35, INT:12 },
-      trees:{ controle:5, magia:2, fisica:6 }, spec:{ controle:2, magia:0, fisica:3 }, evolution:"Mortal", resets:0 },
-    { profileId:"admin:slot:1", classId:"FM", name:"Ylva", level:18, gold:3200,
-      attrs:{ FOR:12, DES:18, CONS:14, INT:30 },
-      trees:{ controle:3, magia:5, fisica:1 }, spec:{ controle:1, magia:2, fisica:0 }, evolution:"Mortal", resets:0 },
-    null,
-    { profileId:"admin:slot:3", classId:"HT", name:"Sigrid", level:91, gold:48220,
-      attrs:{ FOR:28, DES:60, CONS:22, INT:16 },
-      trees:{ controle:4, magia:3, fisica:7 }, spec:{ controle:1, magia:1, fisica:4 }, evolution:"Mortal", resets:0 },
-  ];
+  const DEFAULT_SLOTS = [null, null, null, null];
 
   const session = UaidzinSave.requireSession();
   if (!session) return;

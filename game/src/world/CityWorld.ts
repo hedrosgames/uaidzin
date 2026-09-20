@@ -6,15 +6,48 @@ import {
   Mesh,
   MeshStandardMaterial,
   PlaneGeometry,
-  RepeatWrapping,
-  SRGBColorSpace,
-  TextureLoader,
 } from "three";
 import { CITY_INTERACTABLES, CITY_PORTAL_PROP, type InteractableDef } from "./definitions";
 import { boxBoundary, type WorldBoundary } from "./WorldBoundary";
 import { boxFromCenter, emptyCollision, type WorldCollision } from "./collision";
 import { DUNGEON_TEST } from "../data/dungeons/dungeon-definitions";
 import { createPortalVfx, PORTAL_COLLISION_DEPTH, PORTAL_GATE_W, type PortalVfxHandle } from "../presentation/effects/PortalVfx";
+import { FountainWater } from "../presentation/effects/FountainWater";
+import { BRAZIER_RADIUS, createBrazier } from "../presentation/effects/Brazier";
+import { createAmbientEmbers } from "../presentation/effects/AmbientEmbers";
+import { cityPropFootprint, cityPropScale, spawnCityProp, type CityPropId } from "./CityProps";
+import { makeCityFloorMaterial } from "./CityGround";
+import { buildCityScenery } from "./CityScenery";
+
+const FOUNTAIN_HEIGHT = 2.8;
+const STALL_HEIGHT = 2.6;
+const WALL_HEIGHT = 2.2;
+const BULLETIN_HEIGHT = 2.3;
+const BULLETIN_POS = { x: 3.6, z: -13.2, quarterTurns: 0 };
+const PLAZA_RADIUS = 5.5;
+const PLAZA_CURB = 0.55;
+const BRAZIER_SPOTS: Array<[number, number]> = [
+  [-6.8, -6.8],
+  [6.8, -6.8],
+  [-6.8, 6.8],
+  [6.8, 6.8],
+];
+const EMBER_COUNT = 110;
+
+const CITY_STALLS: Array<[CityPropId, number, number, number]> = [
+  ["stall-1", -12, 10, 1],
+  ["weapon-rack", 12, 10, 3],
+  ["stall-bakery", -14, 0, 1],
+  ["stall-1", 14, 0, 3],
+  ["stall-2", -10, -12, 0],
+  ["stall-bakery", 10, -12, 0],
+  ["wagon", 0, 12, 2],
+];
+
+export interface WorldTickable {
+  update(dt: number): void;
+  dispose(): void;
+}
 
 export interface BuiltWorld {
   id: string;
@@ -23,26 +56,7 @@ export interface BuiltWorld {
   collision: WorldCollision;
   interactables: InteractableDef[];
   spawn: { x: number; z: number };
-  tickables: PortalVfxHandle[];
-}
-
-function makeCityFloorMaterial(): MeshStandardMaterial {
-  const texture = new TextureLoader().load("/textures/city-floor.webp");
-  texture.wrapS = RepeatWrapping;
-  texture.wrapT = RepeatWrapping;
-  texture.colorSpace = SRGBColorSpace;
-  texture.anisotropy = 8;
-  texture.repeat.set(6, 6);
-  return new MeshStandardMaterial({ map: texture, roughness: 1, metalness: 0 });
-}
-
-function makeBuilding(w: number, h: number, d: number, color: number): Mesh {
-  const mesh = new Mesh(
-    new BoxGeometry(w, h, d),
-    new MeshStandardMaterial({ color, roughness: 0.9, metalness: 0 }),
-  );
-  mesh.position.y = h / 2;
-  return mesh;
+  tickables: WorldTickable[];
 }
 
 function makeNpcMarker(def: InteractableDef): Group {
@@ -55,6 +69,7 @@ function makeNpcMarker(def: InteractableDef): Group {
     new MeshStandardMaterial({ color: def.color, roughness: 0.55 }),
   );
   body.position.y = 0.7;
+  body.castShadow = true;
   body.userData.interactableId = def.id;
   g.add(body);
 
@@ -63,6 +78,7 @@ function makeNpcMarker(def: InteractableDef): Group {
     new MeshStandardMaterial({ color: 0xe8ecf2, roughness: 0.7 }),
   );
   head.position.y = 1.55;
+  head.castShadow = true;
   head.userData.interactableId = def.id;
   g.add(head);
 
@@ -92,12 +108,14 @@ function makeChest(def: InteractableDef): Group {
 
   const base = new Mesh(new BoxGeometry(1.15, 0.55, 0.75), wood);
   base.position.y = 0.28;
+  base.castShadow = true;
   base.userData.interactableId = def.id;
   g.add(base);
 
   const lid = new Mesh(new BoxGeometry(1.18, 0.18, 0.78), darkWood);
   lid.position.set(0, 0.64, -0.02);
   lid.rotation.x = -0.18;
+  lid.castShadow = true;
   lid.userData.interactableId = def.id;
   g.add(lid);
 
@@ -127,56 +145,95 @@ export function buildCityWorld(): BuiltWorld {
   const size = 36;
   const group = new Group();
   group.name = "world-city";
-  const floorMat = makeCityFloorMaterial();
+  const floorMat = makeCityFloorMaterial(size / 2);
   const ground = new Mesh(new PlaneGeometry(size, size), floorMat);
   ground.rotation.x = -Math.PI / 2;
   ground.name = "ground";
+  ground.receiveShadow = true;
   group.add(ground);
+  group.add(buildCityScenery(size / 2));
   const collision = emptyCollision();
 
-  const plaza = new Mesh(new CylinderGeometry(5.5, 5.5, 0.06, 32), floorMat);
-  plaza.position.y = 0.03;
+  const curb = new Mesh(
+    new CylinderGeometry(PLAZA_RADIUS + PLAZA_CURB, PLAZA_RADIUS + PLAZA_CURB, 0.1, 48),
+    new MeshStandardMaterial({ color: 0x6f665c, roughness: 0.95, metalness: 0 }),
+  );
+  curb.position.y = 0.05;
+  curb.receiveShadow = true;
+  curb.castShadow = true;
+  group.add(curb);
+
+  const plaza = new Mesh(new CylinderGeometry(PLAZA_RADIUS, PLAZA_RADIUS, 0.06, 48), floorMat);
+  plaza.position.y = 0.1;
+  plaza.receiveShadow = true;
   group.add(plaza);
 
-  const buildings: Array<[number, number, number, number, number, number]> = [
-    [-12, 10, 4, 3.2, 4, 0x2f3848],
-    [12, 10, 4, 2.8, 4, 0x2f3848],
-    [-14, 0, 3, 4.5, 5, 0x384254],
-    [14, 0, 3, 3.5, 5, 0x384254],
-    [-10, -12, 5, 2.4, 3, 0x2a3344],
-    [10, -12, 5, 2.4, 3, 0x2a3344],
-    [0, 12, 6, 3.6, 4, 0x323c4c],
-  ];
-  for (const [x, z, w, h, d, color] of buildings) {
-    const b = makeBuilding(w, h, d, color);
-    b.position.x = x;
-    b.position.z = z;
-    group.add(b);
-    collision.boxes.push(boxFromCenter(x, z, w, d));
+  const fountainWater = new FountainWater();
+  const fountainScale = cityPropScale("fountain", FOUNTAIN_HEIGHT);
+  spawnCityProp(group, { id: "fountain", x: 0, z: 0, scale: fountainScale, quarterTurns: 0 }, (root) => {
+    fountainWater.attach(root);
+  });
+  const fountainFoot = cityPropFootprint("fountain", fountainScale, 0);
+  collision.circles.push({ x: 0, z: 0, r: Math.max(fountainFoot.width, fountainFoot.depth) / 2 });
+
+  for (const [id, x, z, quarterTurns] of CITY_STALLS) {
+    const scale = cityPropScale(id, STALL_HEIGHT);
+    spawnCityProp(group, { id, x, z, scale, quarterTurns });
+    const foot = cityPropFootprint(id, scale, quarterTurns);
+    collision.boxes.push(boxFromCenter(x, z, foot.width, foot.depth));
   }
 
-  const wallMat = new MeshStandardMaterial({ color: 0x252b36, roughness: 1 });
-  const wallH = 1.6;
-  const wallT = 0.6;
+  const bulletinScale = cityPropScale("bulletin-board", BULLETIN_HEIGHT);
+  spawnCityProp(group, { id: "bulletin-board", ...BULLETIN_POS, scale: bulletinScale });
+  const bulletinFoot = cityPropFootprint("bulletin-board", bulletinScale, BULLETIN_POS.quarterTurns);
+  collision.boxes.push(boxFromCenter(BULLETIN_POS.x, BULLETIN_POS.z, bulletinFoot.width, bulletinFoot.depth));
+
+  const wallScale = cityPropScale("wall", WALL_HEIGHT);
+  const wallSegment = cityPropFootprint("wall", wallScale, 0);
+  const wallT = wallSegment.depth;
   const half = size / 2;
-  const walls: Array<[number, number, number, number]> = [
-    [0, half - wallT / 2, size, wallT],
-    [0, -half + wallT / 2, size, wallT],
-    [half - wallT / 2, 0, wallT, size],
-    [-half + wallT / 2, 0, wallT, size],
+  const segments = Math.max(1, Math.round(size / wallSegment.width));
+  const segmentLength = size / segments;
+  const wallScaleX = wallScale * (segmentLength / wallSegment.width);
+  const sides: Array<[number, number, number]> = [
+    [0, half - wallT / 2, 0],
+    [0, -half + wallT / 2, 2],
+    [half - wallT / 2, 0, 1],
+    [-half + wallT / 2, 0, 3],
   ];
-  for (const [x, z, w, d] of walls) {
-    const wall = new Mesh(new BoxGeometry(w, wallH, d), wallMat);
-    wall.position.set(x, wallH / 2, z);
-    group.add(wall);
-    collision.boxes.push(boxFromCenter(x, z, w, d));
+  for (const [cx, cz, quarterTurns] of sides) {
+    const alongX = quarterTurns % 2 === 0;
+    for (let i = 0; i < segments; i++) {
+      const offset = -half + segmentLength * (i + 0.5);
+      spawnCityProp(group, {
+        id: "wall",
+        x: alongX ? offset : cx,
+        z: alongX ? cz : offset,
+        scale: wallScale,
+        scaleX: wallScaleX,
+        quarterTurns,
+      });
+    }
+    collision.boxes.push(
+      alongX ? boxFromCenter(cx, cz, size, wallT) : boxFromCenter(cx, cz, wallT, size),
+    );
   }
 
   for (const def of CITY_INTERACTABLES) {
     group.add(def.kind === "chest" ? makeChest(def) : makeNpcMarker(def));
     collision.circles.push({ x: def.x, z: def.z, r: def.kind === "chest" ? 0.55 : 0.4 });
   }
-  const tickables: PortalVfxHandle[] = [];
+  const tickables: WorldTickable[] = [fountainWater];
+  BRAZIER_SPOTS.forEach(([bx, bz], i) => {
+    const brazier = createBrazier(`brazier-${i}`, bx, bz);
+    group.add(brazier.group);
+    tickables.push(brazier);
+    collision.circles.push({ x: bx, z: bz, r: BRAZIER_RADIUS });
+  });
+  const embers = createAmbientEmbers(EMBER_COUNT, size / 2 - 2);
+  group.add(embers.points);
+  tickables.push(embers);
+
   const cityPortal = makePortal(CITY_PORTAL_PROP, false);
   group.add(cityPortal.group);
   tickables.push(cityPortal);
@@ -246,7 +303,7 @@ export function buildTestDungeonWorld(): BuiltWorld {
 
   }
 
-  const tickables: PortalVfxHandle[] = [];
+  const tickables: WorldTickable[] = [];
   const exitPortal = makePortal(
     {
       id: "portal-exit",

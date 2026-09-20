@@ -5,6 +5,7 @@ import { GameClock } from "../core/time/GameClock";
 import { formatMMSS } from "../core/time/FormatTime";
 import { DebugHud } from "../debug/DebugHud";
 import { SceneRenderer } from "../presentation/rendering/SceneRenderer";
+import { WEAPON_SET_IDS, WEAPON_SET_LABEL } from "../presentation/player/WeaponRig";
 import { InteractionPanel } from "../ui/InteractionPanel";
 import { GamePanels } from "../ui/GamePanels";
 import { WireUi, isWirePanelName } from "../ui/WireUi";
@@ -90,6 +91,7 @@ export class GameApp {
   private readonly farmStats: HTMLElement;
   private readonly resultOverlay: HTMLElement;
   private readonly speedToggle: HTMLElement;
+  private readonly weaponToggle: HTMLButtonElement;
   private readonly settingsOverlay: HTMLElement;
   private readonly toastEl: HTMLElement;
   private readonly helpBar: HTMLElement;
@@ -198,6 +200,7 @@ export class GameApp {
     this.farmStats = deps.farmStatsElement;
     this.resultOverlay = deps.resultOverlayElement;
     this.speedToggle = deps.hudToolsElement;
+    this.weaponToggle = deps.hudToolsElement.querySelector<HTMLButtonElement>("#btn-weapon-set")!;
     this.settingsOverlay = deps.settingsOverlayElement;
     this.toastEl = deps.toastElement;
     this.helpBar = deps.helpBarElement;
@@ -272,12 +275,14 @@ export class GameApp {
 
     this.loop = new GameLoop((dt) => this.tick(dt));
     this.bindResize(deps.canvas);
+    this.bindWheelZoom(deps.canvas);
     this.bindDebugToggle();
     this.bindEscape();
     this.bindDebugTimer();
     this.bindDebugProgression();
     this.bindPanels();
     this.bindSpeedToggle();
+    this.bindWeaponToggle();
     this.bindSettings();
     this.bindJuiceToasts();
     this.bindSkillBarClicks();
@@ -332,6 +337,22 @@ export class GameApp {
       const scale = normalizeTimeScale(Number(btn.getAttribute("data-speed")));
       this.applyTimeScale(scale, true);
     });
+  }
+
+  private bindWeaponToggle(): void {
+    this.weaponToggle.addEventListener("click", () => {
+      const current = this.renderer.playerView.getWeaponSet();
+      const index = current ? WEAPON_SET_IDS.indexOf(current) : -1;
+      const next = WEAPON_SET_IDS[(index + 1) % WEAPON_SET_IDS.length]!;
+      void this.renderer.playerView.setWeaponSet(next);
+      this.refreshWeaponToggle();
+    });
+  }
+
+  private refreshWeaponToggle(): void {
+    const set = this.renderer.playerView.getWeaponSet();
+    const label = set ? WEAPON_SET_LABEL[set] : "";
+    if (this.weaponToggle.textContent !== label) this.weaponToggle.textContent = label;
   }
 
   private bindSettings(): void {
@@ -461,7 +482,7 @@ export class GameApp {
 
   private applyShadowSetting(): void {
     const el = document.getElementById("opt-shadows") as HTMLInputElement | null;
-    this.renderer.setBlobShadowEnabled(el ? el.checked : true);
+    this.renderer.setShadowsEnabled(el ? el.checked : true);
   }
 
   private closeSettings(): void {
@@ -667,6 +688,7 @@ export class GameApp {
   private tick(deltaSeconds: number): void {
     try {
       this.clock.advance(deltaSeconds);
+      this.refreshWeaponToggle();
       if (this.toastTimer > 0) {
         this.toastTimer -= deltaSeconds;
         if (this.toastTimer <= 0) {
@@ -691,6 +713,18 @@ export class GameApp {
       this.showToast("Erro no jogo â€” veja o console", "dungeon");
       this.loop.stop();
     }
+  }
+
+  private bindWheelZoom(canvas: HTMLCanvasElement): void {
+    canvas.addEventListener(
+      "wheel",
+      (event) => {
+        if (!this.entered || this.isPanelsOpen()) return;
+        event.preventDefault();
+        this.session.camera.zoomBy(Math.sign(-event.deltaY));
+      },
+      { passive: false },
+    );
   }
 
   private bindResize(canvas: HTMLCanvasElement): void {

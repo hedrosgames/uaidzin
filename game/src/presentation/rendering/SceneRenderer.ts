@@ -1,5 +1,5 @@
 import {
-  AmbientLight,
+  ACESFilmicToneMapping,
   BackSide,
   BufferGeometry,
   CanvasTexture,
@@ -7,22 +7,41 @@ import {
   CircleGeometry,
   Color,
   DirectionalLight,
+  FogExp2,
   Group,
+  HalfFloatType,
+  HemisphereLight,
   Mesh,
   MeshBasicMaterial,
   Object3D,
+  PCFSoftShadowMap,
   PerspectiveCamera,
   Raycaster,
   Scene,
   ShaderMaterial,
+  SphereGeometry,
+  Vector2,
   Vector3,
+  WebGLRenderTarget,
   WebGLRenderer,
 } from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { PlayerView } from "../player/PlayerView";
 
 export interface SceneRendererOptions {
   canvas: HTMLCanvasElement;
 }
+
+const SKY_ZENITH = 0x0b1020;
+const SKY_HORIZON = 0x2a1f22;
+const FOG_COLOR = 0x1a1518;
+const FOG_DENSITY = 0.016;
+const KEY_LIGHT_OFFSET = new Vector3(14, 22, 10);
+const SHADOW_HALF_EXTENT = 24;
+const BLOOM = { strength: 0.42, radius: 0.45, threshold: 0.82 };
 
 export class SceneRenderer {
   readonly scene = new Scene();
@@ -38,9 +57,14 @@ export class SceneRenderer {
   private readonly playerCenter = new Vector3();
   private readonly toPlayer = new Vector3();
   private readonly playerBlobShadow: Mesh;
+  private readonly keyLight: DirectionalLight;
+  private readonly composer: EffectComposer;
+  private readonly bloomPass: UnrealBloomPass;
+  private readonly skyDome: Mesh;
 
   constructor(options: SceneRendererOptions) {
-    this.scene.background = new Color(0x0f1218);
+    this.scene.background = new Color(FOG_COLOR);
+    this.scene.fog = new FogExp2(FOG_COLOR, FOG_DENSITY);
     this.scene.add(this.worldRoot);
 
     const { clientWidth, clientHeight } = options.canvas;
@@ -55,8 +79,15 @@ export class SceneRenderer {
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(width, height, false);
+    this.renderer.toneMapping = ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
 
-    this.setupLights();
+    this.keyLight = this.setupLights();
+    this.skyDome = this.createSkyDome();
+    this.scene.add(this.skyDome);
+
     this.playerMesh = this.playerView.root;
     const geometry = new CapsuleGeometry(0.35, 0.9, 6, 12);
     this.playerOutlineMesh = this.createPlayerOutline(geometry);
@@ -67,20 +98,84 @@ export class SceneRenderer {
     this.playerBlobShadow = this.createPlayerBlobShadow();
     this.playerView.root.add(this.playerBlobShadow);
     this.scene.add(this.playerView.root);
+
+    const target = new WebGLRenderTarget(width, height, { samples: 4, type: HalfFloatType });
+    this.composer = new EffectComposer(this.renderer, target);
+    this.composer.setPixelRatio(this.renderer.getPixelRatio());
+    this.composer.setSize(width, height);
+    this.bloomPass = new UnrealBloomPass(
+      new Vector2(width, height),
+      BLOOM.strength,
+      BLOOM.radius,
+      BLOOM.threshold,
+    );
+    this.composer.addPass(new RenderPass(this.scene, new PerspectiveCamera()));
+    this.composer.addPass(this.bloomPass);
+    this.composer.addPass(new OutputPass());
   }
 
   async loadPlayerModel(classId = "TK"): Promise<void> {
     await this.playerView.load(classId);
   }
 
-  private setupLights(): void {
-    this.scene.add(new AmbientLight(0xb0c4de, 0.55));
-    const dir = new DirectionalLight(0xffffff, 1.05);
-    dir.position.set(6, 12, 8);
-    this.scene.add(dir);
-    const fill = new DirectionalLight(0x88aaff, 0.25);
-    fill.position.set(-6, 4, -4);
+  private setupLights(): DirectionalLight {
+    this.scene.add(new HemisphereLight(0x8090c0, 0x3a2a1c, 0.55));
+
+    const key = new DirectionalLight(0xffdcb0, 2.1);
+    key.position.copy(KEY_LIGHT_OFFSET);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.near = 1;
+    key.shadow.camera.far = 80;
+    key.shadow.camera.left = -SHADOW_HALF_EXTENT;
+    key.shadow.camera.right = SHADOW_HALF_EXTENT;
+    key.shadow.camera.top = SHADOW_HALF_EXTENT;
+    key.shadow.camera.bottom = -SHADOW_HALF_EXTENT;
+    key.shadow.bias = -0.0004;
+    key.shadow.normalBias = 0.03;
+    key.shadow.radius = 3;
+    this.scene.add(key);
+    this.scene.add(key.target);
+
+    const fill = new DirectionalLight(0x6f86d6, 0.35);
+    fill.position.set(-10, 6, -8);
     this.scene.add(fill);
+    return key;
+  }
+
+  private createSkyDome(): Mesh {
+    const material = new ShaderMaterial({
+      uniforms: {
+        zenith: { value: new Color(SKY_ZENITH) },
+        horizon: { value: new Color(SKY_HORIZON) },
+      },
+      vertexShader: [
+        "varying vec3 vWorld;",
+        "void main() {",
+        "  vec4 wp = modelMatrix * vec4(position, 1.0);",
+        "  vWorld = wp.xyz;",
+        "  gl_Position = projectionMatrix * viewMatrix * wp;",
+        "}",
+      ].join("\n"),
+      fragmentShader: [
+        "uniform vec3 zenith;",
+        "uniform vec3 horizon;",
+        "varying vec3 vWorld;",
+        "void main() {",
+        "  float h = clamp(normalize(vWorld).y, 0.0, 1.0);",
+        "  float t = pow(h, 0.55);",
+        "  vec3 col = mix(horizon, zenith, t);",
+        "  gl_FragColor = vec4(col, 1.0);",
+        "}",
+      ].join("\n"),
+      side: BackSide,
+      depthWrite: false,
+      fog: false,
+    });
+    const dome = new Mesh(new SphereGeometry(150, 24, 12), material);
+    dome.name = "sky-dome";
+    dome.frustumCulled = false;
+    return dome;
   }
 
   private createPlayerOutline(geometry: BufferGeometry): Mesh {
@@ -139,8 +234,8 @@ export class SceneRenderer {
     const ctx = canvas.getContext("2d");
     if (ctx) {
       const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-      gradient.addColorStop(0, "rgba(0,0,0,0.58)");
-      gradient.addColorStop(0.45, "rgba(0,0,0,0.28)");
+      gradient.addColorStop(0, "rgba(0,0,0,0.45)");
+      gradient.addColorStop(0.45, "rgba(0,0,0,0.2)");
       gradient.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, size, size);
@@ -161,8 +256,16 @@ export class SceneRenderer {
     return blob;
   }
 
-  setBlobShadowEnabled(enabled: boolean): void {
+  setShadowsEnabled(enabled: boolean): void {
+    this.renderer.shadowMap.enabled = enabled;
+    this.keyLight.castShadow = enabled;
     this.playerBlobShadow.visible = enabled;
+    this.scene.traverse((obj) => {
+      const mat = (obj as Mesh).material;
+      if (!mat) return;
+      const mats = Array.isArray(mat) ? mat : [mat];
+      for (const m of mats) m.needsUpdate = true;
+    });
   }
 
   setPlayerTransform(x: number, z: number, facing: number, moving: boolean): void {
@@ -177,6 +280,8 @@ export class SceneRenderer {
     const w = Math.max(width, 1);
     const h = Math.max(height, 1);
     this.renderer.setSize(w, h, false);
+    this.composer.setSize(w, h);
+    this.bloomPass.setSize(w, h);
   }
 
   private updatePlayerGhost(camera: PerspectiveCamera): void {
@@ -195,10 +300,20 @@ export class SceneRenderer {
     this.playerView.setOcclusionGhostVisible(occluded);
   }
 
+  private followKeyLight(): void {
+    const p = this.playerMesh.position;
+    this.keyLight.target.position.set(p.x, 0, p.z);
+    this.keyLight.position.set(p.x + KEY_LIGHT_OFFSET.x, KEY_LIGHT_OFFSET.y, p.z + KEY_LIGHT_OFFSET.z);
+    this.skyDome.position.set(p.x, 0, p.z);
+  }
+
   render(camera: PerspectiveCamera): void {
     if (this.disposed) return;
     this.updatePlayerGhost(camera);
-    this.renderer.render(this.scene, camera);
+    this.followKeyLight();
+    const renderPass = this.composer.passes[0] as RenderPass;
+    renderPass.camera = camera;
+    this.composer.render();
   }
 
   dispose(): void {
@@ -211,6 +326,10 @@ export class SceneRenderer {
     blobMat.map?.dispose();
     blobMat.dispose();
     this.playerBlobShadow.geometry.dispose();
+    (this.skyDome.material as ShaderMaterial).dispose();
+    this.skyDome.geometry.dispose();
+    this.bloomPass.dispose();
+    this.composer.dispose();
     this.renderer.dispose();
   }
 }

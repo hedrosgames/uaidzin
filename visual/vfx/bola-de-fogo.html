@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UAIDZIN — Lab VFX · Bola de Fogo</title>
+<style>
+:root{
+  --bg0:#100c08; --bg1:#241c14; --bg2:#2e241a;
+  --iron:#3d3228; --gold:#d4a017; --gold-hi:#e8c547;
+  --blood:#a33b3b; --ink:#f0e6d0; --ink-dim:#b8a88c; --ink-mute:#7a6b58;
+  --fire:#ff6a1a; --fire-hot:#ffd24a; --fire-core:#fff3c4;
+  --font-ui:"Segoe UI",Tahoma,system-ui,sans-serif;
+  --font-num:ui-monospace,Consolas,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#000;overflow:hidden;font-family:var(--font-ui);color:var(--ink);font-size:14px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
+.viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000}
+.stage{
+  width:1600px;height:900px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(ellipse at 20% 70%,#3a2414 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 70%,#2a1810 0%,transparent 45%),
+    linear-gradient(180deg,#1a1410 0%,#0e0a08 70%,#080604 100%);
+  transform-origin:center center;
+}
+.hud{
+  position:absolute;inset:0;z-index:8;pointer-events:none;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:28px 36px 32px;
+}
+.hud-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+.brand{pointer-events:auto}
+.brand h1{
+  margin:0;font-size:22px;font-weight:600;letter-spacing:.04em;
+  color:var(--gold);
+}
+.brand p{margin:6px 0 0;font-size:12px;color:var(--ink-mute);letter-spacing:.06em;text-transform:uppercase}
+.meta{
+  pointer-events:auto;text-align:right;
+  background:linear-gradient(180deg,rgba(36,28,20,.92),rgba(16,12,8,.92));
+  border:1px solid #5a4a38;border-radius:2px;padding:12px 16px;min-width:220px;
+}
+.meta .k{font-size:11px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.08em}
+.meta .v{font-family:var(--font-num);font-size:13px;color:var(--ink);margin-top:2px}
+.meta .v.hot{color:var(--fire-hot)}
+.hud-bot{
+  display:flex;justify-content:space-between;align-items:flex-end;gap:20px;pointer-events:none;
+}
+.controls{
+  pointer-events:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  background:linear-gradient(180deg,rgba(36,28,20,.94),rgba(16,12,8,.94));
+  border:1px solid #5a4a38;border-radius:2px;padding:12px 14px;
+}
+.controls button{
+  appearance:none;border:1px solid var(--gold);border-radius:2px;
+  background:linear-gradient(180deg,#3a2e1c,#241c14);
+  color:var(--ink);font-family:var(--font-ui);font-size:13px;font-weight:600;
+  letter-spacing:.04em;padding:10px 18px;cursor:pointer;
+}
+.controls button:hover{border-color:var(--gold-hi);color:var(--gold-hi)}
+.controls button:active{transform:translateY(1px)}
+.controls button.primary{
+  background:linear-gradient(180deg,#6a3010,#3a1a0a);
+  border-color:var(--fire);color:var(--fire-hot);
+}
+.controls button.primary:hover{border-color:var(--fire-hot)}
+.controls label{
+  display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-dim);
+  margin-left:8px;
+}
+.controls input[type="range"]{width:120px;accent-color:var(--gold)}
+.legend{
+  pointer-events:none;text-align:right;
+  background:linear-gradient(180deg,rgba(36,28,20,.88),rgba(16,12,8,.88));
+  border:1px solid #5a4a38;border-radius:2px;padding:12px 16px;max-width:340px;
+}
+.legend h2{margin:0 0 6px;font-size:12px;font-weight:600;color:var(--gold);letter-spacing:.08em;text-transform:uppercase}
+.legend p{margin:0;font-size:12px;line-height:1.45;color:var(--ink-dim)}
+.legend .swatches{display:flex;gap:6px;justify-content:flex-end;margin-top:8px}
+.legend .sw{width:18px;height:18px;border:1px solid rgba(240,230,208,.25);border-radius:1px}
+canvas#gl{display:block;width:100%;height:100%}
+.status{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  z-index:6;pointer-events:none;font-family:var(--font-num);font-size:13px;
+  color:var(--fire-hot);letter-spacing:.12em;text-transform:uppercase;
+  opacity:0;transition:opacity .15s ease;
+}
+.status.on{opacity:.9}
+</style>
+</head>
+<body>
+<div class="viewport">
+  <div class="stage" id="stage">
+    <canvas id="gl"></canvas>
+    <div class="status" id="status"></div>
+    <div class="hud">
+      <div class="hud-top">
+        <div class="brand">
+          <h1>Lab VFX — Bola de Fogo</h1>
+          <p>UAIDZIN · referência WYD FireBall · fora da build</p>
+        </div>
+        <div class="meta">
+          <div class="k">Efeito</div>
+          <div class="v hot" id="m-phase">ocioso</div>
+          <div class="k" style="margin-top:10px">Duração</div>
+          <div class="v" id="m-time">0.00 s</div>
+          <div class="k" style="margin-top:10px">Partículas</div>
+          <div class="v" id="m-parts">0</div>
+        </div>
+      </div>
+      <div class="hud-bot">
+        <div class="controls">
+          <button type="button" class="primary" id="btn-fire">Disparar</button>
+          <button type="button" id="btn-loop">Loop: ligado</button>
+          <label>Velocidade
+            <input type="range" id="rng-speed" min="0.4" max="2" step="0.1" value="1">
+            <span id="lbl-speed">1.0×</span>
+          </label>
+        </div>
+        <div class="legend">
+          <h2>Composição</h2>
+          <p>Núcleo girando + rastro de faíscas + explosão de impacto no alvo. Cor por fogo físico/mágico, sem cobrir o caster.</p>
+          <div class="swatches">
+            <div class="sw" style="background:#fff3c4"></div>
+            <div class="sw" style="background:#ffd24a"></div>
+            <div class="sw" style="background:#ff6a1a"></div>
+            <div class="sw" style="background:#a33b3b"></div>
+            <div class="sw" style="background:#d4a017"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="importmap">
+{
+  "imports": {
+    "three": "../../game/public/vendor/three/three.module.js"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from "three";
+
+const stage = document.getElementById("stage");
+const canvas = document.getElementById("gl");
+const statusEl = document.getElementById("status");
+const mPhase = document.getElementById("m-phase");
+const mTime = document.getElementById("m-time");
+const mParts = document.getElementById("m-parts");
+const btnFire = document.getElementById("btn-fire");
+const btnLoop = document.getElementById("btn-loop");
+const rngSpeed = document.getElementById("rng-speed");
+const lblSpeed = document.getElementById("lbl-speed");
+
+function fitStage() {
+  const s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+  stage.style.transform = "scale(" + s + ")";
+  const mx = (1600 * s - 1600) / 2;
+  const my = (900 * s - 900) / 2;
+  stage.style.margin = my + "px " + mx + "px";
+  resizeGl();
+}
+window.addEventListener("resize", fitStage);
+
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: true,
+  alpha: false,
+  powerPreference: "high-performance",
+});
+renderer.setClearColor(0x0e0a08, 1);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0e0a08, 10, 28);
+
+const camera = new THREE.PerspectiveCamera(40, 1600 / 900, 0.1, 80);
+camera.position.set(0, 4.2, 9.2);
+camera.lookAt(0, 1.1, 0);
+
+const ambient = new THREE.AmbientLight(0xb0c4de, 0.45);
+scene.add(ambient);
+const key = new THREE.DirectionalLight(0xfff0dd, 0.85);
+key.position.set(4, 8, 6);
+scene.add(key);
+const fireLight = new THREE.PointLight(0xff6a1a, 0, 8, 2);
+fireLight.position.set(0, 1.2, 0);
+scene.add(fireLight);
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(24, 14),
+  new THREE.MeshStandardMaterial({ color: 0x1a1410, roughness: 0.95, metalness: 0 })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+const grid = new THREE.GridHelper(24, 24, 0x3d3228, 0x241c14);
+grid.position.y = 0.01;
+scene.add(grid);
+
+function makeBody(colorHex, x) {
+  const g = new THREE.Group();
+  const geo = new THREE.CapsuleGeometry(0.32, 0.85, 6, 12);
+  const mat = new THREE.MeshStandardMaterial({
+    color: colorHex,
+    roughness: 0.7,
+    metalness: 0.05,
+    emissive: new THREE.Color(0x000000),
+    emissiveIntensity: 0,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.y = 0.9;
+  g.add(mesh);
+  const blobCanvas = document.createElement("canvas");
+  blobCanvas.width = blobCanvas.height = 128;
+  const ctx = blobCanvas.getContext("2d");
+  const grad = ctx.createRadialGradient(64, 64, 4, 64, 64, 64);
+  grad.addColorStop(0, "rgba(0,0,0,0.55)");
+  grad.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 128, 128);
+  const blobMat = new THREE.MeshBasicMaterial({
+    map: new THREE.CanvasTexture(blobCanvas),
+    transparent: true,
+    depthWrite: false,
+  });
+  const blob = new THREE.Mesh(new THREE.CircleGeometry(0.55, 24), blobMat);
+  blob.rotation.x = -Math.PI / 2;
+  blob.position.y = 0.02;
+  g.add(blob);
+  g.position.x = x;
+  scene.add(g);
+  return { group: g, mesh, mat };
+}
+
+const caster = makeBody(0x5b9fd4, -3.4);
+const target = makeBody(0xa33b3b, 3.4);
+
+const FIRE_VERT = `
+uniform float uTime;
+uniform float uSpin;
+varying vec2 vUv;
+varying vec3 vNormalW;
+void main() {
+  vUv = uv;
+  vec3 p = position;
+  float wob = sin(p.y * 8.0 + uTime * 10.0) * 0.04 + cos(p.x * 7.0 - uTime * 7.0) * 0.03;
+  p += normal * wob;
+  vNormalW = normalize(normalMatrix * normal);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+}
+`;
+
+const FIRE_FRAG = `
+uniform float uTime;
+uniform float uSpin;
+uniform float uHeat;
+varying vec2 vUv;
+varying vec3 vNormalW;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+
+void main() {
+  vec2 p = vUv * 2.0 - 1.0;
+  float ang = atan(p.y, p.x) + uSpin;
+  float rad = length(p);
+  float swirl = sin(ang * 3.0 - uTime * 8.0 + rad * 6.0) * 0.5 + 0.5;
+  float n = noise(vec2(ang * 2.0, rad * 4.0 - uTime * 3.0));
+  float n2 = noise(vec2(ang * 4.0 + uTime, rad * 7.0 + uTime * 2.0));
+  float bands = mix(swirl, n, 0.45) * 0.65 + n2 * 0.35;
+  float core = smoothstep(0.85, 0.05, rad);
+  float rim = smoothstep(0.2, 0.95, rad) * (1.0 - smoothstep(0.85, 1.05, rad));
+  float facing = clamp(dot(normalize(vNormalW), vec3(0.0, 0.0, 1.0)), 0.0, 1.0);
+
+  vec3 hot = vec3(1.0, 0.95, 0.75);
+  vec3 mid = vec3(1.0, 0.72, 0.18);
+  vec3 deep = vec3(0.85, 0.22, 0.05);
+  vec3 dark = vec3(0.25, 0.05, 0.02);
+
+  vec3 col = mix(deep, mid, bands);
+  col = mix(col, hot, core * 0.85 * uHeat);
+  col = mix(dark, col, 0.35 + 0.65 * facing);
+  col += mid * rim * 0.55;
+  col *= 0.85 + 0.35 * uHeat;
+
+  float alpha = clamp(0.55 + core * 0.45 + rim * 0.25, 0.0, 1.0);
+  gl_FragColor = vec4(col, alpha);
+}
+`;
+
+const ballGroup = new THREE.Group();
+scene.add(ballGroup);
+
+const ballUniforms = {
+  uTime: { value: 0 },
+  uSpin: { value: 0 },
+  uHeat: { value: 1 },
+};
+const ballMat = new THREE.ShaderMaterial({
+  uniforms: ballUniforms,
+  vertexShader: FIRE_VERT,
+  fragmentShader: FIRE_FRAG,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+});
+const ballCore = new THREE.Mesh(new THREE.SphereGeometry(0.38, 28, 20), ballMat);
+ballGroup.add(ballCore);
+
+const shellMat = new THREE.MeshBasicMaterial({
+  color: 0xff6a1a,
+  transparent: true,
+  opacity: 0.22,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  side: THREE.BackSide,
+});
+const ballShell = new THREE.Mesh(new THREE.SphereGeometry(0.52, 20, 16), shellMat);
+ballGroup.add(ballShell);
+
+const ringMat = new THREE.MeshBasicMaterial({
+  color: 0xffd24a,
+  transparent: true,
+  opacity: 0.55,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  side: THREE.DoubleSide,
+});
+const ballRingA = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.035, 8, 40), ringMat);
+const ballRingB = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.028, 8, 36), ringMat.clone());
+ballGroup.add(ballRingA, ballRingB);
+
+const trailCount = 48;
+const trailPos = new Float32Array(trailCount * 3);
+const trailLife = new Float32Array(trailCount);
+const trailGeo = new THREE.BufferGeometry();
+trailGeo.setAttribute("position", new THREE.BufferAttribute(trailPos, 3));
+const trailMat = new THREE.PointsMaterial({
+  color: 0xff8a2a,
+  size: 0.12,
+  transparent: true,
+  opacity: 0.85,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  sizeAttenuation: true,
+});
+const trail = new THREE.Points(trailGeo, trailMat);
+scene.add(trail);
+let trailHead = 0;
+
+const boomCount = 64;
+const boomPos = new Float32Array(boomCount * 3);
+const boomVel = new Float32Array(boomCount * 3);
+const boomLife = new Float32Array(boomCount);
+const boomGeo = new THREE.BufferGeometry();
+boomGeo.setAttribute("position", new THREE.BufferAttribute(boomPos, 3));
+const boomMat = new THREE.PointsMaterial({
+  color: 0xffb14a,
+  size: 0.16,
+  transparent: true,
+  opacity: 0.95,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  sizeAttenuation: true,
+});
+const boom = new THREE.Points(boomGeo, boomMat);
+scene.add(boom);
+
+const smokeCount = 18;
+const smokePos = new Float32Array(smokeCount * 3);
+const smokeVel = new Float32Array(smokeCount * 3);
+const smokeLife = new Float32Array(smokeCount);
+const smokeGeo = new THREE.BufferGeometry();
+smokeGeo.setAttribute("position", new THREE.BufferAttribute(smokePos, 3));
+const smokeMat = new THREE.PointsMaterial({
+  color: 0x6a5a4a,
+  size: 0.28,
+  transparent: true,
+  opacity: 0.4,
+  depthWrite: false,
+  blending: THREE.NormalBlending,
+  sizeAttenuation: true,
+});
+const smoke = new THREE.Points(smokeGeo, smokeMat);
+scene.add(smoke);
+
+const burstMat = new THREE.MeshBasicMaterial({
+  color: 0xffc45a,
+  transparent: true,
+  opacity: 0,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  side: THREE.DoubleSide,
+});
+const burst = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 14), burstMat);
+scene.add(burst);
+
+const shockMat = new THREE.MeshBasicMaterial({
+  color: 0xff6a1a,
+  transparent: true,
+  opacity: 0,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  side: THREE.DoubleSide,
+});
+const shock = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.32, 40), shockMat);
+shock.rotation.x = -Math.PI / 2;
+scene.add(shock);
+
+const flashLight = new THREE.PointLight(0xffaa33, 0, 10, 2);
+scene.add(flashLight);
+
+const FROM = new THREE.Vector3(-3.4, 1.05, 0);
+const TO = new THREE.Vector3(3.4, 0.95, 0);
+const CAST_OFFSET = 0.35;
+
+let phase = "idle";
+let phaseT = 0;
+let spin = 0;
+let loopOn = true;
+let speed = 1;
+let clock = new THREE.Clock();
+let particleBudget = 0;
+
+function setStatus(text, on) {
+  statusEl.textContent = text;
+  statusEl.classList.toggle("on", !!on);
+}
+
+function resetParticles() {
+  for (let i = 0; i < trailCount; i++) {
+    trailPos[i * 3] = 0;
+    trailPos[i * 3 + 1] = -10;
+    trailPos[i * 3 + 2] = 0;
+    trailLife[i] = 0;
+  }
+  for (let i = 0; i < boomCount; i++) {
+    boomPos[i * 3] = 0;
+    boomPos[i * 3 + 1] = -10;
+    boomPos[i * 3 + 2] = 0;
+    boomLife[i] = 0;
+  }
+  for (let i = 0; i < smokeCount; i++) {
+    smokePos[i * 3] = 0;
+    smokePos[i * 3 + 1] = -10;
+    smokePos[i * 3 + 2] = 0;
+    smokeLife[i] = 0;
+  }
+  trailGeo.attributes.position.needsUpdate = true;
+  boomGeo.attributes.position.needsUpdate = true;
+  smokeGeo.attributes.position.needsUpdate = true;
+}
+
+function fire() {
+  if (phase !== "idle") return;
+  phase = "cast";
+  phaseT = 0;
+  ballGroup.visible = true;
+  ballGroup.position.copy(FROM).add(new THREE.Vector3(CAST_OFFSET, 0, 0));
+  ballGroup.scale.setScalar(0.4);
+  ballUniforms.uHeat.value = 0.7;
+  fireLight.intensity = 0.8;
+  resetParticles();
+  setStatus("cast", true);
+  target.mat.emissive.setHex(0x000000);
+  target.mat.emissiveIntensity = 0;
+}
+
+function spawnTrail(p) {
+  const i = trailHead % trailCount;
+  trailPos[i * 3] = p.x + (Math.random() - 0.5) * 0.08;
+  trailPos[i * 3 + 1] = p.y + (Math.random() - 0.5) * 0.08;
+  trailPos[i * 3 + 2] = p.z + (Math.random() - 0.5) * 0.08;
+  trailLife[i] = 1;
+  trailHead++;
+  trailGeo.attributes.position.needsUpdate = true;
+}
+
+function explode(at) {
+  phase = "boom";
+  phaseT = 0;
+  ballGroup.visible = false;
+  fireLight.intensity = 3.2;
+  fireLight.position.copy(at);
+  flashLight.position.copy(at);
+  flashLight.intensity = 4;
+  burst.position.copy(at);
+  burst.scale.setScalar(0.3);
+  burstMat.opacity = 1;
+  shock.position.set(at.x, 0.06, at.z);
+  shock.scale.setScalar(0.4);
+  shockMat.opacity = 0.85;
+  target.mat.emissive.setHex(0xff3300);
+  target.mat.emissiveIntensity = 0.95;
+  target.group.scale.set(1.15, 0.88, 1.15);
+
+  for (let i = 0; i < boomCount; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const b = (Math.random() - 0.5) * Math.PI;
+    const sp = 1.4 + Math.random() * 2.8;
+    boomVel[i * 3] = Math.cos(a) * Math.cos(b) * sp;
+    boomVel[i * 3 + 1] = Math.abs(Math.sin(b)) * sp * 0.9 + 0.6;
+    boomVel[i * 3 + 2] = Math.sin(a) * Math.cos(b) * sp;
+    boomPos[i * 3] = at.x;
+    boomPos[i * 3 + 1] = at.y;
+    boomPos[i * 3 + 2] = at.z;
+    boomLife[i] = 0.45 + Math.random() * 0.35;
+  }
+  for (let i = 0; i < smokeCount; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 0.4 + Math.random() * 0.9;
+    smokeVel[i * 3] = Math.cos(a) * sp;
+    smokeVel[i * 3 + 1] = 0.6 + Math.random() * 1.1;
+    smokeVel[i * 3 + 2] = Math.sin(a) * sp;
+    smokePos[i * 3] = at.x + (Math.random() - 0.5) * 0.2;
+    smokePos[i * 3 + 1] = at.y + (Math.random() - 0.5) * 0.15;
+    smokePos[i * 3 + 2] = at.z + (Math.random() - 0.5) * 0.2;
+    smokeLife[i] = 0.7 + Math.random() * 0.5;
+  }
+  boomGeo.attributes.position.needsUpdate = true;
+  smokeGeo.attributes.position.needsUpdate = true;
+  setStatus("impacto", true);
+}
+
+function endShot() {
+  phase = "idle";
+  phaseT = 0;
+  ballGroup.visible = false;
+  fireLight.intensity = 0;
+  flashLight.intensity = 0;
+  burstMat.opacity = 0;
+  shockMat.opacity = 0;
+  target.mat.emissive.setHex(0x000000);
+  target.mat.emissiveIntensity = 0;
+  target.group.scale.set(1, 1, 1);
+  setStatus("", false);
+  if (loopOn) {
+    window.setTimeout(() => {
+      if (loopOn && phase === "idle") fire();
+    }, 420);
+  }
+}
+
+function updateFlight(dt) {
+  phaseT += dt * speed;
+  const castDur = 0.28;
+  const flyDur = 0.85;
+  if (phase === "cast") {
+    const k = Math.min(1, phaseT / castDur);
+    ballUniforms.uHeat.value = 0.7 + k * 0.4;
+    ballGroup.scale.setScalar(0.4 + k * 0.7);
+    ballGroup.position.copy(FROM).add(new THREE.Vector3(CAST_OFFSET * k, 0.15 * Math.sin(k * Math.PI), 0));
+    fireLight.position.copy(ballGroup.position);
+    fireLight.intensity = 0.6 + k * 0.8;
+    if (k >= 1) {
+      phase = "fly";
+      phaseT = 0;
+      setStatus("voo", true);
+    }
+  } else if (phase === "fly") {
+    const k = Math.min(1, phaseT / flyDur);
+    const ease = k * k * (3 - 2 * k);
+    const x = THREE.MathUtils.lerp(FROM.x + CAST_OFFSET, TO.x, ease);
+    const y = THREE.MathUtils.lerp(FROM.y + 0.1, TO.y, ease) + Math.sin(k * Math.PI) * 0.25;
+    const z = THREE.MathUtils.lerp(0, 0, ease);
+    ballGroup.position.set(x, y, z);
+    ballGroup.scale.setScalar(1.1);
+    ballUniforms.uHeat.value = 1.05;
+    fireLight.position.copy(ballGroup.position);
+    fireLight.intensity = 1.4;
+    spawnTrail(ballGroup.position);
+    if (k >= 1) explode(ballGroup.position.clone());
+  }
+}
+
+function updateBoom(dt) {
+  phaseT += dt * speed;
+  const boomDur = 0.7;
+  burst.scale.setScalar(0.3 + phaseT * 3.2);
+  burstMat.opacity = Math.max(0, 1 - phaseT / 0.28);
+  shock.scale.setScalar(0.4 + phaseT * 4.5);
+  shockMat.opacity = Math.max(0, 0.85 - phaseT / 0.35);
+  fireLight.intensity = Math.max(0, 3.2 * (1 - phaseT / 0.45));
+  flashLight.intensity = Math.max(0, 4 * (1 - phaseT / 0.2));
+  target.group.scale.lerp(new THREE.Vector3(1, 1, 1), 1 - Math.exp(-8 * dt));
+  target.mat.emissiveIntensity = Math.max(0, 0.95 - phaseT * 2.2);
+
+  let live = 0;
+  for (let i = 0; i < boomCount; i++) {
+    if (boomLife[i] <= 0) continue;
+    boomLife[i] -= dt * speed;
+    if (boomLife[i] <= 0) {
+      boomPos[i * 3 + 1] = -10;
+      continue;
+    }
+    boomVel[i * 3 + 1] -= 3.5 * dt;
+    boomPos[i * 3] += boomVel[i * 3] * dt;
+    boomPos[i * 3 + 1] += boomVel[i * 3 + 1] * dt;
+    boomPos[i * 3 + 2] += boomVel[i * 3 + 2] * dt;
+    if (boomPos[i * 3 + 1] < 0.05) {
+      boomPos[i * 3 + 1] = 0.05;
+      boomVel[i * 3 + 1] *= -0.25;
+      boomVel[i * 3] *= 0.6;
+      boomVel[i * 3 + 2] *= 0.6;
+    }
+    live++;
+  }
+  boomMat.opacity = 0.95 * Math.max(0, 1 - phaseT / 0.7);
+  boomGeo.attributes.position.needsUpdate = true;
+
+  for (let i = 0; i < smokeCount; i++) {
+    if (smokeLife[i] <= 0) continue;
+    smokeLife[i] -= dt * speed;
+    if (smokeLife[i] <= 0) {
+      smokePos[i * 3 + 1] = -10;
+      continue;
+    }
+    smokePos[i * 3] += smokeVel[i * 3] * dt;
+    smokePos[i * 3 + 1] += smokeVel[i * 3 + 1] * dt;
+    smokePos[i * 3 + 2] += smokeVel[i * 3 + 2] * dt;
+    smokeVel[i * 3 + 1] *= 0.98;
+  }
+  smokeMat.opacity = 0.4 * Math.max(0, 1 - phaseT / 0.9);
+  smokeGeo.attributes.position.needsUpdate = true;
+
+  if (phaseT >= boomDur && live === 0) endShot();
+  else if (phaseT >= 1.2) endShot();
+}
+
+function updateTrail(dt) {
+  let live = 0;
+  for (let i = 0; i < trailCount; i++) {
+    if (trailLife[i] <= 0) continue;
+    trailLife[i] -= dt * speed * 1.8;
+    if (trailLife[i] <= 0) {
+      trailPos[i * 3 + 1] = -10;
+      continue;
+    }
+    trailPos[i * 3 + 1] += dt * 0.35 * trailLife[i];
+    live++;
+  }
+  trailMat.opacity = phase === "fly" || phase === "cast" ? 0.85 : Math.max(0, trailMat.opacity - dt);
+  trailGeo.attributes.position.needsUpdate = true;
+  particleBudget = live;
+}
+
+function tick() {
+  const raw = clock.getDelta();
+  const dt = Math.min(raw, 0.05);
+  const t = performance.now() / 1000;
+  spin += dt * speed * (phase === "fly" ? 12 : phase === "cast" ? 6 : 0);
+  ballUniforms.uTime.value = t;
+  ballUniforms.uSpin.value = spin;
+  ballRingA.rotation.x = t * 2.4 * speed;
+  ballRingA.rotation.y = spin * 0.7;
+  ballRingB.rotation.x = -t * 3.1 * speed;
+  ballRingB.rotation.z = spin * 0.9;
+  ballShell.scale.setScalar(1 + Math.sin(t * 8) * 0.04);
+
+  if (phase === "cast" || phase === "fly") updateFlight(dt);
+  if (phase === "boom") updateBoom(dt);
+  updateTrail(dt);
+
+  caster.group.position.y = Math.sin(t * 2.2) * 0.03;
+  mPhase.textContent = phase === "idle" ? "ocioso" : phase === "cast" ? "cast" : phase === "fly" ? "voo" : "impacto";
+  mTime.textContent = (phase === "idle" ? 0 : phaseT).toFixed(2) + " s";
+  mParts.textContent = String(particleBudget + (phase === "boom" ? boomCount : 0));
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+
+function resizeGl() {
+  const w = stage.clientWidth || 1600;
+  const h = stage.clientHeight || 900;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+btnFire.addEventListener("click", () => fire());
+btnLoop.addEventListener("click", () => {
+  loopOn = !loopOn;
+  btnLoop.textContent = loopOn ? "Loop: ligado" : "Loop: desligado";
+});
+rngSpeed.addEventListener("input", () => {
+  speed = Number(rngSpeed.value);
+  lblSpeed.textContent = speed.toFixed(1) + "×";
+});
+
+resetParticles();
+ballGroup.visible = false;
+fitStage();
+tick();
+window.setTimeout(() => fire(), 600);
+</script>
+</body>
+</html>

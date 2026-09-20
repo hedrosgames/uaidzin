@@ -173,6 +173,15 @@
       await clearIdbAll();
       say("Storage UAIDZIN limpo (settings preservados).");
     };
+
+    const auto = new URLSearchParams(location.search).get("auto");
+    if (auto === "all") {
+      document.getElementById("btnAll").click();
+      setTimeout(function () { location.href = "/"; }, 400);
+    } else if (auto === "account") {
+      document.getElementById("btnAccount").click();
+      setTimeout(function () { location.href = "/"; }, 400);
+    }
   </script>
 </body>
 </html>
