@@ -13,10 +13,10 @@ const NAMES = {
   misc: ["Item"],
 } as const;
 
-function pickRarity(): Rarity {
+function pickRarity(random: () => number = Math.random): Rarity {
   const weights = ECONOMY_BALANCE.rarityWeights;
   const total = weights.reduce((a, b) => a + b, 0);
-  let r = Math.random() * total;
+  let r = random() * total;
   for (let i = 0; i < weights.length; i++) {
     r -= weights[i];
     if (r <= 0) return ECONOMY_BALANCE.rarities[i];
@@ -24,13 +24,13 @@ function pickRarity(): Rarity {
   return "Comum";
 }
 
-export function createEquipDrop(level: number): ItemInstance {
+export function createEquipDrop(level: number, random: () => number = Math.random): ItemInstance {
   const slots: ItemInstance["slot"][] = ["weapon", "head", "armor", "ring1", "ring2", "neck", "ear"];
-  const slot = slots[Math.floor(Math.random() * slots.length)];
-  const rarity = pickRarity();
+  const slot = slots[Math.floor(random() * slots.length)];
+  const rarity = pickRarity(random);
   const ri = ECONOMY_BALANCE.rarities.indexOf(rarity);
   const names = NAMES[slot];
-  const name = names[Math.floor(Math.random() * names.length)];
+  const name = names[Math.floor(random() * names.length)];
   const base = ECONOMY_BALANCE.equipBaseStat(level, ri);
   return {
     uid: nextItemUid(),

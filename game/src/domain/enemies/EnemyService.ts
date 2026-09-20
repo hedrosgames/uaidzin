@@ -15,13 +15,15 @@ function statsFor(archetype: EnemyArchetype) {
   return COMBAT_BALANCE.enemy[archetype];
 }
 
-function respawnDelay(): number {
+function respawnDelay(random: () => number = Math.random): number {
   const [min, max] = COMBAT_BALANCE.enemy.respawnSeconds;
-  return min + Math.random() * (max - min);
+  return min + random() * (max - min);
 }
 
 export class EnemyService {
   readonly enemies: EnemyModel[] = [];
+
+  constructor(private readonly random: () => number = Math.random) {}
 
   spawnFromDungeon(def: DungeonDef = DUNGEON_TEST): void {
     this.enemies.length = 0;
@@ -62,7 +64,7 @@ export class EnemyService {
           ? (s as { retreatIfCloserThan?: number }).retreatIfCloserThan
           : undefined,
       leashRadius: "leashRadius" in s ? (s as { leashRadius?: number }).leashRadius : undefined,
-      respawnSeconds: sp.isBoss ? DUNGEON_BALANCE.boss.respawnSeconds : respawnDelay(),
+      respawnSeconds: sp.isBoss ? DUNGEON_BALANCE.boss.respawnSeconds : respawnDelay(this.random),
     });
   }
 

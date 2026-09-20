@@ -4,7 +4,10 @@ import { createEquipDrop, createMaterial } from "../items/ItemFactory";
 
 
 export class EconomyService {
-  constructor(private readonly inventory: InventoryService) {}
+  constructor(
+    private readonly inventory: InventoryService,
+    private readonly random: () => number = Math.random,
+  ) {}
 
   grantKillLoot(archetype: "fixed" | "chaser" | "ranged" | "boss", isBoss: boolean): {
     gold: number;
@@ -17,17 +20,17 @@ export class EconomyService {
 
     let dropped: string | null = null;
     let lost = false;
-    const dropRoll = Math.random();
+    const dropRoll = this.random();
     if (dropRoll < ECONOMY_BALANCE.equipDropChance || isBoss) {
-      const item = createEquipDrop(1);
+      const item = createEquipDrop(1, this.random);
       const ok = this.inventory.add(item);
       if (ok) dropped = item.name;
       else {
         lost = true;
         dropped = null;
       }
-    } else if (Math.random() < ECONOMY_BALANCE.materialDropChance) {
-      const mat = createMaterial(Math.random() < ECONOMY_BALANCE.oriShare ? "Ori" : "Lac", 1);
+    } else if (this.random() < ECONOMY_BALANCE.materialDropChance) {
+      const mat = createMaterial(this.random() < ECONOMY_BALANCE.oriShare ? "Ori" : "Lac", 1);
       const ok = this.inventory.add(mat);
       if (ok) dropped = mat.name;
       else lost = true;
