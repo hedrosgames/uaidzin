@@ -1,7 +1,7 @@
-import { saveVault } from "./SaveVault";
+import { saveVault, type CharacterLoadResult } from "./SaveVault";
 import { SAVE_VERSION, type SavePayload } from "./SaveTypes";
 
-export { SAVE_VERSION, type SavePayload };
+export { SAVE_VERSION, type SavePayload, type CharacterLoadResult };
 
 export class SaveService {
   setProfileId(id: string): void {
@@ -16,7 +16,7 @@ export class SaveService {
     await saveVault.saveCharacter(payload, { immediate: true });
   }
 
-  async load(): Promise<SavePayload | null> {
+  async load(): Promise<CharacterLoadResult> {
     return saveVault.loadCharacter();
   }
 

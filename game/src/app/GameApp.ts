@@ -8,7 +8,11 @@ import { SceneRenderer } from "../presentation/rendering/SceneRenderer";
 import { InteractionPanel } from "../ui/InteractionPanel";
 import { GamePanels } from "../ui/GamePanels";
 import { WireUi, isWirePanelName } from "../ui/WireUi";
-import { CityGameSession, type SessionHud } from "./CityGameSession";
+import { CityGameSession, dungeonEnterMessage, type SessionHud } from "./CityGameSession";
+
+function assertNever(value: never): never {
+  throw new Error(String(value));
+}
 import { GameLoop } from "./GameLoop";
 import type { BootCharacter } from "./BootFlow";
 import { clearBootCharacter, clearBootSession } from "./BootFlow";
@@ -104,6 +108,20 @@ export class GameApp {
   private lastToastText = "";
   private entered = false;
   private leaving = false;
+  private autosaveTimer: number | null = null;
+  private readonly onPageHide = (): void => {
+    if (this.entered && this.modeAllowsSave()) void this.session.persistSave(true);
+  };
+  private readonly onVisibility = (): void => {
+    if (document.visibilityState === "hidden" && this.entered && this.modeAllowsSave()) {
+      void this.session.persistSave(true);
+    }
+  };
+
+  private modeAllowsSave(): boolean {
+    const mode = this.state.getMode();
+    return mode === "CITY" || mode === "DUNGEON";
+  }
 
   constructor(deps: GameAppDeps) {
     this.renderer = new SceneRenderer({ canvas: deps.canvas });
@@ -171,22 +189,14 @@ export class GameApp {
       if (mode === "CITY" && this.entered) void this.session.persistSave(true);
     });
 
-    setInterval(() => {
-      if (!this.entered || this.state.getMode() !== "CITY") return;
+    this.autosaveTimer = window.setInterval(() => {
+      if (!this.entered || !this.modeAllowsSave()) return;
       if (saveVault.shouldSkipAutosave()) return;
       void this.session.persistSave();
     }, 30000);
 
-    window.addEventListener("pagehide", () => {
-      if (this.entered && this.state.getMode() === "CITY") {
-        void this.session.persistSave(true);
-      }
-    });
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden" && this.entered && this.state.getMode() === "CITY") {
-        void this.session.persistSave(true);
-      }
-    });
+    window.addEventListener("pagehide", this.onPageHide);
+    document.addEventListener("visibilitychange", this.onVisibility);
 
     saveVault.onStatus((status) => this.renderSaveStatus(status));
 
@@ -305,26 +315,51 @@ export class GameApp {
         else app.panels.close();
       },
       enterDungeon: () => {
-        app.session.activeDungeonId = app.session.pickDungeonForLevel().id;
-        app.session.enterWorld("dungeon-test");
+        const id = app.session.pickDungeonForLevel().id;
+        return app.session.tryEnterDungeon(id);
       },
       enterDungeonById: (id: string) => {
         const result = app.session.tryEnterDungeon(id);
         if (result.ok) {
           if (app.wireUi) app.wireUi.close();
           else app.panels.close();
-        } else if (result.reason === "entry") {
-          app.showToast("Entrada insuficiente", "dungeon");
-        } else if (result.reason === "level") {
-          app.showToast("Fora da faixa", "dungeon");
+          return result;
+        }
+        switch (result.reason) {
+          case "entry":
+            app.showToast(dungeonEnterMessage(result.reason), "dungeon");
+            break;
+          case "level":
+            app.showToast(dungeonEnterMessage(result.reason), "dungeon");
+            break;
+          case "evolution":
+            app.showToast(dungeonEnterMessage(result.reason), "dungeon");
+            break;
+          case "missing":
+            app.showToast(dungeonEnterMessage(result.reason), "dungeon");
+            break;
+          default:
+            assertNever(result.reason);
         }
         return result;
       },
       getPortalContext: () => ({
         level: app.session.character.level,
         evolution: app.session.progression.state.evolution,
-        entryCounts: app.session.portalEntryCounts(),
+        dungeons: app.session.eligibleDungeons().map((d) => ({
+          id: d.id,
+          name: d.name,
+          minLevel: d.minLevel,
+          maxLevel: d.maxLevel,
+        })),
       }),
+      listEligibleDungeons: () =>
+        app.session.eligibleDungeons().map((d) => ({
+          id: d.id,
+          name: d.name,
+          minLevel: d.minLevel,
+          maxLevel: d.maxLevel,
+        })),
       teleportPlayer: (x: number, z: number) => {
         app.session.player.setPosition(x, z);
       },
@@ -373,6 +408,9 @@ export class GameApp {
       debugSetTimer: (s: number) => app.session.debugSetTimer(s),
       debugAddLevels: (n: number) => app.session.debugAddLevels(n),
       persistSave: () => app.session.persistSave(true),
+      login: (userId: string, password: string) => saveVault.login(userId, password),
+      sessionUser: () => saveVault.getSession()?.user || null,
+      persistAccountVault: () => app.session.persistAccountVault(),
       clearSave: () => {
         clearBootCharacter();
         return saveVault.wipeProfile(app.session.saveService.getProfileId());
@@ -419,9 +457,11 @@ export class GameApp {
           const slots = await saveVault.listSlots();
           const summary = slots[slotIndex];
           if (!summary) return false;
+          const previous = app.session.saveService.getProfileId();
           app.session.saveService.setProfileId(summary.profileId);
           const loaded = await app.session.loadSave();
           if (!loaded) {
+            app.session.saveService.setProfileId(previous);
             return false;
           }
           await app.session.reloadAccountVault();
@@ -706,8 +746,8 @@ export class GameApp {
       }
       if (event.key === "F6") {
         event.preventDefault();
-        const ok = this.session.debugTryEvolve();
-        console.info("[UAIDZIN] evolve", ok ? "ok" : "bloqueado");
+        const evolved = this.session.debugTryEvolve();
+        if (!evolved.ok && evolved.reason) this.showToast(evolved.reason, "dungeon");
       }
     });
   }
@@ -715,7 +755,13 @@ export class GameApp {
   start(character: BootCharacter): void {
     this.session.saveService.setProfileId(character.id);
     void this.session.loadSave().then(async (loaded) => {
-      if (!loaded) this.session.applyBootCharacter(character);
+      if (!loaded) {
+        if (this.session.saveUnreadable) {
+          this.showToast("Save ilegível — progresso não foi sobrescrito", "dungeon");
+        } else {
+          this.session.applyBootCharacter(character);
+        }
+      }
       try {
         const view = this.currentViewModel();
         this.wireUi = await WireUi.mount(this.wireHost, view);
@@ -741,6 +787,12 @@ export class GameApp {
   dispose(): void {
     this.loop.stop();
     this.resizeObserver?.disconnect();
+    if (this.autosaveTimer !== null) {
+      window.clearInterval(this.autosaveTimer);
+      this.autosaveTimer = null;
+    }
+    window.removeEventListener("pagehide", this.onPageHide);
+    document.removeEventListener("visibilitychange", this.onVisibility);
     this.session.dispose();
     this.renderer.dispose();
   }

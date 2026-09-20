@@ -1,5 +1,10 @@
 import { PROGRESSION_BALANCE, type EvolutionId } from "../../data/balance/progression";
+import { DUNGEONS_MORTAL } from "../../data/dungeons/dungeons-mortal";
 import type { CharacterModel } from "../character/CharacterModel";
+
+const DUNGEONS_BY_EVOLUTION: Partial<Record<EvolutionId, readonly unknown[]>> = {
+  Mortal: DUNGEONS_MORTAL,
+};
 
 export interface ProgressionState {
   evolution: EvolutionId;
@@ -57,9 +62,31 @@ export class ProgressionService {
     return true;
   }
 
-  canEvolve(): boolean {
+  destinationEvolution(): EvolutionId | null {
+    if (this.state.evolution === "Mortal") return "Arch";
+    if (this.state.evolution === "Arch") return "Cele";
+    return null;
+  }
+
+  hasContentForEvolution(evolution: EvolutionId): boolean {
+    return (DUNGEONS_BY_EVOLUTION[evolution]?.length ?? 0) > 0;
+  }
+
+  evolveUnavailableReason(): string | null {
+    const dest = this.destinationEvolution();
+    if (!dest) return null;
     const max = PROGRESSION_BALANCE.evolutions[this.state.evolution].maxLevel;
-    return this.state.level >= max && this.state.evolution !== "Cele";
+    if (this.state.level < max) return null;
+    if (!this.hasContentForEvolution(dest)) return `Conteúdo de ${dest} ainda não disponível`;
+    return null;
+  }
+
+  canEvolve(): boolean {
+    const dest = this.destinationEvolution();
+    if (!dest) return false;
+    const max = PROGRESSION_BALANCE.evolutions[this.state.evolution].maxLevel;
+    if (this.state.level < max) return false;
+    return this.hasContentForEvolution(dest);
   }
 
   evolve(): boolean {

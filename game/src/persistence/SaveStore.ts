@@ -129,9 +129,10 @@ export class SaveStore {
     return lsGet(lsProfileKey(profileId));
   }
 
-  async writeProfileBlob(profileId: string, envelope: string): Promise<void> {
+  async writeProfileBlob(profileId: string, envelope: string, opts?: { rotateBackup?: boolean }): Promise<void> {
+    const rotate = opts?.rotateBackup !== false;
     const current = await this.readProfileCurrent(profileId);
-    if (current && current !== envelope) {
+    if (rotate && current && current !== envelope) {
       await idbPut(idbProfilePrevKey(profileId), current);
       lsSet(lsProfilePrevKey(profileId), current);
     }

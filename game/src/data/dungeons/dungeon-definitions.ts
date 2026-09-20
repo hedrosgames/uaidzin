@@ -24,7 +24,6 @@ export interface DungeonDef {
   maxLevel: number;
   
   durationSeconds: number;
-  entryItemId: string | null;
   arenas: ArenaDef[];
 }
 
@@ -36,7 +35,6 @@ export const DUNGEON_TEST: DungeonDef = {
   minLevel: 1,
   maxLevel: 20,
   durationSeconds: 600,
-  entryItemId: null,
   arenas: [
     {
       id: "arena-1",

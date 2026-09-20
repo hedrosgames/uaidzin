@@ -26,7 +26,7 @@ import { BuffService } from "../domain/character/BuffService";
 import { SaveService, type SavePayload } from "../persistence/SaveService";
 import { SAVE_VERSION, emptyProgress, parseProfileId } from "../persistence/SaveTypes";
 import { saveVault } from "../persistence/SaveVault";
-import type { ItemInstance } from "../domain/items/ItemModel";
+import { adoptItemUidSeq, type ItemInstance } from "../domain/items/ItemModel";
 import type { EquipSlot } from "../domain/items/EquipmentService";
 import { ECONOMY_BALANCE } from "../data/balance/economy";
 import type { DungeonDef } from "../data/dungeons/dungeon-definitions";
@@ -70,6 +70,28 @@ export interface SessionHud {
   skills: Array<{ key: number; name: string; cdRatio: number; ready: boolean; auto: boolean }>;
   lootToast: string | null;
   uiToastKind: "skill" | "attr" | "level" | "dungeon";
+}
+
+export type DungeonEnterReason = "missing" | "evolution" | "level" | "entry";
+export type DungeonEnterResult = { ok: true } | { ok: false; reason: DungeonEnterReason };
+
+function assertNever(value: never): never {
+  throw new Error(String(value));
+}
+
+export function dungeonEnterMessage(reason: DungeonEnterReason): string {
+  switch (reason) {
+    case "missing":
+      return "Dungeon não encontrada";
+    case "evolution":
+      return "Evolução sem conteúdo nesta dungeon";
+    case "level":
+      return "Fora da faixa";
+    case "entry":
+      return "Entrada insuficiente";
+    default:
+      return assertNever(reason);
+  }
 }
 
 export class CityGameSession {
@@ -116,6 +138,11 @@ export class CityGameSession {
   private hitStop = 0;
   private pendingSkillSlot = -1;
   hadSave = false;
+  saveUnreadable = false;
+  lastCombatMissAt = 0;
+  deathEmitCount = 0;
+  progressState = emptyProgress();
+  private vaultPersistChain: Promise<void> = Promise.resolve();
 
   setArmorAuraEnabled(on: boolean): void {
     this.renderer.playerView.setArmorAuraEnabled(on);
@@ -144,8 +171,26 @@ export class CityGameSession {
 
   async start(): Promise<void> {
     await this.reloadAccountVault();
+    this.adoptItemUidsFromState();
     await this.renderer.loadPlayerModel(this.skillTree.state.classId);
     this.enterWorld("city");
+  }
+
+  private adoptItemUidsFromState(): void {
+    const equipped = this.equipment.snapshotEquipped();
+    const uids = [
+      ...this.inventory.items.map((i) => i.uid),
+      ...Object.values(equipped).map((i) => i?.uid).filter((u): u is string => !!u),
+      ...this.accountVault.items.map((i) => i.uid),
+    ];
+    adoptItemUidSeq(uids);
+  }
+
+  private enqueueVaultPersist(): void {
+    this.vaultPersistChain = this.vaultPersistChain.then(async () => {
+      await this.persistSave(true);
+      await this.persistAccountVault();
+    });
   }
 
   async reloadAccountVault(): Promise<void> {
@@ -164,8 +209,7 @@ export class CityGameSession {
     if (moved <= 0) return 0;
     this.inventory.gold -= moved;
     this.accountVault.gold += moved;
-    void this.persistSave(true);
-    void this.persistAccountVault();
+    this.enqueueVaultPersist();
     return moved;
   }
 
@@ -176,8 +220,7 @@ export class CityGameSession {
     if (moved <= 0) return 0;
     this.accountVault.gold -= moved;
     this.inventory.gold += moved;
-    void this.persistSave(true);
-    void this.persistAccountVault();
+    this.enqueueVaultPersist();
     return moved;
   }
 
@@ -188,8 +231,7 @@ export class CityGameSession {
       this.inventory.add(item);
       return false;
     }
-    void this.persistSave(true);
-    void this.persistAccountVault();
+    this.enqueueVaultPersist();
     return true;
   }
 
@@ -200,8 +242,7 @@ export class CityGameSession {
       this.accountVault.add(item);
       return false;
     }
-    void this.persistSave(true);
-    void this.persistAccountVault();
+    this.enqueueVaultPersist();
     return true;
   }
 
@@ -275,6 +316,7 @@ export class CityGameSession {
       this.skill.reset();
       this.sessionXp = 0;
       this.onModeChange("DUNGEON");
+      this.deathEmitCount = 0;
       this.bus.emit("dungeon:entered", { dungeonId: def.id });
     }
     this.bus.emit("world:changed", { worldId: world.id });
@@ -286,33 +328,32 @@ export class CityGameSession {
     return list[0] ?? DUNGEON_TEST;
   }
 
-  tryEnterDungeon(dungeonId: string): { ok: boolean; reason?: string } {
+  dungeonEntryGate(dungeonId: string): { ok: true; def: DungeonDef } | { ok: false; reason: DungeonEnterReason; def?: DungeonDef } {
     const def = findDungeon(dungeonId);
     if (!def) return { ok: false, reason: "missing" };
     if (this.progression.state.evolution !== "Mortal") {
-      return { ok: false, reason: "evolution" };
+      return { ok: false, reason: "evolution", def };
     }
     if (this.character.level < def.minLevel || this.character.level > def.maxLevel) {
-      return { ok: false, reason: "level" };
+      return { ok: false, reason: "level", def };
     }
-    if (def.entryItemId) {
-      if (!this.inventory.consumeMaterial(def.entryItemId, 1)) {
-        return { ok: false, reason: "entry" };
-      }
-    }
-    this.activeDungeonId = def.id;
+    return { ok: true, def };
+  }
+
+  tryEnterDungeon(dungeonId: string): DungeonEnterResult {
+    const gate = this.dungeonEntryGate(dungeonId);
+    if (!gate.ok) return { ok: false, reason: gate.reason };
+    this.activeDungeonId = gate.def.id;
     this.enterWorld("dungeon-test");
     return { ok: true };
   }
 
-  portalEntryCounts(): Record<string, number> {
-    const ids = ["entry_d4", "entry_d5", "entry_d6", "entry_d7", "entry_d8"];
-    const out: Record<string, number> = {};
-    for (const id of ids) out[id] = this.inventory.countMaterial(id);
-    return out;
+  eligibleDungeons(): DungeonDef[] {
+    return dungeonsAllowedForLevel(this.progression.state.level);
   }
 
   async persistSave(immediate = false): Promise<void> {
+    if (this.saveUnreadable) return;
     const profileId = this.saveService.getProfileId();
     const parsed = parseProfileId(profileId);
     const classId = this.skillTree.state.classId;
@@ -359,7 +400,11 @@ export class CityGameSession {
         unlocked: this.bags.snapshot(),
       },
       buffs: this.buffs.snapshot(),
-      progress: emptyProgress(),
+      progress: {
+        dungeonsUnlocked: [...this.progressState.dungeonsUnlocked],
+        dungeonClears: { ...this.progressState.dungeonClears },
+        quests: { ...this.progressState.quests },
+      },
       options: {},
     };
     if (immediate) {
@@ -370,13 +415,19 @@ export class CityGameSession {
   }
 
   async loadSave(): Promise<boolean> {
-    const data = await this.saveService.load();
-    if (!data) {
+    const result = await this.saveService.load();
+    if (result.status === "unreadable") {
+      this.saveUnreadable = true;
+      this.hadSave = true;
+      return false;
+    }
+    this.saveUnreadable = false;
+    if (result.status === "missing") {
       this.hadSave = false;
       return false;
     }
     this.hadSave = true;
-    this.applySavePayload(data);
+    this.applySavePayload(result.payload);
     return true;
   }
 
@@ -451,6 +502,11 @@ export class CityGameSession {
     this.bags.apply(data.bags?.unlocked);
     this.buffs.apply(data.buffs);
     this.skillLoadout.applySaved(data.skillLoadout?.slots);
+    this.progressState = {
+      dungeonsUnlocked: [...(data.progress?.dungeonsUnlocked || [])],
+      dungeonClears: { ...(data.progress?.dungeonClears || {}) },
+      quests: { ...(data.progress?.quests || {}) },
+    };
     this.progression.recomputeCombatStats();
     this.character.syncMaxMp();
     this.character.healFull();
@@ -476,12 +532,17 @@ export class CityGameSession {
 
     if (this.resultHold > 0) {
       this.resultHold -= dt;
+      if (this.lootToastTimer > 0) {
+        this.lootToastTimer -= dt;
+        if (this.lootToastTimer <= 0) this.lootToast = null;
+      }
       if (this.resultHold <= 0) {
         this.character.healFull();
         this.enterWorld("city");
         void this.persistSave(true);
       }
       this.renderer.render(this.camera.camera);
+      this.pushHud(inDungeon);
       return;
     }
 
@@ -646,7 +707,8 @@ export class CityGameSession {
         this.progression.state.level,
         "kill",
       );
-      this.lootToast = `Nível ${this.progression.state.level}!`;
+      const levelText = `Nível ${this.progression.state.level}!`;
+      this.lootToast = this.lootToast ? `${this.lootToast} · ${levelText}` : levelText;
       this.lootToastTimer = 2;
       this.bus.emit("character:level-up", {
         level: this.progression.state.level,
@@ -713,6 +775,10 @@ export class CityGameSession {
             this.effects.spawnDamageNumber(enemy.x, 1.7, enemy.z, 0, "kill");
           }
           this.bus.emit("combat:hit", { targetId: enemy.id, damage: dmg, killed });
+        } else if (enemy.alive) {
+          this.effects.spawnDamageNumber(enemy.x, 1.4, enemy.z, 0, "miss");
+          this.bus.emit("combat:miss", { targetId: enemy.id });
+          this.lastCombatMissAt = Date.now();
         }
       }
     }
@@ -788,7 +854,13 @@ export class CityGameSession {
             this.onModeChange("DEAD");
             this.deathReturnTimer = 1.2;
             this.bus.emit("character:death", { at: Date.now() });
+            this.deathEmitCount += 1;
+            break;
           }
+        } else {
+          this.effects.spawnDamageNumber(this.player.x, 1.8, this.player.z, 0, "miss");
+          this.bus.emit("combat:miss", { targetId: "player" });
+          this.lastCombatMissAt = Date.now();
         }
       }
     }
@@ -983,12 +1055,8 @@ export class CityGameSession {
     let body = def.body;
     if (def.kind === "portal") {
       const pick = this.pickDungeonForLevel();
-      this.activeDungeonId = pick.id;
-      const levelOk =
-        this.character.level >= pick.minLevel &&
-        this.character.level <= pick.maxLevel &&
-        this.progression.state.evolution === "Mortal";
-      body = `${pick.name}\nNível ${pick.minLevel}–${pick.maxLevel} (${levelOk ? "ok" : "fora"})\nItens de entrada: ${pick.entryItemId ? "sim" : "não"}\nDuração: 10:00 · 3 arenas\nDisponíveis p/ seu nível: ${dungeonsAllowedForLevel(this.progression.state.level).map((d) => d.name).join(", ") || "—"}`;
+      const gate = this.dungeonEntryGate(pick.id);
+      body = `${pick.name}\nNível ${pick.minLevel}–${pick.maxLevel} (${gate.ok ? "ok" : "fora"})\nDuração: 10:00 · 3 arenas\nDisponíveis p/ seu nível: ${this.eligibleDungeons().map((d) => d.name).join(", ") || "—"}`;
     }
     this.panel.open({ id: def.id, label: def.label, body, kind: def.kind });
     this.bus.emit("interaction:opened", { id: def.id, label: def.label, body });
@@ -1000,12 +1068,9 @@ export class CityGameSession {
     if (!def) return;
     if (this.openNpcService(id)) return;
     if (def.kind === "portal") {
-      const pick = this.pickDungeonForLevel();
-      this.activeDungeonId = pick.id;
-      const levelOk =
-        this.character.level >= pick.minLevel && this.character.level <= pick.maxLevel;
       this.closeInteractionOverlay();
-      if (levelOk) this.enterWorld("dungeon-test");
+      const result = this.tryEnterDungeon(this.pickDungeonForLevel().id);
+      if (!result.ok) this.setUiToast(dungeonEnterMessage(result.reason), "dungeon");
       return;
     }
     if (def.kind === "portal-exit") {
@@ -1093,8 +1158,17 @@ export class CityGameSession {
     return this.progression.reset();
   }
 
-  debugTryEvolve(): boolean {
-    return this.progression.evolve();
+  debugTryEvolve(): { ok: boolean; reason?: string } {
+    const blocked = this.progression.evolveUnavailableReason();
+    if (blocked) {
+      this.setUiToast(blocked, "dungeon");
+      return { ok: false, reason: blocked };
+    }
+    return { ok: this.progression.evolve() };
+  }
+
+  debugSetDodgeChance(value: number): void {
+    COMBAT_BALANCE.dodgeChance = value;
   }
 
   enemyViewMesh(id: string) {

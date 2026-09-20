@@ -34,6 +34,11 @@ import type { AccountVaultState } from "../domain/account/AccountVaultService";
 
 type StatusListener = (status: SaveStatus, error?: string | null) => void;
 
+export type CharacterLoadResult =
+  | { status: "ok"; payload: SavePayload }
+  | { status: "missing" }
+  | { status: "unreadable" };
+
 const DEFAULT_DEMO_SLOTS = (): Array<SlotSummary | null> => [
   {
     profileId: "admin:slot:0",
@@ -365,14 +370,17 @@ export class SaveVault {
     await this.writeAccount(session, account);
   }
 
-  async loadCharacter(profileId?: string): Promise<SavePayload | null> {
+  async loadCharacter(profileId?: string): Promise<CharacterLoadResult> {
     const id = profileId || this.profileId;
     this.profileId = id;
     const session = this.getSession();
     const candidates = await this.store.readProfileCandidates(id);
+    if (!candidates.length) return { status: "missing" };
     let best: SavePayload | null = null;
     let bestAt = -1;
+    let sawBlob = false;
     for (const found of candidates) {
+      sawBlob = true;
       try {
         let rawObj: unknown;
         if (looksEncrypted(found.blob)) {
@@ -392,7 +400,8 @@ export class SaveVault {
         
       }
     }
-    return best;
+    if (best) return { status: "ok", payload: best };
+    return { status: sawBlob ? "unreadable" : "missing" };
   }
 
   async saveCharacter(payload: SavePayload, opts?: { immediate?: boolean }): Promise<void> {
@@ -520,9 +529,9 @@ export class SaveVault {
   }
 
   async exportProfile(profileId?: string): Promise<string | null> {
-    const payload = await this.loadCharacter(profileId);
-    if (!payload) return null;
-    return JSON.stringify(payload, null, 2);
+    const loaded = await this.loadCharacter(profileId);
+    if (loaded.status !== "ok") return null;
+    return JSON.stringify(loaded.payload, null, 2);
   }
 
   async importProfile(json: string, profileId?: string): Promise<SavePayload | null> {

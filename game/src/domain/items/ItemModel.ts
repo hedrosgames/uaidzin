@@ -17,3 +17,13 @@ let uidSeq = 1;
 export function nextItemUid(): string {
   return `item_${uidSeq++}`;
 }
+
+export function adoptItemUidSeq(uids: string[]): void {
+  let next = uidSeq;
+  for (const uid of uids) {
+    const match = /^item_(\d+)$/.exec(uid);
+    if (!match) continue;
+    next = Math.max(next, Number(match[1]) + 1);
+  }
+  uidSeq = next;
+}

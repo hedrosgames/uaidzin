@@ -4,7 +4,6 @@ function makeDungeon(
   index: number,
   minLevel: number,
   maxLevel: number,
-  needsItem: boolean,
 ): DungeonDef {
   const z0 = 0;
   const z1 = -24;
@@ -16,7 +15,6 @@ function makeDungeon(
     minLevel,
     maxLevel,
     durationSeconds: 600,
-    entryItemId: needsItem ? `entry_${tag}` : null,
     arenas: [
       {
         id: `${tag}-a1`,
@@ -57,14 +55,14 @@ function makeDungeon(
 
 
 export const DUNGEONS_MORTAL: DungeonDef[] = [
-  makeDungeon(1, 1, 40, false),
-  makeDungeon(2, 35, 90, false),
-  makeDungeon(3, 80, 150, false),
-  makeDungeon(4, 140, 220, true),
-  makeDungeon(5, 200, 280, true),
-  makeDungeon(6, 260, 330, true),
-  makeDungeon(7, 310, 370, true),
-  makeDungeon(8, 350, 400, true),
+  makeDungeon(1, 1, 40),
+  makeDungeon(2, 35, 90),
+  makeDungeon(3, 80, 150),
+  makeDungeon(4, 140, 220),
+  makeDungeon(5, 200, 280),
+  makeDungeon(6, 260, 330),
+  makeDungeon(7, 310, 370),
+  makeDungeon(8, 350, 400),
 ];
 
 export function findDungeon(id: string): DungeonDef | undefined {
