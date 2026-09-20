@@ -8,6 +8,7 @@ export const COMBAT_BALANCE = {
     defense: 6,
     attackRange: 2.2,
     attackInterval: 0.85,
+    speed: 5.5,
     skill: {
       id: "skill_power_strike",
       name: "Golpe Poderoso",

@@ -21,6 +21,9 @@ export const PROGRESSION_BALANCE = {
   defenseFromCons(cons: number): number {
     return 2 + Math.floor(cons / 4);
   },
+  maxMpFromLevelInt(level: number, int: number): number {
+    return 50 + level * 8 + int;
+  },
 } as const;
 
 export type EvolutionId = keyof typeof PROGRESSION_BALANCE.evolutions;

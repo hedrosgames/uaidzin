@@ -1,6 +1,7 @@
+import { SKILL_BALANCE } from "../../data/balance/skills";
 import type { AttackTarget } from "./AttackController";
 import type { LoadoutSlot, SkillLoadout } from "./SkillLoadout";
-import { SKILL_MP_COST, type CharacterModel } from "../character/CharacterModel";
+import type { CharacterModel } from "../character/CharacterModel";
 
 export interface SkillCast {
   slot: LoadoutSlot;
@@ -36,7 +37,7 @@ export class SkillController {
       slot = this.loadout.bestReadyAuto();
     }
     if (!slot) return null;
-    if (this.character && !this.character.spendMp(SKILL_MP_COST)) return null;
+    if (this.character && !this.character.spendMp(SKILL_BALANCE.mpCost)) return null;
 
     const range = slot.skill.range || 2.5;
     let best: AttackTarget | null = null;
@@ -50,11 +51,11 @@ export class SkillController {
       }
     }
     if (!best) {
-      if (this.character) this.character.regenMp(SKILL_MP_COST);
+      if (this.character) this.character.regenMp(SKILL_BALANCE.mpCost);
       return null;
     }
 
-    const mult = slot.skill.damageMultiplier * (1 + (slot.level - 1) * 0.05);
+    const mult = slot.skill.damageMultiplier * (1 + (slot.level - 1) * SKILL_BALANCE.skillLevelDamageBonus);
     const dmg = Math.max(1, Math.round((baseAttack - defenseOf(best.id)) * mult));
     this.loadout.use(slot);
     return { slot, target: best, damage: dmg };

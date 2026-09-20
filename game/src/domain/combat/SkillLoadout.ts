@@ -13,7 +13,7 @@ export interface LoadoutSlot {
 }
 
 function specFactor(spec: number): number {
-  return 1 - (Math.min(spec, SKILL_BALANCE.specializationPerTreeCap) / SKILL_BALANCE.specializationPerTreeCap) * 0.25;
+  return 1 - (Math.min(spec, SKILL_BALANCE.specializationPerTreeCap) / SKILL_BALANCE.specializationPerTreeCap) * SKILL_BALANCE.specializationCooldownPenalty;
 }
 
 

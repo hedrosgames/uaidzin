@@ -1,4 +1,5 @@
 import { MathUtils } from "three";
+import { COMBAT_BALANCE } from "../data/balance/combat";
 import { positionBlocked, type WorldCollision } from "../world/collision";
 
 export interface PlayerRuntimeOptions {
@@ -18,7 +19,7 @@ export class PlayerRuntime {
   isMoving = false;
 
   constructor(options: PlayerRuntimeOptions = {}) {
-    this.speed = options.speed ?? 5.5;
+    this.speed = options.speed ?? COMBAT_BALANCE.player.speed;
     this.radius = options.radius ?? 0.35;
   }
 

@@ -1,12 +1,11 @@
+import { PROGRESSION_BALANCE } from "../../data/balance/progression";
+
 export interface CharacterAttributes {
   FOR: number;
   DES: number;
   CONS: number;
   INT: number;
 }
-
-
-export const SKILL_MP_COST = 8;
 
 export class CharacterModel {
   level = 1;
@@ -47,7 +46,7 @@ export class CharacterModel {
   }
 
   computeMaxMp(level: number, int: number): number {
-    return 50 + level * 8 + int;
+    return PROGRESSION_BALANCE.maxMpFromLevelInt(level, int);
   }
 
   syncMaxMp(): void {
