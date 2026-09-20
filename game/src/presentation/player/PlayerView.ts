@@ -280,23 +280,14 @@ export class PlayerView {
   private async attachHandWeapons(model: Object3D): Promise<void> {
     this.detachHandWeapons();
     const axe = await this.loadAxePrototype();
-    console.info("[weapons] prototype", !!axe);
     if (!axe) return;
-
-    const names: string[] = [];
-    model.traverse((obj) => {
-      if ((obj as Bone).isBone || /hand/i.test(obj.name)) names.push(`${obj.type}:${obj.name}`);
-    });
-    console.info("[weapons] handish", names);
 
     for (const side of ["left", "right"] as const) {
       const hand = this.findHandBone(model, side === "left" ? "Left" : "Right");
-      console.info("[weapons] hand", side, hand?.name ?? "missing");
       if (!hand) continue;
       hand.updateWorldMatrix(true, false);
       const hs = new Vector3();
       hand.getWorldScale(hs);
-      console.info("[weapons] hand scale", side, hs.toArray());
       const grip = AXE_GRIP[side];
       const socket = new Group();
       socket.name = `weapon-socket-${side}`;
