@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "bot": "node scripts/bot-play.mjs",
-    "test:save": "node scripts/save-harness.mjs"
+    "test:save": "node scripts/save-harness.mjs",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "three": "^0.170.0"
