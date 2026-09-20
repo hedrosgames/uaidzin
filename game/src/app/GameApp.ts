@@ -1,4 +1,4 @@
-import { EventBus } from "../core/events/EventBus";
+﻿import { EventBus } from "../core/events/EventBus";
 import { ErrorReporter } from "../core/errors/ErrorReporter";
 import { GameStateStore } from "../core/state/GameStateStore";
 import { GameClock } from "../core/time/GameClock";
@@ -8,12 +8,9 @@ import { SceneRenderer } from "../presentation/rendering/SceneRenderer";
 import { InteractionPanel } from "../ui/InteractionPanel";
 import { GamePanels } from "../ui/GamePanels";
 import { WireUi, isWirePanelName } from "../ui/WireUi";
-import { CityGameSession, dungeonEnterMessage, type SessionHud } from "./CityGameSession";
-
-function assertNever(value: never): never {
-  throw new Error(String(value));
-}
+import { CityGameSession, type SessionHud } from "./CityGameSession";
 import { GameLoop } from "./GameLoop";
+import { installDebugApi } from "../debug/DebugApi";
 import type { BootCharacter } from "./BootFlow";
 import { clearBootCharacter, clearBootSession } from "./BootFlow";
 import { saveVault } from "../persistence/SaveVault";
@@ -304,234 +301,9 @@ export class GameApp {
   }
 
   private exposeDebugApi(): void {
-    const w = window as unknown as { __UAIDZIN__?: unknown; __UAIDZIN_DEBUG__?: boolean };
-    const isDev = !!(import.meta as { env?: { DEV?: boolean } }).env?.DEV;
-    if (!isDev && !w.__UAIDZIN_DEBUG__) return;
-    const app = this;
-    w.__UAIDZIN__ = {
-      session: app.session,
-      getState: () => app.state.getMode(),
-      getSnapshot: () => ({
-        mode: app.state.getMode(),
-        level: app.session.progression.state.level,
-        evolution: app.session.progression.state.evolution,
-        hp: app.session.character.hp,
-        maxHp: app.session.character.maxHp,
-        mp: app.session.character.mp,
-        maxMp: app.session.character.maxMp,
-        gold: app.session.inventory.gold,
-        invUsed: app.session.inventory.usedSlots(),
-        playerX: app.session.player.x,
-        playerZ: app.session.player.z,
-        playerFacing: app.session.player.facing,
-        world: app.session.worlds.getCurrentId(),
-        classId: app.session.skillTree.state.classId,
-        playerName: app.session.character.name,
-        panelsOpen: app.isPanelsOpen(),
-        entered: app.entered,
-        timerPhase: app.session.dungeonRun.getPhase(),
-        timerRemaining: app.session.dungeonRun.getRemainingSeconds(),
-        kills: app.session.dungeonRun.getKills(),
-        enemiesAlive: app.session.enemies.enemies.filter((e) => e.alive).length,
-        fxCount: app.session.effects.getCount(),
-        skillPoints: app.session.skillTree.state.skillPoints,
-        unspentPoints: app.session.progression.state.unspentAttributePoints,
-        skillSlots: app.session.skillLoadout.slots.length,
-        timeScale: app.timeScale,
-        hasPlayerOutline: !!app.renderer.playerOutlineMesh.parent,
-        playerGhostVisible: app.renderer.playerGhostMesh.visible,
-      }),
-      setArmorAuraEnabled: (on: boolean) => {
-        app.session.setArmorAuraEnabled(on);
-      },
-      openPanel: (name: string, title?: string, shopId?: string) => {
-        if (app.wireUi) {
-          if (isWirePanelName(name)) {
-            app.wireUi.open(name, {
-              title,
-              shopId,
-            });
-          }
-          return;
-        }
-        if (name === "person" || name === "skills" || name === "inv") app.panels.open(name);
-      },
-      closePanels: () => {
-        if (app.wireUi) app.wireUi.close();
-        else app.panels.close();
-      },
-      skipToGame: () => {
-        app.session.skillTree.setClass(app.session.skillTree.state.classId || "TK");
-        app.session.skillLoadout.refresh();
-        app.session.progression.recomputeCombatStats();
-        app.session.character.healFull();
-        if (app.wireUi) app.wireUi.close();
-        else app.panels.close();
-        app.enterGame();
-      },
-      setClass: (id: string) => {
-        app.session.skillTree.setClass(id as never);
-        void app.session.persistSave();
-        if (app.wireUi) app.wireUi.close();
-        else app.panels.close();
-      },
-      enterDungeon: () => {
-        const id = app.session.pickDungeonForLevel().id;
-        return app.session.tryEnterDungeon(id);
-      },
-      enterDungeonById: (id: string) => {
-        const result = app.session.tryEnterDungeon(id);
-        if (result.ok) {
-          if (app.wireUi) app.wireUi.close();
-          else app.panels.close();
-          return result;
-        }
-        switch (result.reason) {
-          case "entry":
-            app.showToast(dungeonEnterMessage(result.reason), "dungeon");
-            break;
-          case "level":
-            app.showToast(dungeonEnterMessage(result.reason), "dungeon");
-            break;
-          case "evolution":
-            app.showToast(dungeonEnterMessage(result.reason), "dungeon");
-            break;
-          case "missing":
-            app.showToast(dungeonEnterMessage(result.reason), "dungeon");
-            break;
-          default:
-            assertNever(result.reason);
-        }
-        return result;
-      },
-      getPortalContext: () => ({
-        level: app.session.character.level,
-        evolution: app.session.progression.state.evolution,
-        dungeons: app.session.eligibleDungeons().map((d) => ({
-          id: d.id,
-          name: d.name,
-          minLevel: d.minLevel,
-          maxLevel: d.maxLevel,
-        })),
-      }),
-      listEligibleDungeons: () =>
-        app.session.eligibleDungeons().map((d) => ({
-          id: d.id,
-          name: d.name,
-          minLevel: d.minLevel,
-          maxLevel: d.maxLevel,
-        })),
-      teleportPlayer: (x: number, z: number) => {
-        app.session.player.setPosition(x, z);
-      },
-      getFxCount: () => app.session.effects.getCount(),
-      learnFirstSkill: () => {
-        app.session.debugAddLevels(1);
-        const okLearn = app.session.skillTree.learn("fisica", 0);
-        app.session.skillLoadout.refresh();
-        return { learned: okLearn, slots: app.session.skillLoadout.slots.length, names: app.session.skill.slotLabels() };
-      },
-      learnRandomSkill: () => {
-        const result = app.session.debugLearnRandomSkill();
-        if (result.learned) {
-          app.showToast(`Skill ${result.skillId} Lv${result.level}`, "skill");
-          app.pulseFrame();
-        }
-        return result;
-      },
-      spendRandomAttributes: () => {
-        const result = app.session.debugSpendRandomAttributes();
-        if (result.spent > 0) {
-          app.showToast(`+${result.spent} pts · ${result.breakdown}`, "attr");
-          app.pulseFrame();
-        }
-        return result;
-      },
-      setTimeScale: (n: number) => {
-        app.applyTimeScale(normalizeTimeScale(n), false);
-        return app.timeScale;
-      },
-      getTimeScale: () => app.timeScale,
-      getEnemyMeshState: () => app.session.allEnemyMeshStates(),
-      getAliveEnemies: () =>
-        app.session.enemies.enemies
-          .filter((e) => e.alive)
-          .map((e) => ({ id: e.id, x: e.x, z: e.z })),
-      toCity: () => app.session.enterWorld("city"),
-      openInteractionById: (id: string) => {
-        const world = app.session.worlds.getCurrent();
-        const def = world?.interactables.find((i) => i.id === id);
-        if (!def) return false;
-        app.session.openInteraction(def);
-        return true;
-      },
-      confirmInteraction: (id: string) => app.session.confirmInteraction(id),
-      debugSetTimer: (s: number) => app.session.debugSetTimer(s),
-      debugAddLevels: (n: number) => app.session.debugAddLevels(n),
-      persistSave: () => app.session.persistSave(true),
-      login: (userId: string, password: string) => saveVault.login(userId, password),
-      sessionUser: () => saveVault.getSession()?.user || null,
-      persistAccountVault: () => app.session.persistAccountVault(),
-      clearSave: () => {
-        clearBootCharacter();
-        return saveVault.wipeProfile(app.session.saveService.getProfileId());
-      },
-      save: {
-        persist: () => app.session.persistSave(true),
-        flush: () => saveVault.flush(),
-        wipeProfile: (id?: string) => saveVault.wipeProfile(id || app.session.saveService.getProfileId()),
-        wipeAccount: (user?: string) =>
-          saveVault.wipeAccount(user || saveVault.getSession()?.user || "admin"),
-        wipeAll: (includeSettings?: boolean) => saveVault.wipeAll(!!includeSettings),
-        status: () => saveVault.getStatus(),
-        lastError: () => saveVault.getLastError(),
-        writeCount: () => saveVault.getWriteCount(),
-        exportProfile: () => saveVault.exportProfile(),
-        importProfile: (json: string) => saveVault.importProfile(json),
-      },
-      vault: {
-        snapshot: () => app.session.accountVault.snapshot(),
-        depositGold: (n: number) => app.session.depositGoldToVault(n),
-        withdrawGold: (n: number) => app.session.withdrawGoldFromVault(n),
-        moveToVault: (uid: string) => app.session.moveItemToVault(uid),
-        moveFromVault: (uid: string) => app.session.moveItemFromVault(uid),
-      },
-      bags: {
-        unlocked: () => app.session.bags.snapshot(),
-        unlock: (i: number) => {
-          app.session.bags.unlock(i);
-          void app.session.persistSave(true);
-        },
-      },
-      account: {
-        createSlot: (input: {
-          slotIndex: number;
-          classId: string;
-          name: string;
-          level?: number;
-          gold?: number;
-        }) => saveVault.createSlot(input),
-        deleteSlot: (slotIndex: number) => saveVault.deleteSlot(slotIndex),
-        loadSlot: async (slotIndex: number) => {
-          await app.session.persistSave(true);
-          await saveVault.flush();
-          const slots = await saveVault.listSlots();
-          const summary = slots[slotIndex];
-          if (!summary) return false;
-          const previous = app.session.saveService.getProfileId();
-          app.session.saveService.setProfileId(summary.profileId);
-          const loaded = await app.session.loadSave();
-          if (!loaded) {
-            app.session.saveService.setProfileId(previous);
-            return false;
-          }
-          await app.session.reloadAccountVault();
-          app.wireUi?.applyCharacter(app.currentViewModel());
-          return true;
-        },
-      },
-    };
+    installDebugApi(this as unknown as import("../debug/DebugApi").DebugHost);
   }
+
 
   private bindSkillBarClicks(): void {
     this.skillBar.addEventListener("click", (e) => {
@@ -549,7 +321,7 @@ export class GameApp {
       btn.classList.toggle("on", value === scale);
     });
     if (toast) {
-      this.showToast(`Velocidade ${scale}×`, scale > 1 ? "dungeon" : "skill");
+      this.showToast(`Velocidade ${scale}Ã—`, scale > 1 ? "dungeon" : "skill");
     }
   }
 
@@ -671,7 +443,7 @@ export class GameApp {
     btnSave?.addEventListener("click", () => {
       saveSettings();
       this.closeSettings();
-      this.showToast("Opções salvas.", "skill");
+      this.showToast("OpÃ§Ãµes salvas.", "skill");
     });
     btnChange?.addEventListener("click", () => {
       void this.leaveToBoot("select");
@@ -739,7 +511,7 @@ export class GameApp {
       el.className = "save-status";
       this.playerFrame.appendChild(el);
     }
-    if (status === "saving") el.textContent = "Salvando…";
+    if (status === "saving") el.textContent = "Salvandoâ€¦";
     else if (status === "saved") el.textContent = "Salvo";
     else if (status === "error") el.textContent = "Falha ao salvar";
     else el.textContent = "";
@@ -749,11 +521,11 @@ export class GameApp {
 
   private bindJuiceToasts(): void {
     this.bus.on("character:level-up", ({ level }) => {
-      this.showToast(`Nível ${level}!`, "level");
+      this.showToast(`NÃ­vel ${level}!`, "level");
       this.pulseFrame();
     });
     this.bus.on("dungeon:entered", ({ dungeonId }) => {
-      this.showToast(`${dungeonId} · ${this.timeScale}×`, "dungeon");
+      this.showToast(`${dungeonId} Â· ${this.timeScale}Ã—`, "dungeon");
     });
   }
 
@@ -790,7 +562,7 @@ export class GameApp {
     void this.session.loadSave().then(async (loaded) => {
       if (!loaded) {
         if (this.session.saveUnreadable) {
-          this.showToast("Save ilegível — progresso não foi sobrescrito", "dungeon");
+          this.showToast("Save ilegÃ­vel â€” progresso nÃ£o foi sobrescrito", "dungeon");
         } else {
           this.session.applyBootCharacter(character);
         }
@@ -801,7 +573,7 @@ export class GameApp {
         this.wireHost.hidden = false;
         window.dispatchEvent(new Event("resize"));
       } catch (error) {
-        console.warn("[UAIDZIN] wire UI falhou, usando painéis legados", error);
+        console.warn("[UAIDZIN] wire UI falhou, usando painÃ©is legados", error);
         this.wireUi = null;
       }
       await this.session.start();
@@ -850,7 +622,7 @@ export class GameApp {
     for (let i = 0; i < count; i++) {
       const s = skills[i];
       if (!s) {
-        html += `<button type="button" class="skill-slot empty" disabled><span class="skill-key">${i + 1}</span><span class="skill-name">—</span></button>`;
+        html += `<button type="button" class="skill-slot empty" disabled><span class="skill-key">${i + 1}</span><span class="skill-name">â€”</span></button>`;
         continue;
       }
       const cd = Math.max(0, Math.min(1, s.cdRatio));
@@ -886,7 +658,7 @@ export class GameApp {
 
     this.farmStats.hidden = hud.timer == null;
     if (hud.timer != null) {
-      this.farmStats.textContent = `Kills ${hud.kills} · XP ${hud.xp} · ${hud.arenaHint ?? ""}`;
+      this.farmStats.textContent = `Kills ${hud.kills} Â· XP ${hud.xp} Â· ${hud.arenaHint ?? ""}`;
     }
 
     if (hud.lootToast) this.showToast(hud.lootToast, hud.uiToastKind);
@@ -912,11 +684,11 @@ export class GameApp {
       this.debugHud.update({
         mode: this.state.getMode(),
         elapsed: this.clock.getElapsedSeconds(),
-        extra: `hp ${char.hp}/${char.maxHp} · mp ${char.mp}/${char.maxMp} · ${this.session.worlds.getCurrentId() ?? "-"} · timer ${timer != null ? formatMMSS(Number(timer)) : "--"} · kills ${this.session.dungeonRun.getKills()}`,
+        extra: `hp ${char.hp}/${char.maxHp} Â· mp ${char.mp}/${char.maxMp} Â· ${this.session.worlds.getCurrentId() ?? "-"} Â· timer ${timer != null ? formatMMSS(Number(timer)) : "--"} Â· kills ${this.session.dungeonRun.getKills()}`,
       });
     } catch (error) {
       this.errors.report(error, "GameApp.tick");
-      this.showToast("Erro no jogo — veja o console", "dungeon");
+      this.showToast("Erro no jogo â€” veja o console", "dungeon");
       this.loop.stop();
     }
   }
