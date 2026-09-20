@@ -299,8 +299,11 @@ export class GameApp {
   }
 
   private exposeDebugApi(): void {
+    const w = window as unknown as { __UAIDZIN__?: unknown; __UAIDZIN_DEBUG__?: boolean };
+    const isDev = !!(import.meta as { env?: { DEV?: boolean } }).env?.DEV;
+    if (!isDev && !w.__UAIDZIN_DEBUG__) return;
     const app = this;
-    (window as unknown as { __UAIDZIN__: unknown }).__UAIDZIN__ = {
+    w.__UAIDZIN__ = {
       session: app.session,
       getState: () => app.state.getMode(),
       getSnapshot: () => ({
