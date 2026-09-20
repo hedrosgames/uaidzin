@@ -6,26 +6,26 @@ export const CLASS_ART: Record<
   { face: string; portrait: string; name: string; namePt: string }
 > = {
   TK: {
-    face: "/faces/face-tk.png",
-    portrait: "/faces/char-tk.png",
+    face: "/boot/assets/face-tk.png",
+    portrait: "/boot/assets/char-tk.png",
     name: "Thegn Knight",
     namePt: "Cavaleiro Thegn",
   },
   FM: {
-    face: "/faces/face-fm.png",
-    portrait: "/faces/char-fm.png",
+    face: "/boot/assets/face-fm.png",
+    portrait: "/boot/assets/char-fm.png",
     name: "Frost Maiden",
     namePt: "Donzela do Gelo",
   },
   BM: {
-    face: "/faces/face-bm.png",
-    portrait: "/faces/char-bm.png",
+    face: "/boot/assets/face-bm.png",
+    portrait: "/boot/assets/char-bm.png",
     name: "Beast Master",
     namePt: "Mestre das Feras",
   },
   HT: {
-    face: "/faces/face-ht.png",
-    portrait: "/faces/char-ht.png",
+    face: "/boot/assets/face-ht.png",
+    portrait: "/boot/assets/char-ht.png",
     name: "Huntress",
     namePt: "Caçadora",
   },

@@ -97,8 +97,8 @@ function scopeCss(css: string, scope: string): string {
 
 function rewriteAssetUrls(text: string): string {
   return text
-    .replaceAll("assets/face-ht.png", "/faces/face-ht.png")
-    .replaceAll("assets/char-ht.png", "/faces/char-ht.png")
+    .replaceAll("assets/face-ht.png", "/boot/assets/face-ht.png")
+    .replaceAll("assets/char-ht.png", "/boot/assets/char-ht.png")
     .replaceAll('"assets/', '"/wire/assets/')
     .replaceAll("'assets/", "'/wire/assets/")
     .replaceAll("+ \"assets/", "+ \"/wire/assets/")
