@@ -26,8 +26,8 @@ export class EconomyService {
         lost = true;
         dropped = null;
       }
-    } else if (Math.random() < 0.18) {
-      const mat = createMaterial(Math.random() < 0.75 ? "Ori" : "Lac", 1);
+    } else if (Math.random() < ECONOMY_BALANCE.materialDropChance) {
+      const mat = createMaterial(Math.random() < ECONOMY_BALANCE.oriShare ? "Ori" : "Lac", 1);
       const ok = this.inventory.add(mat);
       if (ok) dropped = mat.name;
       else lost = true;

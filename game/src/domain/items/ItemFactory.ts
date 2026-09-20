@@ -31,7 +31,7 @@ export function createEquipDrop(level: number): ItemInstance {
   const ri = ECONOMY_BALANCE.rarities.indexOf(rarity);
   const names = NAMES[slot];
   const name = names[Math.floor(Math.random() * names.length)];
-  const base = 1 + Math.floor(level / 8) + ri;
+  const base = ECONOMY_BALANCE.equipBaseStat(level, ri);
   return {
     uid: nextItemUid(),
     defId: `${slot}_${rarity.toLowerCase()}`,
@@ -39,8 +39,8 @@ export function createEquipDrop(level: number): ItemInstance {
     rarity,
     slot,
     refine: 0,
-    attackBonus: slot === "weapon" ? base * 2 : base,
-    defenseBonus: slot === "weapon" ? 0 : base + ri,
+    attackBonus: slot === "weapon" ? base * ECONOMY_BALANCE.weaponAttackMultiplier : base,
+    defenseBonus: slot === "weapon" ? 0 : ECONOMY_BALANCE.equipDefenseBonus(base, ri),
     stack: 1,
     sellValue: ECONOMY_BALANCE.sellValueByRarity[ri] + base,
   };

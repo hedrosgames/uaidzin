@@ -9,7 +9,7 @@ export type AccountVaultState = {
 export class AccountVaultService {
   gold = 0;
   readonly items: ItemInstance[] = [];
-  readonly capacity = 120;
+  readonly capacity = ECONOMY_BALANCE.accountVaultCapacity;
 
   snapshot(): AccountVaultState {
     return {

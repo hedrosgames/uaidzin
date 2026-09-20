@@ -1,14 +1,20 @@
-export const BAG_COUNT = 4;
+import { ECONOMY_BALANCE } from "../../data/balance/economy";
+
+export const BAG_COUNT = ECONOMY_BALANCE.bagCount;
+
+function defaultBagLocks(): boolean[] {
+  return Array.from({ length: BAG_COUNT }, (_, i) => i === 0);
+}
 
 export class BagLockService {
-  unlocked: boolean[] = [true, false, false, false];
+  unlocked: boolean[] = defaultBagLocks();
 
   snapshot(): boolean[] {
     return this.unlocked.map((v, i) => (i === 0 ? true : !!v));
   }
 
   apply(list: boolean[] | null | undefined): void {
-    const next = [true, false, false, false];
+    const next = defaultBagLocks();
     if (Array.isArray(list)) {
       for (let i = 0; i < BAG_COUNT; i++) {
         next[i] = i === 0 ? true : !!list[i];
