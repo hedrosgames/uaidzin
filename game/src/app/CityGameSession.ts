@@ -375,8 +375,8 @@ export class CityGameSession {
         resetsInEvolution: this.progression.state.resetsInEvolution,
         bonusAttributePoints: this.progression.state.bonusAttributePoints,
         attributes: { ...this.character.attributes },
-        hp: this.character.maxHp,
-        mp: this.character.maxMp,
+        hp: this.character.hp,
+        mp: this.character.mp,
       },
       inventory: {
         gold: this.inventory.gold,
@@ -509,7 +509,15 @@ export class CityGameSession {
     };
     this.progression.recomputeCombatStats();
     this.character.syncMaxMp();
-    this.character.healFull();
+    const savedHp = Number(data.character.hp);
+    const savedMp = Number(data.character.mp);
+    this.character.hp = Number.isFinite(savedHp)
+      ? Math.max(0, Math.min(this.character.maxHp, savedHp))
+      : this.character.maxHp;
+    this.character.mp = Number.isFinite(savedMp)
+      ? Math.max(0, Math.min(this.character.maxMp, savedMp))
+      : this.character.maxMp;
+    this.character.isDead = this.character.hp <= 0;
     this.skillLoadout.refresh();
   }
 
