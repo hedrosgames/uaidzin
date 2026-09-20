@@ -931,7 +931,6 @@ export class GameApp {
       if (event.key === "F9") {
         event.preventDefault();
         this.session.debugSetTimer(3);
-        console.info("[UAIDZIN] debug: timer da dungeon em 3s");
       }
     });
   }
