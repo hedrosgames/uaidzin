@@ -62,7 +62,7 @@ export class EnemyService {
           ? (s as { retreatIfCloserThan?: number }).retreatIfCloserThan
           : undefined,
       leashRadius: "leashRadius" in s ? (s as { leashRadius?: number }).leashRadius : undefined,
-      respawnSeconds: sp.isBoss ? 30 : respawnDelay(),
+      respawnSeconds: sp.isBoss ? DUNGEON_BALANCE.boss.respawnSeconds : respawnDelay(),
     });
   }
 

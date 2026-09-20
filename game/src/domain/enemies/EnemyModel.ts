@@ -1,4 +1,4 @@
-import type { EnemyArchetype } from "../../data/balance/combat";
+import { COMBAT_BALANCE, type EnemyArchetype } from "../../data/balance/combat";
 
 export interface EnemyInit {
   id: string;
@@ -60,7 +60,7 @@ export class EnemyModel {
     this.attackInterval = init.attackInterval;
     this.speed = init.speed ?? 0;
     this.minApproach = init.minApproach ?? 1.2;
-    this.preferred = init.preferred ?? init.range * 0.8;
+    this.preferred = init.preferred ?? init.range * COMBAT_BALANCE.enemy.preferredRangeFactor;
     this.retreatIfCloserThan = init.retreatIfCloserThan ?? 2;
     this.leashRadius = init.leashRadius ?? 99;
     this.respawnSeconds = init.respawnSeconds;
@@ -82,6 +82,6 @@ export class EnemyModel {
     this.hp = this.maxHp;
     this.x = this.homeX;
     this.z = this.homeZ;
-    this.attackCooldown = 0.5;
+    this.attackCooldown = COMBAT_BALANCE.enemy.respawnAttackCooldown;
   }
 }

@@ -100,12 +100,13 @@ export class ProgressionService {
 
   private refundAllAttributes(): void {
     const a = this.character.attributes;
-    const spent = a.FOR + a.DES + a.CONS + a.INT - 40;
+    const base = PROGRESSION_BALANCE.baseAttributes;
+    const spent = a.FOR + a.DES + a.CONS + a.INT - (base.FOR + base.DES + base.CONS + base.INT);
     if (spent > 0) this.state.unspentAttributePoints += spent;
-    a.FOR = 10;
-    a.DES = 10;
-    a.CONS = 10;
-    a.INT = 10;
+    a.FOR = base.FOR;
+    a.DES = base.DES;
+    a.CONS = base.CONS;
+    a.INT = base.INT;
   }
 
   recomputeCombatStats(): void {

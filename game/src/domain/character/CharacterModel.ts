@@ -14,7 +14,7 @@ export class CharacterModel {
   maxHp: number;
   mp: number;
   maxMp: number;
-  attributes: CharacterAttributes = { FOR: 10, DES: 10, CONS: 10, INT: 10 };
+  attributes: CharacterAttributes = { ...PROGRESSION_BALANCE.baseAttributes };
   isDead = false;
 
   /**
