@@ -1,9 +1,8 @@
 ---
 feature: hub-ui
-status: delivered
+status: implemented
 updated: 2026-09-10
 branch: UAIDZIN
-commits: 
 ---
 
 # Hub UI — login, HUD WYD e painéis
@@ -12,7 +11,7 @@ commits:
 
 **What was built** — O hub abre em login (admin/admin) → seleção de personagem (criar com classe + nome, ou entrar com o save) → cidade 3D. A tela Continuar/Novo jogo e o debug HUD padrão saíram do fluxo. O HUD do hub tem frame WYD no topo-esquerdo (face da classe, nome, nível, HP, MP, XP), skill bar inferior-central com teclas 1–4, cooldown e click, HP em world space sobre o jogador (verde ≥40%, vermelho &lt;40%) e tutorial só com C/K/I. MP mínimo: `50 + level*8 + INT`, custo 8 por cast, regen 4/s. Painéis C/K/I na paleta Salão/Brasa.
 
-**Verification** — `npm run typecheck` (PASS). `npm run smoke` Playwright: 44/44 (login/seleção/entrada, frame, MP, HP world bar, help-bar, painéis C/K/I, skill cast, F1 debug, save). Review apontou XP de sessão no frame — corrigido para `progressionXp`.
+**Verification** — login/seleção em `visual/telas/`; HUD e painéis em `WireUi.ts` + `03-wire-paineis-cidade.html`.
 
 **Journey log**
 - `CityGameSession.ts` foi sobrescrito por engano durante um edit; restaurado de `HEAD` e reaplicado.
@@ -63,4 +62,4 @@ A interface do hub estava em greybox: tela Continuar/Novo jogo bloqueava o fluxo
 - [x] T4: Skill bar inferior-central com CD e click/teclas 1–4
 - [x] T5: HP world bar do jogador
 - [x] T6: Help-bar só C/K/I + restilo dos painéis
-- [x] T7: Smoke atualizado — typecheck e smoke verdes
+- [ ] T7: Smoke atualizado — typecheck e smoke verdes

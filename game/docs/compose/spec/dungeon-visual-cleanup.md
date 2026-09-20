@@ -1,9 +1,8 @@
 ---
 feature: dungeon-visual-cleanup
-status: delivered
+status: implemented
 updated: 2026-09-10
 branch: UAIDZIN
-commits: 979ee9f..HEAD
 ---
 
 # Limpeza visual da dungeon + inimigos na cidade
@@ -12,7 +11,7 @@ commits: 979ee9f..HEAD
 
 **What was built** — Remoção dos discos coloridos de spawn da geometria da dungeon; anel de alcance e slash desativados no combate. `EnemyRuntimeView` esconde meshes órfãos e `hideAll()` roda ao entrar na cidade. Smoke observa todos os meshes do view (não só a lista do serviço).
 
-**Verification** — `typecheck` PASS · `build` PASS · `smoke` **22/22** com `cidade sem inimigos visíveis`.
+**Verification** — `EnemyRuntimeView.hideAll` e `CityGameSession` escondem inimigos ao entrar na cidade. Sem spawn markers no código.
 
 **Journey log**
 - Discos de spawn eram o que “coloria” a dungeon — não VFX.
@@ -35,4 +34,4 @@ Redesign de arena, novos mobs, shaders.
 
 - [x] T1: Remover spawn markers da dungeon
 - [x] T2: Sync esconde meshes ausentes + hideAll na cidade
-- [x] T3: Smoke com assert de todos os view meshes + screenshot
+- [ ] T3: Smoke com assert de todos os view meshes + screenshot

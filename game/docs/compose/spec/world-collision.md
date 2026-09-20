@@ -1,9 +1,8 @@
 ---
 feature: world-collision
-status: delivered
+status: implemented
 updated: 2026-09-11
 branch: UAIDZIN
-commits: 8f9d30c..WORKTREE
 ---
 
 # Colisão do player com o mundo
@@ -12,7 +11,7 @@ commits: 8f9d30c..WORKTREE
 
 **What was built** — Colisão 2D X/Z sem física: `world/collision.ts` (boxes/circles + teste círculo–AABB), sólidos preenchidos no build de city (7 buildings, 4 walls, NPCs r=0.4) e dungeon (side walls). `PlayerRuntime.update` aceita `collision` e resolve slide full→X→Z; click-move limpa target se travar. Portais e chão não colidem. Teleport de debug ignora colisão.
 
-**Verification** — `npm run typecheck` PASS · `npm run smoke` **45/45** incluindo `não atravessa building — z=9.59` (building em z∈[10,14], player para em ~9.65).
+**Verification** — código em `game/src/world/collision.ts`, `CityWorld.ts` e `PlayerRuntime.ts`.
 
 **Journey log**
 - GDD/19-decisoes já mandava colisão simples de caixa, não Rapier.
@@ -113,7 +112,7 @@ update(dt, inputX, inputZ, bounds, collision?: WorldCollision): void
 - [x] T1: Extrair tabelas de buildings/walls/NPCs + `WorldCollision` no build city/dungeon — acceptance: city e dungeon retornam boxes/circles coerentes com o mesh (covers: S2)
 - [x] T2: `PlayerRuntime.update` com resolve por eixo + boundary — acceptance: WASD não entra em sólido; slide na parede (covers: S2)
 - [x] T3: Wire `CityGameSession` + click-move para não perseguir alvo dentro de sólido — acceptance: click atrás de building para na face (covers: S2)
-- [x] T4: Smoke (WASD vs building + typecheck) — acceptance: PASS (covers: S2)
+- [ ] T4: Smoke (WASD vs building + typecheck) — acceptance: PASS (covers: S2)
 
 ## Riscos / tradeoffs
 

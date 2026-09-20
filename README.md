@@ -10,7 +10,7 @@ RPG de farm/autofarm 3D para navegador (Three.js + Vite + TypeScript).
 | `plano de implementação/` | Fases e decisões de design |
 | `game/` | Código do jogo |
 | `GDD.html` | GDD visual gerado (`build.bat`) |
-| `visual/` | Diagramas do GDD |
+| `visual/` | Fonte da UI do jogo (`telas/03-wire-paineis-cidade.html`, carregada por `game/src/ui/WireUi.ts` e copiada no build em `game/vite.config.ts`) e SVGs do GDD |
 
 ## Rodar o jogo
 

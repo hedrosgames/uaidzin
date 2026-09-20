@@ -1,9 +1,8 @@
 ---
 feature: combat-feedback
-status: delivered
+status: implemented
 updated: 2026-09-10
 branch: UAIDZIN
-commits: d34ece1..HEAD
 ---
 
 # Combat Feedback (ataque e dano visíveis)
@@ -12,7 +11,7 @@ commits: d34ece1..HEAD
 
 **What was built** — EffectManager de apresentação com números de dano DOM (inimigo/jogador/skill/KO), telegrafia de ataque (face + pulse + slash), flash de emissive no alvo, death scale-out, anel de alcance do ataque básico e skill-slot com cooldown. EnemyRuntimeView passa a consultar o EffectManager para não sobrescrever flash/morte (fix C1/C2 da review).
 
-**Verification** — `npm run typecheck` PASS · `npm run build` PASS · `npm run smoke` **21/21 PASS** incluindo `números de dano gerados` e `morte mantém mesh visível (scale-out)` com `{alive:false, visible:true, dying:true}`. Screenshot em `docs/compose/combat-feedback.png`.
+**Verification** — `EffectManager` no código. PNG `docs/compose/combat-feedback.png` existe.
 
 **Journey log**
 - Eventos `combat:hit` existiam sem VFX — farm “parecia” sem combate.
@@ -45,5 +44,5 @@ Apresentação apenas. Domínio de combate intacto.
 - [x] T1: EffectManager + overlay DOM + CSS
 - [x] T2: Wire hit/skill/player damage/death
 - [x] T3: Indicador de alcance + pulse
-- [x] T4: Smoke Playwright (21/21, inclui assert de death visibility)
-- [x] T5: typecheck + build + commit
+- [ ] T4: Smoke Playwright (assert de death visibility)
+- [ ] T5: typecheck + build + commit
