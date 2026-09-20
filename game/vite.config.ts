@@ -53,7 +53,11 @@ function wireUiPlugin(): Plugin {
     },
     closeBundle() {
       const out = path.resolve(__dirname, "dist/wire");
-      if (!fs.existsSync(wireRoot)) return;
+      if (!fs.existsSync(wireRoot)) {
+        throw new Error(
+          `UI não encontrada em ${wireRoot}. Essa pasta contém a interface do jogo (visual/telas) e o build não pode publicá-lo sem ela.`,
+        );
+      }
       copyDir(wireRoot, out);
     },
   };
