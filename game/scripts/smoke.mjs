@@ -138,7 +138,22 @@ async function main() {
     if (s.level === 1) ok("boot level=1");
     else fail(`boot level esperado 1, recebido ${s.level}`);
 
-    // 2. DUNGEON
+    const logged = await page.evaluate(async () => window.__UAIDZIN__.login("admin", "admin"));
+    if (logged && logged.ok === true) ok("sessão de conta admin");
+    else fail(`login admin/admin falhou: ${logged && logged.error ? logged.error : "sem retorno"}`);
+
+    await page.evaluate(() => {
+      window.__UAIDZIN__.session.progression.state.evolution = "Arch";
+    });
+    await page.evaluate(() => window.__UAIDZIN__.confirmInteraction("portal-city-decor"));
+    await page.waitForTimeout(300);
+    s = await snap();
+    if (s.mode !== "DUNGEON") ok("portal recusa evolução Arch");
+    else fail('portal com evolution=Arch entrou em DUNGEON');
+    await page.evaluate(() => {
+      window.__UAIDZIN__.session.progression.state.evolution = "Mortal";
+    });
+
     await page.evaluate(() => window.__UAIDZIN__.enterDungeon());
     try {
       s = await waitSnap((x) => x.mode === "DUNGEON", 8000, 'mode "DUNGEON"');
@@ -149,6 +164,66 @@ async function main() {
     }
     if (s.enemiesAlive > 0) ok(`inimigos vivos=${s.enemiesAlive}`);
     else fail(`dungeon enemiesAlive esperado > 0, recebido ${s.enemiesAlive}`);
+
+    await page.evaluate(() => {
+      window.__UAIDZIN__.learnFirstSkill();
+      window.__UAIDZIN__.learnRandomSkill();
+    });
+    const skillCdGuard = await page.evaluate(() => {
+      const sess = window.__UAIDZIN__.session;
+      if (sess.skillLoadout.slots[0]) sess.skillLoadout.slots[0].cd = 99;
+      const dummy = [{ id: "t", x: sess.player.x, z: sess.player.z, alive: true }];
+      const cast = sess.skill.tick(
+        0,
+        false,
+        0,
+        dummy,
+        sess.player.x,
+        sess.player.z,
+        sess.character.attack,
+        () => 0,
+      );
+      return cast === null;
+    });
+    if (skillCdGuard) ok("slot em cooldown não dispara outra skill");
+    else fail("slot em cooldown disparou outra skill");
+
+    const wallIdle = await page.evaluate(() => {
+      const sess = window.__UAIDZIN__.session;
+      const p = sess.player;
+      const world = sess.worlds.getCurrent();
+      if (!world) return false;
+      const x0 = p.x;
+      const z0 = p.z;
+      p.update(0.05, 1, 0, world.boundary, world.collision);
+      const moved = Math.hypot(p.x - x0, p.z - z0) > 1e-6;
+      return p.isMoving === moved;
+    });
+    if (wallIdle) ok("isMoving segue deslocamento efetivo");
+    else fail("isMoving divergiu do deslocamento efetivo");
+
+    await page.evaluate(() => {
+      window.__UAIDZIN__.session.debugSetDodgeChance(1);
+      window.__UAIDZIN__.session.lastCombatMissAt = 0;
+    });
+    const missTarget = await page.evaluate(() => {
+      const list = window.__UAIDZIN__.getAliveEnemies() || [];
+      if (!list.length) return null;
+      const e = list[0];
+      return { x: e.x, z: e.z + 0.6 };
+    });
+    if (missTarget) {
+      await page.evaluate(({ x, z }) => window.__UAIDZIN__.teleportPlayer(x, z), missTarget);
+    }
+    await page.waitForTimeout(1200);
+    const missAt = await page.evaluate(() => window.__UAIDZIN__.session.lastCombatMissAt);
+    const missText = await page.evaluate(() => {
+      const nodes = [...document.querySelectorAll(".dmg-number")];
+      return nodes.some((n) => n.textContent === "MISS");
+    });
+    if (missAt > 0 && missText) ok("MISS visível e combat:miss emitido");
+    else fail(`MISS esperado (lastCombatMissAt=${missAt}, texto=${missText})`);
+    await page.evaluate(() => window.__UAIDZIN__.session.debugSetDodgeChance(0.05));
 
     // 3. COMBATE
     await page.evaluate(() => window.__UAIDZIN__.setTimeScale(10));
@@ -268,6 +343,95 @@ async function main() {
     else fail(`save gold esperado exatamente ${before.gold}, recebido ${s.gold}`);
     if (s.invUsed === before.invUsed) ok(`save round-trip invUsed=${s.invUsed}`);
     else fail(`save invUsed esperado ${before.invUsed}, recebido ${s.invUsed}`);
+
+    const goldBeforeVault = s.gold;
+    await page.evaluate(() => {
+      window.__UAIDZIN__.session.progressState.dungeonsUnlocked = ["dungeon-1"];
+      window.__UAIDZIN__.session.depositGoldToVault(10);
+    });
+    const midVault = await page.evaluate(() => ({
+      vault: window.__UAIDZIN__.session.accountVault.gold,
+      gold: window.__UAIDZIN__.session.inventory.gold,
+    }));
+    if (midVault.vault >= 10 && midVault.gold === goldBeforeVault - 10) {
+      ok("ouro saiu do inventário e entrou no cofre");
+    } else {
+      fail(`cofre em memória: vault=${midVault.vault} gold=${midVault.gold}`);
+    }
+    await page.evaluate(async () => {
+      await window.__UAIDZIN__.persistAccountVault();
+      await window.__UAIDZIN__.persistSave();
+    });
+    await page.waitForTimeout(400);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitApi();
+    await page.waitForTimeout(800);
+    const progressKept = await page.evaluate(
+      () => window.__UAIDZIN__.session.progressState.dungeonsUnlocked.includes("dungeon-1"),
+    );
+    const vaultGold = await page.evaluate(() => window.__UAIDZIN__.session.accountVault.gold);
+    const sessionUser = await page.evaluate(() => window.__UAIDZIN__.sessionUser());
+    if (progressKept) ok("progress sobrevive ao save");
+    else fail("progress.dungeonsUnlocked foi apagado no save");
+    if (sessionUser !== "admin") fail(`sessão após reload: esperado admin, recebido ${sessionUser}`);
+    else if (vaultGold >= 10) ok("cofre persistiu após reload");
+    else fail(`cofre após reload: vault=${vaultGold}, esperado >= 10`);
+
+    const uidsBefore = await page.evaluate(() => {
+      const sess = window.__UAIDZIN__.session;
+      const eq = sess.equipment.snapshotEquipped();
+      return [
+        ...sess.inventory.items.map((i) => i.uid),
+        ...Object.values(eq).map((i) => i && i.uid).filter(Boolean),
+        ...sess.accountVault.items.map((i) => i.uid),
+      ];
+    });
+    await page.evaluate(() => {
+      window.__UAIDZIN__.session.economy.grantKillLoot("fixed", true);
+    });
+    const uidsAfter = await page.evaluate(() => {
+      const sess = window.__UAIDZIN__.session;
+      const eq = sess.equipment.snapshotEquipped();
+      return [
+        ...sess.inventory.items.map((i) => i.uid),
+        ...Object.values(eq).map((i) => i && i.uid).filter(Boolean),
+        ...sess.accountVault.items.map((i) => i.uid),
+      ];
+    });
+    const unique = new Set(uidsAfter).size === uidsAfter.length;
+    const grew = uidsAfter.length >= uidsBefore.length;
+    if (unique && grew) ok("uid de item sem colisão após reload");
+    else fail(`uid duplicado ou drop falhou before=${uidsBefore.length} after=${uidsAfter.length} unique=${new Set(uidsAfter).size}`);
+
+    await page.evaluate(() => {
+      const cur = window.__UAIDZIN__.session.progression.state.level;
+      if (cur < 160) window.__UAIDZIN__.debugAddLevels(160 - cur);
+    });
+    await page.evaluate(() => window.__UAIDZIN__.enterDungeonById("dungeon-4"));
+    try {
+      s = await waitSnap((x) => x.mode === "DUNGEON", 8000, 'mode "DUNGEON" na D4');
+      ok("nível 160 entrou na D4");
+    } catch (err) {
+      fail(`D4: esperado mode "DUNGEON", ${err.message}`);
+    }
+
+    await page.evaluate(() => {
+      const sess = window.__UAIDZIN__.session;
+      sess.deathEmitCount = 0;
+      sess.character.hp = 1;
+      sess.character.isDead = false;
+      window.__UAIDZIN__.setTimeScale(10);
+      for (const e of sess.enemies.enemies) {
+        if (!e.alive) continue;
+        e.x = sess.player.x;
+        e.z = sess.player.z;
+        e.attackCooldown = 0;
+      }
+    });
+    await page.waitForTimeout(1500);
+    const deaths = await page.evaluate(() => window.__UAIDZIN__.session.deathEmitCount);
+    if (deaths === 1) ok("character:death emitido uma vez");
+    else fail(`character:death esperado 1, recebido ${deaths}`);
   } finally {
     await browser.close();
     killServer();
