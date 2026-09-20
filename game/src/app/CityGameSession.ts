@@ -678,10 +678,10 @@ export class CityGameSession {
     return "Arena 3 / 3";
   }
 
-  private grantKillXp(enemyId: string, archetype: string): void {
-    const isBoss = enemyId.includes("boss");
-    const key = isBoss ? "boss" : (archetype as "fixed" | "chaser" | "ranged");
-    const xp = DUNGEON_BALANCE.xpPerKill[isBoss ? "boss" : archetype as "fixed" | "chaser" | "ranged"] ?? 8;
+  private grantKillXp(enemy: { id: string; archetype: string; isBoss: boolean }): void {
+    const isBoss = enemy.isBoss;
+    const key = isBoss ? "boss" : (enemy.archetype as "fixed" | "chaser" | "ranged");
+    const xp = DUNGEON_BALANCE.xpPerKill[isBoss ? "boss" : enemy.archetype as "fixed" | "chaser" | "ranged"] ?? 8;
     this.sessionXp += xp;
     const { levelsGained } = this.progression.addXp(xp);
     this.dungeonRun.addKill(xp);
@@ -769,7 +769,7 @@ export class CityGameSession {
           this.effects.playHitFlash(mesh);
           this.effects.spawnDamageNumber(enemy.x, 1.4, enemy.z, dmg, "enemy");
           if (killed) {
-            this.grantKillXp(enemy.id, enemy.archetype);
+            this.grantKillXp(enemy);
             this.effects.playDeath(mesh);
             this.effects.hideHpBar(enemy.id);
             this.effects.spawnDamageNumber(enemy.x, 1.7, enemy.z, 0, "kill");
@@ -812,7 +812,7 @@ export class CityGameSession {
         this.effects.playHitFlash(mesh);
         this.effects.spawnDamageNumber(enemy.x, 1.6, enemy.z, cast.damage, "skill");
         if (killed) {
-          this.grantKillXp(enemy.id, enemy.archetype);
+          this.grantKillXp(enemy);
           this.effects.playDeath(mesh);
           this.effects.hideHpBar(enemy.id);
           this.effects.spawnDamageNumber(enemy.x, 1.8, enemy.z, 0, "kill");

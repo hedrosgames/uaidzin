@@ -18,6 +18,7 @@ export interface EnemyInit {
   homeX: number;
   homeZ: number;
   respawnSeconds: number;
+  isBoss?: boolean;
 }
 
 export class EnemyModel {
@@ -36,6 +37,7 @@ export class EnemyModel {
   readonly retreatIfCloserThan: number;
   readonly leashRadius: number;
   readonly respawnSeconds: number;
+  readonly isBoss: boolean;
 
   x: number;
   z: number;
@@ -64,6 +66,7 @@ export class EnemyModel {
     this.retreatIfCloserThan = init.retreatIfCloserThan ?? 2;
     this.leashRadius = init.leashRadius ?? 99;
     this.respawnSeconds = init.respawnSeconds;
+    this.isBoss = !!init.isBoss;
   }
 
   applyDamage(amount: number): boolean {

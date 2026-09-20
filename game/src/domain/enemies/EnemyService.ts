@@ -65,6 +65,7 @@ export class EnemyService {
           : undefined,
       leashRadius: "leashRadius" in s ? (s as { leashRadius?: number }).leashRadius : undefined,
       respawnSeconds: sp.isBoss ? DUNGEON_BALANCE.boss.respawnSeconds : respawnDelay(this.random),
+      isBoss: !!sp.isBoss,
     });
   }
 
