@@ -345,6 +345,7 @@ export class CityGameSession {
     const gate = this.dungeonEntryGate(dungeonId);
     if (!gate.ok) return { ok: false, reason: gate.reason };
     this.activeDungeonId = gate.def.id;
+    this.economy.setDungeonIndexFromId(gate.def.id);
     this.enterWorld("dungeon-test");
     return { ok: true };
   }
@@ -696,6 +697,7 @@ export class CityGameSession {
     this.sessionXp += xp;
     const { levelsGained } = this.progression.addXp(xp);
     this.dungeonRun.addKill(xp);
+    this.economy.lootLevel = this.character.level;
     const loot = this.economy.grantKillLoot(key, isBoss);
     if (loot.lostItem) {
       this.lootToast = "Inventário cheio — item perdido";

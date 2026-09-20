@@ -6,6 +6,7 @@ export const ECONOMY_BALANCE = {
   goldCap: 2_000_000_000,
   goldPerKill: { fixed: 3, chaser: 4, ranged: 4, boss: 25 },
   equipDropChance: 0.22,
+  bossEquipDropChance: 0.4,
   materialDropChance: 0.18,
   oriShare: 0.75,
   oriUntilDungeon: 4,

@@ -5,6 +5,7 @@ import { createEquipDrop, createMaterial } from "../items/ItemFactory";
 
 export class EconomyService {
   dungeonIndex = 1;
+  lootLevel = 1;
 
   constructor(
     private readonly inventory: InventoryService,
@@ -28,8 +29,9 @@ export class EconomyService {
     let dropped: string | null = null;
     let lost = false;
     const dropRoll = this.random();
-    if (dropRoll < ECONOMY_BALANCE.equipDropChance || isBoss) {
-      const item = createEquipDrop(1, this.random);
+    const equipChance = isBoss ? ECONOMY_BALANCE.bossEquipDropChance : ECONOMY_BALANCE.equipDropChance;
+    if (dropRoll < equipChance) {
+      const item = createEquipDrop(this.lootLevel, this.random);
       const ok = this.inventory.add(item);
       if (ok) dropped = item.name;
       else {
