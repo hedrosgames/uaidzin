@@ -432,6 +432,51 @@ async function main() {
     const deaths = await page.evaluate(() => window.__UAIDZIN__.session.deathEmitCount);
     if (deaths === 1) ok("character:death emitido uma vez");
     else fail(`character:death esperado 1, recebido ${deaths}`);
+
+    await page.evaluate(async () => {
+      await window.__UAIDZIN__.persistSave();
+    });
+    await page.waitForTimeout(400);
+    const profileId = await page.evaluate(() => window.__UAIDZIN__.session.saveService.getProfileId());
+    const corruptMark = "SMOKE_CORRUPT_BLOB";
+    await page.evaluate(async ({ id, mark }) => {
+      const lsKey = `uaidzin.save.${id}`;
+      const lsPrev = `uaidzin.save.${id}:prev`;
+      localStorage.setItem(lsKey, mark);
+      localStorage.setItem(lsPrev, mark);
+      await new Promise((resolve) => {
+        const req = indexedDB.open("uaidzin", 1);
+        req.onerror = () => resolve();
+        req.onsuccess = () => {
+          try {
+            const db = req.result;
+            const tx = db.transaction("save", "readwrite");
+            const store = tx.objectStore("save");
+            store.put(mark, `profile:${id}`);
+            store.put(mark, `profile:${id}:prev`);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+          } catch {
+            resolve();
+          }
+        };
+      });
+    }, { id: profileId, mark: corruptMark });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await waitApi();
+    await page.waitForTimeout(800);
+    const flag = await page.evaluate(() => window.__UAIDZIN__.session.saveUnreadable);
+    if (flag) ok("save ilegível sinalizado");
+    else fail("save ilegível não foi sinalizado após corromper o blob");
+    await page.evaluate(async () => {
+      await window.__UAIDZIN__.persistSave();
+    });
+    await page.waitForTimeout(400);
+    const blobAfter = await page.evaluate(
+      () => localStorage.getItem(`uaidzin.save.${window.__UAIDZIN__.session.saveService.getProfileId()}`),
+    );
+    if (blobAfter === corruptMark) ok("blob corrompido não foi sobrescrito");
+    else fail(`blob foi substituído após save ilegível (prefixo=${String(blobAfter).slice(0, 40)})`);
   } finally {
     await browser.close();
     killServer();
