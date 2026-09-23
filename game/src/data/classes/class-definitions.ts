@@ -1,3 +1,4 @@
+import { FM_CONTROLE, FM_FISICA, FM_MAGIA } from "./skills/fm";
 import { TK_CONTROLE, TK_FISICA, TK_MAGIA } from "./skills/tk";
 import { defineSkill, type SkillDef } from "./skill-types";
 
@@ -58,11 +59,15 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     name: "Frost Maiden",
     primary: "INT",
     treeOrder: ["fisica", "controle", "magia"],
-    treeLabels: genericLabels,
+    treeLabels: {
+      fisica: "Física",
+      controle: "White Mage",
+      magia: "Maga negra",
+    },
     trees: {
-      controle: tree("fm_ctrl", ["Laço", "Silêncio", "Rede", "Cadeia", "Prisão", "Véu", "Estase", "Domínio"]),
-      magia: tree("fm_mag", ["Faísca", "Dardo", "Bola", "Lança", "Tempestade", "Cometa", "Vórtice", "Ruína"]),
-      fisica: tree("fm_fis", ["Bastão", "Toque", "Golpe Arcano", "Lâmina", "Impacto", "Ruptura", "Eco", "Colapso"]),
+      controle: FM_CONTROLE,
+      magia: FM_MAGIA,
+      fisica: FM_FISICA,
     },
   },
   BM: {
