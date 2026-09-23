@@ -1,0 +1,37 @@
+{
+  "human": [
+    "attack.glb",
+    "attack_1h.glb",
+    "attack_2h.glb",
+    "attack_bow.glb",
+    "attack_greatsword.glb",
+    "attack_kick.glb",
+    "attack_swipe.glb",
+    "attack_unarmed.glb",
+    "block.glb",
+    "cast.glb",
+    "cast_fire.glb",
+    "cast_heal.glb",
+    "hit_gut.glb",
+    "hit_right.glb",
+    "idle_2h.glb",
+    "idle_greatsword.glb",
+    "run.glb"
+  ],
+  "mutant": [
+    "attack.glb",
+    "attack_punch.glb",
+    "death.glb",
+    "idle.glb",
+    "roar.glb",
+    "run.glb"
+  ],
+  "shared": [
+    "attack.glb",
+    "cast.glb",
+    "death.glb",
+    "hit_gut.glb",
+    "hit_right.glb",
+    "run.glb"
+  ]
+}
