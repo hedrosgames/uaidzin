@@ -63,6 +63,8 @@ export class SceneRenderer {
   private readonly skyDome: Mesh;
 
   constructor(options: SceneRendererOptions) {
+    this.scene.name = "UAIDZIN_Scene";
+    this.worldRoot.name = "WorldRoot";
     this.scene.background = new Color(FOG_COLOR);
     this.scene.fog = new FogExp2(FOG_COLOR, FOG_DENSITY);
     this.scene.add(this.worldRoot);
@@ -116,6 +118,10 @@ export class SceneRenderer {
 
   async loadPlayerModel(classId = "TK"): Promise<void> {
     await this.playerView.load(classId);
+  }
+
+  getEffectComposer(): EffectComposer {
+    return this.composer;
   }
 
   private setupLights(): DirectionalLight {

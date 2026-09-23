@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "threejs-devtools-mcp": {
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd \"${workspaceFolder}/game\" && DEV_PORT=5173 BROWSER=none npx -y threejs-devtools-mcp@0.4.1"
+      ]
+    }
+  }
+}

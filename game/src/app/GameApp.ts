@@ -575,6 +575,9 @@ export class GameApp {
   }
 
   dispose(): void {
+    const stopDevTools = (window as Window & { __UAIDZIN_THREE_DEVTOOLS_STOP__?: () => void })
+      .__UAIDZIN_THREE_DEVTOOLS_STOP__;
+    stopDevTools?.();
     this.loop.stop();
     this.resizeObserver?.disconnect();
     if (this.autosaveTimer !== null) {

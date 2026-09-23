@@ -93,6 +93,7 @@ export class PlayerView {
   private readonly weaponRig = new WeaponRig();
   private weaponSet: WeaponSetId | null = null;
   private attackClip: HumanAttackClip = "attack";
+  private attackBindGen = 0;
   ready = false;
 
   constructor() {
@@ -131,7 +132,11 @@ export class PlayerView {
     }
 
     this.attackClip = attackClipForWeapon(this.weaponSet ?? CLASS_WEAPON_SET[id]);
-    await this.bindAttackClip(this.attackClip);
+    await this.bindAttackClip(this.attackClip).catch(async () => {
+      if (this.attackClip === "attack") return;
+      this.attackClip = "attack";
+      await this.bindAttackClip("attack");
+    });
 
     const entries = Object.entries(FIXED_ANIM_URLS) as Array<
       [Exclude<PlayerAnim, "idle" | "attack">, string]
@@ -195,6 +200,10 @@ export class PlayerView {
 
   getClassId(): PlayerClassId {
     return this.classId;
+  }
+
+  getAnimationMixer(): AnimationMixer | null {
+    return this.mixer;
   }
 
   setPose(x: number, z: number, facing: number, moving: boolean): void {
@@ -384,16 +393,20 @@ export class PlayerView {
 
   private async bindAttackClip(clipId: HumanAttackClip): Promise<void> {
     if (!this.mixer) return;
+    const gen = ++this.attackBindGen;
+    const gltf = await this.loader.loadAsync(humanAnimUrl(clipId));
+    if (!this.mixer || gen !== this.attackBindGen) {
+      this.disposeObject(gltf.scene);
+      return;
+    }
+    const clip = gltf.animations[0] ?? null;
+    this.disposeObject(gltf.scene);
+    if (!clip) return;
     const prev = this.actions.get("attack");
     if (prev) {
       prev.stop();
       this.mixer.uncacheClip(prev.getClip());
     }
-    this.actions.delete("attack");
-    const gltf = await this.loader.loadAsync(humanAnimUrl(clipId));
-    const clip = gltf.animations[0] ?? null;
-    this.disposeObject(gltf.scene);
-    if (!clip) return;
     clip.name = "attack";
     this.actions.set("attack", this.mixer.clipAction(clip));
     if (this.current === "attack") this.play("attack", false);

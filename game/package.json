@@ -10,13 +10,16 @@
     "typecheck": "tsc --noEmit",
     "bot": "node scripts/bot-play.mjs",
     "test:save": "node scripts/save-harness.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "devtools:mcp": "DEV_PORT=5173 BROWSER=none npx -y threejs-devtools-mcp@0.4.1",
+    "devtools:verify": "node scripts/threejs-devtools-verify.mjs"
   },
   "dependencies": {
     "three": "^0.170.0",
     "three.quarks": "^0.16.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0",
     "@types/three": "^0.170.0",
     "playwright": "^1.63.0",
     "typescript": "^5.6.3",

@@ -86,7 +86,8 @@ export default defineConfig({
       ignored: [
         "**/scripts/_tk-work/**",
         "**/scripts/_char-work/**",
-        "**/public/models/**",
+        "**/public/models/player/**",
+        "**/public/models/city/**",
       ],
     },
   },
