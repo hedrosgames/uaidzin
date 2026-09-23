@@ -1003,6 +1003,24 @@ textarea,
   text-transform: capitalize;
 }
 
+.wyd-loadout {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 8px 0 4px;
+}
+
+.wyd-slot {
+  border: 1px solid var(--iron);
+  background: var(--bg0);
+  padding: 6px 4px;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
 .wyd-skill-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

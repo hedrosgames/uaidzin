@@ -67,6 +67,11 @@ export class CharacterModel {
     return true;
   }
 
+  heal(amount: number, cap = this.maxHp): void {
+    if (this.isDead || amount <= 0) return;
+    this.hp = Math.min(cap, this.hp + amount);
+  }
+
   healFull(): void {
     this.hp = this.maxHp;
     this.mp = this.maxMp;

@@ -1,6 +1,8 @@
 import type { ItemInstance } from "../domain/items/ItemModel";
 import type { EquipSlot } from "../domain/items/EquipmentService";
 import type { ActiveBuff } from "../domain/character/BuffService";
+import { CLASSES } from "../data/classes/class-definitions";
+import { remapSkillId } from "../data/classes/skill-legacy";
 import {
   SAVE_VERSION,
   emptyBags,
@@ -56,6 +58,9 @@ function asBuffs(raw: unknown): ActiveBuff[] {
       remainingSec: Math.max(0, Number(b.remainingSec) || 0),
       stacks: Math.max(1, Math.floor(Number(b.stacks) || 1)),
       magnitude: b.magnitude,
+      stat: b.stat,
+      harmful: b.harmful,
+      nextHitMul: b.nextHitMul,
     });
   }
   return out;
@@ -222,5 +227,21 @@ export function migrateSave(raw: unknown, profileIdHint = "default"): SavePayloa
     current = { ...current, saveVersion: current.saveVersion + 1 };
   }
   current.saveVersion = SAVE_VERSION;
+  void CLASSES;
+  remapLearnedSkills(current);
   return current;
+}
+
+function remapLearnedSkills(payload: SavePayload): void {
+  const levels: SavePayload["skills"]["levels"] = {};
+  for (const [id, row] of Object.entries(payload.skills.levels || {})) {
+    const next = remapSkillId(id);
+    const level = Number(row?.level) || 0;
+    if (!levels[next] || level > levels[next].level) levels[next] = { level };
+  }
+  payload.skills.levels = levels;
+  payload.skillLoadout.slots = (payload.skillLoadout.slots || []).map((slot) => ({
+    ...slot,
+    skillId: remapSkillId(slot.skillId),
+  }));
 }

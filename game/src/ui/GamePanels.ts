@@ -63,6 +63,9 @@ export class GamePanels {
         s.setUiToast(`Skill aprendida`, "skill");
       }
     }
+    if (action === "equipSkill") s.equipSkill(a);
+    if (action === "toggleAuto") s.toggleSkillAuto(Number(a));
+    if (action === "clearSlot") s.clearSkillSlot(Number(a));
     if (action === "spec") s.skillTree.spendSpec(a as never, 1);
     if (action === "setClass") {
       s.skillTree.setClass(a as ClassId);
@@ -146,24 +149,41 @@ export class GamePanels {
               `<button type="button" class="btn ${id === st.classId ? "primary" : ""}" data-action="setClass" data-arg="${id}">${CLASSES[id].id}</button>`,
           )
           .join("")}</div>`;
-      const treeLabel: Record<string, string> = {
-        controle: "Controle",
-        magia: "Magia",
-        fisica: "Física",
-      };
-      for (const tree of ["controle", "magia", "fisica"] as const) {
-        html += `<div class="wyd-sec">${treeLabel[tree]} <button type="button" class="btn tiny" data-action="spec" data-arg="${tree}">+spec ${st.specialization[tree]}</button></div><div class="wyd-skill-grid">`;
+      const klass = CLASSES[st.classId];
+      const slots = s.skillLoadout.slots;
+      html += `<div class="wyd-loadout">`;
+      for (let i = 0; i < 4; i++) {
+        const slot = slots[i];
+        html += `<div class="wyd-slot">
+          <div class="wyd-skill-name">${slot ? slot.skill.name : "—"}</div>
+          ${
+            slot
+              ? `<button type="button" class="btn tiny" data-action="toggleAuto" data-arg="${i}">${slot.auto ? "Auto" : "Manual"}</button>
+                 <button type="button" class="btn tiny" data-action="clearSlot" data-arg="${i}">Tirar</button>`
+              : ""
+          }
+        </div>`;
+      }
+      html += `</div>`;
+      for (const tree of klass.treeOrder) {
+        html += `<div class="wyd-sec">${klass.treeLabels[tree]} <button type="button" class="btn tiny" data-action="spec" data-arg="${tree}">+spec ${st.specialization[tree]}</button></div><div class="wyd-skill-grid">`;
         s.skillTree.getTree(tree).forEach((sk, i) => {
           const lvl = s.skillTree.getSkillLevel(sk.id);
           const locked = i === 7 && st.eighthTree && st.eighthTree !== tree;
           const owned = lvl > 0;
-          html += `<div class="wyd-skill ${owned ? "owned" : ""} ${locked ? "locked" : ""}" title="${sk.name}">
+          const equipped = slots.some((slot) => slot.skill.id === sk.id);
+          html += `<div class="wyd-skill ${owned ? "owned" : ""} ${locked ? "locked" : ""}">
             <div class="wyd-skill-icon">${owned ? lvl : ""}</div>
             <div class="wyd-skill-name">${sk.name}</div>
             ${
               locked
                 ? `<em>bloq.</em>`
                 : `<button type="button" class="btn tiny" data-action="learn" data-arg="${i}" data-arg2="${tree}">+</button>`
+            }
+            ${
+              owned && sk.kind !== "passive"
+                ? `<button type="button" class="btn tiny" data-action="equipSkill" data-arg="${sk.id}">${equipped ? "No elo" : "Elo"}</button>`
+                : ""
             }
           </div>`;
         });

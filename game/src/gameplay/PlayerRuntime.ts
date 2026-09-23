@@ -17,6 +17,7 @@ export class PlayerRuntime {
   moveTarget: { x: number; z: number } | null = null;
   facing = 0;
   isMoving = false;
+  speedScale = 1;
 
   constructor(options: PlayerRuntimeOptions = {}) {
     this.speed = options.speed ?? COMBAT_BALANCE.player.speed;
@@ -86,7 +87,7 @@ export class PlayerRuntime {
     if (len > 0.0001) {
       const nx = dirX / len;
       const nz = dirZ / len;
-      const step = this.speed * dt;
+      const step = this.speed * Math.max(0.35, this.speedScale) * dt;
       const full = this.clampBounds(this.x + nx * step, this.z + nz * step, bounds);
       let next = { x: this.x, z: this.z };
       if (this.isFree(full.x, full.z, collision)) {

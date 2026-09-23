@@ -46,6 +46,13 @@ export class EnemyModel {
   attackCooldown = 0;
   respawnTimer = 0;
   facing = 0;
+  slowTimer = 0;
+  slowFactor = 1;
+  stunTimer = 0;
+  dotDps = 0;
+  dotTimer = 0;
+  antiHealTimer = 0;
+  tauntTimer = 0;
 
   constructor(init: EnemyInit) {
     this.id = init.id;
@@ -86,5 +93,66 @@ export class EnemyModel {
     this.x = this.homeX;
     this.z = this.homeZ;
     this.attackCooldown = COMBAT_BALANCE.enemy.respawnAttackCooldown;
+    this.clearStatus();
+  }
+
+  clearStatus(): void {
+    this.slowTimer = 0;
+    this.slowFactor = 1;
+    this.stunTimer = 0;
+    this.dotDps = 0;
+    this.dotTimer = 0;
+    this.antiHealTimer = 0;
+    this.tauntTimer = 0;
+  }
+
+  tickStatus(dt: number): number {
+    this.slowTimer = Math.max(0, this.slowTimer - dt);
+    this.stunTimer = Math.max(0, this.stunTimer - dt);
+    this.tauntTimer = Math.max(0, this.tauntTimer - dt);
+    this.antiHealTimer = Math.max(0, this.antiHealTimer - dt);
+    if (this.slowTimer <= 0) this.slowFactor = 1;
+    if (this.dotTimer <= 0 || !this.alive) return 0;
+    this.dotTimer -= dt;
+    const damage = this.dotDps * dt;
+    if (this.dotTimer <= 0) this.dotDps = 0;
+    return damage;
+  }
+
+  applySkillStatus(
+    effect: {
+      slow?: number;
+      slowSec?: number;
+      stunSec?: number;
+      stunChance?: number;
+      antiHealSec?: number;
+      tauntSec?: number;
+      knock?: number;
+    },
+    dotDps: number,
+    dotSec: number | undefined,
+    fromX: number,
+    fromZ: number,
+  ): void {
+    if (effect.slowSec) {
+      this.slowTimer = Math.max(this.slowTimer, effect.slowSec);
+      this.slowFactor = effect.slow ?? 0.55;
+    }
+    if (effect.stunSec && (effect.stunChance == null || Math.random() < effect.stunChance)) {
+      this.stunTimer = Math.max(this.stunTimer, effect.stunSec);
+    }
+    if (dotSec && dotDps > 0) {
+      this.dotDps = Math.max(this.dotDps, dotDps);
+      this.dotTimer = Math.max(this.dotTimer, dotSec);
+    }
+    if (effect.antiHealSec) this.antiHealTimer = Math.max(this.antiHealTimer, effect.antiHealSec);
+    if (effect.tauntSec) this.tauntTimer = Math.max(this.tauntTimer, effect.tauntSec);
+    if (effect.knock) {
+      const dx = this.x - fromX;
+      const dz = this.z - fromZ;
+      const len = Math.hypot(dx, dz) || 1;
+      this.x += (dx / len) * effect.knock;
+      this.z += (dz / len) * effect.knock;
+    }
   }
 }

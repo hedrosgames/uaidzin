@@ -20,6 +20,21 @@ export class EnemyAI {
     const dist = Math.hypot(dx, dz) || 0.0001;
     const nx = dx / dist;
     const nz = dz / dist;
+    if (enemy.stunTimer > 0) {
+      enemy.facing = Math.atan2(dx, dz);
+      return { wantsAttack: false };
+    }
+    const slow = enemy.slowTimer > 0 ? enemy.slowFactor : 1;
+
+    if (enemy.tauntTimer > 0) {
+      const step = Math.max(enemy.speed, 2.4) * slow * ctx.dt;
+      if (dist > enemy.minApproach) {
+        enemy.x += nx * step;
+        enemy.z += nz * step;
+      }
+      enemy.facing = Math.atan2(dx, dz);
+      return { wantsAttack: ctx.playerAlive && dist <= enemy.range && enemy.attackCooldown <= 0 };
+    }
 
     if (enemy.archetype === "fixed") {
 
@@ -34,8 +49,8 @@ export class EnemyAI {
 
     if (enemy.archetype === "chaser") {
       if (dist > enemy.minApproach) {
-        enemy.x += nx * enemy.speed * ctx.dt;
-        enemy.z += nz * enemy.speed * ctx.dt;
+        enemy.x += nx * enemy.speed * slow * ctx.dt;
+        enemy.z += nz * enemy.speed * slow * ctx.dt;
       }
       enemy.facing = Math.atan2(dx, dz);
       return { wantsAttack: ctx.playerAlive && dist <= enemy.range && enemy.attackCooldown <= 0 };
@@ -43,11 +58,11 @@ export class EnemyAI {
 
 
     if (dist < enemy.retreatIfCloserThan) {
-      enemy.x -= nx * enemy.speed * ctx.dt;
-      enemy.z -= nz * enemy.speed * ctx.dt;
+      enemy.x -= nx * enemy.speed * slow * ctx.dt;
+      enemy.z -= nz * enemy.speed * slow * ctx.dt;
     } else if (dist > enemy.preferred + 0.4) {
-      enemy.x += nx * enemy.speed * COMBAT_BALANCE.enemy.approachSpeedFactor * ctx.dt;
-      enemy.z += nz * enemy.speed * COMBAT_BALANCE.enemy.approachSpeedFactor * ctx.dt;
+      enemy.x += nx * enemy.speed * slow * COMBAT_BALANCE.enemy.approachSpeedFactor * ctx.dt;
+      enemy.z += nz * enemy.speed * slow * COMBAT_BALANCE.enemy.approachSpeedFactor * ctx.dt;
     }
     enemy.facing = Math.atan2(dx, dz);
     return { wantsAttack: ctx.playerAlive && dist <= enemy.range && enemy.attackCooldown <= 0 };

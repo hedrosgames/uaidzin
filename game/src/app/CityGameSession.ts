@@ -7,8 +7,11 @@ import { dungeonsAllowedForLevel, findDungeon } from "../data/dungeons/dungeons-
 import type { EventBus } from "../core/events/EventBus";
 import { CharacterModel } from "../domain/character/CharacterModel";
 import { AttackController } from "../domain/combat/AttackController";
-import { SkillController } from "../domain/combat/SkillController";
+import { learnedPassives, SkillController } from "../domain/combat/SkillController";
 import { SkillLoadout } from "../domain/combat/SkillLoadout";
+import { buildCombatMods, emptyMods, type CombatMods } from "../domain/combat/CombatMods";
+import { FormState } from "../domain/combat/FormState";
+import { SummonRuntime } from "../domain/combat/SummonRuntime";
 import { calculateDamage } from "../domain/combat/DamageCalculator";
 import { rollHitSimple } from "../domain/combat/HitChanceCalculator";
 import { EnemyAI } from "../domain/enemies/EnemyAI";
@@ -40,6 +43,7 @@ import { EnemyRuntimeView } from "../presentation/enemies/EnemyRuntimeView";
 import { EffectManager } from "../presentation/effects/EffectManager";
 import { GameCamera } from "../presentation/camera/GameCamera";
 import { SceneRenderer } from "../presentation/rendering/SceneRenderer";
+import { SummonView } from "../presentation/combat/SummonView";
 import { InteractionPanel } from "../ui/InteractionPanel";
 import { WorldManager, type WorldId } from "../world/WorldManager";
 import type { InteractableDef } from "../world/definitions";
@@ -118,7 +122,11 @@ export class CityGameSession {
   readonly enemies = new EnemyService();
   readonly attack = new AttackController();
   readonly skillLoadout = new SkillLoadout(this.skillTree);
-  readonly skill = new SkillController(this.skillLoadout, this.character);
+  readonly skill = new SkillController(this.skillLoadout, this.character, this.skillTree);
+  readonly form = new FormState();
+  readonly summons = new SummonRuntime();
+  private readonly summonView: SummonView;
+  private frameMods: CombatMods = emptyMods();
   readonly enemyAi = new EnemyAI();
   readonly dungeonRun = new DungeonRun();
 
@@ -167,6 +175,7 @@ export class CityGameSession {
       renderer.scene,
     );
     this.enemyView.bindEffects(this.effects);
+    this.summonView = new SummonView(renderer.scene);
   }
 
   async start(): Promise<void> {
@@ -286,6 +295,9 @@ export class CityGameSession {
 
     if (id === "city") {
       this.enemies.clear();
+      this.summons.clear();
+      this.summonView.clear();
+      this.form.clear();
       this.enemyView.hideAll();
       this.effects.hideAllHpBars();
       this.effects.setNpcNameplates(
@@ -565,6 +577,16 @@ export class CityGameSession {
 
     this.character.regenMp(4 * dt);
     this.buffs.tick(dt);
+    this.form.advance(dt);
+    this.frameMods = buildCombatMods(
+      this.buffs.active,
+      learnedPassives(this.skillTree),
+      this.renderer.playerView.getWeaponSet(),
+      this.form,
+    );
+    this.player.speedScale = 1 + this.frameMods.moveSpeed;
+    const hpCap = Math.round(this.character.maxHp * (1 + Math.max(0, this.frameMods.maxHpMul)));
+    if (this.character.hp > hpCap) this.character.hp = hpCap;
 
     const keysBlocked = this.panel.isOpen() || uiBlocked;
     const click = this.controller.consumeClickMove();
@@ -628,6 +650,7 @@ export class CityGameSession {
       this.player.facing,
       this.player.isMoving,
     );
+    this.renderer.playerView.root.scale.setScalar(this.form.active ? this.form.scale : 1);
     this.renderer.updatePlayer(dt);
     this.enemyView.sync(this.enemies);
     this.camera.follow(this.player.x, this.player.z, dt);
@@ -643,7 +666,7 @@ export class CityGameSession {
     this.renderer.render(this.camera.camera);
     const el = this.renderer.renderer.domElement;
     this.effects.update(dt, this.camera.camera, el.clientWidth || 1, el.clientHeight || 1);
-    const playerRatio = this.character.maxHp > 0 ? this.character.hp / this.character.maxHp : 0;
+    const playerRatio = hpCap > 0 ? Math.min(1, this.character.hp / hpCap) : 0;
     this.effects.spawnHpBar("player", this.player.x, 2.05, this.player.z, playerRatio);
 
     this.updateNearby(world.interactables);
@@ -655,7 +678,7 @@ export class CityGameSession {
     const p = this.progression.state;
     this.onHud({
       hp: this.character.hp,
-      maxHp: this.character.maxHp,
+      maxHp: Math.round(this.character.maxHp * (1 + Math.max(0, this.frameMods.maxHpMul))),
       mp: this.character.mp,
       maxMp: this.character.maxMp,
       skillCd: this.skill.getCooldownRatio(0),
@@ -733,6 +756,8 @@ export class CityGameSession {
   private finishDungeon(reason: "timer" | "death" | "exit"): void {
     const result = this.dungeonRun.end(reason);
     this.enemies.clear();
+    this.summons.clear();
+    this.summonView.clear();
     this.effects.hideAllHpBars();
     const mm = Math.floor(result.elapsedSeconds / 60);
     const ss = Math.floor(result.elapsedSeconds % 60);
@@ -766,7 +791,8 @@ export class CityGameSession {
     this.enemies.updateRespawns(dt);
     const targets = this.enemies.aliveTargets();
     const reach = this.weaponReach();
-    this.attack.setReach(reach.attackRange, reach.attackInterval);
+    const speedMul = Math.max(0.4, 1 + this.frameMods.attackSpeed);
+    this.attack.setReach(reach.attackRange, reach.attackInterval / speedMul);
 
     const hitTarget = this.attack.tick(
       dt,
@@ -786,7 +812,12 @@ export class CityGameSession {
         this.renderer.playerView.playAttack();
 
         if (enemy.alive && rollHitSimple()) {
-          const dmg = calculateDamage(this.character.attack, enemy.defense);
+          let atk = this.character.attack * this.frameMods.attackMul;
+          if (this.frameMods.stealth) atk *= this.buffs.consumeStealth();
+          let dmg = calculateDamage(atk, enemy.defense);
+          if (Math.random() < this.frameMods.critChance + (this.form.active ? this.frameMods.transformedCrit : 0)) {
+            dmg = Math.max(1, Math.round(dmg * 1.5));
+          }
           const killed = enemy.applyDamage(dmg);
           const mesh = this.enemyView.getMesh(enemy.id);
           this.effects.playHitFlash(mesh);
@@ -814,26 +845,41 @@ export class CityGameSession {
       targets,
       this.player.x,
       this.player.z,
-      this.character.attack,
+      this.player.facing,
       (id) => this.enemies.findById(id)?.defense ?? 0,
+      (id) => {
+        const enemy = this.enemies.findById(id);
+        return { hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 1 };
+      },
+      this.buffs,
+      this.form,
+      this.summons,
+      this.renderer.playerView.getWeaponSet(),
     );
     if (cast) {
-      const enemy = this.enemies.findById(cast.target.id);
-      if (enemy?.alive) {
-        this.renderer.playerView.playCast();
-        const killed = enemy.applyDamage(cast.damage);
+      const resolved = cast.resolved;
+      const aim = resolved.aim ?? { x: this.player.x, z: this.player.z + 1 };
+      this.renderer.playerView.playCast();
+      this.effects.playSkillVfx(
+        resolved.vfx,
+        new Vector3(this.player.x, 0, this.player.z),
+        new Vector3(aim.x, 0, aim.z),
+        resolved.color,
+      );
+      const hpCap = Math.round(this.character.maxHp * (1 + Math.max(0, this.frameMods.maxHpMul)));
+      this.character.heal(resolved.heal + resolved.lifesteal, hpCap);
+      const seen = new Set<string>();
+      for (const hit of resolved.hits) {
+        const enemy = this.enemies.findById(hit.id);
+        if (!enemy?.alive) continue;
+        const killed = enemy.applyDamage(hit.damage);
         const mesh = this.enemyView.getMesh(enemy.id);
-        const kind = cast.slot.tree === "magia" ? "bolt" : cast.slot.tree === "controle" ? "zone" : "burst";
-        const color = cast.slot.tree === "magia" ? 0xb07cff : cast.slot.tree === "controle" ? 0x6b7cff : 0xc45c26;
-        this.effects.playSkillVfx(
-          kind,
-          new Vector3(this.player.x, 0, this.player.z),
-          new Vector3(enemy.x, 0, enemy.z),
-          color,
-        );
-        if (kind === "burst") this.effects.playAttackPulse(mesh);
-        this.effects.playHitFlash(mesh);
-        this.effects.spawnDamageNumber(enemy.x, 1.6, enemy.z, cast.damage, "skill");
+        if (!seen.has(enemy.id)) {
+          seen.add(enemy.id);
+          this.effects.playHitFlash(mesh);
+          if (resolved.vfx === "burst") this.effects.playAttackPulse(mesh);
+        }
+        this.effects.spawnDamageNumber(enemy.x, 1.6, enemy.z, hit.damage, "skill");
         if (killed) {
           this.grantKillXp(enemy);
           this.effects.playDeath(mesh);
@@ -842,10 +888,68 @@ export class CityGameSession {
           this.effects.cameraPunch(0.08);
           this.hitStop = 0.04;
         }
-        this.bus.emit("skill:used", { skillId: cast.slot.skill.id, targetId: enemy.id });
-        this.bus.emit("combat:hit", { targetId: enemy.id, damage: cast.damage, killed });
+        this.bus.emit("combat:hit", { targetId: enemy.id, damage: hit.damage, killed });
+      }
+      for (const plan of resolved.enemyEffects) {
+        const enemy = this.enemies.findById(plan.id);
+        if (!enemy?.alive) continue;
+        enemy.applySkillStatus(plan.effect, plan.dotDps, plan.effect.dotSec, this.player.x, this.player.z);
+      }
+      this.bus.emit("skill:used", {
+        skillId: cast.slot.skill.id,
+        targetId: resolved.hits[0]?.id ?? "self",
+      });
+    }
+
+    for (const enemy of this.enemies.enemies) {
+      if (!enemy.alive) continue;
+      const dot = enemy.tickStatus(dt);
+      if (dot > 0) {
+        const killed = enemy.applyDamage(Math.max(1, Math.round(dot)));
+        this.effects.spawnDamageNumber(enemy.x, 1.5, enemy.z, Math.max(1, Math.round(dot)), "skill");
+        if (killed) {
+          this.grantKillXp(enemy);
+          this.effects.playDeath(this.enemyView.getMesh(enemy.id));
+          this.effects.hideHpBar(enemy.id);
+        }
       }
     }
+
+    const strikes = this.summons.tick(
+      dt,
+      this.enemies.enemies.map((enemy) => ({
+        id: enemy.id,
+        x: enemy.x,
+        z: enemy.z,
+        alive: enemy.alive,
+        defense: enemy.defense,
+      })),
+    );
+    for (const strike of strikes) {
+      const enemy = this.enemies.findById(strike.id);
+      if (!enemy?.alive) continue;
+      const killed = enemy.applyDamage(strike.damage);
+      this.effects.spawnDamageNumber(enemy.x, 1.5, enemy.z, strike.damage, "skill");
+      if (killed) {
+        this.grantKillXp(enemy);
+        this.effects.playDeath(this.enemyView.getMesh(enemy.id));
+        this.effects.hideHpBar(enemy.id);
+      }
+      if (strike.splash > 0) {
+        for (const other of this.enemies.enemies) {
+          if (!other.alive || other.id === enemy.id) continue;
+          if (Math.hypot(other.x - enemy.x, other.z - enemy.z) > strike.splash) continue;
+          const splashDmg = Math.max(1, Math.round(strike.damage * 0.55));
+          const splashKill = other.applyDamage(splashDmg);
+          if (splashKill) {
+            this.grantKillXp(other);
+            this.effects.playDeath(this.enemyView.getMesh(other.id));
+            this.effects.hideHpBar(other.id);
+          }
+        }
+      }
+    }
+    this.summonView.sync(this.summons.actors);
 
     for (const enemy of this.enemies.enemies) {
       if (!enemy.alive) continue;
@@ -859,33 +963,61 @@ export class CityGameSession {
       const { wantsAttack } = this.enemyAi.update(enemy, {
         playerX: this.player.x,
         playerZ: this.player.z,
-        playerAlive: !this.character.isDead,
+        playerAlive: !this.character.isDead && !this.frameMods.stealth,
         dt,
       });
-      if (wantsAttack) {
-        enemy.attackCooldown = enemy.attackInterval;
-        if (rollHitSimple()) {
-          const dmg = calculateDamage(enemy.attack, this.character.defense);
-          this.character.applyDamage(dmg);
-          this.effects.spawnDamageNumber(this.player.x, 1.8, this.player.z, dmg, "player");
-          this.effects.cameraPunch(0.1);
-          this.effects.playHitFlash(this.renderer.playerMesh);
-          this.renderer.playerView.playHit();
-          this.bus.emit("combat:damage", { amount: dmg, hp: this.character.hp });
-          if (this.character.isDead) {
-            this.renderer.playerView.playDeath();
-            this.onModeChange("DEAD");
-            this.deathReturnTimer = 1.2;
-            this.bus.emit("character:death", { at: Date.now() });
-            this.deathEmitCount += 1;
-            break;
-          }
-        } else {
-          this.effects.spawnDamageNumber(this.player.x, 1.8, this.player.z, 0, "miss");
-          this.bus.emit("combat:miss", { targetId: "player" });
-          this.lastCombatMissAt = Date.now();
+      if (!wantsAttack) continue;
+      const summon = this.summons.nearest(enemy.x, enemy.z, enemy.range);
+      const summonDist = summon ? Math.hypot(summon.x - enemy.x, summon.z - enemy.z) : Number.POSITIVE_INFINITY;
+      const playerDist = Math.hypot(this.player.x - enemy.x, this.player.z - enemy.z);
+      enemy.attackCooldown = enemy.attackInterval;
+      if (summon && summonDist <= playerDist) {
+        const incoming = calculateDamage(enemy.attack, summon.defense);
+        const split = this.summons.damage(summon.uid, incoming, this.frameMods.summonLink);
+        if (split.player > 0) this.hurtPlayer(split.player);
+        continue;
+      }
+      if (!rollHitSimple() || Math.random() < this.frameMods.evasion || this.frameMods.stealth) {
+        this.effects.spawnDamageNumber(this.player.x, 1.8, this.player.z, 0, "miss");
+        this.bus.emit("combat:miss", { targetId: "player" });
+        this.lastCombatMissAt = Date.now();
+        continue;
+      }
+      let dmg = calculateDamage(enemy.attack, this.character.defense * this.frameMods.defenseMul);
+      dmg = Math.max(1, Math.round(dmg * (1 - this.frameMods.damageReduction)));
+      if (enemy.archetype === "ranged") {
+        dmg = Math.max(1, Math.round(dmg * (1 - this.frameMods.magicResist)));
+      }
+      this.hurtPlayer(dmg);
+      if (this.frameMods.reflect > 0 && enemy.alive) {
+        const reflected = Math.max(1, Math.round(dmg * this.frameMods.reflect));
+        const killed = enemy.applyDamage(reflected);
+        if (killed) {
+          this.grantKillXp(enemy);
+          this.effects.playDeath(this.enemyView.getMesh(enemy.id));
+          this.effects.hideHpBar(enemy.id);
         }
       }
+    }
+  }
+
+  private hurtPlayer(amount: number): void {
+    if (this.character.isDead || amount <= 0) return;
+    this.character.applyDamage(amount);
+    this.effects.spawnDamageNumber(this.player.x, 1.8, this.player.z, amount, "player");
+    this.effects.cameraPunch(0.1);
+    this.effects.playHitFlash(this.renderer.playerMesh);
+    this.renderer.playerView.playHit();
+    this.bus.emit("combat:damage", { amount, hp: this.character.hp });
+    if (this.character.isDead) {
+      this.renderer.playerView.playDeath();
+      this.form.clear();
+      this.summons.clear();
+      this.summonView.clear();
+      this.onModeChange("DEAD");
+      this.deathReturnTimer = 1.2;
+      this.bus.emit("character:death", { at: Date.now() });
+      this.deathEmitCount += 1;
     }
   }
 
@@ -904,6 +1036,19 @@ export class CityGameSession {
 
   forceSkillSlot(index: number): void {
     this.pendingSkillSlot = index;
+  }
+
+  equipSkill(skillId: string): void {
+    if (!this.skillLoadout.assign(skillId)) return;
+    this.setUiToast("Skill no elo", "skill");
+  }
+
+  toggleSkillAuto(index: number): void {
+    this.skillLoadout.toggleAuto(index);
+  }
+
+  clearSkillSlot(index: number): void {
+    this.skillLoadout.clearSlot(index);
   }
 
   private groundPointFromNdc(ndcX: number, ndcY: number): { x: number; z: number } | null {

@@ -7,4 +7,12 @@ export const SKILL_BALANCE = {
   mpCost: 8,
   specializationCooldownPenalty: 0.25,
   skillLevelDamageBonus: 0.05,
+  healAutoHpRatio: 0.62,
+  critMultiplier: 1.5,
+  tierMp: [6, 8, 8, 10, 10, 12, 12, 18],
+  tierCd: [2.4, 3.2, 4, 4.6, 5.2, 6, 7, 12],
+  tierMult: [1.15, 1.3, 1.45, 1.6, 1.8, 2, 2.2, 2.8],
+  rangeMelee: 2.8,
+  rangeRanged: 8,
+  aoeRadius: 3.4,
 } as const;

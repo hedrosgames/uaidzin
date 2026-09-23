@@ -55,12 +55,11 @@ export class SkillLoadout {
 
     for (const tree of ["controle", "magia", "fisica"] as const) {
       const skills = CLASSES[st.classId].trees[tree];
-      skills.forEach((skill, index) => {
+      skills.forEach((skill) => {
         const level = this.tree.getSkillLevel(skill.id);
-        if (level <= 0) return;
-
-        void index;
-        const score = skill.damageMultiplier * level * (1 + st.specialization[tree] / 40);
+        if (level <= 0 || skill.kind === "passive") return;
+        const weight = skill.kind === "damage" ? skill.damageMultiplier : skill.kind === "heal" ? 1.2 : 0.85;
+        const score = weight * level * (1 + st.specialization[tree] / 40);
         candidates.push({ skill, tree, level, score });
       });
     }
@@ -110,6 +109,60 @@ export class SkillLoadout {
 
   resetCooldowns(): void {
     for (const s of this.slots) s.cd = 0;
+  }
+
+  assign(skillId: string): boolean {
+    const st = this.tree.state;
+    let found: { skill: SkillDef; tree: TreeId; level: number } | null = null;
+    for (const tree of ["controle", "magia", "fisica"] as const) {
+      const skill = CLASSES[st.classId].trees[tree].find((item) => item.id === skillId);
+      if (!skill || skill.kind === "passive") continue;
+      const level = this.tree.getSkillLevel(skill.id);
+      if (level <= 0) continue;
+      found = { skill, tree, level };
+      break;
+    }
+    if (!found) return false;
+    const picked = found;
+    if (this.slots.some((slot) => slot.skill.id === picked.skill.id)) return true;
+    const cdScale = specFactor(st.specialization[picked.tree]);
+    const slot: LoadoutSlot = {
+      skill: picked.skill,
+      tree: picked.tree,
+      level: picked.level,
+      cooldown: Math.max(0.4, picked.skill.cooldown * cdScale),
+      cd: 0,
+      auto: true,
+    };
+    if (this.slots.length < 4) this.slots.push(slot);
+    else this.slots[3] = slot;
+    this.preferred = this.slots.map((item) => ({
+      skillId: item.skill.id,
+      tree: item.tree,
+      auto: item.auto,
+    }));
+    return true;
+  }
+
+  clearSlot(index: number): void {
+    if (index < 0 || index >= this.slots.length) return;
+    this.slots.splice(index, 1);
+    this.preferred = this.slots.map((item) => ({
+      skillId: item.skill.id,
+      tree: item.tree,
+      auto: item.auto,
+    }));
+  }
+
+  toggleAuto(index: number): void {
+    const slot = this.slots[index];
+    if (!slot) return;
+    slot.auto = !slot.auto;
+    this.preferred = this.slots.map((item) => ({
+      skillId: item.skill.id,
+      tree: item.tree,
+      auto: item.auto,
+    }));
   }
 
   bestReadyAuto(): LoadoutSlot | null {
