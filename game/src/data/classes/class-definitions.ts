@@ -1,5 +1,6 @@
 import { BM_CONTROLE, BM_FISICA, BM_MAGIA } from "./skills/bm";
 import { FM_CONTROLE, FM_FISICA, FM_MAGIA } from "./skills/fm";
+import { HT_CONTROLE, HT_FISICA, HT_MAGIA } from "./skills/ht";
 import { TK_CONTROLE, TK_FISICA, TK_MAGIA } from "./skills/tk";
 import { defineSkill, type SkillDef } from "./skill-types";
 
@@ -16,27 +17,6 @@ export interface ClassDef {
   treeLabels: Record<TreeId, string>;
   trees: Record<TreeId, SkillDef[]>;
 }
-
-function tree(prefix: string, names: string[]): SkillDef[] {
-  return names.map((name, index) =>
-    defineSkill({
-      id: `${prefix}_${index + 1}`,
-      name,
-      index,
-      kind: "damage",
-      shape: "single",
-      range: 2.5 + (index % 3) * 0.3,
-      damageMultiplier: 1.2 + index * 0.15,
-      cooldown: 3 + (index % 4) * 0.5,
-    }),
-  );
-}
-
-const genericLabels: Record<TreeId, string> = {
-  controle: "Controle",
-  magia: "Magia",
-  fisica: "Física",
-};
 
 export const CLASSES: Record<ClassId, ClassDef> = {
   TK: {
@@ -92,11 +72,15 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     name: "Huntress",
     primary: "DES",
     treeOrder: ["fisica", "controle", "magia"],
-    treeLabels: genericLabels,
+    treeLabels: {
+      fisica: "Survival",
+      controle: "Capture",
+      magia: "Arcane Archer",
+    },
     trees: {
-      controle: tree("ht_ctrl", ["Armadilha", "Corda", "Rede", "Silêncio", "Marca", "Canto", "Trilha", "Cerco"]),
-      magia: tree("ht_mag", ["Farol", "Sinal", "Bênção", "Vento", "Lua", "Estrela", "Aurora", "Eclipse"]),
-      fisica: tree("ht_fis", ["Tiro", "Perfuração", "Rajada", "Flecha Dupla", "Chuva", "Precisão", "Salva", "Tempestade"]),
+      controle: HT_CONTROLE,
+      magia: HT_MAGIA,
+      fisica: HT_FISICA,
     },
   },
 };
