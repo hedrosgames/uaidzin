@@ -1,3 +1,4 @@
+import { BM_CONTROLE, BM_FISICA, BM_MAGIA } from "./skills/bm";
 import { FM_CONTROLE, FM_FISICA, FM_MAGIA } from "./skills/fm";
 import { TK_CONTROLE, TK_FISICA, TK_MAGIA } from "./skills/tk";
 import { defineSkill, type SkillDef } from "./skill-types";
@@ -75,11 +76,15 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     name: "Beast Master",
     primary: "INT",
     treeOrder: ["fisica", "magia", "controle"],
-    treeLabels: genericLabels,
+    treeLabels: {
+      fisica: "Nature",
+      magia: "Element",
+      controle: "Summon",
+    },
     trees: {
-      controle: tree("bm_ctrl", ["Chamado", "Ameaça", "Bando", "Cerco", "Ordem", "Domínio", "Legião", "Soberano"]),
-      magia: tree("bm_mag", ["Elo", "Eco", "Canal", "Pacto", "Vínculo", "Ritual", "Essência", "Absoluto"]),
-      fisica: tree("bm_fis", ["Presas", "Garra", "Mordida", "Investida", "Feras", "Matilha", "Caçada", "Apex"]),
+      controle: BM_CONTROLE,
+      magia: BM_MAGIA,
+      fisica: BM_FISICA,
     },
   },
   HT: {
