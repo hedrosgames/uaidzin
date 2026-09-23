@@ -15,6 +15,12 @@ import {
   Vector3,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import {
+  attackClipForWeapon,
+  humanAnimUrl,
+  humanCombatUrl,
+  type HumanAttackClip,
+} from "./PlayerAnimCatalog";
 import { ArmorAura } from "./ArmorAura";
 import { WeaponRig, type WeaponSetId } from "./WeaponRig";
 
@@ -45,13 +51,15 @@ const CLASS_WEAPON_SET: Record<PlayerClassId, WeaponSetId> = {
   HT: "dual-sword",
 };
 
-const ANIM_URLS: Record<Exclude<PlayerAnim, "idle">, string> = {
-  run: "/models/player/shared/anims/run.glb",
-  attack: "/models/player/shared/anims/attack.glb",
-  cast: "/models/player/shared/anims/cast.glb",
-  hit_gut: "/models/player/shared/anims/hit_gut.glb",
-  hit_right: "/models/player/shared/anims/hit_right.glb",
-  death: "/models/player/shared/anims/death.glb",
+const FIXED_ANIM_URLS: Record<
+  Exclude<PlayerAnim, "idle" | "attack">,
+  string
+> = {
+  run: humanCombatUrl("run"),
+  cast: humanCombatUrl("cast"),
+  hit_gut: humanCombatUrl("hit_gut"),
+  hit_right: humanCombatUrl("hit_right"),
+  death: humanCombatUrl("death"),
 };
 
 const ONE_SHOT: ReadonlySet<PlayerAnim> = new Set([
@@ -84,6 +92,7 @@ export class PlayerView {
   private readonly ghosts: Mesh[] = [];
   private readonly weaponRig = new WeaponRig();
   private weaponSet: WeaponSetId | null = null;
+  private attackClip: HumanAttackClip = "attack";
   ready = false;
 
   constructor() {
@@ -121,8 +130,11 @@ export class PlayerView {
       this.actions.set("idle", this.mixer.clipAction(idleClip));
     }
 
-    const entries = Object.entries(ANIM_URLS) as Array<
-      [Exclude<PlayerAnim, "idle">, string]
+    this.attackClip = attackClipForWeapon(this.weaponSet ?? CLASS_WEAPON_SET[id]);
+    await this.bindAttackClip(this.attackClip);
+
+    const entries = Object.entries(FIXED_ANIM_URLS) as Array<
+      [Exclude<PlayerAnim, "idle" | "attack">, string]
     >;
     const loaded = await Promise.all(
       entries.map(async ([name, url]) => {
@@ -152,6 +164,11 @@ export class PlayerView {
   async setWeaponSet(set: WeaponSetId): Promise<void> {
     this.weaponSet = set;
     if (!this.model) return;
+    const nextAttack = attackClipForWeapon(set);
+    if (nextAttack !== this.attackClip) {
+      this.attackClip = nextAttack;
+      await this.bindAttackClip(nextAttack);
+    }
     await this.weaponRig.equip(this.root, set);
     this.armorAura.apply(this.weaponRig.getVisualRoots());
   }
@@ -363,6 +380,23 @@ export class PlayerView {
         std.dispose();
       }
     });
+  }
+
+  private async bindAttackClip(clipId: HumanAttackClip): Promise<void> {
+    if (!this.mixer) return;
+    const prev = this.actions.get("attack");
+    if (prev) {
+      prev.stop();
+      this.mixer.uncacheClip(prev.getClip());
+    }
+    this.actions.delete("attack");
+    const gltf = await this.loader.loadAsync(humanAnimUrl(clipId));
+    const clip = gltf.animations[0] ?? null;
+    this.disposeObject(gltf.scene);
+    if (!clip) return;
+    clip.name = "attack";
+    this.actions.set("attack", this.mixer.clipAction(clip));
+    if (this.current === "attack") this.play("attack", false);
   }
 
   private playOneShot(name: PlayerAnim): void {

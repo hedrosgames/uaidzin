@@ -3,3 +3,8 @@ dist
 .DS_Store
 *.local
 .vite
+assets-source/mixamo-incoming/
+assets-source/_discarded/
+assets-source/organized/human/
+assets-source/organized/mutant/
+assets-source/organized/meshes/
