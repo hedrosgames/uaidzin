@@ -203,8 +203,13 @@ async function main() {
         dummy,
         sess.player.x,
         sess.player.z,
-        sess.character.attack,
+        sess.player.facing,
         () => 0,
+        () => ({ hp: 10, maxHp: 10 }),
+        sess.buffs,
+        sess.form,
+        sess.summons,
+        null,
       );
       return cast === null;
     });
