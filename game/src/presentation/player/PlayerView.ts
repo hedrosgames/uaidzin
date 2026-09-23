@@ -18,7 +18,6 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import {
   attackClipForWeapon,
   humanAnimUrl,
-  humanCombatUrl,
   type HumanAttackClip,
 } from "./PlayerAnimCatalog";
 import { ArmorAura } from "./ArmorAura";
@@ -51,15 +50,33 @@ const CLASS_WEAPON_SET: Record<PlayerClassId, WeaponSetId> = {
   HT: "dual-sword",
 };
 
-const FIXED_ANIM_URLS: Record<
-  Exclude<PlayerAnim, "idle" | "attack">,
-  string
-> = {
-  run: humanCombatUrl("run"),
-  cast: humanCombatUrl("cast"),
-  hit_gut: humanCombatUrl("hit_gut"),
-  hit_right: humanCombatUrl("hit_right"),
-  death: humanCombatUrl("death"),
+const WEAPON_ATTACK_ANIM: Record<WeaponSetId, Extract<PlayerAnim, "attack" | "cast">> = {
+  "dual-axe": "attack",
+  "axe-shield": "attack",
+  "sword-shield": "attack",
+  "dual-sword": "attack",
+  greatsword: "attack",
+  "dual-gloves": "attack",
+  "staff-shield": "cast",
+  greatstaff: "cast",
+  bow: "cast",
+};
+
+const ANIM_URLS: Record<Exclude<PlayerAnim, "idle">, string> = {
+  run: "/models/player/shared/anims/run.glb",
+  attack: "/models/player/shared/anims/attack.glb",
+  cast: "/models/player/shared/anims/cast.glb",
+  hit_gut: "/models/player/shared/anims/hit_gut.glb",
+  hit_right: "/models/player/shared/anims/hit_right.glb",
+  death: "/models/player/shared/anims/death.glb",
+};
+
+const FIXED_ANIM_URLS: Record<Exclude<PlayerAnim, "idle" | "attack">, string> = {
+  run: ANIM_URLS.run,
+  cast: ANIM_URLS.cast,
+  hit_gut: ANIM_URLS.hit_gut,
+  hit_right: ANIM_URLS.hit_right,
+  death: ANIM_URLS.death,
 };
 
 const ONE_SHOT: ReadonlySet<PlayerAnim> = new Set([
@@ -208,7 +225,8 @@ export class PlayerView {
   }
 
   playAttack(): void {
-    this.playOneShot("attack");
+    const set = this.weaponRig.getSet() ?? this.weaponSet ?? CLASS_WEAPON_SET[this.classId];
+    this.playOneShot(WEAPON_ATTACK_ANIM[set]);
   }
 
   playCast(): void {
@@ -221,8 +239,41 @@ export class PlayerView {
   }
 
   playDeath(): void {
+    const action = this.actions.get("death");
+    if (action) {
+      action.stop();
+      action.reset();
+      action.weight = 1;
+    }
     this.dead = true;
+    this.busyUntil = 0;
+    this.current = "";
     this.playOneShot("death");
+  }
+
+  clearDeath(): void {
+    if (!this.dead && this.current !== "death") return;
+    this.dead = false;
+    this.busyUntil = 0;
+    const death = this.actions.get("death");
+    if (death) {
+      death.fadeOut(0.05);
+      death.stop();
+      death.reset();
+      death.weight = 0;
+    }
+    this.current = "";
+    if (this.ready) this.play(this.moving ? "run" : "idle", true);
+  }
+
+  isDeadPose(): boolean {
+    return this.dead;
+  }
+
+  getAnimDurationSec(name: PlayerAnim): number {
+    const action = this.actions.get(name);
+    if (!action) return 1.2;
+    return Math.max(0.25, action.getClip().duration / Math.max(action.timeScale, 0.01));
   }
 
   update(dt: number): void {
@@ -390,7 +441,9 @@ export class PlayerView {
       this.mixer.uncacheClip(prev.getClip());
     }
     this.actions.delete("attack");
-    const gltf = await this.loader.loadAsync(humanAnimUrl(clipId));
+    const gltf = await this.loader.loadAsync(
+      clipId === "attack" ? ANIM_URLS.attack : humanAnimUrl(clipId),
+    );
     const clip = gltf.animations[0] ?? null;
     this.disposeObject(gltf.scene);
     if (!clip) return;

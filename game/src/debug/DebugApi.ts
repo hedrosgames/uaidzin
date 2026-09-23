@@ -50,6 +50,10 @@ export type DebugSnapshot = {
   timeScale: number;
   hasPlayerOutline: boolean;
   playerGhostVisible: boolean;
+  playerDeadPose: boolean;
+  deathEmitCount: number;
+  moveLock: number;
+  dropLogCount: number;
 };
 
 export type DebugHost = {
@@ -103,7 +107,14 @@ export function installDebugApi(app: DebugHost): void {
       timeScale: app.timeScale,
       hasPlayerOutline: !!app.renderer.playerOutlineMesh.parent,
       playerGhostVisible: app.renderer.playerGhostMesh.visible,
+      playerDeadPose: app.renderer.playerView.isDeadPose(),
+      deathEmitCount: app.session.deathEmitCount,
+      moveLock: app.session.getMoveLockRemaining(),
+      dropLogCount: app.session.getDropLog().length,
     }),
+    getDropLog: () => app.session.getDropLog(),
+    clearDropLog: () => app.session.clearDropLog(),
+    forcePlayerDeath: () => app.session.debugForceDeath(),
     setArmorAuraEnabled: (on: boolean) => {
       app.session.setArmorAuraEnabled(on);
     },
@@ -168,11 +179,14 @@ export function installDebugApi(app: DebugHost): void {
     getPortalContext: () => ({
       level: app.session.character.level,
       evolution: app.session.progression.state.evolution,
+      entryCounts: app.session.entryItemCounts(),
       dungeons: app.session.eligibleDungeons().map((d) => ({
         id: d.id,
         name: d.name,
         minLevel: d.minLevel,
         maxLevel: d.maxLevel,
+        entryItemId: d.entryItemId ?? null,
+        durationSeconds: d.durationSeconds,
       })),
     }),
     listEligibleDungeons: () =>
@@ -181,6 +195,8 @@ export function installDebugApi(app: DebugHost): void {
         name: d.name,
         minLevel: d.minLevel,
         maxLevel: d.maxLevel,
+        entryItemId: d.entryItemId ?? null,
+        durationSeconds: d.durationSeconds,
       })),
     teleportPlayer: (x: number, z: number) => {
       app.session.player.setPosition(x, z);
@@ -190,6 +206,7 @@ export function installDebugApi(app: DebugHost): void {
       app.session.debugAddLevels(1);
       const okLearn = app.session.skillTree.learn("fisica", 0);
       app.session.skillLoadout.refresh();
+      void app.session.persistSave(true);
       return { learned: okLearn, slots: app.session.skillLoadout.slots.length, names: app.session.skill.slotLabels() };
     },
     learnRandomSkill: () => {
@@ -197,6 +214,7 @@ export function installDebugApi(app: DebugHost): void {
       if (result.learned) {
         app.showToast(`Skill ${result.skillId} Lv${result.level}`, "skill");
         app.pulseFrame();
+        void app.session.persistSave(true);
       }
       return result;
     },
@@ -216,12 +234,19 @@ export function installDebugApi(app: DebugHost): void {
     getEnemyMeshState: () => app.session.allEnemyMeshStates(),
     getAliveEnemies: () =>
       app.session.enemies.enemies.filter((e) => e.alive).map((e) => ({ id: e.id, x: e.x, z: e.z })),
-    toCity: () => app.session.enterWorld("city"),
+    toCity: () => app.session.returnToCityWithFade(),
     openInteractionById: (id: string) => {
       const world = app.session.worlds.getCurrent();
       const def = world?.interactables.find((i) => i.id === id);
       if (!def) return false;
       app.session.openInteraction(def);
+      return true;
+    },
+    queueInteractById: (id: string) => {
+      const world = app.session.worlds.getCurrent();
+      const def = world?.interactables.find((i) => i.id === id);
+      if (!def) return false;
+      app.session.beginInteract(def);
       return true;
     },
     confirmInteraction: (id: string) => app.session.confirmInteraction(id),
@@ -259,6 +284,38 @@ export function installDebugApi(app: DebugHost): void {
       unlock: (i: number) => {
         app.session.bags.unlock(i);
         void app.session.persistSave(true);
+      },
+    },
+    composer: {
+      listEligible: (recipeId: string) =>
+        app.session.composition.listEligible(recipeId).map((it) => ({
+          uid: it.uid,
+          defId: it.defId,
+          name: it.name,
+          refine: it.refine,
+          rarity: it.rarity,
+          slot: it.slot,
+          attackBonus: it.attackBonus,
+          defenseBonus: it.defenseBonus,
+          stack: it.stack,
+        })),
+      canAttempt: (recipeId: string, itemUid: string) =>
+        app.session.composition.canAttempt(recipeId, itemUid),
+      compose: (recipeId: string, itemUid: string) => {
+        const result = app.session.tryCompose(recipeId, itemUid);
+        app.wireUi?.applyCharacter(app.currentViewModel());
+        return result;
+      },
+    },
+    quests: {
+      list: () => app.session.quests.listForUi(),
+      accept: (questId: string) => {
+        const result = app.session.acceptQuest(questId);
+        app.wireUi?.applyCharacter(app.currentViewModel());
+        const api = (window as unknown as { __UAIDZIN_WIRE__?: { paintQuest?: () => void } })
+          .__UAIDZIN_WIRE__;
+        api?.paintQuest?.();
+        return result;
       },
     },
     account: {

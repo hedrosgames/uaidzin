@@ -132,6 +132,7 @@ export class AccountAuth {
   logout(): void {
     try {
       sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem("uaidzin_active_char");
     } catch {
       
     }

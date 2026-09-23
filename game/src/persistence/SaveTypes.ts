@@ -14,6 +14,8 @@ export type QuestState = {
   step?: number;
 };
 
+export type TreeMap = { controle: number; magia: number; fisica: number };
+
 export type SlotSummary = {
   profileId: string;
   classId: string;
@@ -23,6 +25,8 @@ export type SlotSummary = {
   gold: number;
   resets: number;
   attrs: AttrBlock;
+  trees: TreeMap;
+  spec: TreeMap;
 };
 
 export type SkillLoadoutSlotSave = {
@@ -154,11 +158,33 @@ export type CharacterViewModel = {
   attrs: AttrBlock;
   hp?: number;
   mp?: number;
+  maxHp?: number;
+  maxMp?: number;
+  xp?: number;
+  xpToNext?: number;
+  attrPts?: number;
+  attack?: number;
+  defense?: number;
+  spec?: TreeMap;
+  specPts?: number;
   vaultGold?: number;
 };
 
 export function emptyAttrs(): AttrBlock {
   return { FOR: 5, DES: 5, CONS: 5, INT: 5 };
+}
+
+export function emptyTreeMap(): TreeMap {
+  return { controle: 0, magia: 0, fisica: 0 };
+}
+
+export function normalizeTreeMap(src: unknown): TreeMap {
+  const t = src && typeof src === "object" ? (src as Record<string, unknown>) : {};
+  return {
+    controle: Math.max(0, Math.floor(Number(t.controle) || 0)),
+    magia: Math.max(0, Math.floor(Number(t.magia) || 0)),
+    fisica: Math.max(0, Math.floor(Number(t.fisica) || 0)),
+  };
 }
 
 export function emptyProgress(): SavePayload["progress"] {
@@ -200,6 +226,8 @@ export function normalizeSlots(slots: unknown): Array<SlotSummary | null> {
         CONS: Number(s.attrs?.CONS) || 5,
         INT: Number(s.attrs?.INT) || 5,
       },
+      trees: normalizeTreeMap((s as SlotSummary).trees),
+      spec: normalizeTreeMap((s as SlotSummary).spec),
     });
   }
   return out;
@@ -231,6 +259,16 @@ export function parseProfileId(profileId: string): { userId: string; slotIndex: 
 }
 
 export function summaryFromPayload(payload: SavePayload): SlotSummary {
+  const spec = normalizeTreeMap(payload.skills.specialization);
+  const trees = emptyTreeMap();
+  const levels = payload.skills.levels || {};
+  for (const [skillId, progress] of Object.entries(levels)) {
+    const lvl = Math.max(0, Math.floor(Number(progress?.level) || 0));
+    if (lvl <= 0) continue;
+    if (skillId.includes("_ctrl") || skillId.includes("controle")) trees.controle += lvl;
+    else if (skillId.includes("_mag") || skillId.includes("magia")) trees.magia += lvl;
+    else if (skillId.includes("_fis") || skillId.includes("fisica")) trees.fisica += lvl;
+  }
   return {
     profileId: payload.meta.profileId,
     classId: payload.character.classId || payload.skills.classId,
@@ -240,6 +278,8 @@ export function summaryFromPayload(payload: SavePayload): SlotSummary {
     gold: payload.inventory.gold,
     resets: payload.character.resetsInEvolution,
     attrs: { ...payload.character.attributes },
+    trees,
+    spec,
   };
 }
 

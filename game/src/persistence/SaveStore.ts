@@ -1,6 +1,6 @@
 const DB_NAME = "uaidzin";
 const STORE = "save";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export function lsProfileKey(profileId: string): string {
   return `uaidzin.save.${profileId}`;
@@ -33,41 +33,61 @@ export function openDb(): Promise<IDBDatabase | null> {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) {
+        db.close();
+        resolve(null);
+        return;
+      }
+      resolve(db);
+    };
     req.onerror = () => resolve(null);
   });
 }
 
 async function idbGet(key: string): Promise<string | null> {
   const db = await openDb();
-  if (!db) return null;
+  if (!db || !db.objectStoreNames.contains(STORE)) return null;
   return new Promise((resolve) => {
-    const tx = db.transaction(STORE, "readonly");
-    const req = tx.objectStore(STORE).get(key);
-    req.onsuccess = () => resolve((req.result as string) ?? null);
-    req.onerror = () => resolve(null);
+    try {
+      const tx = db.transaction(STORE, "readonly");
+      const req = tx.objectStore(STORE).get(key);
+      req.onsuccess = () => resolve((req.result as string) ?? null);
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
   });
 }
 
 async function idbPut(key: string, value: string): Promise<boolean> {
   const db = await openDb();
-  if (!db) return false;
+  if (!db || !db.objectStoreNames.contains(STORE)) return false;
   return new Promise((resolve) => {
-    const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).put(value, key);
-    tx.oncomplete = () => resolve(true);
-    tx.onerror = () => resolve(false);
+    try {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).put(value, key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    } catch {
+      resolve(false);
+    }
   });
 }
 
 async function idbDelete(key: string): Promise<void> {
   const db = await openDb();
-  if (!db) return;
+  if (!db || !db.objectStoreNames.contains(STORE)) return;
   await new Promise<void>((resolve) => {
-    const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).delete(key);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => resolve();
+    try {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).delete(key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
   });
 }
 

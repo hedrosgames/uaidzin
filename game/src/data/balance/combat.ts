@@ -1,6 +1,12 @@
 export const COMBAT_BALANCE = {
   dodgeChance: 0.05,
   minDamage: 1,
+  moveLock: {
+    attackFallback: 0.4,
+    hitFallback: 0.28,
+    skillFallback: 0.45,
+    max: 0.85,
+  },
   player: {
     maxHp: 120,
     attack: 18,

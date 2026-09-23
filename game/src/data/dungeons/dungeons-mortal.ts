@@ -13,7 +13,6 @@ function arenasIntro(tag: string): ArenaDef[] {
       spawns: [
         { id: `${tag}-a1-f1`, archetype: "fixed", x: 5, z: -5 },
         { id: `${tag}-a1-f2`, archetype: "fixed", x: -5, z: -5 },
-        { id: `${tag}-a1-c1`, archetype: "chaser", x: 4, z: 4 },
       ],
     },
     {
@@ -23,7 +22,6 @@ function arenasIntro(tag: string): ArenaDef[] {
       halfSize: 9,
       spawns: [
         { id: `${tag}-a2-f1`, archetype: "fixed", x: 5, z: z1 - 5 },
-        { id: `${tag}-a2-c1`, archetype: "chaser", x: -5, z: z1 - 3 },
         { id: `${tag}-a2-r1`, archetype: "ranged", x: -4, z: z1 - 7 },
       ],
     },
@@ -34,7 +32,6 @@ function arenasIntro(tag: string): ArenaDef[] {
       halfSize: 10,
       spawns: [
         { id: `${tag}-a3-c1`, archetype: "chaser", x: 5, z: z2 + 2 },
-        { id: `${tag}-a3-r1`, archetype: "ranged", x: 0, z: z2 - 7 },
         { id: `${tag}-a3-boss`, archetype: "fixed", x: 0, z: z2 - 2, isBoss: true },
       ],
     },
@@ -172,6 +169,7 @@ function makeDungeon(
   minLevel: number,
   maxLevel: number,
   layout: (tag: string) => ArenaDef[],
+  entryItemId: string | null = null,
 ): DungeonDef {
   const tag = `d${index}`;
   return {
@@ -179,20 +177,21 @@ function makeDungeon(
     name: `Dungeon ${index}`,
     minLevel,
     maxLevel,
+    entryItemId,
     durationSeconds: 600,
     arenas: layout(tag),
   };
 }
 
 export const DUNGEONS_MORTAL: DungeonDef[] = [
-  makeDungeon(1, 1, 40, arenasIntro),
-  makeDungeon(2, 35, 90, arenasRanged),
-  makeDungeon(3, 80, 150, arenasChase),
-  makeDungeon(4, 140, 220, arenasDense),
-  makeDungeon(5, 200, 280, arenasRanged),
-  makeDungeon(6, 260, 330, arenasChase),
-  makeDungeon(7, 310, 370, arenasDense),
-  makeDungeon(8, 350, 400, arenasChase),
+  makeDungeon(1, 1, 40, arenasIntro, null),
+  makeDungeon(2, 35, 90, arenasRanged, null),
+  makeDungeon(3, 80, 150, arenasChase, null),
+  makeDungeon(4, 140, 220, arenasDense, "entry_d4"),
+  makeDungeon(5, 200, 280, arenasRanged, "entry_d5"),
+  makeDungeon(6, 260, 330, arenasChase, "entry_d6"),
+  makeDungeon(7, 310, 370, arenasDense, "entry_d7"),
+  makeDungeon(8, 350, 400, arenasChase, "entry_d8"),
 ];
 
 export function findDungeon(id: string): DungeonDef | undefined {

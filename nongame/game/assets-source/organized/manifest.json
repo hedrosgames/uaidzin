@@ -1,0 +1,23 @@
+{
+  "human": [
+    "attack.glb",
+    "attack_1h.glb",
+    "attack_2h.glb",
+    "attack_bow.glb",
+    "attack_greatsword.glb",
+    "attack_swipe.glb",
+    "cast.glb",
+    "hit_gut.glb",
+    "hit_right.glb",
+    "run.glb"
+  ],
+  "mutant": [],
+  "shared": [
+    "attack.glb",
+    "cast.glb",
+    "death.glb",
+    "hit_gut.glb",
+    "hit_right.glb",
+    "run.glb"
+  ]
+}

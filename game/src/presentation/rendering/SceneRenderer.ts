@@ -268,6 +268,27 @@ export class SceneRenderer {
     });
   }
 
+  setWorldLook(kind: "city" | "dungeon"): void {
+    const fog = this.scene.fog as FogExp2 | null;
+    if (kind === "dungeon") {
+      this.scene.background = new Color(0x1a2218);
+      if (fog) {
+        fog.color.set(0x1a2218);
+        fog.density = 0.007;
+      }
+      this.renderer.toneMappingExposure = 1.32;
+      this.skyDome.visible = false;
+      return;
+    }
+    this.scene.background = new Color(FOG_COLOR);
+    if (fog) {
+      fog.color.set(FOG_COLOR);
+      fog.density = FOG_DENSITY;
+    }
+    this.renderer.toneMappingExposure = 1.15;
+    this.skyDome.visible = true;
+  }
+
   setPlayerTransform(x: number, z: number, facing: number, moving: boolean): void {
     this.playerView.setPose(x, z, facing, moving);
   }
@@ -284,6 +305,18 @@ export class SceneRenderer {
     this.bloomPass.setSize(w, h);
   }
 
+  private isFixedOccluder(obj: Object3D): boolean {
+    let cur: Object3D | null = obj;
+    while (cur) {
+      if (cur.userData.occlusionIgnore === true) return false;
+      if (cur.name === "enemies-view") return false;
+      cur = cur.parent;
+    }
+    if ((obj as { isLineSegments?: boolean }).isLineSegments) return false;
+    if (obj.name === "ground") return false;
+    return true;
+  }
+
   private updatePlayerGhost(camera: PerspectiveCamera): void {
     this.playerMesh.getWorldPosition(this.playerCenter);
     this.playerCenter.y += 0.9;
@@ -296,7 +329,8 @@ export class SceneRenderer {
     }
     this.raycaster.set(camera.position, this.toPlayer.normalize());
     this.raycaster.far = dist - 0.2;
-    const occluded = this.raycaster.intersectObject(this.worldRoot, true).length > 0;
+    const hits = this.raycaster.intersectObject(this.worldRoot, true);
+    const occluded = hits.some((hit) => this.isFixedOccluder(hit.object));
     this.playerView.setOcclusionGhostVisible(occluded);
   }
 

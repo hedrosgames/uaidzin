@@ -6,3 +6,12 @@
 *.local
 .factory/
 Teste.txt
+nongame/game/assets-source/mixamo-incoming/
+nongame/game/assets-source/_discarded/
+nongame/game/assets-source/organized/human/
+nongame/game/assets-source/organized/mutant/
+nongame/game/assets-source/organized/meshes/
+nongame/game/assets-source/creature-pack/
+nongame/assets/drive/
+nongame/assets/animations/unused/
+nongame/assets/models/unused/

@@ -3,6 +3,7 @@
   const SESSION_KEY = "uaidzin_session_v1";
   const SAVE_PREFIX = "uaidzin_save_v1_";
   const REMEMBER_KEY = "uaidzin_login";
+  const GOOGLE_LOCAL_KEY = "uaidzin_google_local_v1";
   const ITERATIONS = 100000;
   const FALLBACK_ITERATIONS = 5000;
   const enc = new TextEncoder();
@@ -113,6 +114,103 @@
     return acc[userId];
   }
 
+  function normalizeVault(vault) {
+    const v = vault && typeof vault === "object" ? vault : {};
+    return {
+      gold: Math.max(0, Number(v.gold) || 0),
+      items: Array.isArray(v.items) ? v.items : [],
+    };
+  }
+
+  async function registerAccount(userId, password) {
+    const id = String(userId || "").trim();
+    if (!id || !password) {
+      return { ok: false, error: "Preencha login e senha." };
+    }
+    const acc = readAccounts();
+    if (acc[id]) {
+      return { ok: false, error: "Este login já está em uso." };
+    }
+    const salt = b64(randomBytes(16));
+    const hash = await hashPassword(password, unb64(salt));
+    acc[id] = { id, salt, hash, createdAt: Date.now(), mode: hasSubtle ? "aes" : "fallback" };
+    writeAccounts(acc);
+    return { ok: true, account: acc[id] };
+  }
+
+  function randomHex(byteCount) {
+    const bytes = randomBytes(byteCount);
+    let out = "";
+    for (let i = 0; i < bytes.length; i++) {
+      out += bytes[i].toString(16).padStart(2, "0");
+    }
+    return out;
+  }
+
+  function getOrCreateGoogleIdentity() {
+    try {
+      const raw = localStorage.getItem(GOOGLE_LOCAL_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && typeof data.id === "string" && data.id.indexOf("google:") === 0 && data.secret) {
+          return data;
+        }
+      }
+    } catch (_) {}
+    const data = {
+      id: "google:" + randomHex(8),
+      secret: b64(randomBytes(24)),
+    };
+    localStorage.setItem(GOOGLE_LOCAL_KEY, JSON.stringify(data));
+    return data;
+  }
+
+  async function ensureEmptySave(session) {
+    const existing = await loadSave(session);
+    if (existing && !existing.corrupted) return existing;
+    await saveData(session, {
+      slots: [null, null, null, null],
+      vault: { gold: 0, items: [] },
+    });
+    return loadSave(session);
+  }
+
+  async function loginGoogleSimulated() {
+    try {
+      await bootstrap();
+      const identity = getOrCreateGoogleIdentity();
+      const acc = readAccounts();
+      const isNew = !acc[identity.id];
+      if (isNew) {
+        const reg = await registerAccount(identity.id, identity.secret);
+        if (!reg || !reg.ok) {
+          return { ok: false, error: (reg && reg.error) || "Não foi possível criar a conta Google." };
+        }
+      }
+      const res = await login(identity.id, identity.secret);
+      if (!res || !res.ok) {
+        return { ok: false, error: (res && res.error) || "Falha ao entrar com Google." };
+      }
+      if (isNew) {
+        await saveData(res.session, {
+          slots: [null, null, null, null],
+          vault: { gold: 0, items: [] },
+        });
+      } else {
+        await ensureEmptySave(res.session);
+      }
+      return {
+        ok: true,
+        session: res.session,
+        userId: identity.id,
+        created: isNew,
+      };
+    } catch (err) {
+      console.error("loginGoogleSimulated", err);
+      return { ok: false, error: "Falha ao entrar com Google." };
+    }
+  }
+
   async function bootstrap() {
     const existing = readAccounts()["admin"];
     if (existing && existing.salt && existing.hash) return existing;
@@ -134,16 +232,26 @@
       localStorage.removeItem("uaidzin.save." + profileId);
       localStorage.removeItem("uaidzin.save." + profileId + ":prev");
     } catch (_) {}
-    try {
-      const req = indexedDB.open("uaidzin", 1);
-      req.onsuccess = function () {
-        const db = req.result;
-        if (!db.objectStoreNames.contains("save")) return;
-        const tx = db.transaction("save", "readwrite");
-        tx.objectStore("save").delete("profile:" + profileId);
-        tx.objectStore("save").delete("profile:" + profileId + ":prev");
-      };
-    } catch (_) {}
+    return new Promise(function (resolve) {
+      try {
+        const req = indexedDB.open("uaidzin", 1);
+        req.onerror = function () { resolve(); };
+        req.onsuccess = function () {
+          const db = req.result;
+          if (!db.objectStoreNames.contains("save")) {
+            resolve();
+            return;
+          }
+          const tx = db.transaction("save", "readwrite");
+          tx.objectStore("save").delete("profile:" + profileId);
+          tx.objectStore("save").delete("profile:" + profileId + ":prev");
+          tx.oncomplete = function () { resolve(); };
+          tx.onerror = function () { resolve(); };
+        };
+      } catch (_) {
+        resolve();
+      }
+    });
   }
 
   async function resetAdminAccount() {
@@ -151,9 +259,9 @@
     delete acc["admin"];
     writeAccounts(acc);
     localStorage.removeItem(SAVE_PREFIX + "admin");
-    ["0", "1", "2", "3"].forEach(function (i) {
-      clearProfileStorage("admin:slot:" + i);
-    });
+    await Promise.all(["0", "1", "2", "3"].map(function (i) {
+      return clearProfileStorage("admin:slot:" + i);
+    }));
     sessionStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem("uaidzin_active_char");
     return bootstrap();
@@ -240,6 +348,13 @@
 
   function logout() {
     sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem("uaidzin_active_char");
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.sessionStorage.removeItem(SESSION_KEY);
+        window.parent.sessionStorage.removeItem("uaidzin_active_char");
+      }
+    } catch (_) {}
   }
 
   function requireSession() {
@@ -294,6 +409,20 @@
     return JSON.parse(dec.decode(plain));
   }
 
+  function numOr(v, fallback) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function normalizeTreeMap(src) {
+    const t = src && typeof src === "object" ? src : {};
+    return {
+      controle: Math.max(0, numOr(t.controle, 0)),
+      magia: Math.max(0, numOr(t.magia, 0)),
+      fisica: Math.max(0, numOr(t.fisica, 0)),
+    };
+  }
+
   function normalizeSlots(slots) {
     const raw = Array.isArray(slots) ? slots : [];
     const out = [];
@@ -303,20 +432,23 @@
         out.push(null);
         continue;
       }
+      const attrs = s.attrs && typeof s.attrs === "object" ? s.attrs : {};
       out.push({
         profileId: s.profileId || "",
         classId: s.classId,
         name: s.name,
-        level: Number(s.level) || 1,
+        level: Math.max(1, numOr(s.level, 1)),
         evolution: s.evolution || "Mortal",
-        gold: Number(s.gold) || 0,
-        resets: Number(s.resets) || 0,
+        gold: Math.max(0, numOr(s.gold, 0)),
+        resets: Math.max(0, numOr(s.resets, 0)),
         attrs: {
-          FOR: Number(s.attrs && s.attrs.FOR) || 5,
-          DES: Number(s.attrs && s.attrs.DES) || 5,
-          CONS: Number(s.attrs && s.attrs.CONS) || 5,
-          INT: Number(s.attrs && s.attrs.INT) || 5,
+          FOR: Math.max(0, numOr(attrs.FOR, 5)),
+          DES: Math.max(0, numOr(attrs.DES, 5)),
+          CONS: Math.max(0, numOr(attrs.CONS, 5)),
+          INT: Math.max(0, numOr(attrs.INT, 5)),
         },
+        trees: normalizeTreeMap(s.trees),
+        spec: normalizeTreeMap(s.spec),
       });
     }
     return out;
@@ -329,6 +461,7 @@
       const payload = JSON.parse(raw);
       const data = await decryptJson(session, payload);
       data.slots = normalizeSlots(data.slots);
+      data.vault = normalizeVault(data.vault);
       return data;
     } catch (err) {
       console.warn("save corrompido", err);
@@ -337,10 +470,20 @@
   }
 
   async function saveData(session, data) {
+    let vault = normalizeVault(null);
+    if (data && Object.prototype.hasOwnProperty.call(data, "vault")) {
+      vault = normalizeVault(data.vault);
+    } else {
+      const existing = await loadSave(session);
+      if (existing && !existing.corrupted && existing.vault) {
+        vault = normalizeVault(existing.vault);
+      }
+    }
     const blob = await encryptJson(session, {
       version: 1,
       user: session.user,
       slots: normalizeSlots(data.slots),
+      vault,
       updatedAt: Date.now(),
     });
     localStorage.setItem(saveKeyFor(session.user), blob);
@@ -351,8 +494,8 @@
     const data = (await loadSave(session)) || { slots: [null, null, null, null] };
     const slots = normalizeSlots(data.slots);
     const slot = slots[slotIndex];
-    if (slot && slot.profileId) clearProfileStorage(slot.profileId);
-    else clearProfileStorage(session.user + ":slot:" + slotIndex);
+    if (slot && slot.profileId) await clearProfileStorage(slot.profileId);
+    else await clearProfileStorage(session.user + ":slot:" + slotIndex);
     slots[slotIndex] = null;
     await saveData(session, { slots });
     try {
@@ -390,6 +533,8 @@
     bootstrap,
     resetAdminAccount,
     ensureAccount,
+    registerAccount,
+    loginGoogleSimulated,
     login,
     logout,
     getSession,

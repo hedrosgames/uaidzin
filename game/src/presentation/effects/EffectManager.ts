@@ -201,10 +201,31 @@ export class EffectManager {
     this.skillFx.push({ mesh: ring, t: 0.28, max: 0.28, kind });
   }
 
-  levelUpPulse(mesh: Object3D | null | undefined): void {
-    if (!mesh) return;
-    mesh.scale.set(1.25, 1.15, 1.25);
-    this.pulses.push({ mesh, t: 0.35 });
+  levelUpPulse(mesh: Object3D | null | undefined, at?: { x: number; z: number }): void {
+    if (mesh) {
+      mesh.scale.set(1.35, 1.22, 1.35);
+      this.pulses.push({ mesh, t: VFX_BALANCE.levelUpPulseSeconds });
+    }
+    const x = at?.x ?? mesh?.position.x ?? 0;
+    const z = at?.z ?? mesh?.position.z ?? 0;
+    const geo = new RingGeometry(0.35, 1.15, 40);
+    const mat = new MeshBasicMaterial({
+      color: VFX_BALANCE.colors.levelUp,
+      transparent: true,
+      opacity: 0.75,
+      depthWrite: false,
+    });
+    const ring = new Mesh(geo, mat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.08, z);
+    this.sceneRoot.add(ring);
+    this.skillFx.push({
+      mesh: ring,
+      t: VFX_BALANCE.levelUpRingSeconds,
+      max: VFX_BALANCE.levelUpRingSeconds,
+      kind: "zone",
+    });
+    this.cameraPunch(0.14);
   }
 
   cameraPunch(amp = 0.12): void {

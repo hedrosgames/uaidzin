@@ -75,7 +75,7 @@ const MODEL_SPECS: Record<WeaponModelId, WeaponModelSpec> = {
   staff: { url: "/weapons/staff.glb", sourceHeight: 1, length: 1.43, grip: 0.3, mount: "grip", restTiltDeg: 30, restShift: 0 },
   greatstaff: { url: "/weapons/staff.glb", sourceHeight: 1, length: 2.0655, grip: 0.3, mount: "grip", restTiltDeg: 20, restShift: 0 },
   bow: { url: "/weapons/bow.glb", sourceHeight: 1, length: 1.92, grip: 0.5, mount: "grip", restTiltDeg: 90, restShift: 0 },
-  shield: { url: null, sourceHeight: 1, length: 0.6, grip: 0.5, mount: "forearm", restTiltDeg: 0, restShift: 0 },
+  shield: { url: null, sourceHeight: 1, length: 0.52, grip: 0.5, mount: "forearm", restTiltDeg: 0, restShift: 0 },
   glove: { url: null, sourceHeight: 1, length: 0.38, grip: 0.5, mount: "palm", restTiltDeg: 0, restShift: 0 },
 };
 
@@ -101,7 +101,9 @@ const BONE = {
 
 const GRIP_ALONG_FINGERS = 0.5;
 const GRIP_INTO_PALM = 0.28;
-const SHIELD_OFF_ARM = 0.07;
+const SHIELD_OFF_ARM = 0.16;
+const SHIELD_HAND_BIAS = 0.68;
+const SHIELD_BONE_LIFT = 0.04;
 
 interface Attachment {
   anchor: Object3D;
@@ -333,8 +335,10 @@ export class WeaponRig {
       const outward = frame.palm.clone().negate();
       outward.addScaledVector(boneDir, -outward.dot(boneDir)).normalize();
       const handPos = frame.center.clone().addScaledVector(frame.fingers, -frame.fingerLength * GRIP_ALONG_FINGERS);
-      const mid = anchorPos.clone().lerp(handPos, 0.5);
-      worldCenter = mid.addScaledVector(outward, SHIELD_OFF_ARM);
+      const mid = anchorPos.clone().lerp(handPos, SHIELD_HAND_BIAS);
+      worldCenter = mid
+        .addScaledVector(outward, SHIELD_OFF_ARM)
+        .addScaledVector(boneDir, SHIELD_BONE_LIFT);
       up = boneDir;
       forward = outward;
     } else if (spec.mount === "palm") {

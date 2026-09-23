@@ -38,6 +38,7 @@ export interface GameAppDeps {
   deathOverlayElement: HTMLElement;
   timerElement: HTMLElement;
   farmStatsElement: HTMLElement;
+  dropLogElement: HTMLElement;
   resultOverlayElement: HTMLElement;
   gamePanelsElement: HTMLElement;
   wireUiElement: HTMLElement;
@@ -82,6 +83,7 @@ export class GameApp {
   private readonly deathOverlay: HTMLElement;
   private readonly timerEl: HTMLElement;
   private readonly farmStats: HTMLElement;
+  private readonly dropLogEl: HTMLElement;
   private readonly resultOverlay: HTMLElement;
   private readonly speedToggle: HTMLElement;
   private readonly weaponToggle: HTMLButtonElement;
@@ -98,6 +100,7 @@ export class GameApp {
   private timeScale: TimeScale = 1;
   private toastTimer = 0;
   private lastToastText = "";
+  private lastDropLogKey = "";
   private entered = false;
   private leaving = false;
   private autosaveTimer: number | null = null;
@@ -191,6 +194,7 @@ export class GameApp {
     this.deathOverlay = deps.deathOverlayElement;
     this.timerEl = deps.timerElement;
     this.farmStats = deps.farmStatsElement;
+    this.dropLogEl = deps.dropLogElement;
     this.resultOverlay = deps.resultOverlayElement;
     this.speedToggle = deps.hudToolsElement;
     this.weaponToggle = deps.hudToolsElement.querySelector<HTMLButtonElement>("#btn-weapon-set")!;
@@ -345,6 +349,7 @@ export class GameApp {
           "opt-fullscreen": "optFullscreen",
           "opt-shadows": "optShadows",
           "opt-armor-aura": "optArmorAura",
+          "opt-skip-dungeon-confirm": "optSkipDungeonConfirm",
         };
         ranges.forEach(([id, valId]) => {
           const key = map[id];
@@ -368,6 +373,18 @@ export class GameApp {
           if (data.optArmorAura == null) auraEl.checked = false;
           else auraEl.checked = Boolean(data.optArmorAura);
         }
+        const skipEl = document.getElementById("opt-skip-dungeon-confirm") as HTMLInputElement | null;
+        if (skipEl) {
+          if (data.optSkipDungeonConfirm == null) {
+            try {
+              skipEl.checked = localStorage.getItem("uaidzin_portal_skip_confirm") === "1";
+            } catch {
+              skipEl.checked = false;
+            }
+          } else {
+            skipEl.checked = Boolean(data.optSkipDungeonConfirm);
+          }
+        }
         this.applyArmorAuraSetting();
         this.applyShadowSetting();
       } catch {
@@ -376,7 +393,13 @@ export class GameApp {
     };
 
     const saveSettings = () => {
-      const data: Record<string, number | boolean> = {};
+      let prev: Record<string, unknown> = {};
+      try {
+        prev = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") as Record<string, unknown>;
+      } catch {
+        prev = {};
+      }
+      const data: Record<string, unknown> = { ...prev };
       ranges.forEach(([id]) => {
         const el = document.getElementById(id) as HTMLInputElement | null;
         if (!el) return;
@@ -387,10 +410,18 @@ export class GameApp {
       const fullscreen = document.getElementById("opt-fullscreen") as HTMLInputElement | null;
       const shadows = document.getElementById("opt-shadows") as HTMLInputElement | null;
       const armorAura = document.getElementById("opt-armor-aura") as HTMLInputElement | null;
+      const skipConfirm = document.getElementById("opt-skip-dungeon-confirm") as HTMLInputElement | null;
       if (fullscreen) data.optFullscreen = fullscreen.checked;
       if (shadows) data.optShadows = shadows.checked;
       if (armorAura) data.optArmorAura = armorAura.checked;
+      if (skipConfirm) data.optSkipDungeonConfirm = skipConfirm.checked;
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
+      try {
+        if (skipConfirm?.checked) localStorage.setItem("uaidzin_portal_skip_confirm", "1");
+        else localStorage.removeItem("uaidzin_portal_skip_confirm");
+      } catch {
+        
+      }
       this.applyArmorAuraSetting();
       this.applyShadowSetting();
     };
@@ -405,7 +436,7 @@ export class GameApp {
       });
     });
 
-    (["opt-fullscreen", "opt-shadows", "opt-armor-aura"] as const).forEach((id) => {
+    (["opt-fullscreen", "opt-shadows", "opt-armor-aura", "opt-skip-dungeon-confirm"] as const).forEach((id) => {
       const el = document.getElementById(id) as HTMLInputElement | null;
       el?.addEventListener("change", () => {
         saveSettings();
@@ -428,7 +459,7 @@ export class GameApp {
     btnSave?.addEventListener("click", () => {
       saveSettings();
       this.closeSettings();
-      this.showToast("OpÃ§Ãµes salvas.", "skill");
+      this.showToast("Opções salvas.", "skill");
     });
     btnChange?.addEventListener("click", () => {
       void this.leaveToBoot("select");
@@ -473,17 +504,28 @@ export class GameApp {
 
   private currentViewModel(): CharacterViewModel {
     const s = this.session;
+    const p = s.progression.state;
+    const st = s.skillTree.state;
     return {
       profileId: s.saveService.getProfileId(),
-      classId: s.skillTree.state.classId,
+      classId: st.classId,
       name: s.character.name,
-      level: s.progression.state.level,
-      evolution: s.progression.state.evolution,
+      level: p.level,
+      evolution: p.evolution,
       gold: s.inventory.gold,
-      resets: s.progression.state.resetsInEvolution,
+      resets: p.resetsInEvolution,
       attrs: { ...(s.character.attributes || emptyAttrs()) },
       hp: s.character.hp,
       mp: s.character.mp,
+      maxHp: s.character.maxHp,
+      maxMp: s.character.maxMp,
+      xp: p.xp,
+      xpToNext: p.xpToNext,
+      attrPts: p.unspentAttributePoints,
+      attack: s.character.attack,
+      defense: s.character.defense,
+      spec: { ...st.specialization },
+      specPts: st.specPoints,
       vaultGold: s.accountVault.gold,
     };
   }
@@ -496,7 +538,7 @@ export class GameApp {
       el.className = "save-status";
       this.playerFrame.appendChild(el);
     }
-    if (status === "saving") el.textContent = "Salvandoâ€¦";
+    if (status === "saving") el.textContent = "Salvando…";
     else if (status === "saved") el.textContent = "Salvo";
     else if (status === "error") el.textContent = "Falha ao salvar";
     else el.textContent = "";
@@ -506,8 +548,9 @@ export class GameApp {
 
   private bindJuiceToasts(): void {
     this.bus.on("character:level-up", ({ level }) => {
-      this.showToast(`NÃ­vel ${level}!`, "level");
+      this.showToast(`Nível ${level}!`, "level");
       this.pulseFrame();
+      this.flashBars();
     });
     this.bus.on("dungeon:entered", ({ dungeonId }) => {
       this.showToast(dungeonId, "dungeon");
@@ -529,6 +572,16 @@ export class GameApp {
     this.playerFrame.classList.add("pulse-juicy");
   }
 
+  private flashBars(): void {
+    for (const sel of [".stat-bar.hp", ".stat-bar.mp", ".stat-bar.xp"]) {
+      const bar = this.playerFrame.querySelector(sel);
+      if (!bar) continue;
+      bar.classList.remove("flash-up");
+      void (bar as HTMLElement).offsetWidth;
+      bar.classList.add("flash-up");
+    }
+  }
+
   private isPanelsOpen(): boolean {
     if (this.wireUi) return this.wireUi.isOpen();
     return this.panels.isOpen();
@@ -544,10 +597,13 @@ export class GameApp {
 
   start(character: BootCharacter): void {
     this.session.saveService.setProfileId(character.id);
-    void this.session.loadSave().then(async (loaded) => {
+    void this.session
+      .loadSave()
+      .catch(() => false)
+      .then(async (loaded) => {
       if (!loaded) {
         if (this.session.saveUnreadable) {
-          this.showToast("Save ilegÃ­vel â€” progresso nÃ£o foi sobrescrito", "dungeon");
+          this.showToast("Save ilegível — progresso não foi sobrescrito", "dungeon");
         } else {
           this.session.applyBootCharacter(character);
         }
@@ -558,7 +614,7 @@ export class GameApp {
         this.wireHost.hidden = false;
         window.dispatchEvent(new Event("resize"));
       } catch (error) {
-        console.warn("[UAIDZIN] wire UI falhou, usando painÃ©is legados", error);
+        console.warn("[UAIDZIN] wire UI falhou, usando painéis legados", error);
         this.wireUi = null;
       }
       await this.session.start();
@@ -607,7 +663,7 @@ export class GameApp {
     for (let i = 0; i < count; i++) {
       const s = skills[i];
       if (!s) {
-        html += `<button type="button" class="skill-slot empty" disabled><span class="skill-key">${i + 1}</span><span class="skill-name">â€”</span></button>`;
+        html += `<button type="button" class="skill-slot empty" disabled><span class="skill-key">${i + 1}</span><span class="skill-name">—</span></button>`;
         continue;
       }
       const cd = Math.max(0, Math.min(1, s.cdRatio));
@@ -646,7 +702,38 @@ export class GameApp {
       this.farmStats.textContent = `Abates ${hud.kills} · XP ${hud.xp} · ${hud.arenaHint ?? ""}`;
     }
 
+    this.renderDropLog(hud.dropLog);
+
     if (hud.lootToast) this.showToast(hud.lootToast, hud.uiToastKind);
+  }
+
+  private renderDropLog(lines: SessionHud["dropLog"]): void {
+    const key = lines.map((l) => `${l.id}:${l.text}`).join("|");
+    if (key === this.lastDropLogKey) {
+      this.dropLogEl.hidden = lines.length === 0;
+      return;
+    }
+    this.lastDropLogKey = key;
+    if (lines.length === 0) {
+      this.dropLogEl.hidden = true;
+      this.dropLogEl.innerHTML = "";
+      return;
+    }
+    this.dropLogEl.hidden = false;
+    let html = "";
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i]!;
+      const tag =
+        line.kind === "gold"
+          ? "ouro"
+          : line.kind === "item"
+            ? "item"
+            : line.kind === "lost"
+              ? "perda"
+              : "info";
+      html += `<div class="drop-log-line ${line.kind}" data-drop-id="${line.id}"><span class="tag">${tag}</span><span>${line.text}</span></div>`;
+    }
+    this.dropLogEl.innerHTML = html;
   }
 
   private tick(deltaSeconds: number): void {
@@ -670,11 +757,11 @@ export class GameApp {
       this.debugHud.update({
         mode: this.state.getMode(),
         elapsed: this.clock.getElapsedSeconds(),
-        extra: `hp ${char.hp}/${char.maxHp} Â· mp ${char.mp}/${char.maxMp} Â· ${this.session.worlds.getCurrentId() ?? "-"} Â· timer ${timer != null ? formatMMSS(Number(timer)) : "--"} Â· kills ${this.session.dungeonRun.getKills()}`,
+        extra: `hp ${char.hp}/${char.maxHp} · mp ${char.mp}/${char.maxMp} · ${this.session.worlds.getCurrentId() ?? "-"} · timer ${timer != null ? formatMMSS(Number(timer)) : "--"} · kills ${this.session.dungeonRun.getKills()}`,
       });
     } catch (error) {
       this.errors.report(error, "GameApp.tick");
-      this.showToast("Erro no jogo â€” veja o console", "dungeon");
+      this.showToast("Erro no jogo — veja o console", "dungeon");
       this.loop.stop();
     }
   }

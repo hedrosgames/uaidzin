@@ -43,6 +43,21 @@ export function viewFromSave(payload: SavePayload): CharacterViewModel {
   return viewModelFromPayload(payload);
 }
 
+function setText(root: HTMLElement, selector: string, value: string): void {
+  root.querySelectorAll(selector).forEach((el) => {
+    el.textContent = value;
+  });
+}
+
+function setRowByLab(root: HTMLElement, scope: string, lab: string, value: string): void {
+  root.querySelectorAll(`${scope} .row`).forEach((row) => {
+    const labEl = row.querySelector(".lab");
+    if (!labEl || labEl.textContent?.trim() !== lab) return;
+    const val = row.querySelector(".val");
+    if (val) val.textContent = value;
+  });
+}
+
 export function bindHud(
   els: {
     face?: HTMLImageElement | null;
@@ -65,32 +80,23 @@ export function bindWirePanels(root: HTMLElement, view: CharacterViewModel): voi
     else if (src.includes("char-")) img.src = art.portrait;
   });
 
-  const nameTargets = root.querySelectorAll(
-    "[data-bind='name'], #personName, .person-name, .char-name",
-  );
-  nameTargets.forEach((el) => {
-    el.textContent = view.name;
-  });
+  setText(root, "[data-bind='name'], #personName, .person-name, .char-name", view.name);
+  setRowByLab(root, "#p-person", "Nome", view.name);
 
-  const levelTargets = root.querySelectorAll("[data-bind='level'], #personLevel, .person-level");
-  levelTargets.forEach((el) => {
-    el.textContent = String(view.level);
-  });
+  setText(root, "[data-bind='class'], #personClass, .person-class", art.name);
+  setRowByLab(root, "#p-person", "Classe", art.name);
+  setRowByLab(root, "#p-skills", "Classe", art.name);
 
-  const classTargets = root.querySelectorAll("[data-bind='class'], #personClass, .person-class");
-  classTargets.forEach((el) => {
-    el.textContent = art.name;
-  });
+  setText(root, "[data-bind='level'], #personLevel, .person-level", String(view.level));
+  setRowByLab(root, "#p-person", "Nível", String(view.level));
 
-  const goldTargets = root.querySelectorAll("[data-bind='gold'], #goldValue, .gold-value, #invGold, #playerGold, #vaultPlayerGold");
-  goldTargets.forEach((el) => {
-    el.textContent = String(view.gold);
-  });
+  setText(root, "[data-bind='resets'], #personResets, .person-resets", String(view.resets));
+  setRowByLab(root, "#p-person", "Resets", String(view.resets));
+
+  setText(root, "[data-bind='gold'], #goldValue, .gold-value, #invGold, #playerGold, #vaultPlayerGold", String(view.gold));
 
   if (view.vaultGold !== undefined) {
-    root.querySelectorAll("#vaultBankGold, #vaultFootGold, [data-bind='vaultGold']").forEach((el) => {
-      el.textContent = String(view.vaultGold);
-    });
+    setText(root, "#vaultBankGold, #vaultFootGold, [data-bind='vaultGold']", String(view.vaultGold));
   }
 
   const attrMap: Record<string, number> = {
@@ -99,10 +105,61 @@ export function bindWirePanels(root: HTMLElement, view: CharacterViewModel): voi
     CONS: view.attrs.CONS,
     INT: view.attrs.INT,
   };
+  const statKey: Record<string, string> = {
+    FOR: "for",
+    DES: "des",
+    CONS: "cons",
+    INT: "int",
+  };
   for (const [key, value] of Object.entries(attrMap)) {
-    root.querySelectorAll(`[data-attr='${key}'], #attr-${key}, #attr${key}`).forEach((el) => {
-      el.textContent = String(value);
-    });
+    setText(root, `[data-attr='${key}'], #attr-${key}, #attr${key}`, String(value));
+    const row = root.querySelector(`#attr-list .attr[data-stat='${statKey[key]}']`);
+    const bold = row?.querySelector("b");
+    if (bold) bold.textContent = String(value);
+  }
+
+  if (view.attrPts !== undefined) {
+    setText(root, "[data-bind='attrPts'], #attr-pts", String(view.attrPts));
+  }
+
+  if (view.xp !== undefined && view.xpToNext !== undefined) {
+    const xpText = `${view.xp} / ${view.xpToNext}`;
+    setText(root, "[data-bind='xp']", xpText);
+    setRowByLab(root, "#p-person", "EXP", xpText);
+    const ratio = view.xpToNext > 0 ? Math.max(0, Math.min(1, view.xp / view.xpToNext)) : 0;
+    const pct = Math.round(ratio * 100);
+    const bar = root.querySelector("#p-person .bar");
+    if (bar) {
+      const fill = bar.querySelector("i");
+      const label = bar.querySelector("span");
+      if (fill) (fill as HTMLElement).style.width = `${pct}%`;
+      if (label) label.textContent = `${pct}%`;
+    }
+  }
+
+  if (view.hp !== undefined && view.maxHp !== undefined) {
+    setRowByLab(root, "#p-person .combat", "HP", `${Math.ceil(view.hp)} / ${Math.ceil(view.maxHp)}`);
+  }
+  if (view.mp !== undefined && view.maxMp !== undefined) {
+    setRowByLab(root, "#p-person .combat", "MP", `${Math.ceil(view.mp)} / ${Math.ceil(view.maxMp)}`);
+  }
+  if (view.attack !== undefined) {
+    setRowByLab(root, "#p-person .combat", "Ataque", String(view.attack));
+  }
+  if (view.defense !== undefined) {
+    setRowByLab(root, "#p-person .combat", "Defesa", String(view.defense));
+  }
+
+  if (view.spec) {
+    const cap = 40;
+    for (const tree of ["controle", "magia", "fisica"] as const) {
+      const row = root.querySelector(`#spec-spend .spend-row[data-tree='${tree}']`);
+      const num = row?.querySelector(".num");
+      if (num) num.textContent = `${view.spec[tree]}/${cap}`;
+    }
+  }
+  if (view.specPts !== undefined) {
+    setText(root, "#spec-pts, [data-bind='specPts']", String(view.specPts));
   }
 
   const api = (

@@ -365,6 +365,73 @@ textarea,
   width: 100%;
 }
 
+.drop-log {
+  position: absolute;
+  left: 14px;
+  bottom: 18px;
+  width: min(320px, calc(100vw - 28px));
+  max-height: 220px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 4px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 4;
+  font-family: var(--font-num);
+}
+
+.drop-log[hidden] {
+  display: none;
+}
+
+.drop-log-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--iron-hi);
+  border-left: 3px solid var(--gold);
+  background: rgba(16, 12, 8, 0.92);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.35;
+  animation: drop-log-in 0.16s ease-out;
+}
+
+.drop-log-line.item {
+  border-left-color: var(--frost);
+}
+
+.drop-log-line.lost {
+  border-left-color: var(--blood);
+  color: var(--blood-hi);
+}
+
+.drop-log-line.gold {
+  border-left-color: var(--gold);
+  color: var(--gold);
+}
+
+.drop-log-line .tag {
+  flex-shrink: 0;
+  min-width: 2.4em;
+  color: var(--ink-dim);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@keyframes drop-log-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .ui-toast {
   position: absolute;
   top: 72px;
@@ -422,6 +489,25 @@ textarea,
   }
   100% {
     transform: scale(1);
+  }
+}
+
+.stat-bar.flash-up .stat-fill {
+  animation: bar-flash-up 0.55s ease-out;
+}
+
+@keyframes bar-flash-up {
+  0% {
+    filter: brightness(1);
+    box-shadow: none;
+  }
+  35% {
+    filter: brightness(1.55);
+    box-shadow: 0 0 10px rgba(212, 160, 23, 0.65);
+  }
+  100% {
+    filter: brightness(1);
+    box-shadow: none;
   }
 }
 

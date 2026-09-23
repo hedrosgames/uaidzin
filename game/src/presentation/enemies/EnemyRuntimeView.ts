@@ -18,6 +18,7 @@ export class EnemyRuntimeView {
 
   constructor(parent: Group) {
     this.group.name = "enemies-view";
+    this.group.userData.occlusionIgnore = true;
     parent.add(this.group);
   }
 
@@ -82,6 +83,7 @@ export class EnemyRuntimeView {
       new MeshStandardMaterial({ color: COLORS[archetype], roughness: 0.55 }),
     );
     mesh.position.y = 0.55;
+    mesh.userData.occlusionIgnore = true;
     return mesh;
   }
 

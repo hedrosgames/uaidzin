@@ -1,6 +1,6 @@
 import { createGameApp } from "./app/GameCompositionRoot";
 import type { GameApp } from "./app/GameApp";
-import { runBootFlow } from "./app/BootFlow";
+import { releaseBootSceneFade, runBootFlow } from "./app/BootFlow";
 import "./style.css";
 
 function requireElement<T extends HTMLElement>(id: string): T {
@@ -29,6 +29,7 @@ async function bootstrap(): Promise<GameApp> {
     deathOverlayElement: requireElement<HTMLElement>("death-overlay"),
     timerElement: requireElement<HTMLElement>("dungeon-timer"),
     farmStatsElement: requireElement<HTMLElement>("farm-stats"),
+    dropLogElement: requireElement<HTMLElement>("drop-log"),
     resultOverlayElement: requireElement<HTMLElement>("result-overlay"),
     gamePanelsElement: requireElement<HTMLElement>("game-panels"),
     wireUiElement: requireElement<HTMLElement>("wire-ui"),
@@ -39,6 +40,7 @@ async function bootstrap(): Promise<GameApp> {
   });
   const character = await runBootFlow(document.body);
   app.start(character);
+  await releaseBootSceneFade();
   window.addEventListener("beforeunload", () => app.dispose());
   return app;
 }

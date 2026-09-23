@@ -22,7 +22,7 @@ export interface DungeonDef {
   name: string;
   minLevel: number;
   maxLevel: number;
-  
+  entryItemId?: string | null;
   durationSeconds: number;
   arenas: ArenaDef[];
 }

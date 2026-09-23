@@ -709,12 +709,19 @@ body{
     radial-gradient(ellipse at 50% 90%, rgba(212,160,23,.18), transparent 55%),
     linear-gradient(180deg,#1c1610,#0a0806);
   padding:6px 4px 0;
+  position:relative;
 }
-.class-opt .art img{
+.class-opt .art img,
+.class-opt .art .char-3d{
   height:140px;width:auto;max-width:100%;
   object-fit:contain;object-position:center bottom;
   filter:drop-shadow(0 6px 10px rgba(0,0,0,.55));
   pointer-events:none;
+}
+.class-opt .art .char-3d{
+  width:100%;
+  height:100%;
+  filter:none;
 }
 .class-opt .meta{padding:8px 6px 10px}
 .class-opt .cid{
@@ -789,9 +796,17 @@ input[type="range"]::-webkit-slider-thumb{
   position:absolute;inset:0;z-index:25;pointer-events:none;
   background:radial-gradient(ellipse 60% 55% at 50% 45%, transparent 40%, rgba(0,0,0,.55) 100%);
 }
+.scene-fade{
+  position:fixed;inset:0;background:#000;z-index:9999;
+  opacity:0;pointer-events:none;
+  transition:opacity .42s ease;
+}
+.scene-fade.on{opacity:1;pointer-events:auto}
+.scene-fade.hold{opacity:1;transition:none;pointer-events:auto}
 </style>
 </head>
 <body>
+<div class="scene-fade" id="sceneFade" aria-hidden="true"></div>
 
 <div class="viewport">
 <div class="stage" id="stage">
@@ -883,7 +898,7 @@ input[type="range"]::-webkit-slider-thumb{
       <div class="modal">
         <h2>Criar Mortal</h2>
         <label for="newName">Nome</label>
-        <input type="text" id="newName" maxlength="16" placeholder="nome do personagem" spellcheck="false">
+        <input type="text" id="newName" maxlength="12" placeholder="nome do personagem" spellcheck="false">
         <label>Classe</label>
         <div class="class-pick" id="classPick"></div>
         <div class="btn-row">
@@ -917,6 +932,7 @@ input[type="range"]::-webkit-slider-thumb{
         <div class="set-row"><span>Tela cheia</span><div class="ctrl"><input type="checkbox" class="toggle" id="optFullscreen"></div></div>
         <div class="set-row"><span>Sombras</span><div class="ctrl"><input type="checkbox" class="toggle" id="optShadows" checked></div></div>
         <div class="btn-row">
+          <button type="button" class="btn-iron danger" id="btnLogout">Deslogar</button>
           <button type="button" class="btn-iron" id="btnSettingsCancel">Fechar</button>
           <button type="button" class="btn-primary" id="btnSettingsSave">Salvar</button>
         </div>
@@ -952,6 +968,52 @@ window.__mountCharPreview = mountCharPreview;
 </script>
 <script src="assets/save-store.js"></script>
 <script>(function(){
+  const inBootFrame = !!(window.parent && window.parent !== window);
+  const sceneFadeEl = document.getElementById("sceneFade");
+
+  function sceneFadeOutEnter(){
+    if (!sceneFadeEl || inBootFrame) return;
+    try {
+      if (sessionStorage.getItem("uaidzin_boot_fade") !== "1") return;
+      sessionStorage.removeItem("uaidzin_boot_fade");
+    } catch (_) {
+      return;
+    }
+    sceneFadeEl.classList.add("hold");
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        sceneFadeEl.classList.remove("hold");
+        sceneFadeEl.classList.add("on");
+        requestAnimationFrame(function () {
+          sceneFadeEl.classList.remove("on");
+        });
+      });
+    });
+  }
+
+  function sceneFadeNavigate(url, parentMessage){
+    if (inBootFrame && parentMessage) {
+      window.parent.postMessage(parentMessage, "*");
+      return;
+    }
+    try { sessionStorage.setItem("uaidzin_boot_fade", "1"); } catch (_) {}
+    if (!sceneFadeEl) {
+      window.location.href = url;
+      return;
+    }
+    sceneFadeEl.classList.add("on");
+    var navigated = false;
+    var go = function () {
+      if (navigated) return;
+      navigated = true;
+      window.location.href = url;
+    };
+    sceneFadeEl.addEventListener("transitionend", go, { once: true });
+    setTimeout(go, 500);
+  }
+
+  sceneFadeOutEnter();
+
   const CLASSES = {
     TK: {
       id:"TK", name:"Thegn Knight", namePt:"Cavaleiro Thegn", primary:"FOR",
@@ -1119,10 +1181,28 @@ window.__mountCharPreview = mountCharPreview;
         out[i] = null;
         continue;
       }
+      const attrs = s.attrs || {};
+      const trees = s.trees || {};
+      const spec = s.spec || {};
       out[i] = {
         ...s,
         profileId: s.profileId || (String(session.user) + ":slot:" + i),
-        attrs: s.attrs || { FOR:5, DES:5, CONS:5, INT:5 },
+        attrs: {
+          FOR: Number.isFinite(Number(attrs.FOR)) ? Number(attrs.FOR) : 5,
+          DES: Number.isFinite(Number(attrs.DES)) ? Number(attrs.DES) : 5,
+          CONS: Number.isFinite(Number(attrs.CONS)) ? Number(attrs.CONS) : 5,
+          INT: Number.isFinite(Number(attrs.INT)) ? Number(attrs.INT) : 5,
+        },
+        trees: {
+          controle: Number(trees.controle) || 0,
+          magia: Number(trees.magia) || 0,
+          fisica: Number(trees.fisica) || 0,
+        },
+        spec: {
+          controle: Number(spec.controle) || 0,
+          magia: Number(spec.magia) || 0,
+          fisica: Number(spec.fisica) || 0,
+        },
         gold: Number(s.gold) || 0,
         resets: Number(s.resets) || 0,
         level: Number(s.level) || 1,
@@ -1303,18 +1383,42 @@ window.__mountCharPreview = mountCharPreview;
   const newName = document.getElementById("newName");
   const classPick = document.getElementById("classPick");
   const btnCreateConfirm = document.getElementById("btnCreateConfirm");
+  let classPickDisposers = [];
+
+  function clearClassPickPreviews(){
+    for (const stop of classPickDisposers) {
+      try { stop(); } catch (_) {}
+    }
+    classPickDisposers = [];
+  }
 
   function renderClassPick(){
+    const existing = [...classPick.querySelectorAll(".class-opt")];
+    if (existing.length === Object.keys(CLASSES).length && classPickDisposers.length) {
+      existing.forEach((d) => {
+        d.classList.toggle("sel", d.dataset.classId === createClassId);
+      });
+      return;
+    }
+    clearClassPickPreviews();
     classPick.innerHTML = "";
     Object.values(CLASSES).forEach(c => {
       const d = document.createElement("div");
       d.className = "class-opt" + (c.id === createClassId ? " sel" : "");
+      d.dataset.classId = c.id;
       d.innerHTML = `
-        <div class="art"><img src="${c.img}" alt=""></div>
+        <div class="art"></div>
         <div class="meta">
           <div class="cid">${c.id}</div>
           <div class="cname">${c.namePt}</div>
         </div>`;
+      const art = d.querySelector(".art");
+      const mount = window.__mountCharPreview;
+      if (mount && art) {
+        classPickDisposers.push(mount(art, c.id));
+      } else if (art) {
+        art.innerHTML = `<img src="${c.img}" alt="">`;
+      }
       d.addEventListener("click", () => {
         createClassId = c.id;
         renderClassPick();
@@ -1323,8 +1427,11 @@ window.__mountCharPreview = mountCharPreview;
       classPick.appendChild(d);
     });
   }
+  function isValidCharName(name){
+    return /^[A-Za-zÀ-ÖØ-öø-ÿ]{3,12}$/.test(name);
+  }
   function refreshCreateBtn(){
-    btnCreateConfirm.disabled = !(newName.value.trim().length >= 2 && createClassId);
+    btnCreateConfirm.disabled = !(isValidCharName(newName.value.trim()) && createClassId);
   }
   newName.addEventListener("input", refreshCreateBtn);
 
@@ -1333,34 +1440,38 @@ window.__mountCharPreview = mountCharPreview;
     if (emptyIdx < 0) { toast("Todos os 4 slots estão ocupados.", true); return; }
     newName.value = "";
     createClassId = "TK";
+    clearClassPickPreviews();
+    classPick.innerHTML = "";
     renderClassPick();
     refreshCreateBtn();
     modalCreate.classList.add("open");
   }
   document.getElementById("btnCreateFirst").addEventListener("click", openCreate);
   document.getElementById("btnCreateCancel").addEventListener("click", () => {
+    clearClassPickPreviews();
     modalCreate.classList.remove("open");
   });
   btnCreateConfirm.addEventListener("click", async () => {
     const name = newName.value.trim();
-    if (name.length < 2) { toast("Nome muito curto.", true); return; }
+    if (!isValidCharName(name)) { toast("Nome: 3 a 12 letras, sem número ou símbolo.", true); return; }
     if (!createClassId) return;
     const emptyIdx = slots.findIndex(s => !s);
     if (emptyIdx < 0) { toast("Sem slots livres.", true); return; }
 
-    const base = CLASSES[createClassId].base;
     const slot = {
       profileId: String(session.user) + ":slot:" + emptyIdx,
       classId: createClassId,
       name,
       level: 1,
-      gold: 100,
-      attrs: { ...base },
+      gold: 0,
+      attrs: { FOR:5, DES:5, CONS:5, INT:5 },
       trees: { controle:0, magia:0, fisica:0 },
       spec: { controle:0, magia:0, fisica:0 },
       evolution: "Mortal",
       resets: 0
     };
+    clearClassPickPreviews();
+    if (UaidzinSave.clearProfileStorage) await UaidzinSave.clearProfileStorage(slot.profileId);
     slots[emptyIdx] = slot;
     await persist();
     modalCreate.classList.remove("open");
@@ -1381,7 +1492,7 @@ window.__mountCharPreview = mountCharPreview;
     if (selected < 0 || !slots[selected]) return;
     const name = slots[selected].name;
     if (UaidzinSave.deleteSlot) {
-      slots = await UaidzinSave.deleteSlot(session, selected);
+      slots = normalizeSlots(await UaidzinSave.deleteSlot(session, selected));
     } else {
       const profileId = slots[selected].profileId || (String(session.user) + ":slot:" + selected);
       if (UaidzinSave.clearProfileStorage) UaidzinSave.clearProfileStorage(profileId);
@@ -1419,11 +1530,11 @@ window.__mountCharPreview = mountCharPreview;
     toast(slot.name + " entra em Aurelion.");
 
     setTimeout(() => {
-      if (window.parent && window.parent !== window) {
+      if (inBootFrame) {
         window.parent.postMessage({ type: "uaidzin-boot-enter", character: character }, "*");
-      } else {
-        window.location.href = "/";
+        return;
       }
+      sceneFadeNavigate("/");
     }, 450);
   });
 
@@ -1438,6 +1549,17 @@ window.__mountCharPreview = mountCharPreview;
     saveSettings();
     overlay.classList.remove("open");
     toast("Opções salvas.");
+  });
+  document.getElementById("btnLogout").addEventListener("click", () => {
+    try {
+      sessionStorage.removeItem("uaidzin_active_char");
+      if (inBootFrame) {
+        window.parent.sessionStorage.removeItem("uaidzin_active_char");
+      }
+    } catch (_) {}
+    if (UaidzinSave.logout) UaidzinSave.logout();
+    overlay.classList.remove("open");
+    sceneFadeNavigate("01-login.html", { type: "uaidzin-boot-need-login" });
   });
 
   function loadSettings(){

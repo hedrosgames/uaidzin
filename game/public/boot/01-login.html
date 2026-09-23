@@ -170,21 +170,27 @@ body{font-family:var(--font-ui);color:var(--ink)}
 .link-btn:hover{color:var(--gold)}
 
 
-.btn-shield{
+.btn-shield,.btn-cta{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   width:100%;
   font-family:var(--font-ui);font-size:13px;font-weight:700;
   letter-spacing:.12em;text-transform:uppercase;
   padding:14px 20px 18px;
   cursor:pointer;border:none;color:#1a1408;
-  clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 6px),50% 100%,0 calc(100% - 6px),0 10px);
   background:linear-gradient(180deg,#e0bc38 0%,#c9a227 45%,#9a7a1a 100%);
   transition:filter .15s, transform .1s;
   text-shadow:0 1px 0 rgba(255,255,255,.25);
 }
-.btn-shield:hover:not(:disabled){filter:brightness(1.12)}
-.btn-shield:active:not(:disabled){transform:translateY(1px)}
-.btn-shield:disabled{
+.btn-shield{
+  clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 6px),50% 100%,0 calc(100% - 6px),0 10px);
+}
+.btn-cta{
+  border-radius:2px;
+  padding:14px 20px;
+}
+.btn-shield:hover:not(:disabled),.btn-cta:hover:not(:disabled){filter:brightness(1.12)}
+.btn-shield:active:not(:disabled),.btn-cta:active:not(:disabled){transform:translateY(1px)}
+.btn-shield:disabled,.btn-cta:disabled{
   background:linear-gradient(180deg,#3d3228,#2a2118);
   color:var(--ink-mute);
   cursor:not-allowed;
@@ -215,6 +221,26 @@ body{font-family:var(--font-ui);color:var(--ink)}
   width:20px;height:20px;flex-shrink:0;
   display:block;
 }
+.btn-create{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;margin-top:10px;
+  font-family:var(--font-ui);font-size:13px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:12px 18px 14px;cursor:pointer;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.05) 0%, transparent 40%),
+    linear-gradient(180deg,#3d3228 0%,#241c14 55%,#1a140e 100%);
+  border:1px solid var(--iron-hi);
+  color:var(--ink-dim);
+  border-radius:2px;
+  transition:filter .15s, border-color .15s, color .15s;
+}
+.btn-create:hover{
+  filter:brightness(1.15);
+  border-color:var(--gold-dim);
+  color:var(--ink);
+}
+.btn-create:active{filter:brightness(1.05)}
 .or{
   display:flex;align-items:center;gap:12px;margin:16px 0;
   font-size:10px;letter-spacing:.2em;text-transform:uppercase;
@@ -343,6 +369,13 @@ input[type="range"]::-webkit-slider-thumb{
 @keyframes fadeOut{
   to{opacity:0;transform:scale(.98) translateY(-8px)}
 }
+.scene-fade{
+  position:fixed;inset:0;background:#000;z-index:9999;
+  opacity:0;pointer-events:none;
+  transition:opacity .42s ease;
+}
+.scene-fade.on{opacity:1;pointer-events:auto}
+.scene-fade.hold{opacity:1;transition:none;pointer-events:auto}
 .next-hint{
   display:none;text-align:center;margin-top:28px;
   font-size:13px;color:var(--gold-hi);
@@ -352,6 +385,7 @@ input[type="range"]::-webkit-slider-thumb{
 </style>
 </head>
 <body>
+<div class="scene-fade" id="sceneFade" aria-hidden="true"></div>
 
 <div class="viewport">
 <div class="stage" id="stage">
@@ -423,6 +457,8 @@ input[type="range"]::-webkit-slider-thumb{
         </svg>
         Entrar com Google
       </button>
+
+      <button type="button" class="btn-create" id="btnCreateAccount">Criar conta</button>
 
       <div class="msg error" id="msgError" role="alert">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -507,6 +543,7 @@ input[type="range"]::-webkit-slider-thumb{
   const pass = $("pass");
   const saveCreds = $("saveCreds");
   const btnLogin = $("btnLogin");
+  const btnCreateAccount = $("btnCreateAccount");
   const form = $("loginForm");
   const msgError = $("msgError");
   const msgErrorText = $("msgErrorText");
@@ -514,6 +551,53 @@ input[type="range"]::-webkit-slider-thumb{
   const msgSuccessText = $("msgSuccessText");
   const msgInfo = $("msgInfo");
   const msgInfoText = $("msgInfoText");
+  let authMode = "login";
+  const inBootFrame = !!(window.parent && window.parent !== window);
+  const sceneFadeEl = $("sceneFade");
+
+  function sceneFadeOutEnter(){
+    if (!sceneFadeEl) return;
+    if (inBootFrame) return;
+    try {
+      if (sessionStorage.getItem("uaidzin_boot_fade") !== "1") return;
+      sessionStorage.removeItem("uaidzin_boot_fade");
+    } catch (_) {
+      return;
+    }
+    sceneFadeEl.classList.add("hold");
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        sceneFadeEl.classList.remove("hold");
+        sceneFadeEl.classList.add("on");
+        requestAnimationFrame(function () {
+          sceneFadeEl.classList.remove("on");
+        });
+      });
+    });
+  }
+
+  function goSelecao(session){
+    if (inBootFrame) {
+      window.parent.postMessage({ type: "uaidzin-boot-login-ok", session: session || UaidzinSave.getSession() }, "*");
+      return;
+    }
+    try { sessionStorage.setItem("uaidzin_boot_fade", "1"); } catch (_) {}
+    if (!sceneFadeEl) {
+      window.location.href = "02-selecao-personagem.html";
+      return;
+    }
+    sceneFadeEl.classList.add("on");
+    var navigated = false;
+    var go = function () {
+      if (navigated) return;
+      navigated = true;
+      window.location.href = "02-selecao-personagem.html";
+    };
+    sceneFadeEl.addEventListener("transitionend", go, { once: true });
+    setTimeout(go, 500);
+  }
+
+  sceneFadeOutEnter();
 
   function hideMsgs(){
     msgError.classList.remove("show");
@@ -528,13 +612,39 @@ input[type="range"]::-webkit-slider-thumb{
   function fieldsFilled(){
     return user.value.trim().length > 0 && pass.value.length > 0;
   }
+  function ctaLabel(){
+    return authMode === "create" ? "Criar" : "Entrar";
+  }
   function refreshBtn(){
     btnLogin.disabled = !fieldsFilled();
+    if (btnLogin.textContent !== "Verificando…" && btnLogin.textContent !== "Criando…") {
+      btnLogin.textContent = ctaLabel();
+    }
+  }
+  function syncCtaShape(){
+    if (authMode === "create") {
+      btnLogin.classList.remove("btn-shield");
+      btnLogin.classList.add("btn-cta");
+    } else {
+      btnLogin.classList.remove("btn-cta");
+      btnLogin.classList.add("btn-shield");
+    }
+  }
+  function setAuthMode(mode){
+    authMode = mode === "create" ? "create" : "login";
+    hideMsgs();
+    if (authMode === "create") {
+      btnCreateAccount.textContent = "Voltar";
+      pass.setAttribute("autocomplete", "new-password");
+    } else {
+      btnCreateAccount.textContent = "Criar conta";
+      pass.setAttribute("autocomplete", "current-password");
+    }
+    syncCtaShape();
+    refreshBtn();
   }
 
-  UaidzinSave.bootstrap().then(() => {
-    console.log("bootstrap ok", UaidzinSave._debug);
-  }).catch((e) => console.error("bootstrap", e));
+  UaidzinSave.bootstrap().catch(() => {});
 
   user.addEventListener("input", () => { hideMsgs(); refreshBtn(); });
   pass.addEventListener("input", () => { hideMsgs(); refreshBtn(); });
@@ -545,11 +655,7 @@ input[type="range"]::-webkit-slider-thumb{
 
   try {
     if (UaidzinSave.getSession()) {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: "uaidzin-boot-login-ok", session: UaidzinSave.getSession() }, "*");
-      } else {
-        window.location.href = "02-selecao-personagem.html";
-      }
+      goSelecao(UaidzinSave.getSession());
     }
   } catch (_) {}
 
@@ -574,22 +680,42 @@ input[type="range"]::-webkit-slider-thumb{
     const p = pass.value;
 
     if (!u || !p) {
-      showMsg(msgError, msgErrorText, "Preencha login e senha para entrar.");
+      showMsg(msgError, msgErrorText, authMode === "create"
+        ? "Preencha login e senha para criar a conta."
+        : "Preencha login e senha para entrar.");
       return;
     }
 
+    const creating = authMode === "create";
     btnLogin.disabled = true;
-    btnLogin.textContent = "Verificando…";
+    btnLogin.textContent = creating ? "Criando…" : "Verificando…";
 
-    UaidzinSave.bootstrap()
-      .then(() => UaidzinSave.login(u, p))
+    const flow = creating
+      ? UaidzinSave.bootstrap()
+          .then(() => UaidzinSave.registerAccount(u, p))
+          .then((reg) => {
+            if (!reg || !reg.ok) {
+              return { ok: false, error: (reg && reg.error) || "Não foi possível criar a conta." };
+            }
+            return UaidzinSave.login(u, p).then((res) => {
+              if (!res || !res.ok) return res;
+              return UaidzinSave.saveData(res.session, {
+                slots: [null, null, null, null],
+                vault: { gold: 0, items: [] },
+              }).then(() => res);
+            });
+          })
+      : UaidzinSave.bootstrap().then(() => UaidzinSave.login(u, p));
+
+    flow
       .then((res) => {
-        btnLogin.textContent = "Entrar";
         refreshBtn();
 
         if (!res || !res.ok) {
-          showMsg(msgError, msgErrorText, (res && res.error) || "Login ou senha inválidos.");
-          pass.value = "";
+          showMsg(msgError, msgErrorText, (res && res.error) || (creating
+            ? "Não foi possível criar a conta."
+            : "Login ou senha inválidos."));
+          if (!creating) pass.value = "";
           refreshBtn();
           return;
         }
@@ -602,36 +728,61 @@ input[type="range"]::-webkit-slider-thumb{
           else localStorage.removeItem("uaidzin_login");
         }
 
-        showMsg(msgSuccess, msgSuccessText, "Bem-vindo, " + u + ".");
+        showMsg(msgSuccess, msgSuccessText, creating
+          ? "Conta criada. Bem-vindo, " + u + "."
+          : "Bem-vindo, " + u + ".");
         setTimeout(() => {
           $("stage").classList.add("leaving");
-          if (window.parent && window.parent !== window) {
-            const session = UaidzinSave.getSession();
-            window.parent.postMessage({ type: "uaidzin-boot-login-ok", session: session }, "*");
-          } else {
-            window.location.href = "02-selecao-personagem.html";
-          }
+          goSelecao(UaidzinSave.getSession());
         }, 650);
       })
       .catch((err) => {
-        console.error("login", err);
-        btnLogin.textContent = "Entrar";
+        console.error(creating ? "register" : "login", err);
         refreshBtn();
-        showMsg(msgError, msgErrorText, "Falha ao entrar.");
+        showMsg(msgError, msgErrorText, creating
+          ? "Falha ao criar a conta."
+          : "Falha ao entrar.");
       });
+  });
+
+  btnCreateAccount.addEventListener("click", () => {
+    setAuthMode(authMode === "create" ? "login" : "create");
   });
 
   $("btnGoogle").addEventListener("click", () => {
     hideMsgs();
+    setAuthMode("login");
     btnLogin.disabled = true;
     showMsg(msgInfo, msgInfoText, "Conectando ao Google…");
     setTimeout(() => {
-      user.value = "admin";
-      pass.value = "admin";
-      saveCreds.checked = true;
-      refreshBtn();
-      showMsg(msgSuccess, msgSuccessText, "Conta do Google vinculada. Clique em Entrar.");
-    }, 900);
+      UaidzinSave.loginGoogleSimulated()
+        .then((res) => {
+          refreshBtn();
+          if (!res || !res.ok) {
+            showMsg(msgError, msgErrorText, (res && res.error) || "Falha ao entrar com Google.");
+            return;
+          }
+          const u = res.userId || (res.session && res.session.user) || "";
+          if (user.value !== u) {
+            user.value = u;
+            pass.value = "";
+          }
+          if (saveCreds.checked) {
+            if (UaidzinSave.rememberUser) UaidzinSave.rememberUser(u);
+            else localStorage.setItem("uaidzin_login", JSON.stringify({ user: u }));
+          }
+          showMsg(msgSuccess, msgSuccessText, "Bem-vindo, " + u + ".");
+          setTimeout(() => {
+            $("stage").classList.add("leaving");
+            goSelecao(UaidzinSave.getSession());
+          }, 650);
+        })
+        .catch((err) => {
+          console.error("google", err);
+          refreshBtn();
+          showMsg(msgError, msgErrorText, "Falha ao entrar com Google.");
+        });
+    }, 400);
   });
 
   const overlay = $("overlaySettings");

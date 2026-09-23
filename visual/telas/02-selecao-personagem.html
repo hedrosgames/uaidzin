@@ -284,12 +284,18 @@ body{
   transform-origin:50% 100%;
   display:flex;align-items:flex-end;justify-content:center;
 }
-.char .body img{
+.char .body img,
+.char .body .char-3d{
   width:auto;height:100%;max-width:100%;
   object-fit:contain;object-position:center bottom;
   display:block;
   pointer-events:none;
   user-select:none;
+}
+.char .body .char-3d{
+  width:100%;
+  height:100%;
+  filter:none;
 }
 
 
@@ -704,12 +710,19 @@ body{
     radial-gradient(ellipse at 50% 90%, rgba(212,160,23,.18), transparent 55%),
     linear-gradient(180deg,#1c1610,#0a0806);
   padding:6px 4px 0;
+  position:relative;
 }
-.class-opt .art img{
+.class-opt .art img,
+.class-opt .art .char-3d{
   height:140px;width:auto;max-width:100%;
   object-fit:contain;object-position:center bottom;
   filter:drop-shadow(0 6px 10px rgba(0,0,0,.55));
   pointer-events:none;
+}
+.class-opt .art .char-3d{
+  width:100%;
+  height:100%;
+  filter:none;
 }
 .class-opt .meta{padding:8px 6px 10px}
 .class-opt .cid{
@@ -784,9 +797,17 @@ input[type="range"]::-webkit-slider-thumb{
   position:absolute;inset:0;z-index:25;pointer-events:none;
   background:radial-gradient(ellipse 60% 55% at 50% 45%, transparent 40%, rgba(0,0,0,.55) 100%);
 }
+.scene-fade{
+  position:fixed;inset:0;background:#000;z-index:9999;
+  opacity:0;pointer-events:none;
+  transition:opacity .42s ease;
+}
+.scene-fade.on{opacity:1;pointer-events:auto}
+.scene-fade.hold{opacity:1;transition:none;pointer-events:auto}
 </style>
 </head>
 <body>
+<div class="scene-fade" id="sceneFade" aria-hidden="true"></div>
 
 <div class="viewport">
 <div class="stage" id="stage">
@@ -878,7 +899,7 @@ input[type="range"]::-webkit-slider-thumb{
       <div class="modal">
         <h2>Criar Mortal</h2>
         <label for="newName">Nome</label>
-        <input type="text" id="newName" maxlength="16" placeholder="nome do personagem" spellcheck="false">
+        <input type="text" id="newName" maxlength="12" placeholder="nome do personagem" spellcheck="false">
         <label>Classe</label>
         <div class="class-pick" id="classPick"></div>
         <div class="btn-row">
@@ -912,6 +933,7 @@ input[type="range"]::-webkit-slider-thumb{
         <div class="set-row"><span>Tela cheia</span><div class="ctrl"><input type="checkbox" class="toggle" id="optFullscreen"></div></div>
         <div class="set-row"><span>Sombras</span><div class="ctrl"><input type="checkbox" class="toggle" id="optShadows" checked></div></div>
         <div class="btn-row">
+          <button type="button" class="btn-iron danger" id="btnLogout">Deslogar</button>
           <button type="button" class="btn-iron" id="btnSettingsCancel">Fechar</button>
           <button type="button" class="btn-primary" id="btnSettingsSave">Salvar</button>
         </div>
@@ -920,8 +942,66 @@ input[type="range"]::-webkit-slider-thumb{
   </div>
 </div>
 
+<script type="importmap">
+{
+  "imports": {
+    "three": "/vendor/three/three.module.js",
+    "three/addons/": "/vendor/three/addons/"
+  }
+}
+</script>
+<script type="module">
+import { mountCharPreview } from "./assets/char-preview.mjs";
+window.__mountCharPreview = mountCharPreview;
+</script>
 <script src="assets/save-store.js"></script>
 <script>(function(){
+  const inBootFrame = !!(window.parent && window.parent !== window);
+  const sceneFadeEl = document.getElementById("sceneFade");
+
+  function sceneFadeOutEnter(){
+    if (!sceneFadeEl || inBootFrame) return;
+    try {
+      if (sessionStorage.getItem("uaidzin_boot_fade") !== "1") return;
+      sessionStorage.removeItem("uaidzin_boot_fade");
+    } catch (_) {
+      return;
+    }
+    sceneFadeEl.classList.add("hold");
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        sceneFadeEl.classList.remove("hold");
+        sceneFadeEl.classList.add("on");
+        requestAnimationFrame(function () {
+          sceneFadeEl.classList.remove("on");
+        });
+      });
+    });
+  }
+
+  function sceneFadeNavigate(url, parentMessage){
+    if (inBootFrame && parentMessage) {
+      window.parent.postMessage(parentMessage, "*");
+      return;
+    }
+    try { sessionStorage.setItem("uaidzin_boot_fade", "1"); } catch (_) {}
+    if (!sceneFadeEl) {
+      window.location.href = url;
+      return;
+    }
+    sceneFadeEl.classList.add("on");
+    var navigated = false;
+    var go = function () {
+      if (navigated) return;
+      navigated = true;
+      window.location.href = url;
+    };
+    sceneFadeEl.addEventListener("transitionend", go, { once: true });
+    setTimeout(go, 500);
+  }
+
+  sceneFadeOutEnter();
+
   const CLASSES = {
     TK: {
       id:"TK", name:"Thegn Knight", namePt:"Cavaleiro Thegn", primary:"FOR",
@@ -1076,18 +1156,7 @@ input[type="range"]::-webkit-slider-thumb{
   }
 
   const MAX_SLOTS = 4;
-  const DEFAULT_SLOTS = [
-    { classId:"TK", name:"Bjorn", level:42, gold:12840,
-      attrs:{ FOR:48, DES:22, CONS:35, INT:12 },
-      trees:{ controle:5, magia:2, fisica:6 }, spec:{ controle:2, magia:0, fisica:3 }, evolution:"Mortal", resets:0 },
-    { classId:"FM", name:"Ylva", level:18, gold:3200,
-      attrs:{ FOR:12, DES:18, CONS:14, INT:30 },
-      trees:{ controle:3, magia:5, fisica:1 }, spec:{ controle:1, magia:2, fisica:0 }, evolution:"Mortal", resets:0 },
-    null,
-    { classId:"HT", name:"Sigrid", level:91, gold:48220,
-      attrs:{ FOR:28, DES:60, CONS:22, INT:16 },
-      trees:{ controle:4, magia:3, fisica:7 }, spec:{ controle:1, magia:1, fisica:4 }, evolution:"Mortal", resets:0 },
-  ];
+  const DEFAULT_SLOTS = [null, null, null, null];
 
   const session = UaidzinSave.requireSession();
   if (!session) return;
@@ -1096,7 +1165,37 @@ input[type="range"]::-webkit-slider-thumb{
     const out = [];
     for (let i=0;i<MAX_SLOTS;i++) {
       const s = arr && arr[i];
-      out[i] = s && s.classId && CLASSES[s.classId] ? s : null;
+      if (!(s && s.classId && CLASSES[s.classId])) {
+        out[i] = null;
+        continue;
+      }
+      const attrs = s.attrs || {};
+      const trees = s.trees || {};
+      const spec = s.spec || {};
+      out[i] = {
+        ...s,
+        profileId: s.profileId || (session ? String(session.user) + ":slot:" + i : ""),
+        attrs: {
+          FOR: Number.isFinite(Number(attrs.FOR)) ? Number(attrs.FOR) : 5,
+          DES: Number.isFinite(Number(attrs.DES)) ? Number(attrs.DES) : 5,
+          CONS: Number.isFinite(Number(attrs.CONS)) ? Number(attrs.CONS) : 5,
+          INT: Number.isFinite(Number(attrs.INT)) ? Number(attrs.INT) : 5,
+        },
+        trees: {
+          controle: Number(trees.controle) || 0,
+          magia: Number(trees.magia) || 0,
+          fisica: Number(trees.fisica) || 0,
+        },
+        spec: {
+          controle: Number(spec.controle) || 0,
+          magia: Number(spec.magia) || 0,
+          fisica: Number(spec.fisica) || 0,
+        },
+        gold: Number(s.gold) || 0,
+        resets: Number(s.resets) || 0,
+        level: Number(s.level) || 1,
+        evolution: s.evolution || "Mortal",
+      };
     }
     return out;
   }
@@ -1114,6 +1213,7 @@ input[type="range"]::-webkit-slider-thumb{
   let slots = DEFAULT_SLOTS.map(s => s ? JSON.parse(JSON.stringify(s)) : null);
   let selected = -1;
   let createClassId = "TK";
+  let previewDisposers = [];
 
   const scene = document.getElementById("scene");
   const roster = document.getElementById("roster");
@@ -1133,7 +1233,15 @@ input[type="range"]::-webkit-slider-thumb{
     t._tm = setTimeout(() => t.classList.remove("show"), 2000);
   }
 
+  function clearPreviews(){
+    for (const stop of previewDisposers) {
+      try { stop(); } catch (_) {}
+    }
+    previewDisposers = [];
+  }
+
   function buildScene(){
+    clearPreviews();
     roster.innerHTML = "";
     slotList.innerHTML = "";
 
@@ -1155,8 +1263,15 @@ input[type="range"]::-webkit-slider-thumb{
         el.dataset.i = String(i);
         el.innerHTML = `
           <div class="label"><div class="nm">${slot.name}</div><div class="lv">Nível ${slot.level}</div></div>
-          <div class="body"><img src="${c.img}" alt=""></div>
+          <div class="body"></div>
           <div class="glow"></div>`;
+        const body = el.querySelector(".body");
+        const mount = window.__mountCharPreview;
+        if (mount && body) {
+          previewDisposers.push(mount(body, slot.classId));
+        } else if (body) {
+          body.innerHTML = `<img src="${c.img}" alt="">`;
+        }
         el.addEventListener("click", () => selectSlot(i));
         roster.appendChild(el);
       }
@@ -1255,18 +1370,42 @@ input[type="range"]::-webkit-slider-thumb{
   const newName = document.getElementById("newName");
   const classPick = document.getElementById("classPick");
   const btnCreateConfirm = document.getElementById("btnCreateConfirm");
+  let classPickDisposers = [];
+
+  function clearClassPickPreviews(){
+    for (const stop of classPickDisposers) {
+      try { stop(); } catch (_) {}
+    }
+    classPickDisposers = [];
+  }
 
   function renderClassPick(){
+    const existing = [...classPick.querySelectorAll(".class-opt")];
+    if (existing.length === Object.keys(CLASSES).length && classPickDisposers.length) {
+      existing.forEach((d) => {
+        d.classList.toggle("sel", d.dataset.classId === createClassId);
+      });
+      return;
+    }
+    clearClassPickPreviews();
     classPick.innerHTML = "";
     Object.values(CLASSES).forEach(c => {
       const d = document.createElement("div");
       d.className = "class-opt" + (c.id === createClassId ? " sel" : "");
+      d.dataset.classId = c.id;
       d.innerHTML = `
-        <div class="art"><img src="${c.img}" alt=""></div>
+        <div class="art"></div>
         <div class="meta">
           <div class="cid">${c.id}</div>
           <div class="cname">${c.namePt}</div>
         </div>`;
+      const art = d.querySelector(".art");
+      const mount = window.__mountCharPreview;
+      if (mount && art) {
+        classPickDisposers.push(mount(art, c.id));
+      } else if (art) {
+        art.innerHTML = `<img src="${c.img}" alt="">`;
+      }
       d.addEventListener("click", () => {
         createClassId = c.id;
         renderClassPick();
@@ -1275,8 +1414,11 @@ input[type="range"]::-webkit-slider-thumb{
       classPick.appendChild(d);
     });
   }
+  function isValidCharName(name){
+    return /^[A-Za-zÀ-ÖØ-öø-ÿ]{3,12}$/.test(name);
+  }
   function refreshCreateBtn(){
-    btnCreateConfirm.disabled = !(newName.value.trim().length >= 2 && createClassId);
+    btnCreateConfirm.disabled = !(isValidCharName(newName.value.trim()) && createClassId);
   }
   newName.addEventListener("input", refreshCreateBtn);
 
@@ -1285,33 +1427,38 @@ input[type="range"]::-webkit-slider-thumb{
     if (emptyIdx < 0) { toast("Todos os 4 slots estão ocupados.", true); return; }
     newName.value = "";
     createClassId = "TK";
+    clearClassPickPreviews();
+    classPick.innerHTML = "";
     renderClassPick();
     refreshCreateBtn();
     modalCreate.classList.add("open");
   }
   document.getElementById("btnCreateFirst").addEventListener("click", openCreate);
   document.getElementById("btnCreateCancel").addEventListener("click", () => {
+    clearClassPickPreviews();
     modalCreate.classList.remove("open");
   });
   btnCreateConfirm.addEventListener("click", async () => {
     const name = newName.value.trim();
-    if (name.length < 2) { toast("Nome muito curto.", true); return; }
+    if (!isValidCharName(name)) { toast("Nome: 3 a 12 letras, sem número ou símbolo.", true); return; }
     if (!createClassId) return;
     const emptyIdx = slots.findIndex(s => !s);
     if (emptyIdx < 0) { toast("Sem slots livres.", true); return; }
 
-    const base = CLASSES[createClassId].base;
     const slot = {
+      profileId: session ? String(session.user) + ":slot:" + emptyIdx : "",
       classId: createClassId,
       name,
       level: 1,
-      gold: 100,
-      attrs: { ...base },
+      gold: 0,
+      attrs: { FOR:5, DES:5, CONS:5, INT:5 },
       trees: { controle:0, magia:0, fisica:0 },
       spec: { controle:0, magia:0, fisica:0 },
       evolution: "Mortal",
       resets: 0
     };
+    clearClassPickPreviews();
+    if (slot.profileId && UaidzinSave.clearProfileStorage) await UaidzinSave.clearProfileStorage(slot.profileId);
     slots[emptyIdx] = slot;
     await persist();
     modalCreate.classList.remove("open");
@@ -1342,18 +1489,26 @@ input[type="range"]::-webkit-slider-thumb{
   document.getElementById("btnConnect").addEventListener("click", () => {
     if (selected < 0 || !slots[selected]) return;
     const slot = slots[selected];
+    const character = {
+      id: slot.profileId || (session ? String(session.user) + ":slot:" + selected : ""),
+      slotIndex: selected,
+      name: slot.name,
+      classId: slot.classId,
+      level: slot.level,
+      evolution: slot.evolution || "Mortal",
+      gold: slot.gold || 0,
+      attrs: slot.attrs,
+      trees: slot.trees,
+      spec: slot.spec,
+      resets: slot.resets || 0,
+    };
     try {
-      sessionStorage.setItem("uaidzin_active_char", JSON.stringify({
-        name: slot.name,
-        classId: slot.classId,
-        level: slot.level,
-        evolution: slot.evolution || "Mortal",
-      }));
+      sessionStorage.setItem("uaidzin_active_char", JSON.stringify(character));
     } catch (_) {}
     toast(slot.name + " entra em Aurelion.");
 
     setTimeout(() => {
-      window.location.href = "http://127.0.0.1:5173/";
+      sceneFadeNavigate("http://127.0.0.1:5173/");
     }, 450);
   });
 
@@ -1368,6 +1523,17 @@ input[type="range"]::-webkit-slider-thumb{
     saveSettings();
     overlay.classList.remove("open");
     toast("Opções salvas.");
+  });
+  document.getElementById("btnLogout").addEventListener("click", () => {
+    try {
+      sessionStorage.removeItem("uaidzin_active_char");
+      if (inBootFrame) {
+        window.parent.sessionStorage.removeItem("uaidzin_active_char");
+      }
+    } catch (_) {}
+    if (UaidzinSave.logout) UaidzinSave.logout();
+    overlay.classList.remove("open");
+    sceneFadeNavigate("01-login.html", { type: "uaidzin-boot-need-login" });
   });
 
   function loadSettings(){
@@ -1402,16 +1568,18 @@ input[type="range"]::-webkit-slider-thumb{
 
   (async function boot(){
     if (!session) return;
+    for (let i = 0; i < 80 && !window.__mountCharPreview; i++) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
     const data = await UaidzinSave.loadSave(session);
     if (data && data.corrupted) {
       toast("Save ilegível — usando dados padrão.", true);
     } else if (data && Array.isArray(data.slots)) {
       slots = normalizeSlots(data.slots);
-      buildScene();
     } else {
-
       await persist();
     }
+    buildScene();
   })();
 
   function fitStage(){

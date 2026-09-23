@@ -844,7 +844,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 .portal-scroll{
   flex:1 1 auto;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;
   padding-right:2px;
+  scrollbar-width:thin;scrollbar-color:var(--iron-hi) transparent;
 }
+.portal-scroll::-webkit-scrollbar{width:8px}
+.portal-scroll::-webkit-scrollbar-track{background:transparent}
+.portal-scroll::-webkit-scrollbar-thumb{
+  background:var(--iron-hi);border-radius:2px;border:1px solid var(--bg0);
+}
+.portal-scroll::-webkit-scrollbar-thumb:hover{background:var(--gold-dim)}
 .portal-card{
   border:1px solid #5a4a38;border-radius:2px;background:rgba(10,8,6,.92);
   padding:10px 12px;cursor:pointer;flex:0 0 auto;
@@ -855,7 +862,18 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 .portal-card.is-out{
   opacity:.55;filter:grayscale(.25);
 }
-.portal-card .ttl{font:700 15px/1.2 var(--font-ui);color:var(--gold-hi);margin:0 0 4px}
+.portal-card .top{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 4px;
+}
+.portal-card .ttl{font:700 15px/1.2 var(--font-ui);color:var(--gold-hi);margin:0;flex:1 1 auto;min-width:0}
+.portal-card .entry-ico{
+  width:36px;height:36px;flex:0 0 auto;border:1px solid #5a4a38;border-radius:2px;
+  background:rgba(16,12,8,.9);display:flex;align-items:center;justify-content:center;
+}
+.portal-card .entry-ico img{width:28px;height:28px;display:block}
+.portal-card .entry-ico.is-free{
+  color:var(--ink-mute);font:650 10px/1 var(--font-ui);letter-spacing:.02em;
+}
 .portal-card .desc{font:12px/1.35 var(--font-ui);color:var(--ink);margin:0 0 8px;min-height:32px}
 .portal-card .rows{display:grid;gap:4px}
 .portal-card .row{
@@ -863,7 +881,10 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   font:12px/1.2 var(--font-ui);color:var(--ink-dim);
 }
 .portal-card .row .val{font:700 13px/1.2 var(--font-num);color:var(--ink);text-align:right}
-.portal-card .row .val.entry{color:var(--gold-hi)}
+.portal-card .row .val.entry{
+  color:var(--gold-hi);display:inline-flex;align-items:center;gap:6px;justify-content:flex-end;
+}
+.portal-card .row .val.entry img{width:16px;height:16px;display:block;flex:0 0 auto}
 .portal-empty{
   color:var(--ink-mute);font-size:13px;padding:18px 8px;text-align:center;
 }
@@ -917,7 +938,80 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   flex:1 1 auto;min-height:0;
   border:1px dashed #5a4a38;border-radius:2px;
   background:rgba(0,0,0,.28);
+  display:flex;flex-direction:column;gap:10px;padding:12px;overflow:auto;
 }
+.compose-req{
+  font:12px/1.4 var(--font-ui);color:var(--ink-dim);
+  display:flex;flex-direction:column;gap:4px;
+}
+.compose-req .line{display:flex;justify-content:space-between;gap:8px}
+.compose-req .ok{color:var(--gold-hi)}
+.compose-req .bad{color:var(--blood-hi)}
+.compose-targets{
+  flex:1 1 auto;min-height:80px;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;
+  align-content:start;
+}
+.compose-target{
+  border:1px solid #5a4a38;border-radius:2px;background:rgba(10,8,6,.92);
+  padding:8px;cursor:pointer;text-align:left;
+  display:flex;flex-direction:column;gap:4px;
+}
+.compose-target:hover,.compose-target.is-on{
+  border-color:var(--gold);box-shadow:inset 0 0 0 1px rgba(212,160,23,.22);
+}
+.compose-target .nm{font:650 12px/1.2 var(--font-ui);color:var(--ink)}
+.compose-target .meta{font:11px/1.2 var(--font-ui);color:var(--ink-dim)}
+.compose-empty{
+  font:12px/1.35 var(--font-ui);color:var(--ink-mute);padding:8px 0;
+}
+.compose-acts{
+  display:flex;gap:8px;justify-content:flex-end;flex:0 0 auto;
+}
+.compose-acts button{
+  border-radius:2px;padding:8px 14px;font:650 12px/1 var(--font-ui);cursor:pointer;
+}
+.compose-acts .back{
+  border:1px solid #5a4a38;background:#1a1410;color:var(--ink-dim);
+}
+.compose-acts .go{
+  border:1px solid var(--gold-dim);background:linear-gradient(180deg,#3a2e18,#241c10);color:var(--gold-hi);
+}
+.compose-acts .go:disabled{
+  opacity:.45;cursor:default;filter:grayscale(.2);
+}
+
+.quest-body{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:12px;
+  min-height:0;height:100%;
+}
+.quest-list{
+  min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;
+}
+.quest-row{
+  border:1px solid #5a4a38;border-radius:2px;background:rgba(10,8,6,.92);
+  padding:10px 12px;cursor:pointer;text-align:left;
+}
+.quest-row:hover,.quest-row.is-on{
+  border-color:var(--gold);box-shadow:inset 0 0 0 1px rgba(212,160,23,.22);
+}
+.quest-row .ttl{font:700 13px/1.2 var(--font-ui);color:var(--gold-hi);margin:0 0 4px}
+.quest-row .st{font:11px/1.2 var(--font-ui);color:var(--ink-dim)}
+.quest-detail{
+  min-height:0;overflow:auto;
+  border:1px solid #5a4a38;border-radius:2px;background:rgba(0,0,0,.28);
+  padding:12px;display:flex;flex-direction:column;gap:8px;
+}
+.quest-detail .ttl{font:700 16px/1.2 var(--font-ui);color:var(--gold-hi);margin:0}
+.quest-detail .obj{font:12px/1.4 var(--font-ui);color:var(--ink);margin:0}
+.quest-detail .meta{font:12px/1.35 var(--font-ui);color:var(--ink-dim);margin:0}
+.quest-detail .empty{font:12px/1.35 var(--font-ui);color:var(--ink-mute);margin:0}
+.quest-detail .acts{display:flex;justify-content:flex-end;margin-top:auto}
+.quest-detail .acts button{
+  border-radius:2px;padding:8px 14px;font:650 12px/1 var(--font-ui);cursor:pointer;
+  border:1px solid var(--gold-dim);background:linear-gradient(180deg,#3a2e18,#241c10);color:var(--gold-hi);
+}
+.quest-detail .acts button:disabled{opacity:.45;cursor:default}
 
 .power-zone{
   flex:1 1 auto;
@@ -1051,41 +1145,41 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       <svg class="corner br" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
       <div class="win-b">
         <div class="face-row">
-          <div class="face"><img src="assets/face-ht.png" alt=""></div>
+          <div class="face"><img src="assets/face-tk.png" alt=""></div>
           <div style="flex:1">
-            <div class="row"><span class="lab">Nome</span><span class="val">Sigrid</span></div>
-            <div class="row"><span class="lab">Classe</span><span class="val gold">Huntress</span></div>
-            <div class="row"><span class="lab">Resets</span><span class="val">0</span></div>
-            <div class="row"><span class="lab">Nível</span><span class="val">91</span></div>
+            <div class="row"><span class="lab">Nome</span><span class="val" data-bind="name">—</span></div>
+            <div class="row"><span class="lab">Classe</span><span class="val gold" data-bind="class">—</span></div>
+            <div class="row"><span class="lab">Resets</span><span class="val" data-bind="resets">0</span></div>
+            <div class="row"><span class="lab">Nível</span><span class="val" data-bind="level">1</span></div>
           </div>
         </div>
-        <div class="row"><span class="lab">EXP</span><span class="val">128440 / 156000</span></div>
-        <div class="bar"><i style="width:82%"></i><span>82%</span></div>
+        <div class="row"><span class="lab">EXP</span><span class="val" data-bind="xp">0 / 0</span></div>
+        <div class="bar"><i style="width:0%"></i><span>0%</span></div>
 
         <div class="sub">Atributos</div>
         <div class="attrs" id="attr-list">
-          <div class="attr" data-stat="for"><span>FOR</span><b>28</b><button type="button" class="plus">+</button></div>
-          <div class="attr" data-stat="des"><span>DES</span><b>60</b><button type="button" class="plus">+</button></div>
-          <div class="attr" data-stat="cons"><span>CONS</span><b>22</b><button type="button" class="plus">+</button></div>
-          <div class="attr" data-stat="int"><span>INT</span><b>16</b><button type="button" class="plus">+</button></div>
+          <div class="attr" data-stat="for"><span>FOR</span><b data-attr="FOR">5</b><button type="button" class="plus">+</button></div>
+          <div class="attr" data-stat="des"><span>DES</span><b data-attr="DES">5</b><button type="button" class="plus">+</button></div>
+          <div class="attr" data-stat="cons"><span>CONS</span><b data-attr="CONS">5</b><button type="button" class="plus">+</button></div>
+          <div class="attr" data-stat="int"><span>INT</span><b data-attr="INT">5</b><button type="button" class="plus">+</button></div>
         </div>
-        <div class="row" style="margin-top:4px"><span class="lab">Pontos de atributo</span><span class="val gold" id="attr-pts">12</span></div>
+        <div class="row" style="margin-top:4px"><span class="lab">Pontos de atributo</span><span class="val gold" id="attr-pts" data-bind="attrPts">0</span></div>
 
         <div class="sub">Especialização</div>
         <div class="spend-list" id="spec-spend">
-          <div class="spend-row" data-tree="controle"><span class="lab">Armadilha</span><span class="num">1/40</span><button type="button" class="plus">+</button></div>
-          <div class="spend-row" data-tree="magia"><span class="lab">Marca</span><span class="num">1/40</span><button type="button" class="plus">+</button></div>
-          <div class="spend-row" data-tree="fisica"><span class="lab">Caça</span><span class="num">4/40</span><button type="button" class="plus">+</button></div>
-          <div class="spend-row pts"><span class="lab">Pontos</span><span class="num" id="spec-pts">54</span></div>
+          <div class="spend-row" data-tree="controle"><span class="lab">Controle</span><span class="num">0/40</span><button type="button" class="plus">+</button></div>
+          <div class="spend-row" data-tree="magia"><span class="lab">Magia</span><span class="num">0/40</span><button type="button" class="plus">+</button></div>
+          <div class="spend-row" data-tree="fisica"><span class="lab">Física</span><span class="num">0/40</span><button type="button" class="plus">+</button></div>
+          <div class="spend-row pts"><span class="lab">Pontos</span><span class="num" id="spec-pts" data-bind="specPts">0</span></div>
         </div>
 
         <div class="sep"></div>
         <div class="sub">Combate</div>
         <div class="combat">
-          <div class="row"><span class="lab">HP</span><span class="val">168 / 168</span></div>
-          <div class="row"><span class="lab">MP</span><span class="val">214 / 214</span></div>
-          <div class="row"><span class="lab">Ataque</span><span class="val">36</span></div>
-          <div class="row"><span class="lab">Defesa</span><span class="val">7</span></div>
+          <div class="row"><span class="lab">HP</span><span class="val">0 / 0</span></div>
+          <div class="row"><span class="lab">MP</span><span class="val">0 / 0</span></div>
+          <div class="row"><span class="lab">Ataque</span><span class="val">0</span></div>
+          <div class="row"><span class="lab">Defesa</span><span class="val">0</span></div>
           <div class="row"><span class="lab">Poder mágico</span><span class="val">24</span></div>
           <div class="row"><span class="lab">Vel. ataque</span><span class="val">1.61/s</span></div>
           <div class="row"><span class="lab">Alcance</span><span class="val">6.2</span></div>
@@ -1111,7 +1205,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       <svg class="corner bl" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
       <svg class="corner br" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
       <div class="win-b">
-        <div class="row"><span class="lab">Classe</span><span class="val">Huntress</span></div>
+        <div class="row"><span class="lab">Classe</span><span class="val" data-bind="class">—</span></div>
         <div class="row"><span class="lab">8ª árvore</span><span class="val" id="eighthTreeVal">Caça</span></div>
         <div class="row"><span class="lab">Pontos de skill</span><span class="val" id="skillPtsVal">6</span></div>
         <div class="sep"></div>
@@ -1153,7 +1247,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
             <div class="eq locked" data-slot="relic"></div>
           </div>
           <div class="doll" id="doll">
-            <div class="sil"><img src="assets/char-ht.png" alt=""></div>
+            <div class="sil"><img src="assets/char-tk.png" alt=""></div>
             <div class="eq eq-neck" data-slot="neck"></div>
             <div class="eq eq-ear" data-slot="ear"></div>
             <div class="eq eq-weapon" data-slot="weapon"></div>
@@ -1171,7 +1265,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
             <button type="button" class="bag-tab locked" data-bag="2"><img src="assets/eq/lock.svg" alt="">Bolsa II</button>
             <button type="button" class="bag-tab locked" data-bag="3"><img src="assets/eq/lock.svg" alt="">Bolsa III</button>
             <button type="button" class="bag-tab locked" data-bag="4"><img src="assets/eq/lock.svg" alt="">Bolsa IV</button>
-            <span class="val" id="bagCount">12 / 40</span>
+            <span class="val" id="bagCount">0 / 40</span>
           </div>
           <div class="bag-wrap" id="bagWrap">
             <div class="bag" id="bag"></div>
@@ -1375,7 +1469,12 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       <svg class="corner tr" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
       <svg class="corner bl" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
       <svg class="corner br" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
-      <div class="win-b"></div>
+      <div class="win-b quest-body">
+        <div class="quest-list" id="questList"></div>
+        <div class="quest-detail" id="questDetail">
+          <p class="empty">Selecione uma missão.</p>
+        </div>
+      </div>
       </div>
     </section>
     </div>
@@ -1509,7 +1608,13 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   const SHOP_TREES = ["armadilha", "marca", "caca"];
   let skillPoints = 6;
-  let playerGold = 48220;
+  let playerGold = 0;
+  const CAP = 40;
+  const spec = { controle: 0, magia: 0, fisica: 0 };
+  let pts = 0;
+  const attrs = { for: 5, des: 5, cons: 5, int: 5 };
+  let attrPts = 0;
+  let charLevel = 1;
   const skillPtsVal = document.getElementById("skillPtsVal");
   const eighthTreeVal = document.getElementById("eighthTreeVal");
 
@@ -1915,7 +2020,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   };
   const midPanels = ["skills", "vault", "shop", "portal", "sage", "composer", "quest"];
   const rightPanels = ["inv", "skillmaster"];
-  const soloPanels = ["portal", "quest", "composer"];
+  const soloPanels = ["portal", "quest", "composer", "sage"];
   function closeMidExcept(keep) {
     midPanels.forEach((id) => {
       if (id === keep) return;
@@ -1949,6 +2054,9 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     if (opening && id === "person" && panels.sage) panels.sage.classList.add("is-closed");
     if (opening && id === "composer" && typeof paintComposerCatalog === "function") {
       paintComposerCatalog();
+    }
+    if (opening && id === "quest" && typeof paintQuestPanel === "function") {
+      paintQuestPanel();
     }
     el.classList.toggle("is-closed");
   }
@@ -2319,8 +2427,9 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   function makeItemGhost(e, it) {
     ghost = document.createElement("div");
     ghost.className = "drag-ghost";
-    if (it.kind || it.icon) {
-      ghost.innerHTML = '<img src="' + itemIconSrc(it) + '" alt="">';
+    const ico = itemIconSrc(it);
+    if (ico) {
+      ghost.innerHTML = '<img src="' + ico + '" alt="">';
     } else {
       ghost.innerHTML = '<div class="lab">' + it.short + "</div>";
     }
@@ -2494,9 +2603,16 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   }
 
   function itemIconSrc(it) {
-    if (it.kind) return eqIcon(it.kind, true);
+    if (!it) return null;
+    if (it.iconSrc) return it.iconSrc;
     if (it.icon) return "assets/items/" + it.icon + ".svg";
-    return "assets/eq/material.svg";
+    const eco = window.__UAIDZIN_ECONOMY__;
+    if (eco && typeof eco.resolveItemIcon === "function") {
+      const resolved = eco.resolveItemIcon(it.defId || it.id, it.kind || it.slot, it.name);
+      if (resolved) return "assets/" + resolved;
+    }
+    if (it.kind) return eqIcon(it.kind, true);
+    return null;
   }
 
   function paintDoll() {
@@ -2520,7 +2636,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       el.innerHTML = "";
       const img = document.createElement("img");
       img.className = "ico type";
-      img.src = eqIcon(slot, !!(it && !locked));
+      const itemIco = it && !locked ? itemIconSrc(it) : null;
+      img.src = itemIco || eqIcon(slot, !!(it && !locked));
       img.alt = SLOT_LABEL[slot] || slot;
       img.draggable = false;
       el.appendChild(img);
@@ -2565,10 +2682,16 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       cell.className = "cell" + (it ? " has r-" + it.rarity : " empty");
       cell.dataset.bag = String(i);
       if (it) {
+        const ico = itemIconSrc(it);
+        if (!ico) {
+          cell.className = "cell empty";
+          bag.appendChild(cell);
+          continue;
+        }
         filled += 1;
         const img = document.createElement("img");
         img.className = "ico";
-        img.src = itemIconSrc(it);
+        img.src = ico;
         img.alt = it.name;
         img.draggable = false;
         cell.appendChild(img);
@@ -2893,10 +3016,16 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       cell.className = "cell" + (it ? " has r-" + it.rarity : " empty");
       cell.dataset.vault = String(i);
       if (it) {
+        const ico = itemIconSrc(it);
+        if (!ico) {
+          cell.className = "cell empty";
+          vaultBag.appendChild(cell);
+          continue;
+        }
         filled += 1;
         const img = document.createElement("img");
         img.className = "ico";
-        img.src = itemIconSrc(it);
+        img.src = ico;
         img.alt = it.name;
         img.draggable = false;
         cell.appendChild(img);
@@ -3013,18 +3142,17 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   };
 
   function shopIconSrc(item) {
-    if (!item) return "assets/eq/material.svg";
-    if (item.id === "poeira_ori") return "assets/items/ori.svg";
-    if (item.id === "poeira_lac") return "assets/items/lac.svg";
-    const slot = item.slot || "material";
-    if (slot === "weapon") return "assets/eq/weapon.svg";
-    if (slot === "armor") return "assets/eq/armor.svg";
-    if (slot === "head") return "assets/eq/crown.svg";
-    if (slot === "ring1" || slot === "ring2") return "assets/eq/ring.svg";
-    if (slot === "neck") return "assets/eq/neck.svg";
-    if (slot === "ear") return "assets/eq/ear.svg";
-    if (slot === "material") return "assets/items/gem.svg";
-    return "assets/eq/material.svg";
+    if (!item) return null;
+    if (item.icon) return "assets/" + item.icon;
+    const eco = window.__UAIDZIN_ECONOMY__;
+    if (eco && typeof eco.resolveItemIcon === "function") {
+      const resolved = eco.resolveItemIcon(item.id, item.slot, item.name);
+      if (resolved) return "assets/" + resolved;
+    }
+    if (item.id === "mat_ori" || item.id === "poeira_ori") return "assets/items/ori.svg";
+    if (item.id === "mat_lac" || item.id === "poeira_lac") return "assets/items/lac.svg";
+    if (item.id && String(item.id).indexOf("entry_") === 0) return "assets/items/seal.svg";
+    return null;
   }
 
   function formatShopGold(n) {
@@ -3070,6 +3198,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   async function paintShop(shopId) {
     activeShopId = shopId === "blacksmith" ? "blacksmith" : "merchant";
+    shopConfig = null;
     const cfg = await ensureShopConfig();
     const shop = (cfg.shops && cfg.shops[activeShopId]) || SHOP_FALLBACK.shops[activeShopId];
     const items = cfg.items || SHOP_FALLBACK.items;
@@ -3080,6 +3209,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     slots.forEach((slot) => {
       const item = items[slot.itemId];
       if (!item) return;
+      const ico = shopIconSrc(item);
+      if (!ico) return;
       const card = document.createElement("div");
       card.className = "shop-card r-" + (item.rarity || "Comum");
       const qtyHtml = slot.qty > 1 ? '<div class="qty">' + slot.qty + "</div>" : "";
@@ -3088,7 +3219,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
         item.name +
         "</div>" +
         '<img class="ico" src="' +
-        shopIconSrc(item) +
+        ico +
         '" alt="">' +
         qtyHtml;
       card.addEventListener("mouseenter", () => {
@@ -3113,10 +3244,29 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     paintComposer: function () {
       paintComposerCatalog();
     },
+    paintQuest: function () {
+      paintQuestPanel();
+    },
     setCharacter: function (view) {
       if (!view) return;
       if (view.gold != null) playerGold = clampGold(view.gold);
       if (view.vaultGold !== undefined) vaultGold = clampGold(view.vaultGold);
+      if (view.attrs) {
+        attrs.for = Math.max(0, Math.floor(Number(view.attrs.FOR) || 0));
+        attrs.des = Math.max(0, Math.floor(Number(view.attrs.DES) || 0));
+        attrs.cons = Math.max(0, Math.floor(Number(view.attrs.CONS) || 0));
+        attrs.int = Math.max(0, Math.floor(Number(view.attrs.INT) || 0));
+      }
+      if (view.attrPts !== undefined) attrPts = Math.max(0, Math.floor(Number(view.attrPts) || 0));
+      if (view.spec) {
+        spec.controle = Math.max(0, Math.floor(Number(view.spec.controle) || 0));
+        spec.magia = Math.max(0, Math.floor(Number(view.spec.magia) || 0));
+        spec.fisica = Math.max(0, Math.floor(Number(view.spec.fisica) || 0));
+      }
+      if (view.specPts !== undefined) pts = Math.max(0, Math.floor(Number(view.specPts) || 0));
+      if (view.level != null) charLevel = Math.max(1, Math.floor(Number(view.level) || 1));
+      if (typeof paintAttrs === "function") paintAttrs();
+      if (typeof paintSpec === "function") paintSpec();
       paintGold();
       this.syncFromGame();
     },
@@ -3125,39 +3275,35 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       if (!g || !g.session) return;
       playerGold = clampGold(g.session.inventory.gold);
       vaultGold = clampGold(g.session.accountVault.gold);
-      const inv = (g.session.inventory.items || []).map(function (gi) {
+      function fromGameItem(gi) {
         if (!gi) return null;
+        const defId = gi.defId || "";
+        const name = gi.name || "Item";
+        const kind = gi.slot === "material" || gi.slot === "misc" ? null : gi.slot;
+        const eco = window.__UAIDZIN_ECONOMY__;
+        let iconPath = null;
+        if (eco && typeof eco.resolveItemIcon === "function") {
+          iconPath = eco.resolveItemIcon(defId, gi.slot, name);
+        }
+        if (!iconPath) return null;
         return makeItem({
           id: gi.uid || gi.id,
           uid: gi.uid || gi.id,
-          defId: gi.defId || "",
-          name: gi.name || "Item",
-          short: String(gi.name || "Item").slice(0, 8),
-          kind: gi.slot === "material" || gi.slot === "misc" ? null : gi.slot,
+          defId: defId,
+          name: name,
+          short: String(name).slice(0, 8),
+          kind: kind,
+          iconSrc: "assets/" + iconPath,
           rarity: gi.rarity || "Comum",
           refine: gi.refine || 0,
           q: gi.stack || 1,
           desc: "",
           stats: { atk: gi.attackBonus || 0, def: gi.defenseBonus || 0 },
         });
-      });
+      }
+      const inv = (g.session.inventory.items || []).map(fromGameItem).filter(Boolean);
       bagItems = inv.concat(Array(Math.max(0, 40 - inv.length)).fill(null)).slice(0, 40);
-      const vault = (g.session.accountVault.items || []).map(function (gi) {
-        if (!gi) return null;
-        return makeItem({
-          id: gi.uid || gi.id,
-          uid: gi.uid || gi.id,
-          defId: gi.defId || "",
-          name: gi.name || "Item",
-          short: String(gi.name || "Item").slice(0, 8),
-          kind: gi.slot === "material" || gi.slot === "misc" ? null : gi.slot,
-          rarity: gi.rarity || "Comum",
-          refine: gi.refine || 0,
-          q: gi.stack || 1,
-          desc: "",
-          stats: { atk: gi.attackBonus || 0, def: gi.defenseBonus || 0 },
-        });
-      });
+      const vault = (g.session.accountVault.items || []).map(fromGameItem).filter(Boolean);
       vaultItems = vault.concat(Array(Math.max(0, 120 - vault.length)).fill(null)).slice(0, 120);
       if (g.bags && g.bags.unlocked) {
         const u = g.bags.unlocked();
@@ -3194,19 +3340,26 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   void ensureShopConfig();
 
   const COMPOSE_KINDS = [
-    { id: "plus10", title: "+10", desc: "Combinações até o refino +10." },
-    { id: "plus12", title: "+12", desc: "Combinações até o refino +12." },
-    { id: "anct", title: "Anct", desc: "Combinações ancestrais." },
-    { id: "jewels", title: "Jewels", desc: "Combinações de joias." },
+    {
+      id: "plus7",
+      title: "+7",
+      desc: "Poeira de Lac + 1.000.000 Ouro. Chance de 50%.",
+      recipeId: "compose_plus7_lac",
+    },
+    { id: "plus10", title: "+10", desc: "Combinações até o refino +10.", locked: true },
+    { id: "plus12", title: "+12", desc: "Combinações até o refino +12.", locked: true },
+    { id: "anct", title: "Anct", desc: "Combinações ancestrais.", locked: true },
+    { id: "jewels", title: "Jewels", desc: "Combinações de joias.", locked: true },
     { id: "locked-a", title: "", desc: "", locked: true },
-    { id: "locked-b", title: "", desc: "", locked: true },
   ];
 
   const composeBody = document.getElementById("composeBody");
   const composeCatalog = document.getElementById("composeCatalog");
+  const composeBench = document.getElementById("composeBench");
   const composerTitle = document.getElementById("composerTitle");
   const composerWin = document.getElementById("p-composer");
   let composerWorkKind = null;
+  let composerSelectedUid = null;
 
   function setComposerTitle(text) {
     if (composerTitle) composerTitle.textContent = text;
@@ -3214,6 +3367,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   function paintComposerCatalog() {
     composerWorkKind = null;
+    composerSelectedUid = null;
     if (composerWin) composerWin.classList.remove("is-work");
     if (composeBody) composeBody.classList.remove("is-work");
     setComposerTitle("Compositor");
@@ -3235,7 +3389,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   function openComposerWork(kind) {
     if (!kind || kind.locked) return;
-    composerWorkKind = kind.id;
+    composerWorkKind = kind;
+    composerSelectedUid = null;
     if (composerWin) composerWin.classList.add("is-work");
     if (composeBody) composeBody.classList.add("is-work");
     setComposerTitle(kind.title);
@@ -3243,6 +3398,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     closeRightExcept("inv");
     if (panels.inv) panels.inv.classList.remove("is-closed");
     if (panels.composer) panels.composer.classList.remove("is-closed");
+    paintComposerBench();
   }
 
   function exitComposerWork() {
@@ -3258,7 +3414,185 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     return true;
   }
 
+  function paintComposerBench() {
+    if (!composeBench || !composerWorkKind) return;
+    const recipeId = composerWorkKind.recipeId || "";
+    const g = gameApi();
+    const gold = g && g.session ? Number(g.session.inventory.gold) || 0 : playerGold;
+    const lac =
+      g && g.session && g.session.inventory
+        ? g.session.inventory.countMaterial("mat_lac")
+        : 0;
+    const goldOk = gold >= 1000000;
+    const lacOk = lac >= 1;
+    let targets = [];
+    if (g && g.composer && typeof g.composer.listEligible === "function") {
+      targets = g.composer.listEligible(recipeId) || [];
+    }
+    composeBench.innerHTML = "";
+    const req = document.createElement("div");
+    req.className = "compose-req";
+    req.innerHTML =
+      '<div class="line"><span>Poeira de Lac</span><span class="' +
+      (lacOk ? "ok" : "bad") +
+      '">' +
+      lac +
+      " / 1</span></div>" +
+      '<div class="line"><span>Ouro</span><span class="' +
+      (goldOk ? "ok" : "bad") +
+      '">' +
+      formatGold(gold) +
+      " / 1.000.000</span></div>" +
+      '<div class="line"><span>Alvo</span><span>equipamento com refino menor que +7</span></div>';
+    composeBench.appendChild(req);
+
+    const grid = document.createElement("div");
+    grid.className = "compose-targets";
+    if (!targets.length) {
+      const empty = document.createElement("div");
+      empty.className = "compose-empty";
+      empty.textContent = "Nenhum equipamento elegível na bolsa ou no personagem.";
+      grid.appendChild(empty);
+    } else {
+      targets.forEach((it) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className =
+          "compose-target" + (composerSelectedUid === it.uid ? " is-on" : "");
+        card.innerHTML =
+          '<div class="nm">' +
+          (it.name || "Item") +
+          "</div>" +
+          '<div class="meta">+' +
+          (it.refine || 0) +
+          " · " +
+          (it.rarity || "Comum") +
+          "</div>";
+        card.addEventListener("click", () => {
+          composerSelectedUid = it.uid;
+          paintComposerBench();
+        });
+        grid.appendChild(card);
+      });
+    }
+    composeBench.appendChild(grid);
+
+    const acts = document.createElement("div");
+    acts.className = "compose-acts";
+    const back = document.createElement("button");
+    back.type = "button";
+    back.className = "back";
+    back.textContent = "Voltar";
+    back.addEventListener("click", () => exitComposerWork());
+    const go = document.createElement("button");
+    go.type = "button";
+    go.className = "go";
+    go.textContent = "Compôr";
+    go.disabled = !composerSelectedUid || !goldOk || !lacOk;
+    go.addEventListener("click", () => {
+      if (!composerSelectedUid || !g || !g.composer || !g.composer.compose) return;
+      g.composer.compose(recipeId, composerSelectedUid);
+      if (window.__UAIDZIN_WIRE__ && window.__UAIDZIN_WIRE__.syncFromGame) {
+        window.__UAIDZIN_WIRE__.syncFromGame();
+      }
+      paintComposerBench();
+    });
+    acts.appendChild(back);
+    acts.appendChild(go);
+    composeBench.appendChild(acts);
+  }
+
   paintComposerCatalog();
+
+  const questListEl = document.getElementById("questList");
+  const questDetailEl = document.getElementById("questDetail");
+  let questSelectedId = null;
+
+  function questStatusLabel(status) {
+    if (status === "active") return "Ativa";
+    if (status === "done") return "Concluída";
+    if (status === "locked") return "Bloqueada";
+    return "Disponível";
+  }
+
+  function paintQuestPanel() {
+    if (!questListEl || !questDetailEl) return;
+    const g = gameApi();
+    let rows = [];
+    if (g && g.quests && typeof g.quests.list === "function") {
+      rows = g.quests.list() || [];
+    }
+    questListEl.innerHTML = "";
+    if (!rows.length) {
+      questSelectedId = null;
+      questDetailEl.innerHTML = '<p class="empty">Nenhuma missão disponível.</p>';
+      return;
+    }
+    if (!questSelectedId || !rows.some((r) => r.id === questSelectedId)) {
+      questSelectedId = rows[0].id;
+    }
+    rows.forEach((row) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "quest-row" + (row.id === questSelectedId ? " is-on" : "");
+      btn.innerHTML =
+        '<div class="ttl">' +
+        row.title +
+        "</div>" +
+        '<div class="st">' +
+        questStatusLabel(row.status) +
+        (row.status === "active" || row.status === "done"
+          ? " · " + row.step + " / " + row.target
+          : "") +
+        "</div>";
+      btn.addEventListener("click", () => {
+        questSelectedId = row.id;
+        paintQuestPanel();
+      });
+      questListEl.appendChild(btn);
+    });
+    const selected = rows.find((r) => r.id === questSelectedId) || rows[0];
+    const rewardBits = [];
+    if (selected.rewardXp > 0) rewardBits.push(selected.rewardXp + " XP");
+    if (selected.rewardGold > 0) rewardBits.push(formatGold(selected.rewardGold) + " Ouro");
+    const rewardText = rewardBits.length ? rewardBits.join(" · ") : "Sem recompensa numérica";
+    questDetailEl.innerHTML = "";
+    const ttl = document.createElement("p");
+    ttl.className = "ttl";
+    ttl.textContent = selected.title;
+    const obj = document.createElement("p");
+    obj.className = "obj";
+    obj.textContent = selected.objective;
+    const meta = document.createElement("p");
+    meta.className = "meta";
+    meta.textContent =
+      "Progresso: " +
+      selected.step +
+      " / " +
+      selected.target +
+      " · " +
+      questStatusLabel(selected.status) +
+      " · Recompensa: " +
+      rewardText;
+    questDetailEl.appendChild(ttl);
+    questDetailEl.appendChild(obj);
+    questDetailEl.appendChild(meta);
+    const acts = document.createElement("div");
+    acts.className = "acts";
+    const accept = document.createElement("button");
+    accept.type = "button";
+    accept.textContent = "Aceitar";
+    accept.disabled = !selected.canAccept;
+    accept.addEventListener("click", () => {
+      if (!g || !g.quests || !g.quests.accept) return;
+      g.quests.accept(selected.id);
+      paintQuestPanel();
+    });
+    acts.appendChild(accept);
+    questDetailEl.appendChild(acts);
+  }
+
+  paintQuestPanel();
 
   const SAGE_DOCS = {
     fundamentos: {
@@ -3283,7 +3617,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
             "<li><strong>Guarda do Portal</strong> — escolhe e entra em dungeons.</li>" +
             "<li><strong>Mercador</strong> e <strong>Ferreiro</strong> — compra, venda e preparação.</li>" +
             "<li><strong>Mestre de Técnicas</strong> — compra de skills.</li>" +
-            "<li><strong>Sábio</strong> — este guia, além de evolução e reset no futuro.</li>" +
+            "<li><strong>Sábio</strong> — tutorial e códice: ciclo do jogo, evolução e reset.</li>" +
             "<li><strong>Compositor</strong> — composição de itens.</li>" +
             "<li><strong>Baú</strong> — armazenamento da conta.</li>" +
             "<li><strong>Mestre de Quests</strong> — missões.</li>" +
@@ -3299,7 +3633,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
             "<li><strong>K</strong> — Técnicas: árvores de skill e barra inferior.</li>" +
             "<li><strong>I</strong> — Equipamento e bolsa.</li>" +
             "</ul>" +
-            "<p><strong>Esc</strong> fecha as janelas abertas. NPCs de serviço abrem pelo clique, sem tecla extra.</p>",
+            "<p><strong>Esc</strong> fecha as janelas abertas. NPCs de serviço abrem pelo clique, sem tecla extra.</p>" +
+            "<p>Build e equipamentos abrem pelos atalhos ou pelos NPCs próprios — nunca por esta tela do Sábio.</p>",
         },
         {
           id: "movimento",
@@ -3328,7 +3663,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
             "<li><strong>Perseguidor</strong> — aproxima-se do personagem.</li>" +
             "<li><strong>Atirador</strong> — pressiona à distância.</li>" +
             "</ul>" +
-            "<p>Alguns encontros pedem que você vá até o spawn. Outros pedem que você se afaste ou use cobertura de distância. Bosses aparecem em arenas específicas.</p>",
+            "<p>Alguns encontros pedem que você vá até o spawn. Outros pedem que você se afaste ou use cobertura de distância. Chefes aparecem em arenas específicas.</p>",
         },
         {
           id: "dungeon-basico",
@@ -3356,7 +3691,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
           html:
             "<p>Ao subir de nível você ganha pontos de atributo e pontos de skill.</p>" +
             "<p>Os atributos principais são <strong>FOR</strong>, <strong>DES</strong>, <strong>CONS</strong> e <strong>INT</strong>. Eles alimentam ataque, defesa, vitalidade e poder mágico conforme a classe.</p>" +
-            "<p>Distribua os pontos no painel Personagem. Pontos não gastos ficam guardados até você aplicá-los.</p>",
+            "<p>Distribua os pontos no painel Personagem (<strong>C</strong>). Pontos não gastos ficam guardados até você aplicá-los.</p>",
         },
         {
           id: "evolucao",
@@ -3368,7 +3703,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
             "<li><strong>Arch</strong> — níveis 1 a 400.</li>" +
             "<li><strong>Cele</strong> — níveis 1 a 200.</li>" +
             "</ul>" +
-            "<p>Cada etapa tem seu próprio ciclo de nível e de reset. O Guarda do Portal separa as dungeons por evolução; Arch e Cele abrem quando a jornada alcançar essas etapas.</p>",
+            "<p>Cada etapa tem seu próprio ciclo de nível e de reset. O Guarda do Portal separa as dungeons por evolução. Mortal → Arch exige nível 400 e o item de evolução; Arch e Cele liberam suas próprias faixas de dungeon.</p>",
         },
         {
           id: "skills",
@@ -3376,45 +3711,45 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
           html:
             "<p>Cada classe possui três árvores de combate com oito skills compráveis. A oitava skill só pode ser aprendida em uma árvore.</p>" +
             "<p>No <strong>Mestre de Técnicas</strong> você compra skills com pontos e Ouro, em ordem: a skill 2 exige a 1, e assim por diante. Skills de livro ficam na árvore Special e não se compram ali.</p>" +
-            "<p>Pontos de especialização reforçam uma árvore. São separados dos pontos de skill e também podem ser redistribuídos na cidade.</p>",
+            "<p>Pontos de especialização reforçam uma árvore. São separados dos pontos de skill e também podem ser redistribuídos na cidade. O painel de técnicas abre com <strong>K</strong>.</p>",
         },
         {
           id: "equip",
           title: "Equipamento e bolsa",
           html:
             "<p>Armas e armaduras mudam o poder de combate. A bolsa guarda o que dropa no farm e o que você compra na cidade.</p>" +
-            "<p>No painel Equipamento você veste, remove e organiza itens. A lixeira descarta com confirmação. O botão Organizar compacta e ordena a bolsa ativa.</p>" +
+            "<p>No painel Equipamento (<strong>I</strong>) você veste, remove e organiza itens. A lixeira descarta com confirmação. O botão Organizar compacta e ordena a bolsa ativa.</p>" +
             "<p>Itens têm raridade. Refine no Ferreiro para empurrar o poder além do base.</p>",
         },
         {
           id: "bau",
           title: "Baú e Ouro",
           html:
-            "<p>O baú 3D da cidade guarda itens e Ouro da conta, separado da bolsa de combate.</p>" +
-            "<p>Arraste entre bolsa e baú. Deposite ou saque Ouro pelos campos do painel. O teto de Ouro da conta é alto o bastante para o ciclo longo de Mortal.</p>",
+            "<p>O baú da cidade guarda itens e Ouro da <strong>conta</strong>, separado da bolsa de combate do personagem.</p>" +
+            "<p>Arraste entre bolsa e baú. Deposite ou saque Ouro pelos campos do painel. Excluir um personagem não esvazia o baú da conta.</p>",
         },
         {
           id: "lojas",
           title: "Mercador e Ferreiro",
           html:
             "<p>Mercador e Ferreiro usam o mesmo tipo de vitrine. Os cards mostram nome e quantidade; o preço aparece no detalhe ao passar o mouse.</p>" +
-            "<p>O estoque vem da configuração da loja. Use o inventário ao lado para comparar o que já carrega com o que está à venda.</p>",
+            "<p>O Mercador cobre consumíveis, itens de entrada de dungeon e utilidades. O Ferreiro cobre catálogo e refino. Use o inventário ao lado para comparar o que já carrega com o que está à venda.</p>",
         },
         {
           id: "portal",
           title: "Entrar em dungeons",
           html:
-            "<p>Fale com o <strong>Guarda do Portal</strong>. Escolha a aba da sua evolução e leia os cards: descrição, faixa de nível, tipos de inimigo e custo de entrada.</p>" +
+            "<p>Fale com o <strong>Guarda do Portal</strong>. Escolha a aba da sua evolução e leia os cards: descrição, faixa de nível, tempo da run, tipos de inimigo e item de entrada com ícone.</p>" +
             "<p>O filtro <strong>Disponíveis</strong> esconde dungeons fora da sua faixa. Dungeons acima ou abaixo do intervalo não aceitam entrada.</p>" +
-            "<p>Algumas dungeons pedem um selo de entrada. Confirme a expedição — ou marque para não pedir confirmação de novo — e o selo é consumido antes do teleporte.</p>",
+            "<p>Algumas dungeons pedem um item de entrada. Confirme a expedição — ou marque para não pedir confirmação de novo — e o item é consumido antes do teleporte.</p>",
         },
         {
           id: "reset",
           title: "Reset e redistribuição",
           html:
             "<p>Reset e redistribuição acontecem na cidade, sob custo em Ouro que cresce com o nível.</p>" +
-            "<p>Atributos e skills podem ser redistribuídos para experimentar builds. Especialização tem custo menor. Skills de livro permanecem após o reset.</p>" +
-            "<p>Os detalhes finais de marco e preço ficam a cargo do Sábio quando a jornada atingir esses marcos.</p>",
+            "<p>O reset remove nível, atributos e skills do ciclo atual e devolve o personagem ao nível 1 da mesma evolução. Equipamento, refine, inventário e etapa de evolução permanecem.</p>" +
+            "<p>Atributos e skills podem ser redistribuídos para experimentar builds. Especialização tem custo menor. Skills de livro permanecem após o reset. Leia este códice antes do nível 400 para planejar a passagem Mortal → Arch.</p>",
         },
         {
           id: "classes",
@@ -3427,7 +3762,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
             "<li><strong>BM · Beast Master</strong> — invocações e área.</li>" +
             "<li><strong>HT · Huntress</strong> — alcance, marcas e caça.</li>" +
             "</ul>" +
-            "<p>A classe define árvores, fantasias de combate e prioridades de atributo. O patrimônio de conta — baú e progresso — permanece ligado ao personagem escolhido.</p>",
+            "<p>A classe define árvores, fantasias de combate e prioridades de atributo. Bolsa e equipamento ficam com o personagem; o baú é da conta e é compartilhado entre personagens.</p>",
         },
       ],
     },
@@ -3495,6 +3830,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   paintSage();
 
   const PORTAL_SKIP_KEY = "uaidzin_portal_skip_confirm";
+  const SETTINGS_KEY = "uaidzin_settings";
   const PORTAL_DESC = {
     "dungeon-1": "Introdução e primeiro equipamento.",
     "dungeon-2": "Consolidação de build inicial.",
@@ -3513,21 +3849,21 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       boss: { id: "boss", name: "Chefe" },
     },
     items: {
-      entry_d4: { id: "entry_d4", name: "Selo D4" },
-      entry_d5: { id: "entry_d5", name: "Selo D5" },
-      entry_d6: { id: "entry_d6", name: "Selo D6" },
-      entry_d7: { id: "entry_d7", name: "Selo D7" },
-      entry_d8: { id: "entry_d8", name: "Selo D8" },
+      entry_d4: { id: "entry_d4", name: "Selo D4", icon: "seal" },
+      entry_d5: { id: "entry_d5", name: "Selo D5", icon: "seal" },
+      entry_d6: { id: "entry_d6", name: "Selo D6", icon: "seal" },
+      entry_d7: { id: "entry_d7", name: "Selo D7", icon: "seal" },
+      entry_d8: { id: "entry_d8", name: "Selo D8", icon: "seal" },
     },
     dungeons: [
-      { id: "dungeon-1", name: "Dungeon 1", minLevel: 1, maxLevel: 40, entryItemId: null, evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "fixed" }, { monsterId: "chaser" }] }] },
-      { id: "dungeon-2", name: "Dungeon 2", minLevel: 35, maxLevel: 90, entryItemId: null, evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "fixed" }, { monsterId: "chaser" }, { monsterId: "ranged" }] }] },
-      { id: "dungeon-3", name: "Dungeon 3", minLevel: 80, maxLevel: 150, entryItemId: null, evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "chaser" }, { monsterId: "ranged" }] }] },
-      { id: "dungeon-4", name: "Dungeon 4", minLevel: 140, maxLevel: 220, entryItemId: "entry_d4", evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "chaser" }, { monsterId: "ranged" }] }] },
-      { id: "dungeon-5", name: "Dungeon 5", minLevel: 200, maxLevel: 280, entryItemId: "entry_d5", evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "chaser" }, { monsterId: "ranged" }] }] },
-      { id: "dungeon-6", name: "Dungeon 6", minLevel: 260, maxLevel: 330, entryItemId: "entry_d6", evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "fixed" }, { monsterId: "chaser" }, { monsterId: "ranged" }] }] },
-      { id: "dungeon-7", name: "Dungeon 7", minLevel: 310, maxLevel: 370, entryItemId: "entry_d7", evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "chaser" }, { monsterId: "ranged" }, { monsterId: "boss" }] }] },
-      { id: "dungeon-8", name: "Dungeon 8", minLevel: 350, maxLevel: 400, entryItemId: "entry_d8", evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "chaser" }, { monsterId: "ranged" }, { monsterId: "boss" }] }] },
+      { id: "dungeon-1", name: "Dungeon 1", minLevel: 1, maxLevel: 40, entryItemId: null, durationSeconds: 600, evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "fixed" }, { monsterId: "chaser" }] }] },
+      { id: "dungeon-2", name: "Dungeon 2", minLevel: 35, maxLevel: 90, entryItemId: null, durationSeconds: 600, evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "fixed" }, { monsterId: "chaser" }, { monsterId: "ranged" }] }] },
+      { id: "dungeon-3", name: "Dungeon 3", minLevel: 80, maxLevel: 150, entryItemId: null, durationSeconds: 600, evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "chaser" }, { monsterId: "ranged" }] }] },
+      { id: "dungeon-4", name: "Dungeon 4", minLevel: 140, maxLevel: 220, entryItemId: "entry_d4", durationSeconds: 600, evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "chaser" }, { monsterId: "ranged" }] }] },
+      { id: "dungeon-5", name: "Dungeon 5", minLevel: 200, maxLevel: 280, entryItemId: "entry_d5", durationSeconds: 600, evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "chaser" }, { monsterId: "ranged" }] }] },
+      { id: "dungeon-6", name: "Dungeon 6", minLevel: 260, maxLevel: 330, entryItemId: "entry_d6", durationSeconds: 600, evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "fixed" }, { monsterId: "chaser" }, { monsterId: "ranged" }] }] },
+      { id: "dungeon-7", name: "Dungeon 7", minLevel: 310, maxLevel: 370, entryItemId: "entry_d7", durationSeconds: 600, evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "chaser" }, { monsterId: "ranged" }, { monsterId: "boss" }] }] },
+      { id: "dungeon-8", name: "Dungeon 8", minLevel: 350, maxLevel: 400, entryItemId: "entry_d8", durationSeconds: 600, evolution: "Mortal", arenas: [{ spawns: [{ monsterId: "chaser" }, { monsterId: "ranged" }, { monsterId: "boss" }] }] },
     ],
   };
 
@@ -3552,6 +3888,13 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   function readPortalSkip() {
     try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && typeof data.optSkipDungeonConfirm === "boolean") {
+          return data.optSkipDungeonConfirm;
+        }
+      }
       return localStorage.getItem(PORTAL_SKIP_KEY) === "1";
     } catch (_e) {
       return false;
@@ -3560,9 +3903,23 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   function writePortalSkip(on) {
     try {
+      let data = {};
+      try {
+        data = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") || {};
+      } catch (_e) {
+        data = {};
+      }
+      data.optSkipDungeonConfirm = !!on;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
       if (on) localStorage.setItem(PORTAL_SKIP_KEY, "1");
       else localStorage.removeItem(PORTAL_SKIP_KEY);
     } catch (_e) {}
+  }
+
+  function portalHasEntry(dungeon, player) {
+    if (!dungeon.entryItemId) return true;
+    const have = (player.entryCounts && player.entryCounts[dungeon.entryItemId]) || 0;
+    return have >= 1;
   }
 
   function portalPlayer() {
@@ -3613,6 +3970,20 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     return it && it.name ? it.name : dungeon.entryItemId;
   }
 
+  function portalEntryIconSrc(dungeon, items) {
+    if (!dungeon.entryItemId) return "";
+    const it = items[dungeon.entryItemId] || {};
+    if (it.icon) return "assets/items/" + it.icon + ".svg";
+    return "assets/items/seal.svg";
+  }
+
+  function portalDurationLabel(dungeon) {
+    const sec = Math.max(0, Math.floor(Number(dungeon.durationSeconds) || 600));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return m + ":" + String(s).padStart(2, "0");
+  }
+
   function portalInLevel(dungeon, level) {
     return level >= dungeon.minLevel && level <= dungeon.maxLevel;
   }
@@ -3654,16 +4025,20 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     }
     const player = portalPlayer();
     if (!portalInLevel(dungeon, player.level)) return false;
-    if (dungeon.entryItemId) {
-      const have = (player.entryCounts && player.entryCounts[dungeon.entryItemId]) || 0;
-      if (have < 1) return false;
-      portalEntryStock[dungeon.entryItemId] = have - 1;
-    }
+    if (!portalHasEntry(dungeon, player)) return false;
     return true;
   }
 
   function requestPortalEnter(dungeon, entryLabel) {
-    if (!portalInLevel(dungeon, portalPlayer().level)) return;
+    const player = portalPlayer();
+    if (!portalInLevel(dungeon, player.level)) return;
+    if (!portalHasEntry(dungeon, player)) {
+      const api = window.__UAIDZIN__;
+      if (api && typeof api.enterDungeonById === "function") {
+        api.enterDungeonById(dungeon.id);
+      }
+      return;
+    }
     if (readPortalSkip()) {
       tryEnterPortalDungeon(dungeon);
       return;
@@ -3677,6 +4052,11 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     const player = portalPlayer();
     const monsters = cfg.monsters || PORTAL_FALLBACK.monsters;
     const items = Object.assign({}, PORTAL_FALLBACK.items, cfg.items || {});
+    const apiDungeons = Array.isArray(player.dungeons) ? player.dungeons : [];
+    const apiById = {};
+    apiDungeons.forEach((d) => {
+      if (d && d.id) apiById[d.id] = d;
+    });
     const dungeons = (cfg.dungeons || PORTAL_FALLBACK.dungeons).filter((d) => {
       const evo = d.evolution || "Mortal";
       return evo === portalEvo;
@@ -3688,19 +4068,36 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     }
     let shown = 0;
     dungeons.forEach((raw) => {
-      const dungeon = Object.assign({}, raw, {
+      const fromApi = apiById[raw.id] || {};
+      const dungeon = Object.assign({}, raw, fromApi, {
         desc: raw.desc || PORTAL_DESC[raw.id] || "",
         evolution: raw.evolution || "Mortal",
+        durationSeconds:
+          fromApi.durationSeconds != null
+            ? fromApi.durationSeconds
+            : raw.durationSeconds != null
+              ? raw.durationSeconds
+              : 600,
       });
       const inLevel = portalInLevel(dungeon, player.level);
       if (portalHideOut && !inLevel) return;
       shown += 1;
       const entryLabel = portalEntryLabel(dungeon, items);
+      const entryIcon = portalEntryIconSrc(dungeon, items);
+      const hasEntry = portalHasEntry(dungeon, player);
       const card = document.createElement("div");
-      card.className = "portal-card" + (inLevel ? "" : " is-out");
+      card.className = "portal-card" + (inLevel && hasEntry ? "" : " is-out");
+      const entryIcoHtml = entryIcon
+        ? '<div class="entry-ico"><img src="' + entryIcon + '" alt=""></div>'
+        : '<div class="entry-ico is-free">Livre</div>';
+      const entryValHtml = entryIcon
+        ? '<span class="val entry"><img src="' + entryIcon + '" alt="">' + entryLabel + "</span>"
+        : '<span class="val entry">' + entryLabel + "</span>";
       card.innerHTML =
-        '<div class="ttl">' +
+        '<div class="top"><div class="ttl">' +
         dungeon.name +
+        "</div>" +
+        entryIcoHtml +
         "</div>" +
         '<p class="desc">' +
         dungeon.desc +
@@ -3711,12 +4108,15 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
         "–" +
         dungeon.maxLevel +
         "</span></div>" +
+        '<div class="row"><span>Tempo</span><span class="val">' +
+        portalDurationLabel(dungeon) +
+        "</span></div>" +
         '<div class="row"><span>Inimigos</span><span class="val">' +
         portalEnemyNames(dungeon, monsters) +
         "</span></div>" +
-        '<div class="row"><span>Entrada</span><span class="val entry">' +
-        entryLabel +
-        "</span></div>" +
+        '<div class="row"><span>Entrada</span>' +
+        entryValHtml +
+        "</div>" +
         "</div>";
       card.addEventListener("click", () => {
         portalList.querySelectorAll(".portal-card.is-on").forEach((n) => n.classList.remove("is-on"));
@@ -3786,16 +4186,10 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   void ensurePortalConfig();
 
-  const CAP = 40;
-  const spec = { controle: 1, magia: 1, fisica: 4 };
-  let pts = 54;
-  const attrs = { for: 28, des: 60, cons: 22, int: 16 };
-  let attrPts = 12;
   const ptsEl = document.getElementById("spec-pts");
   const attrPtsEl = document.getElementById("attr-pts");
   const powerEl = document.getElementById("char-power");
   const POWER_MAX = 999999999;
-  const CHAR_LEVEL = 91;
   const RARITY_POW = {
     Comum: 1,
     Incomum: 1.35,
@@ -3810,7 +4204,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   }
 
   function calcPower() {
-    let p = CHAR_LEVEL * 220;
+    let p = charLevel * 220;
     p += attrs.for * 48 + attrs.des * 52 + attrs.cons * 44 + attrs.int * 50;
     p += (spec.controle + spec.magia + spec.fisica) * 180;
     Object.keys(skills).forEach((id) => {

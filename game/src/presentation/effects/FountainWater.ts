@@ -11,10 +11,10 @@ type WaterUniforms = {
   uTime: IUniform<number>;
 };
 
-const CACHE_KEY = "uaidzin-fountain-water-v18";
+const CACHE_KEY = "uaidzin-fountain-water-v19";
 const WATER_UV_CENTER = { u: 0.59, v: 0.75 };
-const WATER_UV_INNER = 0.2;
-const WATER_UV_OUTER = 0.245;
+const WATER_UV_INNER = 0.195;
+const WATER_UV_OUTER = 0.255;
 
 const WATER_GLSL = `
 float waterHash(vec2 p) {
@@ -104,8 +104,8 @@ export class FountainWater {
     };
     this.uniforms.push(local);
 
-    mat.roughness = 0.18;
-    mat.metalness = 0.05;
+    mat.roughness = 0.12;
+    mat.metalness = 0.08;
 
     mat.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms) => {
       shader.uniforms.uTime = local.uTime;
@@ -142,37 +142,31 @@ void main() {`,
 #ifdef USE_MAP
   vec2 waterUv = vMapUv;
   float waterM = clamp(vWaterMask, 0.0, 1.0);
-  vec2 flowA = vec2( uTime * 0.85, uTime * -0.62 );
-  vec2 flowB = vec2( uTime * -0.7, uTime * 0.78 );
-  float n1 = waterFbm( vMapUv * 11.0 + flowA );
-  float n2 = waterFbm( vMapUv * 22.0 - flowB );
-  float n3 = waterFbm( vMapUv * 38.0 + flowA.yx * 2.4 );
-  float warp = waterM * ( 0.16 + 0.14 * n3 );
+  vec2 flowA = vec2( uTime * 0.42, uTime * -0.28 );
+  vec2 flowB = vec2( uTime * -0.34, uTime * 0.38 );
+  float n1 = waterFbm( vMapUv * 8.5 + flowA );
+  float n2 = waterFbm( vMapUv * 16.0 - flowB );
+  float n3 = waterFbm( vMapUv * 28.0 + flowA.yx * 1.6 );
+  float warp = waterM * ( 0.1 + 0.08 * n3 );
   waterUv += vec2( n1 - 0.5, n2 - 0.5 ) * warp;
-  waterUv += vec2( n2 - 0.5, n3 - 0.5 ) * warp * 0.85;
+  waterUv += vec2( n2 - 0.5, n3 - 0.5 ) * warp * 0.55;
   vec4 sampledDiffuseColor = texture2D( map, waterUv );
-  float wave = sin( dot( vMapUv, vec2( 48.0, 36.0 ) ) - uTime * 7.2 + n1 * 8.0 );
-  float wave2 = sin( dot( vMapUv, vec2( -28.0, 54.0 ) ) + uTime * 5.4 + n2 * 6.0 );
-  float scroll = fract( vMapUv.x * 18.0 + vMapUv.y * 12.0 - uTime * 1.35 + n1 * 0.8 );
-  float foamLane = smoothstep( 0.0, 0.12, scroll ) * smoothstep( 0.38, 0.18, scroll );
-  float streak = waterNoise( vec2( vMapUv.x * 70.0 + uTime * 3.0, vMapUv.y * 7.0 - uTime * 2.1 ) );
-  float crest = waterFbm( vMapUv * 14.0 + vec2( uTime * 2.0, -uTime * 1.55 ) );
-  vec3 deep = vec3( 0.03, 0.14, 0.3 );
-  vec3 mid = vec3( 0.1, 0.4, 0.6 );
-  vec3 wet = mix( sampledDiffuseColor.rgb, mix( deep, mid, n1 ), waterM * 0.62 );
-  wet += max( wave, 0.0 ) * waterM * vec3( 0.22, 0.38, 0.45 );
-  wet -= max( -wave, 0.0 ) * waterM * vec3( 0.12, 0.16, 0.14 );
-  wet += max( wave2, 0.0 ) * waterM * vec3( 0.14, 0.26, 0.32 );
-  wet -= max( -wave2, 0.0 ) * waterM * vec3( 0.08, 0.11, 0.1 );
-  float foam = clamp(
-    foamLane * 0.75
-    + smoothstep( 0.3, 0.55, crest ) * 0.7
-    + smoothstep( 0.5, 0.75, streak ) * 0.9,
-    0.0, 1.0
-  ) * waterM;
-  wet = mix( wet, vec3( 0.9, 0.97, 1.0 ), foam * 0.88 );
-  float sparkle = smoothstep( 0.5, 0.88, n2 * 0.4 + n3 * 0.6 );
-  wet += vec3( 0.4, 0.7, 0.9 ) * sparkle * waterM * 0.55;
+  float wave = sin( dot( vMapUv, vec2( 36.0, 28.0 ) ) - uTime * 4.2 + n1 * 5.0 );
+  float wave2 = sin( dot( vMapUv, vec2( -22.0, 40.0 ) ) + uTime * 3.1 + n2 * 4.0 );
+  float rim = smoothstep( 0.12, 0.55, waterM ) * ( 1.0 - smoothstep( 0.55, 0.95, waterM ) );
+  float crest = waterFbm( vMapUv * 11.0 + vec2( uTime * 1.1, -uTime * 0.85 ) );
+  vec3 deep = vec3( 0.05, 0.16, 0.28 );
+  vec3 mid = vec3( 0.14, 0.38, 0.52 );
+  vec3 shallow = vec3( 0.28, 0.52, 0.58 );
+  vec3 wet = mix( sampledDiffuseColor.rgb, mix( deep, mid, n1 * 0.65 + 0.2 ), waterM * 0.72 );
+  wet = mix( wet, shallow, rim * 0.45 );
+  wet += max( wave, 0.0 ) * waterM * vec3( 0.14, 0.24, 0.28 );
+  wet -= max( -wave, 0.0 ) * waterM * vec3( 0.08, 0.1, 0.09 );
+  wet += max( wave2, 0.0 ) * waterM * vec3( 0.08, 0.14, 0.18 );
+  float foam = clamp( rim * 0.55 + smoothstep( 0.42, 0.7, crest ) * 0.5, 0.0, 1.0 ) * waterM;
+  wet = mix( wet, vec3( 0.82, 0.92, 0.98 ), foam * 0.55 );
+  float sparkle = smoothstep( 0.62, 0.9, n2 * 0.35 + n3 * 0.65 );
+  wet += vec3( 0.35, 0.55, 0.7 ) * sparkle * waterM * 0.28;
   sampledDiffuseColor.rgb = wet;
   diffuseColor *= sampledDiffuseColor;
 #endif
@@ -186,15 +180,11 @@ void main() {`,
   if ( waterM > 0.08 ) {
     vec3 nDir = normalize( normal );
     vec3 vDir = normalize( vViewPosition );
-    float fres = pow( 1.0 - clamp( abs( dot( vDir, nDir ) ), 0.0, 1.0 ), 1.7 );
-    float glint = waterFbm( vViewPosition.xy * 0.85 + vec2( uTime * 1.8, -uTime * 1.35 ) );
-    float scrollE = fract( vMapUv.x * 18.0 + vMapUv.y * 12.0 - uTime * 1.35 );
-    float foamLaneE = smoothstep( 0.0, 0.12, scrollE ) * smoothstep( 0.38, 0.18, scrollE );
-    float streakE = waterNoise( vec2( vMapUv.x * 70.0 + uTime * 3.0, vMapUv.y * 7.0 - uTime * 2.1 ) );
-    float crestE = waterFbm( vMapUv * 14.0 + vec2( uTime * 2.0, -uTime * 1.55 ) );
-    float foamE = clamp( foamLaneE * 0.75 + smoothstep( 0.3, 0.55, crestE ) * 0.7 + smoothstep( 0.5, 0.75, streakE ) * 0.9, 0.0, 1.0 ) * waterM;
-    totalEmissiveRadiance += vec3( 0.06, 0.16, 0.26 ) * waterM * ( fres * 0.85 + glint * 0.35 );
-    totalEmissiveRadiance += vec3( 0.55, 0.78, 0.95 ) * foamE * 0.55;
+    float fres = pow( 1.0 - clamp( abs( dot( vDir, nDir ) ), 0.0, 1.0 ), 2.0 );
+    float glint = waterFbm( vViewPosition.xy * 0.7 + vec2( uTime * 1.1, -uTime * 0.85 ) );
+    float rimE = smoothstep( 0.12, 0.55, waterM ) * ( 1.0 - smoothstep( 0.55, 0.95, waterM ) );
+    totalEmissiveRadiance += vec3( 0.04, 0.1, 0.16 ) * waterM * ( fres * 0.7 + glint * 0.22 );
+    totalEmissiveRadiance += vec3( 0.35, 0.5, 0.62 ) * rimE * 0.22;
   }
 }
 `,

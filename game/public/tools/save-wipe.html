@@ -126,16 +126,14 @@
 
     async function clearIdbAll() {
       return new Promise((resolve) => {
-        const req = indexedDB.open("uaidzin", 1);
-        req.onerror = () => resolve();
-        req.onsuccess = () => {
-          const db = req.result;
-          if (!db.objectStoreNames.contains("save")) { resolve(); return; }
-          const tx = db.transaction("save", "readwrite");
-          tx.objectStore("save").clear();
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => resolve();
-        };
+        try {
+          const req = indexedDB.deleteDatabase("uaidzin");
+          req.onsuccess = () => resolve();
+          req.onerror = () => resolve();
+          req.onblocked = () => resolve();
+        } catch (_) {
+          resolve();
+        }
       });
     }
 

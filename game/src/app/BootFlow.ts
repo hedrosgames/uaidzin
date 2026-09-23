@@ -15,11 +15,92 @@ export interface BootCharacter {
 }
 
 const ACTIVE_KEY = "uaidzin_active_char";
+export const SCENE_FADE_MS = 420;
 
 declare global {
   interface Window {
     __UAIDZIN_SKIP_BOOT__?: BootCharacter;
   }
+}
+
+export interface SceneFadeOverlay {
+  element: HTMLDivElement;
+  fadeIn(): Promise<void>;
+  fadeOut(): Promise<void>;
+  holdBlack(): void;
+  dispose(): void;
+}
+
+let bootSceneFade: SceneFadeOverlay | null = null;
+
+function waitOpacityTransition(el: HTMLElement): Promise<void> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      el.removeEventListener("transitionend", onEnd);
+      resolve();
+    };
+    const onEnd = (ev: TransitionEvent) => {
+      if (ev.target === el && ev.propertyName === "opacity") finish();
+    };
+    el.addEventListener("transitionend", onEnd);
+    window.setTimeout(finish, SCENE_FADE_MS + 80);
+  });
+}
+
+export function createSceneFadeOverlay(host: HTMLElement = document.body): SceneFadeOverlay {
+  const el = document.createElement("div");
+  el.id = "uaidzin-scene-fade";
+  el.setAttribute(
+    "style",
+    [
+      "position:fixed",
+      "inset:0",
+      "width:100%",
+      "height:100%",
+      "background:#000",
+      "z-index:250",
+      "opacity:0",
+      "pointer-events:none",
+      `transition:opacity ${SCENE_FADE_MS}ms ease`,
+    ].join(";"),
+  );
+  host.appendChild(el);
+
+  return {
+    element: el,
+    holdBlack() {
+      el.style.transition = "none";
+      el.style.opacity = "1";
+      el.style.pointerEvents = "auto";
+      void el.offsetWidth;
+      el.style.transition = `opacity ${SCENE_FADE_MS}ms ease`;
+    },
+    async fadeIn() {
+      el.style.pointerEvents = "auto";
+      void el.offsetWidth;
+      el.style.opacity = "1";
+      await waitOpacityTransition(el);
+    },
+    async fadeOut() {
+      void el.offsetWidth;
+      el.style.opacity = "0";
+      await waitOpacityTransition(el);
+      el.style.pointerEvents = "none";
+    },
+    dispose() {
+      el.remove();
+    },
+  };
+}
+
+export async function releaseBootSceneFade(): Promise<void> {
+  if (!bootSceneFade) return;
+  await bootSceneFade.fadeOut();
+  bootSceneFade.dispose();
+  bootSceneFade = null;
 }
 
 function readStoredCharacter(): BootCharacter | null {
@@ -73,6 +154,16 @@ async function storedCharacterStillValid(character: BootCharacter): Promise<bool
   }
 }
 
+function waitFrameLoad(frame: HTMLIFrameElement): Promise<void> {
+  return new Promise((resolve) => {
+    const onLoad = () => {
+      frame.removeEventListener("load", onLoad);
+      resolve();
+    };
+    frame.addEventListener("load", onLoad);
+  });
+}
+
 export async function runBootFlow(host: HTMLElement = document.body): Promise<BootCharacter> {
   await saveVault.bootstrap();
 
@@ -89,14 +180,39 @@ export async function runBootFlow(host: HTMLElement = document.body): Promise<Bo
   }
 
   return new Promise((resolve) => {
+    const sceneFade = createSceneFadeOverlay(host);
+    bootSceneFade = sceneFade;
+
     const frame = document.createElement("iframe");
-    frame.src = hasBootSession() ? "/boot/02-selecao-personagem.html" : "/boot/01-login.html";
     frame.title = "UAIDZIN Login";
     frame.setAttribute(
       "style",
       "position:fixed;inset:0;width:100%;height:100%;border:0;z-index:200;background:#000;",
     );
+
+    let fadeChain: Promise<void> = Promise.resolve();
+    const enqueue = (task: () => Promise<void>): Promise<void> => {
+      fadeChain = fadeChain.then(task, task);
+      return fadeChain;
+    };
+
+    const goBootPage = (url: string) =>
+      enqueue(async () => {
+        await sceneFade.fadeIn();
+        const loaded = waitFrameLoad(frame);
+        frame.src = url;
+        await loaded;
+        await sceneFade.fadeOut();
+      });
+
+    sceneFade.holdBlack();
+    const firstLoad = waitFrameLoad(frame);
+    frame.src = hasBootSession() ? "/boot/02-selecao-personagem.html" : "/boot/01-login.html";
     host.appendChild(frame);
+    void enqueue(async () => {
+      await firstLoad;
+      await sceneFade.fadeOut();
+    });
 
     const onMessage = (event: MessageEvent) => {
       const data = event.data as {
@@ -113,22 +229,25 @@ export async function runBootFlow(host: HTMLElement = document.body): Promise<Bo
             
           }
           const encoded = encodeURIComponent(JSON.stringify(data.session));
-          frame.src = `/boot/02-selecao-personagem.html#s=${encoded}`;
+          void goBootPage(`/boot/02-selecao-personagem.html#s=${encoded}`);
           return;
         }
-        frame.src = "/boot/02-selecao-personagem.html";
+        void goBootPage("/boot/02-selecao-personagem.html");
         return;
       }
       if (data.type === "uaidzin-boot-need-login") {
         clearBootSession();
-        frame.src = "/boot/01-login.html";
+        void goBootPage("/boot/01-login.html");
         return;
       }
       if (data.type !== "uaidzin-boot-enter" || !data.character?.id) return;
       window.removeEventListener("message", onMessage);
       rememberBootCharacter(data.character);
-      frame.remove();
-      resolve(data.character);
+      void enqueue(async () => {
+        await sceneFade.fadeIn();
+        frame.remove();
+        resolve(data.character!);
+      });
     };
     window.addEventListener("message", onMessage);
   });

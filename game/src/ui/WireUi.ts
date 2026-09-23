@@ -1,6 +1,6 @@
 import type { CharacterViewModel } from "../persistence/SaveTypes";
 import { bindWirePanels } from "./CharacterUiBinder";
-import { SHOP_CATALOG, SKILL_TRAINING } from "../data/balance/economy";
+import { resolveItemIcon, shopCatalogForUi, SKILL_TRAINING } from "../data/balance/economy";
 
 export type WirePanelName =
   | "person"
@@ -39,7 +39,7 @@ const MID_PANELS: WirePanelName[] = [
 
 const RIGHT_PANELS: WirePanelName[] = ["inv", "skillmaster"];
 
-const SOLO_PANELS: WirePanelName[] = ["quest", "portal", "composer"];
+const SOLO_PANELS: WirePanelName[] = ["quest", "portal", "composer", "sage"];
 const WIRE_PANEL_NAMES = new Set<string>(Object.keys(PANEL_IDS));
 
 export function isWirePanelName(name: string): name is WirePanelName {
@@ -98,6 +98,12 @@ function scopeCss(css: string, scope: string): string {
 
 function rewriteAssetUrls(text: string): string {
   return text
+    .replaceAll("assets/face-tk.png", "/boot/assets/face-tk.png")
+    .replaceAll("assets/char-tk.png", "/boot/assets/char-tk.png")
+    .replaceAll("assets/face-fm.png", "/boot/assets/face-fm.png")
+    .replaceAll("assets/char-fm.png", "/boot/assets/char-fm.png")
+    .replaceAll("assets/face-bm.png", "/boot/assets/face-bm.png")
+    .replaceAll("assets/char-bm.png", "/boot/assets/char-bm.png")
     .replaceAll("assets/face-ht.png", "/boot/assets/face-ht.png")
     .replaceAll("assets/char-ht.png", "/boot/assets/char-ht.png")
     .replaceAll('"assets/', '"/wire/assets/')
@@ -143,7 +149,9 @@ export class WireUi {
     });
 
     (window as unknown as { __UAIDZIN_ECONOMY__?: unknown }).__UAIDZIN_ECONOMY__ = {
-      getShopCatalog: () => SHOP_CATALOG,
+      getShopCatalog: () => shopCatalogForUi(),
+      resolveItemIcon: (defId: string, slot?: string, name?: string) =>
+        resolveItemIcon(defId, slot, name),
       skillPointsCost: () => SKILL_TRAINING.pointsCost,
       skillGoldCost: (index: number) => SKILL_TRAINING.goldCost(index),
       skillUpCost: (index: number) => SKILL_TRAINING.upCost(index),
@@ -226,6 +234,11 @@ export class WireUi {
       const api = (window as unknown as { __UAIDZIN_WIRE__?: { paintComposer?: () => void } })
         .__UAIDZIN_WIRE__;
       api?.paintComposer?.();
+    }
+    if (name === "quest") {
+      const api = (window as unknown as { __UAIDZIN_WIRE__?: { paintQuest?: () => void } })
+        .__UAIDZIN_WIRE__;
+      api?.paintQuest?.();
     }
     el.classList.remove("is-closed");
   }

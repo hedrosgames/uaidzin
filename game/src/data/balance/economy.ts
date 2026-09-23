@@ -1,3 +1,5 @@
+import { ITEM_CATALOG, resolveItemIcon, type ItemCatalogDef } from "../items/item-catalog";
+
 export const ECONOMY_BALANCE = {
   inventorySlots: 40,
   bagCount: 4,
@@ -16,10 +18,8 @@ export const ECONOMY_BALANCE = {
   rarityWeights: [50, 28, 14, 6, 2] as const,
   refine: {
     maxLevel: 10,
-    
     successByLevel: [1, 1, 0.95, 0.9, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35],
     goldCost: [10, 20, 40, 70, 110, 160, 230, 320, 430, 560],
-    
     materialTierSwitchAt: 6,
   },
   sellValueByRarity: [5, 12, 28, 60, 120],
@@ -39,6 +39,7 @@ export type ShopItemDef = {
   slot: string;
   rarity: string;
   desc: string;
+  icon: string;
 };
 
 export type ShopSlotDef = {
@@ -47,53 +48,103 @@ export type ShopSlotDef = {
   price: number;
 };
 
+function shopItemFromCatalog(id: string): ShopItemDef {
+  const def = ITEM_CATALOG[id];
+  if (!def || !def.icon) {
+    throw new Error(`SHOP_CATALOG: item sem ícone ou def: ${id}`);
+  }
+  return {
+    id: def.id,
+    name: def.name,
+    slot: def.slot,
+    rarity: def.rarity,
+    desc: def.desc,
+    icon: def.icon,
+  };
+}
+
+function shopItems(ids: string[]): Record<string, ShopItemDef> {
+  const out: Record<string, ShopItemDef> = {};
+  for (const id of ids) out[id] = shopItemFromCatalog(id);
+  return out;
+}
+
+const SHOP_ITEM_IDS = [
+  "mat_ori",
+  "mat_lac",
+  "entry_d4",
+  "entry_d5",
+  "entry_d6",
+  "entry_d7",
+  "entry_d8",
+  "espada_curta",
+  "machado_leve",
+  "armadura_leve",
+  "capacete",
+  "anel_cobre",
+  "anel_ferro",
+  "colar_simples",
+  "brinco_osso",
+] as const;
+
 export const SHOP_CATALOG: {
   items: Record<string, ShopItemDef>;
   shops: Record<string, { id: string; label: string; slots: ShopSlotDef[] }>;
 } = {
-  items: {
-    espada_curta: { id: "espada_curta", name: "Espada Curta", slot: "weapon", rarity: "Comum", desc: "Ataque +4" },
-    machado_leve: { id: "machado_leve", name: "Machado Leve", slot: "weapon", rarity: "Comum", desc: "Ataque +5" },
-    armadura_leve: { id: "armadura_leve", name: "Armadura Leve", slot: "armor", rarity: "Comum", desc: "Defesa +3" },
-    capacete: { id: "capacete", name: "Capacete", slot: "head", rarity: "Comum", desc: "Defesa +2" },
-    anel_cobre: { id: "anel_cobre", name: "Anel de Cobre", slot: "ring1", rarity: "Comum", desc: "Ataque +1 · Defesa +1" },
-    anel_ferro: { id: "anel_ferro", name: "Anel de Ferro", slot: "ring2", rarity: "Incomum", desc: "Ataque +2 · Defesa +2" },
-    colar_simples: { id: "colar_simples", name: "Colar Simples", slot: "neck", rarity: "Comum", desc: "Ataque +1 · Defesa +1" },
-    brinco_osso: { id: "brinco_osso", name: "Brinco de Osso", slot: "ear", rarity: "Comum", desc: "Ataque +1" },
-    poeira_ori: { id: "poeira_ori", name: "Poeira de Ori", slot: "material", rarity: "Comum", desc: "Material de reforço até +5." },
-    poeira_lac: { id: "poeira_lac", name: "Poeira de Lac", slot: "material", rarity: "Comum", desc: "Material de reforço de +6 a +10." },
-  },
+  items: shopItems([...SHOP_ITEM_IDS]),
   shops: {
     merchant: {
       id: "merchant",
       label: "Mercador",
       slots: [
-        { itemId: "poeira_ori", qty: 50, price: 25 },
-        { itemId: "poeira_lac", qty: 10, price: 120 },
-        { itemId: "espada_curta", qty: 5, price: 80 },
-        { itemId: "machado_leve", qty: 5, price: 95 },
-        { itemId: "armadura_leve", qty: 5, price: 75 },
-        { itemId: "capacete", qty: 5, price: 55 },
-        { itemId: "anel_cobre", qty: 8, price: 40 },
-        { itemId: "colar_simples", qty: 8, price: 45 },
-        { itemId: "brinco_osso", qty: 8, price: 35 },
+        { itemId: "entry_d4", qty: 20, price: 200 },
+        { itemId: "entry_d5", qty: 15, price: 350 },
+        { itemId: "entry_d6", qty: 12, price: 500 },
+        { itemId: "entry_d7", qty: 10, price: 750 },
+        { itemId: "entry_d8", qty: 8, price: 1000 },
+        { itemId: "mat_ori", qty: 50, price: 25 },
+        { itemId: "mat_lac", qty: 10, price: 120 },
       ],
     },
     blacksmith: {
       id: "blacksmith",
       label: "Ferreiro",
       slots: [
-        { itemId: "poeira_ori", qty: 99, price: 20 },
-        { itemId: "poeira_lac", qty: 20, price: 100 },
+        { itemId: "mat_ori", qty: 99, price: 20 },
+        { itemId: "mat_lac", qty: 20, price: 100 },
         { itemId: "espada_curta", qty: 3, price: 70 },
         { itemId: "machado_leve", qty: 3, price: 85 },
         { itemId: "armadura_leve", qty: 3, price: 70 },
         { itemId: "capacete", qty: 3, price: 50 },
+        { itemId: "anel_cobre", qty: 4, price: 40 },
         { itemId: "anel_ferro", qty: 4, price: 160 },
+        { itemId: "colar_simples", qty: 4, price: 45 },
+        { itemId: "brinco_osso", qty: 4, price: 35 },
       ],
     },
   },
 };
+
+export function shopCatalogForUi(): typeof SHOP_CATALOG {
+  const items: Record<string, ShopItemDef> = {};
+  for (const [id, item] of Object.entries(SHOP_CATALOG.items)) {
+    if (item.icon) items[id] = item;
+  }
+  const shops: typeof SHOP_CATALOG.shops = {};
+  for (const [shopId, shop] of Object.entries(SHOP_CATALOG.shops)) {
+    shops[shopId] = {
+      ...shop,
+      slots: shop.slots.filter((slot) => !!items[slot.itemId]?.icon),
+    };
+  }
+  return { items, shops };
+}
+
+export function catalogDef(id: string): ItemCatalogDef | undefined {
+  return ITEM_CATALOG[id];
+}
+
+export { resolveItemIcon };
 
 export const SKILL_TRAINING = {
   pointsCost: 1,

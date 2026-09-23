@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UAIDZIN — Grill de design do jogo</title>
+<style>
+:root{
+  --bg:#100c08;
+  --panel:#241c14;
+  --panel2:#2e241a;
+  --gold:#d4a017;
+  --blood:#a33b3b;
+  --ink:#f0e6d0;
+  --ink-dim:#c4b59a;
+  --ink-mute:#8a7a62;
+  --line:#3d3024;
+  --font:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100%}
+body{padding:24px 16px 80px}
+.wrap{max-width:860px;margin:0 auto}
+header{border:1px solid var(--line);background:var(--panel);padding:20px 22px;border-radius:2px;margin-bottom:18px}
+header h1{font-size:20px;font-weight:600;letter-spacing:.04em;color:var(--gold)}
+header p{margin-top:8px;color:var(--ink-dim);font-size:13px;line-height:1.5}
+header .note{margin-top:10px;font-size:12px;color:var(--ink-mute);border-left:2px solid var(--gold);padding-left:10px}
+.bar{display:flex;align-items:center;gap:12px;margin-top:14px}
+.bar-track{flex:1;height:6px;background:#1a140e;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;width:0;background:var(--gold);transition:width .2s}
+.bar-txt{font-size:12px;color:var(--ink-mute);min-width:70px;text-align:right}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.filters button{border:1px solid var(--line);background:var(--panel);color:var(--ink-dim);padding:6px 12px;font-family:var(--font);font-size:12px;border-radius:2px;cursor:pointer}
+.filters button.on{border-color:var(--gold);color:var(--gold)}
+.phase{border:1px solid var(--line);background:var(--panel);border-radius:2px;margin-bottom:14px;padding:16px 18px}
+.phase-tag{display:inline-block;font-size:11px;letter-spacing:.08em;color:var(--bg);background:var(--gold);padding:2px 8px;border-radius:2px;font-weight:600}
+.phase h2{display:inline-block;margin-left:10px;font-size:16px;font-weight:600}
+.phase .val{margin-top:8px;font-size:12px;color:var(--ink-dim);line-height:1.45}
+.q{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.q-head{font-size:14px;font-weight:600;line-height:1.4}
+.q-head .qid{color:var(--gold);font-weight:600;margin-right:6px;font-size:12px}
+.q-head .lock{font-size:11px;color:var(--ink-mute);font-weight:400;display:block;margin-top:4px}
+.opts{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border:1px solid var(--line);background:var(--panel2);border-radius:2px;cursor:pointer;transition:border-color .15s}
+.opt:hover{border-color:var(--gold)}
+.opt input{margin-top:3px;accent-color:var(--gold);cursor:pointer}
+.opt span{font-size:13px;color:var(--ink-dim);line-height:1.4}
+.opt.on{border-color:var(--gold);background:#3a2e1c}
+.opt.on span{color:var(--ink)}
+.free{margin-top:8px}
+.free label{display:block;font-size:11px;color:var(--ink-mute);letter-spacing:.04em;margin-bottom:4px}
+.free input{width:100%;background:#1a140e;border:1px solid var(--line);color:var(--ink);padding:8px 10px;font-family:var(--font);font-size:13px;border-radius:2px}
+.free input:focus{outline:none;border-color:var(--gold)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.btn{border:1px solid var(--gold);background:transparent;color:var(--gold);padding:10px 18px;font-family:var(--font);font-size:13px;font-weight:600;letter-spacing:.04em;border-radius:2px;cursor:pointer}
+.btn:hover{background:var(--gold);color:var(--bg)}
+.btn.ghost{border-color:var(--line);color:var(--ink-dim)}
+.btn.ghost:hover{border-color:var(--ink-dim);background:transparent;color:var(--ink)}
+.btn.primary{background:var(--gold);color:var(--bg)}
+.btn.primary:hover{filter:brightness(1.1)}
+.out{margin-top:18px;border:1px solid var(--line);background:var(--panel);padding:16px 18px;border-radius:2px;display:none}
+.out.show{display:block}
+.out h3{font-size:14px;color:var(--gold);margin-bottom:10px}
+.out pre{white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--ink-dim);line-height:1.5;max-height:440px;overflow:auto;background:#1a140e;padding:12px;border:1px solid var(--line);border-radius:2px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);border:1px solid var(--gold);color:var(--ink);padding:10px 16px;font-size:13px;border-radius:2px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hint{font-size:11px;color:var(--ink-mute);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>UAIDZIN — Grill de design do jogo</h1>
+    <p>Só assunto de jogo: como funciona o mundo, o personagem, o combate, a economia e a progressão. Cada pergunta tem múltipla escolha e campo livre. Respostas viram regra de produto.</p>
+    <div class="note">Ordem de código, stack, arquitetura e “como implementar” não entram aqui — isso fica com o time de desenvolvimento. Regras já travadas no projeto (paleta, escudo só no CTA, zero emoji, HP verde/vermelho 40%, nomes TK/FM/BM/HT, dungeon 10 min, autofarm parado, ataque básico sem andar, reset independente por evolução) só aparecem se precisarmos fechar um detalhe em cima delas.</div>
+    <div class="bar">
+      <div class="bar-track"><div class="bar-fill" id="fill"></div></div>
+      <div class="bar-txt" id="prog">0 / 0</div>
+    </div>
+  </header>
+
+  <div class="filters" id="filters"></div>
+  <div id="form"></div>
+
+  <div class="actions">
+    <button type="button" class="btn primary" id="btnSummary">Gerar resumo</button>
+    <button type="button" class="btn" id="btnCopy">Copiar resumo</button>
+    <button type="button" class="btn ghost" id="btnReset">Limpar respostas</button>
+  </div>
+  <div class="out" id="out">
+    <h3>Resumo de design — para virar regra</h3>
+    <pre id="outTxt"></pre>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const DATA = [
+  {
+    id: "CONTA",
+    title: "Conta e acesso",
+    value: "Quem entra no jogo e o que significa uma conta neste protótipo offline.",
+    questions: [
+      {
+        qid: "CONTA-1",
+        text: "No protótipo, quantas contas “de verdade” o jogador deve ter no dispositivo?",
+        options: [
+          "Uma conta por pessoa que jogar (login livre, várias contas locais)",
+          "Só a conta admin do laboratório; o resto é personagem",
+          "Conta ilimitada, mas sem Google — só login e senha",
+          "Google é a conta principal; login/senha é secundário"
+        ],
+        note: "Já decidido: sem backend real; Google é simulado."
+      },
+      {
+        qid: "CONTA-2",
+        text: "Uma conta pode ter vários personagens ao mesmo tempo?",
+        options: [
+          "Sim — até 4 slots vivos (como o protótipo)",
+          "Sim — 4 slots, mas só 1 “ativo” por vez",
+          "Não — 1 personagem por conta",
+          "Quantos o save suportar, sem limite de UI"
+        ],
+        note: "Hoje o protótipo usa 4 slots."
+      },
+      {
+        qid: "CONTA-3",
+        text: "Excluir personagem o que apaga?",
+        options: [
+          "Só o personagem; baú/ouro da conta permanece",
+          "Personagem e o que só ele usava; ouro da conta fica",
+          "Zera tudo da conta, inclusive ouro e baú",
+          "Personagem some da lista mas o save fica 7 dias (cesto)"
+        ]
+      },
+      {
+        qid: "CONTA-4",
+        text: "Dois personagens da mesma conta dividem o quê?",
+        options: [
+          "Baú e ouro da conta; progressão de nível é por personagem",
+          "Tudo separado, zero compartilhado",
+          "Só o baú; ouro é por personagem",
+          "Só ouro; inventário é por personagem"
+        ],
+        note: "GDD hoje fala em vault da conta (ouro + itens)."
+      },
+      {
+        qid: "CONTA-5",
+        text: "“Lembrar login” no dispositivo guarda o quê?",
+        options: [
+          "Só o nome do usuário (regra atual)",
+          "Usuário e marca “continuar” sem pedir senha neste dispositivo",
+          "Nada — sempre digitar",
+          "Usuário + última classe escolhida"
+        ]
+      }
+    ]
+  },
+  {
+    id: "PERSON",
+    title: "Personagem e identidade",
+    value: "Nascimento, nome, classe e o que o herói é no mundo.",
+    questions: [
+      {
+        qid: "PERSON-1",
+        text: "Nome do personagem: limites e regras?",
+        options: [
+          "3 a 12 letras, sem número/símbolo (o que você pediu na seleção)",
+          "3 a 12, mas pode ter número",
+          "3 a 16 letras",
+          "Livre, só não pode repetir na conta"
+        ]
+      },
+      {
+        qid: "PERSON-2",
+        text: "Nome repetido entre contas diferentes?",
+        options: [
+          "Pode repetir — é jogo offline local",
+          "Não pode repetir (como MMO)",
+          "Pode, mas o jogo mostra o nome da conta junto"
+        ]
+      },
+      {
+        qid: "PERSON-3",
+        text: "Ao nascer, o que o personagem leva?",
+        options: [
+          "Nada: 0 ouro, sem equip, skills zeradas (seu pedido)",
+          "Arma básica da classe + 0 ouro",
+          "Arma + 100 de ouro de boas-vindas",
+          "Kit inicial maior (arma, 1 peça de armadura, pouca poção)"
+        ]
+      },
+      {
+        qid: "PERSON-4",
+        text: "Dá para trocar de classe depois de criar?",
+        options: [
+          "Não — classe é permanente",
+          "Sim, item caro no mercador/compositor",
+          "Sim, só no reset/evolução",
+          "Sim, de graça na cidade (sábio/compositor)"
+        ],
+        note: "Hoje a troca está amarrada a painel de skills no protótipo."
+      },
+      {
+        qid: "PERSON-5",
+        text: "Trocar de personagem na mesma conta:",
+        options: [
+          "Só na seleção (sair da cidade → login/seleção)",
+          "Pode na cidade, com confirmação",
+          "Pode a qualquer momento no HUD",
+          "Só ao deslogar"
+        ]
+      }
+    ]
+  },
+  {
+    id: "CLASSE",
+    title: "Classes",
+    value: "TK Thegn Knight · FM Frost Maiden · BM Beast Master · HT Huntress.",
+    questions: [
+      {
+        qid: "CLASSE-1",
+        text: "Identidade de combate de cada classe (confirmar o essencial):",
+        options: [
+          "TK tanque corpo a corpo; FM magia de gelo à distância; BM feras/área; HT física à distância (como o GDD)",
+          "Só muda o atributo principal; estilo de luta igual",
+          "Cada classe muda arma + 1 mecânica exclusiva forte",
+          "Quero mudar uma das quatro — escrever no campo livre"
+        ]
+      },
+      {
+        qid: "CLASSE-2",
+        text: "Atributo principal por classe:",
+        options: [
+          "TK=FOR · FM=INT · BM=INT · HT=DES (GDD/protótipo)",
+          "BM deveria ser FOR/CONS em vez de INT",
+          "HT=DES e um pouco de FOR; FM só INT",
+          "Rever todos no balance — por ora deixa assim"
+        ]
+      },
+      {
+        qid: "CLASSE-3",
+        text: "Arma da classe no início:",
+        options: [
+          "Uma arma fixa por classe (identidade clara)",
+          "Escolhe entre 2 armas na criação",
+          "Começa desarmado e compra/compora a primeira",
+          "Arma muda com a árvore de skills escolhida"
+        ]
+      },
+      {
+        qid: "CLASSE-4",
+        text: "Uma classe pode ser “melhor” que outra no farm?",
+        options: [
+          "Sim, com papel claro (ex.: BM/HT farmam mais; TK sobrevive mais)",
+          "Não — tudo igual, só o estilo muda",
+          "Sim, mas só no late; no início todos equivalentes",
+          "Não sei ainda — balance depois do G3"
+        ]
+      }
+    ]
+  },
+  {
+    id: "ATRIB",
+    title: "Atributos e combate base",
+    value: "FOR · DES · CONS · INT e o que eles mexem de verdade.",
+    questions: [
+      {
+        qid: "ATRIB-1",
+        text: "Pontos por nível:",
+        options: [
+          "5 pontos livres por nível (GDD)",
+          "3 pontos por nível",
+          "5 + bônus de classe",
+          "Outro valor — escrever"
+        ]
+      },
+      {
+        qid: "ATRIB-2",
+        text: "O que FOR aumenta?",
+        options: [
+          "Ataque físico e peso de equipamento",
+          "Só ataque físico",
+          "Ataque físico e um pouco de HP",
+          "Ataque e chance de crítico físico"
+        ]
+      },
+      {
+        qid: "ATRIB-3",
+        text: "O que DES aumenta?",
+        options: [
+          "Esquiva, crítico e velocidade de ataque",
+          "Só esquiva",
+          "Esquiva e acerto",
+          "Esquiva, crítico e alcance"
+        ]
+      },
+      {
+        qid: "ATRIB-4",
+        text: "O que CONS aumenta?",
+        options: [
+          "HP máximo e defesa",
+          "Só HP",
+          "HP, defesa e resistência a knock/stagger",
+          "HP e regeneração"
+        ]
+      },
+      {
+        qid: "ATRIB-5",
+        text: "O que INT aumenta?",
+        options: [
+          "Poder mágico e MP máximo",
+          "Só poder mágico",
+          "Poder mágico, MP e cooldown de skill",
+          "MP e chance de status (gelo etc.)"
+        ]
+      },
+      {
+        qid: "ATRIB-6",
+        text: "Acerto e esquiva:",
+        options: [
+          "Fórmula base + atributo; sem i-frame manual (GDD)",
+          "Só nível vs nível do monstro",
+          "Esquiva é i-frame curto controlado pelo jogador",
+          "Esquiva quase zero; defesa que resolve"
+        ],
+        note: "GDD: fórmula, não i-frame manual."
+      },
+      {
+        qid: "ATRIB-7",
+        text: "Distribuir pontos errados:",
+        options: [
+          "Respeito livre — build errada se resolve com reset",
+          "Item de reset de atributo na loja",
+          "Reespec grátis no sábio, com limite",
+          "Reespec só no reset de evolução"
+        ]
+      }
+    ]
+  },
+  {
+    id: "SKILL",
+    title: "Skills e builds",
+    value: "Três árvores por classe, 8 nós, a oitava exclusiva.",
+    questions: [
+      {
+        qid: "SKILL-1",
+        text: "Quantas skills o jogador equipa na barra?",
+        options: [
+          "Ativamente 4 + ataque básico (padrão atual do hub)",
+          "Ativamente 3 + ataque básico",
+          "6 slots ativos",
+          "Todas as skills aprendidas ficam disponíveis"
+        ]
+      },
+      {
+        qid: "SKILL-2",
+        text: "A oitava skill (topo):",
+        options: [
+          "Só 1 das 3 árvores pode liberar a 8ª (GDD)",
+          "Pode liberar 2 árvores com muito investimento",
+          "Pode liberar as 3",
+          "8ª é comum e não depende de árvore"
+        ]
+      },
+      {
+        qid: "SKILL-3",
+        text: "Pontos de skill:",
+        options: [
+          "1 ponto por nível (além dos de atributo)",
+          "2 pontos por nível (o protótipo de seleção calcula assim)",
+          "Ponto por nível + bônus em marcos",
+          "Só compra com item/livro"
+        ]
+      },
+      {
+        qid: "SKILL-4",
+        text: "Especialização (spec) das árvores:",
+        options: [
+          "Pontos de spec separados; marcam “main tree”",
+          "Spec automática na árvore com mais pontos",
+          "Escolhe 1 árvore spec e ganha bônus só nela",
+          "Sem spec — só os nós"
+        ]
+      },
+      {
+        qid: "SKILL-5",
+        text: "Skills no reset:",
+        options: [
+          "Reset zera skills e pontos (GDD)",
+          "Reset zera pontos, skills aprendidas ficam gastas",
+          "Pode escolher o que resetar",
+          "Reset não mexe em skill"
+        ]
+      },
+      {
+        qid: "SKILL-6",
+        text: "Skills automáticas vs manuais:",
+        options: [
+          "Algumas auto quando parado (autofarm); manual otimiza (GDD)",
+          "Tudo manual",
+          "Tudo auto, jogador só anda",
+          "O jogador escolhe auto por skill"
+        ]
+      },
+      {
+        qid: "SKILL-7",
+        text: "Custo de skill em dungeon:",
+        options: [
+          "MP com custo fixo por cast (hoje 8) + regen",
+          "MP com custo por skill (varia)",
+          "Cooldown sem MP",
+          "MP + cooldown"
+        ]
+      }
+    ]
+  },
+  {
+    id: "RESET",
+    title: "Reset e evolução",
+    value: "Mortal 1–400 · Arch 1–400 · Cele 1–200. Reset dentro da etapa.",
+    questions: [
+      {
+        qid: "RESET-1",
+        text: "O que o reset remove?",
+        options: [
+          "Nível, atributos e skills do ciclo (GDD)",
+          "Só o nível",
+          "Nível e skills; atributos ficam",
+          "Tudo, inclusive equipamento (punir mais)"
+        ]
+      },
+      {
+        qid: "RESET-2",
+        text: "O que o reset mantém?",
+        options: [
+          "Equipamento, refine, inventário e evolução (GDD)",
+          "Só evolução e ouro",
+          "Tudo exceto nível",
+          "Tudo + skills da árvore spec"
+        ]
+      },
+      {
+        qid: "RESET-3",
+        text: "Pontos ganhos por reset:",
+        options: [
+          "1.000 pontos de atributo (valor de design atual)",
+          "Outro valor fixo — escrever",
+          "Escala com o nível que você resetou",
+          "Escala com quantos resets já fez"
+        ]
+      },
+      {
+        qid: "RESET-4",
+        text: "Custo para resetar:",
+        options: [
+          "Ouro alto (sumidouro de economia)",
+          "Item especial dropado",
+          "Ouro + item",
+          "Só nível mínimo, sem custo"
+        ]
+      },
+      {
+        qid: "RESET-5",
+        text: "Contagem de reset:",
+        options: [
+          "Separada por evolução; zera ao evoluir (GDD)",
+          "Global, acumula para sempre",
+          "Separada, mas evoluir carrega metade",
+          "Global e dá título/efeito cosmético"
+        ]
+      },
+      {
+        qid: "RESET-6",
+        text: "Evolução Mortal → Arch:",
+        options: [
+          "Nível 400 + missão/custo (detalhar depois)",
+          "Só nível 400",
+          "Nível 400 + item de evolução",
+          "Nível 400 + gold e um boss"
+        ]
+      },
+      {
+        qid: "RESET-7",
+        text: "Arch → Cele:",
+        options: [
+          "Mesma lógica do Mortal→Arch, com números próprios",
+          "Mais punitivo (mais ouro/item)",
+          "Mais leve que Mortal→Arch",
+          "Só cosmético + pontos"
+        ]
+      },
+      {
+        qid: "RESET-8",
+        text: "Reset em si zera o quê da evolução atual?",
+        options: [
+          "Volta ao nível 1 da evolução atual e continua nela (GDD)",
+          "Pode cair de evolução se quiser farmar mais reset",
+          "Nunca zera a evolução; reset é só cosmético de nível",
+          "Zera até a Mortal"
+        ]
+      }
+    ]
+  },
+  {
+    id: "COMBATE",
+    title: "Combate",
+    value: "Andar, atacar, morrer, matar — as regras da luta.",
+    questions: [
+      {
+        qid: "COMBATE-1",
+        text: "Ataque básico:",
+        options: [
+          "Automático quando o personagem está parado; não ataca andando (GDD)",
+          "Botão de ataque + automático",
+          "Automático sempre, até andando",
+          "Só no clique do alvo"
+        ]
+      },
+      {
+        qid: "COMBATE-2",
+        text: "Andar enquanto toma dano ou durante ataque:",
+        options: [
+          "Não deveria ser possível (seu pedido) — lock na janela de hit/ataque",
+          "Pode andar tomando dano; ataque trava",
+          "Pode andar sempre; só skill com cast trava",
+          "Lock curto no hit; ataque básico não trava o andar"
+        ]
+      },
+      {
+        qid: "COMBATE-3",
+        text: "Autofarm:",
+        options: [
+          "Parado no lugar; skills automáticas; jogador otimiza a posição (GDD)",
+          "Anda sozinho e farma (defeito a evitar)",
+          "Só ataca o alvo mais perto, sem skill",
+          "Desligado por padrão; liga no HUD"
+        ]
+      },
+      {
+        qid: "COMBATE-4",
+        text: "Alvo do ataque básico:",
+        options: [
+          "Inimigo mais próximo dentro do alcance",
+          "Último que bateu em você",
+          "Clique escolhe o alvo",
+          "Mais próximo + prioridade de elite/boss se no raio"
+        ]
+      },
+      {
+        qid: "COMBATE-5",
+        text: "Dano em área e friendly fire:",
+        options: [
+          "Só inimigos; sem dano em si mesmo",
+          "Pode se machucar com skill própria (risco de build)",
+          "Só skills de BM podem “errar” aliado invocado",
+          "Sem invocação ainda — neutral"
+        ]
+      },
+      {
+        qid: "COMBATE-6",
+        text: "Ver o personagem atrás de obstáculo (x-ray):",
+        options: [
+          "Só o jogador; monstro nunca (seu pedido)",
+          "Jogador e monstro elite",
+          "Jogador e todos os monstros",
+          "Nem jogador — câmera alta resolve"
+        ]
+      },
+      {
+        qid: "COMBATE-7",
+        text: "Câmera:",
+        options: [
+          "Fixa ¾ como o GDD (protótipo atual)",
+          "Fixa ¾ + zoom leve",
+          "Segue o jogador com amortecimento",
+          "Livre no hub, fixa na dungeon"
+        ],
+        note: "GDD marca câmera como decisão de design — já usamos fixa ¾."
+      }
+    ]
+  },
+  {
+    id: "CIDADE",
+    title: "Cidade (hub)",
+    value: "Aurelion: onde se prepara antes da dungeon.",
+    questions: [
+      {
+        qid: "CIDADE-1",
+        text: "O que a cidade precisa ter funcionando para ser “hub de verdade”?",
+        options: [
+          "Guarda (dungeon), ferreiro, mercador, sábio (skills), compositor, mestre de quests",
+          "Só guarda + sábio por enquanto",
+          "Guarda + loja única (mercador com tudo)",
+          "Todos os NPCs, mesmo com listas curtas"
+        ]
+      },
+      {
+        qid: "CIDADE-2",
+        text: "Sábio — o que a tela dele faz?",
+        options: [
+          "Skills/árvore/atributos; NÃO abre equipamento junto (seu pedido)",
+          "Skills + reset",
+          "Skills + atributos + reespec",
+          "Só fala/quest; build é em outro NPC"
+        ]
+      },
+      {
+        qid: "CIDADE-3",
+        text: "Ferreiro — papel principal:",
+        options: [
+          "Melhorar/refinar equipamento e ver catálogo de peças",
+          "Só refinar",
+          "Só vender arma/armadura",
+          "Refinar + composição de item"
+        ]
+      },
+      {
+        qid: "CIDADE-4",
+        text: "Mercador — o que vende?",
+        options: [
+          "Consumíveis, itens de entrada de dungeon, utilidades",
+          "Também equipamento fraco de início",
+          "Só consumíveis",
+          "Tudo que o ferreiro não vende"
+        ]
+      },
+      {
+        qid: "CIDADE-5",
+        text: "Mestre de quests:",
+        options: [
+          "Lista de missões com recompensa (ouro/item/XP) — definir conteúdo mínimo",
+          "Só quests de história/ranking",
+          "Só quests diárias",
+          "Pode fechar quests e dar reset de quest"
+        ]
+      },
+      {
+        qid: "CIDADE-6",
+        text: "Interagir com NPC de longe:",
+        options: [
+          "Clica, anda até perto e abre a UI (seu pedido)",
+          "Só clica se já estiver perto",
+          "Clica e abre UI na hora, sem andar",
+          "Anda até perto e abre só se você clicar de novo"
+        ]
+      },
+      {
+        qid: "CIDADE-7",
+        text: "Mundo fora da cidade (arredores):",
+        options: [
+          "Só visual/atmosfera; farm é na dungeon",
+          "Farm leve de monstro fraco antes da dungeon",
+          "Área de treino com boneco",
+          "Arredores só cosméticos até G5+"
+        ]
+      }
+    ]
+  },
+  {
+    id: "ECON",
+    title: "Economia",
+    value: "Ouro, preços e para onde o dinheiro some.",
+    questions: [
+      {
+        qid: "ECON-1",
+        text: "Ouro inicial do personagem novo:",
+        options: [
+          "0 (seu pedido)",
+          "0 na conta; baú da conta pode ter resto de outro char",
+          "Pequena quantia fixa (ex.: 50) só para tutorial",
+          "0 + item de entrada grátis da primeira dungeon"
+        ]
+      },
+      {
+        qid: "ECON-2",
+        text: "Ouro é por personagem ou da conta?",
+        options: [
+          "Da conta (vault) — GDD atual",
+          "Por personagem",
+          "Conta mostra um cofre; personagem tem bolsa própria",
+          "Misto: bolsa por char + cofre da conta"
+        ]
+      },
+      {
+        qid: "ECON-3",
+        text: "Principais sumidouros de ouro:",
+        options: [
+          "Refino, reset, compras (loja) — GDD",
+          "Só compras",
+          "Refino e reset apenas",
+          "Compras + taxa de entrada dungeon em ouro"
+        ]
+      },
+      {
+        qid: "ECON-4",
+        text: "Vender item para NPC:",
+        options: [
+          "Sim, preço baixo fixo por raridade",
+          "Sim, preço do item / fator",
+          "Não se vende; só refinamento/dissolve",
+          "Vende só consumível"
+        ]
+      },
+      {
+        qid: "ECON-5",
+        text: "Teto/moeda grande no HUD:",
+        options: [
+          "Mostrar ouro completo; formato atual com teto de exibição alto",
+          "Abreviar (1,2k / 1,2mi)",
+          "Ouro + segunda moeda (poeira etc.) no HUD",
+          "Só ouro até o GDD fechar materiais"
+        ]
+      },
+      {
+        qid: "ECON-6",
+        text: "Materiais (Poeira de Ori / Lac etc.):",
+        options: [
+          "Dropam e gastam no refino/compositor — como o GDD",
+          "Ainda não existem no protótipo; só ouro",
+          "Existem mas só como requisito de craft",
+          "Compram na loja também"
+        ]
+      }
+    ]
+  },
+  {
+    id: "ITEM",
+    title: "Itens e equipamento",
+    value: "Inventário, slots, raridade, refine.",
+    questions: [
+      {
+        qid: "ITEM-1",
+        text: "Slots de equipamento:",
+        options: [
+          "7 slots como o GDD (descrever quais no campo livre se quiser)",
+          "Menos slots (ex.: 5) para simplificar",
+          "Mais slots (9+)",
+          "7 + slot de costume cosmético"
+        ]
+      },
+      {
+        qid: "ITEM-2",
+        text: "Raridade dos itens:",
+        options: [
+          "Escala clássica (comum → raro → épico → lendário) — fechar nomes no GDD",
+          "5 tiers com nome próprio do UAIDZIN",
+          "3 tiers só",
+          "Sem cor de raridade; só nível req."
+        ]
+      },
+      {
+        qid: "ITEM-3",
+        text: "Tamanho do inventário do personagem:",
+        options: [
+          "40 espaços (GDD)",
+          "20 para começar, expande com item/bolsa",
+          "80",
+          "Ilimitado no protótipo; limitar no produto"
+        ],
+        note: "Protótipo já fala em bolsas I–IV."
+      },
+      {
+        qid: "ITEM-4",
+        text: "Inventário cheio e drop:",
+        options: [
+          "Drop se perde (GDD)",
+          "Drop vai para baú da conta se tiver espaço",
+          "Drop fica no chão da dungeon",
+          "Drop é recusado com aviso no log"
+        ]
+      },
+      {
+        qid: "ITEM-5",
+        text: "Refino:",
+        options: [
+          "+N com chance; falha pode quebrar/rebaixar (fechar severidade)",
+          "+N sempre sobe, custo sobe muito",
+          "+N com chance; falha só perde material",
+          "Sem risco de quebra até o endgame"
+        ]
+      },
+      {
+        qid: "ITEM-6",
+        text: "Requisito de classe no equip:",
+        options: [
+          "Sim — equip é por classe ou restrição clara",
+          "Qualquer classe usa; só muda o scaling",
+          "Só arma é por classe; armadura é livre",
+          "Sim, com poucos itens “todos os classes”"
+        ]
+      },
+      {
+        qid: "ITEM-7",
+        text: "Itens de entrada de dungeon:",
+        options: [
+          "Consomem ao entrar (seu pedido); lista por dungeon",
+          "Consomem só se falhar",
+          "Não consomem; é só nível mínimo",
+          "Consomem e voltam se você “desistir” nos primeiros segundos"
+        ]
+      },
+      {
+        qid: "ITEM-8",
+        text: "Todo item precisa de ícone próprio?",
+        options: [
+          "Sim — item sem ícone não entra na build do jogo (seu pedido)",
+          "Ícone por raridade serve até a arte final",
+          "Sim para equip e item de quest; consumível pode ser genérico",
+          "Sim, e o editor de itens força o caminho do ícone"
+        ]
+      }
+    ]
+  },
+  {
+    id: "DUNG",
+    title: "Dungeons",
+    value: "10 minutos, arenas lineares, entrada com item.",
+    questions: [
+      {
+        qid: "DUNG-1",
+        text: "Tempo da dungeon:",
+        options: [
+          "10:00 único, não pausa, não renova (GDD)",
+          "10:00 pausáveis em menu",
+          "8 min",
+          "Tempo varia por dungeon"
+        ]
+      },
+      {
+        qid: "DUNG-2",
+        text: "Quando o tempo acaba:",
+        options: [
+          "Encerra e volta para a cidade (GDD)",
+          "Encerra, mas deixa 30s para pegar loot",
+          "Vira modo “fuga” até a saída",
+          "Não volta; fica até morrer (modo hardcore)"
+        ]
+      },
+      {
+        qid: "DUNG-3",
+        text: "Entrada na dungeon:",
+        options: [
+          "Cidade → Guarda → lista → confirmação → consome item → entra",
+          "Sem confirmação se toggle “não perguntar” estiver ativo",
+          "Atalho/porta no mundo além do guarda",
+          "Guarda + item + nível mínimo"
+        ]
+      },
+      {
+        qid: "DUNG-4",
+        text: "Toggle “não solicitar mais confirmação”:",
+        options: [
+          "Vale para todas as dungeons; Settings pode restaurar (seu pedido)",
+          "Vale só para a dungeon em que foi marcado",
+          "Só para o personagem atual",
+          "Marca por conta"
+        ]
+      },
+      {
+        qid: "DUNG-5",
+        text: "Estrutura interna:",
+        options: [
+          "Arenas lineares conectadas; sem ramificação (GDD)",
+          "2 caminhos curtos que se reúnem no boss",
+          "Arena aberta única",
+          "Linear + sala opcional de tesouro"
+        ]
+      },
+      {
+        qid: "DUNG-6",
+        text: "Boss da dungeon:",
+        options: [
+          "Opcional em algumas; obrigatório em outras (GDD pendente)",
+          "Toda dungeon tem boss no fim",
+          "Boss só nas dungeons de marco de nível",
+          "Sem boss — só clear de arenas"
+        ]
+      },
+      {
+        qid: "DUNG-7",
+        text: "Matar o boss encerra o tempo?",
+        options: [
+          "Não — tempo continua (GDD)",
+          "Sim, encerra e dá bônus de tempo restante",
+          "Sim, mas você pode farmar o resto sem recompensa de tempo",
+          "Zera o tempo e teleporta"
+        ]
+      },
+      {
+        qid: "DUNG-8",
+        text: "Quantas dungeons existem na faixa Mortal?",
+        options: [
+          "8 (D1–D8) cobrindo Mortal 1–400 (GDD)",
+          "Menos dungeons, mais repetição de conteúdo",
+          "Mais de 8, com variação de bioma",
+          "8 + 1 dungeon tutorial"
+        ]
+      },
+      {
+        qid: "DUNG-9",
+        text: "D1 (primeira dungeon) deve ser:",
+        options: [
+          "Muito fácil — tutorial de farm; seu pedido de facilitar",
+          "Fácil mas já com 1 elite",
+          "Média desde o início",
+          "Fácil no normal e difícil se entrar “sem item”"
+        ]
+      },
+      {
+        qid: "DUNG-10",
+        text: "Tela de seleção de dungeon mostra o quê?",
+        options: [
+          "Cards com nível req., item de entrada, tempo, recompensa/chegada (seu pedido)",
+          "Só nome + ícone (atual — a melhorar)",
+          "Cards + preview de inimigo",
+          "Cards + progresso de clear da conta"
+        ]
+      },
+      {
+        qid: "DUNG-11",
+        text: "Recarregar a página dentro da dungeon (consequência de jogo):",
+        options: [
+          "Sai da dungeon; volta à cidade com o que o save tinha ao entrar",
+          "Recomeça a dungeon do zero",
+          "Perde a run e o item de entrada",
+          "Perde só o tempo; farm da run mantido"
+        ],
+        note: "Consequência de design para o jogador — não é stack."
+      }
+    ]
+  },
+  {
+    id: "INIM",
+    title: "Inimigos",
+    value: "Comum, elite, boss e o que fazem na arena.",
+    questions: [
+      {
+        qid: "INIM-1",
+        text: "Comportamentos básicos de inimigo:",
+        options: [
+          "Spawn fixo, perseguidor (distância mínima) e longo alcance (GDD)",
+          "Só perseguidor",
+          "Fixo + perseguidor; range depois",
+          "Mais comportamentos (explodir, buffar, etc.) já em D1"
+        ]
+      },
+      {
+        qid: "INIM-2",
+        text: "Elite:",
+        options: [
+          "HP/dano maiores + visual diferente + melhor drop",
+          "Só mais HP",
+          "Só melhor drop, mesmo HP",
+          "Elite tem 1 skill especial"
+        ]
+      },
+      {
+        qid: "INIM-3",
+        text: "Monstro não deve conseguir:",
+        options: [
+          "Atravessar parede nem “grudar” no jogador sem colisão",
+          "Spawn em cima do jogador",
+          "A e B",
+          "Nada além do óbvio por ora"
+        ]
+      },
+      {
+        qid: "INIM-4",
+        text: "HP world bar dos inimigos:",
+        options: [
+          "Verde ≥40%, vermelho &lt;40% (regra travada)",
+          "Só boss mostra bar",
+          "Todos mostram bar o tempo todo",
+          "Só elite e boss"
+        ]
+      },
+      {
+        qid: "INIM-5",
+        text: "Escalada de dificuldade D1 → D8:",
+        options: [
+          "HP/dano/nível do monstro sobem com a faixa de nível da dungeon",
+          "Mesma dificuldade; só o level do monstro sobe",
+          "Só mais monstro; cada um igual",
+          "Dificuldade sobe + mecânica nova a cada 2 dungeons"
+        ]
+      },
+      {
+        qid: "INIM-6",
+        text: "Monstro dropa o quê?",
+        options: [
+          "Ouro sempre; item conforme tabela da dungeon",
+          "Só ouro",
+          "Só item",
+          "Ouro + material de refino com chance"
+        ]
+      }
+    ]
+  },
+  {
+    id: "FARM",
+    title: "Farm, loot e level up",
+    value: "O ciclo de 10 minutos e o que você ganha dele.",
+    questions: [
+      {
+        qid: "FARM-1",
+        text: "XP vem de:",
+        options: [
+          "Matar monstro (principal) + bônus de clear/tempo",
+          "Só matar monstro",
+          "Só tempo de farm / distância",
+          "Matar + quests"
+        ]
+      },
+      {
+        qid: "FARM-2",
+        text: "Level up no meio da dungeon:",
+        options: [
+          "Enche HP e MP na hora + fanfarra curta (seu pedido)",
+          "Só aviso; não cura",
+          "Cura 50%",
+          "Cura e dá escudo curto"
+        ]
+      },
+      {
+        qid: "FARM-3",
+        text: "UI de drop durante a dungeon:",
+        options: [
+          "Lista no canto inferior esquerdo, tipo log (seu pedido)",
+          "Toasts no centro",
+          "Log + contador de drop por raridade",
+          "Só no fim, na tela de resultado"
+        ]
+      },
+      {
+        qid: "FARM-4",
+        text: "Tela de resultado da dungeon:",
+        options: [
+          "Resumo: kills, XP, ouro, itens — e botão cidade",
+          "Muito simples: só XP e ouro",
+          "Detalhado com tempo por arena e ranking da conta",
+          "Sem tela; volta direto com log na cidade"
+        ]
+      },
+      {
+        qid: "FARM-5",
+        text: "Autofarm vs farm manual em eficiência:",
+        options: [
+          "Manual rende mais (GDD: autofarm < manual)",
+          "Igual",
+          "Autofarm rende mais em exp, menos em item",
+          "Igual por hora; manual rende mais item raro"
+        ]
+      },
+      {
+        qid: "FARM-6",
+        text: "Unidade de medida de farm:",
+        options: [
+          "1 sessão de 10 min (GDD)",
+          "Por monstro morto",
+          "Por dungeon clear",
+          "Por nível ganho"
+        ]
+      },
+      {
+        qid: "FARM-7",
+        text: "Poeira/materiais de drop:",
+        options: [
+          "Dropam na dungeon e contam para refine/craft",
+          "Ainda não dropam",
+          "Só boss dropa",
+          "Dropam mas sem uso até o compositor existir"
+        ]
+      }
+    ]
+  },
+  {
+    id: "MORTE",
+    title: "Morte",
+    value: "O que acontece quando você morre na dungeon.",
+    questions: [
+      {
+        qid: "MORTE-1",
+        text: "Ao morrer na dungeon:",
+        options: [
+          "Animação de morte lá dentro, espera, teleporta para a cidade (seu pedido)",
+          "Volta na hora sem anim",
+          "Anima na cidade (o bug atual — não deve)",
+          "Fica no chão até o tempo acabar"
+        ]
+      },
+      {
+        qid: "MORTE-2",
+        text: "Punição de morte:",
+        options: [
+          "Perde o que não foi “bancado” — ouro da run / drop não guardado (fechar)",
+          "Sem punição além de sair da dungeon",
+          "Perde % do ouro da bolsa",
+          "Perde XP da run",
+          "Perde item de entrada"
+        ]
+      },
+      {
+        qid: "MORTE-3",
+        text: "Item de entrada ao morrer:",
+        options: [
+          "Já foi consumido; perdeu a run",
+          "Devolvido se morreu antes de X minutos",
+          "Devolvido sempre",
+          "Não consome item se morrer no primeiro spawn"
+        ]
+      },
+      {
+        qid: "MORTE-4",
+        text: "HP/estado ao voltar na cidade:",
+        options: [
+          "HP/MP cheios",
+          "Mantém o que tinha (pode voltar machucado)",
+          "50%",
+          "Cura gradual por alguns segundos"
+        ]
+      },
+      {
+        qid: "MORTE-5",
+        text: "Morte e animação (repetir):",
+        options: [
+          "Toda morte roda a anim de novo (seu pedido — bug atual)",
+          "Só a primeira vez",
+          "Pode desligar anim de morte nas opções",
+          "Anim curta sempre"
+        ]
+      },
+      {
+        qid: "MORTE-6",
+        text: "Morreu de novo em sequência (sem farm):",
+        options: [
+          "Sem punição extra",
+          "Cooldown curto para reentrar na dungeon",
+          "Custa mais item de entrada a cada morte na mesma hora",
+          "Aviso só"
+        ]
+      }
+    ]
+  },
+  {
+    id: "PROG",
+    title: "Progressão 1 → 400 (Mortal)",
+    value: "O arco do jogador na primeira evolução.",
+    questions: [
+      {
+        qid: "PROG-1",
+        text: "Como o jogador sente os marcos de progressão?",
+        options: [
+          "Nova dungeon a cada faixa de nível (D1 em 1, D2 em X…)",
+          "Nova dungeon + skill nova no mesmo marco",
+          "Só o número sobe; dungeon é a mesma com HP maior",
+          "Marcos com quest de história"
+        ]
+      },
+      {
+        qid: "PROG-2",
+        text: "Primeira skill nova do personagem:",
+        options: [
+          "Logo nos primeiros níveis (ex.: até nível 5)",
+          "Nível 1 já tem 1 skill da árvore",
+          "Só depois da primeira dungeon clear",
+          "Só via livro dropado"
+        ]
+      },
+      {
+        qid: "PROG-3",
+        text: "Quando o jogador deve sentir “ficou mais forte”?",
+        options: [
+          "A cada 10–20 níveis (peça de equip ou skill)",
+          "Só a cada dungeon nova",
+          "Só no reset",
+          "Continuamente, sem marco"
+        ]
+      },
+      {
+        qid: "PROG-4",
+        text: "Nível mínimo por dungeon (exemplo de leitura):",
+        options: [
+          "Cada D tem faixa min/max clara na UI (GDD)",
+          "Só nível mínimo, sem máximo",
+          "Sem nível; só o item de entrada",
+          "Mínimo + recomendado"
+        ]
+      },
+      {
+        qid: "PROG-5",
+        text: "Quem fecha os números da progressão (XP/h, HP do monstro)?",
+        options: [
+          "Você aprova valores em doc/plano de progressão antes de virar código",
+          "Valores provisórios no jogo e você ajusta jogando",
+          "Só depois do editor de conteúdo",
+          "Só o GDD; se faltar, fica provisório marcado"
+        ]
+      },
+      {
+        qid: "PROG-6",
+        text: "Reset de Mortal: quando o jogador “conhece” a mecânica?",
+        options: [
+          "O jogo deve explicar/resetar no fluxo natural perto do 400",
+          "Nunca explicar — descobre sozinho",
+          "Mestre de quests/sábio explica antes do 400",
+          "Tutorial só na primeira vez que tiver nível para resetar"
+        ]
+      }
+    ]
+  },
+  {
+    id: "UI",
+    title: "UI e feedback",
+    value: "O que o jogador lê na tela — só texto do mundo.",
+    questions: [
+      {
+        qid: "UI-1",
+        text: "Textos de instrução de controle na UI:",
+        options: [
+          "Proibidos (regra travada) — só conteúdo de jogo",
+          "Só na primeira sessão",
+          "Painel de ajuda opcional nas opções",
+          "Tutorial embutido no HUD"
+        ]
+      },
+      {
+        qid: "UI-2",
+        text: "Acentos e símbolos em pt-BR:",
+        options: [
+          "Obrigatório certo em todo texto de jogo (seu pedido)",
+          "Só nos textos finais de arte",
+          "Aceitável placeholder sem acento em dev",
+          "Obrigatório — item sem acento reprova a build"
+        ]
+      },
+      {
+        qid: "UI-3",
+        text: "HP do jogador no hub:",
+        options: [
+          "Frame WYD no topo + barra world space no personagem",
+          "Só world space",
+          "Só frame da UI",
+          "Frame + world só em combate/dungeon"
+        ]
+      },
+      {
+        qid: "UI-4",
+        text: "Painéis da cidade (personagem, skills, inventário):",
+        options: [
+          "Paleta Salão/Brasa, moldura ferro/ouro, sem emoji",
+          "Podem ter tema próprio por NPC",
+          "Um tema só para todos os NPCs",
+          "UI mais escura só na dungeon"
+        ]
+      },
+      {
+        qid: "UI-5",
+        text: "Sons de feedback principais:",
+        options: [
+          "Level up, compra, erro de ação, morte, entrada dungeon",
+          "Só level up e morte",
+          "Tudo silencioso até o áudio fechar",
+          "UI toda com click sutil"
+        ]
+      },
+      {
+        qid: "UI-6",
+        text: "Fanfarra de level up:",
+        options: [
+          "Mini fanfarra curta (seu pedido) + flash nas barras",
+          "SFX curto sem fanfarra",
+          "Fanfarra mais longa nos marcos de dungeon",
+          "Silencioso; só número sobe"
+        ]
+      }
+    ]
+  },
+  {
+    id: "CTRL",
+    title: "Controles",
+    value: "Como o corpo do personagem obedece.",
+    questions: [
+      {
+        qid: "CTRL-1",
+        text: "Movimento:",
+        options: [
+          "WASD + click-to-move (protótipo atual)",
+          "Só WASD",
+          "Só click-to-move",
+          "WASD; click só para NPC/alvo"
+        ]
+      },
+      {
+        qid: "CTRL-2",
+        text: "Click no chão longe com obstáculo:",
+        options: [
+          "Desvia/seguir caminho válido; nunca fica andando no lugar (seu pedido)",
+          "Vai em linha reta e para no obstáculo",
+          "Cancela o move na hora",
+          "Tenta contornar; se falhar, para"
+        ]
+      },
+      {
+        qid: "CTRL-3",
+        text: "Teclas da cidade:",
+        options: [
+          "Atalhos C/K/I como hoje; outros painéis via NPC",
+          "Mais atalhos (M mapa, J quests…)",
+          "Menos teclas; tudo por NPC",
+          "Padrão de ARPG (I inventário, C personagem, K skills)"
+        ]
+      },
+      {
+        qid: "CTRL-4",
+        text: "Target de combate:",
+        options: [
+          "Automático (mais perto); sem mouse para alvo",
+          "Mouse hover/click define alvo",
+          "Tab cicla alvos",
+          "Auto + click sobrescreve"
+        ]
+      }
+    ]
+  },
+  {
+    id: "COMP",
+    title: "Compositor e quests",
+    value: "Sistemas de criação de item e de missão.",
+    questions: [
+      {
+        qid: "COMP-1",
+        text: "O compositor serve para:",
+        options: [
+          "Combinar itens/materiais em equip ou consumível melhor",
+          "Só renomear/aparência",
+          "Só evoluir equip (+tier)",
+          "Craft + reroll de atributo"
+        ]
+      },
+      {
+        qid: "COMP-2",
+        text: "Fórmulas do compositor:",
+        options: [
+          "Você dita ou aprova fórmulas; eu documento e jogo consome",
+          "Fórmulas fixas do GDD quando existirem",
+          "Só 1 fórmula de exemplo no protótipo",
+          "Sistema de receita com livro dropado"
+        ]
+      },
+      {
+        qid: "COMP-3",
+        text: "Falha na composição:",
+        options: [
+          "Perde materiais; item final não sai",
+          "Sem falha — só custo",
+          "Falha devolve metade do material",
+          "Chance de item “ruim” em vez de falha"
+        ]
+      },
+      {
+        qid: "COMP-4",
+        text: "Quests — tipo de missão no início:",
+        options: [
+          "Matar N monstros / completar dungeon / coletar item",
+          "Só história linear",
+          "Só daily de farm",
+          "Matar + falar com NPC (entrega)"
+        ]
+      },
+      {
+        qid: "COMP-5",
+        text: "Recompensa de quest:",
+        options: [
+          "XP + ouro; item raro em quest de marco",
+          "Só XP",
+          "Só item",
+          "XP + ouro + material"
+        ]
+      },
+      {
+        qid: "COMP-6",
+        text: "Quest abandonada/repetível:",
+        options: [
+          "Diárias repetem; história não",
+          "Tudo repetível",
+          "Nada repetível",
+          "A definir com o conteúdo mínimo"
+        ]
+      }
+    ]
+  },
+  {
+    id: "SAVE",
+    title: "Save sob a ótica do jogador",
+    value: "O que o mundo lembra de você (não como o código grava).",
+    questions: [
+      {
+        qid: "SAVE-1",
+        text: "O que o jogo deve lembrar sempre?",
+        options: [
+          "Conta, personagens, nível/atributos/skills, equip, inventário, ouro, dungeons liberadas, quests",
+          "Só personagem e nível",
+          "Tudo da lista + posição na cidade",
+          "Tudo da lista + posição dentro da dungeon"
+        ]
+      },
+      {
+        qid: "SAVE-2",
+        text: "Progresso dentro de dungeon em andamento:",
+        options: [
+          "Não persiste run; se fechar, volta à cidade (como DUNG-11)",
+          "Persiste arena atual",
+          "Persiste tempo restante e kills",
+          "Persiste só se estiver na cidade ao sair"
+        ]
+      },
+      {
+        qid: "SAVE-3",
+        text: "Preferências (áudio, toggle de confirmação, FPS):",
+        options: [
+          "Persistem na conta/dispositivo",
+          "Zeram a cada login",
+          "Só por personagem",
+          "Conta para áudio; dispositivo para gráficos"
+        ]
+      },
+      {
+        qid: "SAVE-4",
+        text: "Apagar dados de um personagem:",
+        options: [
+          "Só o slot; a conta e o baú ficam",
+          "Slot + profile do jogo (progresso de dungeon daquele char)",
+          "Conta inteira",
+          "Slot + limpa memória de quests daquele char"
+        ]
+      },
+      {
+        qid: "SAVE-5",
+        text: "Se o save corromper:",
+        options: [
+          "Jogo tenta último bom backup; se falhar, personagem volta seguro na cidade com estado mínimo",
+          "Apaga o personagem",
+          "Zera o personagem nível 1",
+          "Só avisa e bloqueia o slot"
+        ]
+      }
+    ]
+  },
+  {
+    id: "NAO",
+    title: "O que o jogo não é",
+    value: "Fronteiras de produto para não abrir escopo sem querer.",
+    questions: [
+      {
+        qid: "NAO-1",
+        text: "UAIDZIN não é:",
+        options: [
+          "MMORPG online, hypercasual nem roguelike puro (pilares do GDD)",
+          "Pode ter ranking online cosmético no futuro",
+          "Pode virar co-op leve depois",
+          "Confirmo os pilares do GDD como estão"
+        ]
+      },
+      {
+        qid: "NAO-2",
+        text: "Multiplayer nesta versão:",
+        options: [
+          "Zero — offline single-player",
+          "Só placar local",
+          "Futuro: assíncrono (fantasma de run)",
+          "Não quero nem pensar nisso agora"
+        ]
+      },
+      {
+        qid: "NAO-3",
+        text: "Monetização nesta versão:",
+        options: [
+          "Nenhuma — jogo completo offline",
+          "Só cosmético no futuro",
+          "Deixar GDD de monetização em aberto",
+          "Não discutir agora"
+        ]
+      },
+      {
+        qid: "NAO-4",
+        text: "Campo livre — regra de design que você quer travada e eu não perguntei:",
+        options: [
+          "Nada extra por ora",
+          "Tem regra — escrever abaixo",
+          "Prefiro responder em mensagem de texto depois",
+          "Usar o que já está no GDD quando houver conflito"
+        ]
+      }
+    ]
+  }
+];
+
+const STORAGE_KEY = "uaidzin_grill_design_v1";
+const form = document.getElementById("form");
+const fill = document.getElementById("fill");
+const prog = document.getElementById("prog");
+const out = document.getElementById("out");
+const outTxt = document.getElementById("outTxt");
+const toast = document.getElementById("toast");
+const filters = document.getElementById("filters");
+let activeFilter = "ALL";
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch (e) { return {}; }
+}
+function save(state) { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(function () { toast.classList.remove("show"); }, 1800);
+}
+function totalQuestions() {
+  let n = 0;
+  DATA.forEach(function (s) { n += s.questions.length; });
+  return n;
+}
+function answeredCount(state) {
+  let n = 0;
+  DATA.forEach(function (sec) {
+    sec.questions.forEach(function (q) {
+      const row = state[sec.id + "|" + q.qid];
+      if (row && (typeof row.choice === "number" || (row.free && row.free.trim()))) n += 1;
+    });
+  });
+  return n;
+}
+function updateProgress(state) {
+  const total = totalQuestions();
+  const done = answeredCount(state);
+  fill.style.width = (total ? (done / total) * 100 : 0) + "%";
+  prog.textContent = done + " / " + total;
+}
+function escapeAttr(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+function uid(a, b, c, d) { return "r_" + a + "_" + b + "_" + c + "_" + d; }
+
+function buildFilters() {
+  filters.innerHTML = "";
+  const all = [{ id: "ALL", label: "Tudo" }].concat(DATA.map(function (s) { return { id: s.id, label: s.id }; }));
+  all.forEach(function (f) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = f.label;
+    if (f.id === activeFilter) b.classList.add("on");
+    b.addEventListener("click", function () {
+      activeFilter = f.id;
+      buildFilters();
+      render();
+    });
+    filters.appendChild(b);
+  });
+}
+
+function render() {
+  const state = load();
+  form.innerHTML = "";
+  DATA.forEach(function (sec) {
+    if (activeFilter !== "ALL" && sec.id !== activeFilter) return;
+    const box = document.createElement("section");
+    box.className = "phase";
+    let html = '<span class="phase-tag">' + sec.id + "</span>";
+    html += "<h2>" + sec.title + "</h2>";
+    html += '<div class="val">' + sec.value + "</div>";
+    sec.questions.forEach(function (q) {
+      const key = sec.id + "|" + q.qid;
+      const row = state[key] || {};
+      html += '<div class="q"><div class="q-head"><span class="qid">' + q.qid + "</span>" + q.text;
+      if (q.note) html += '<span class="lock">Contexto: ' + q.note + "</span>";
+      html += "</div>";
+      html += '<div class="opts">';
+      q.options.forEach(function (opt, i) {
+        const id = uid(sec.id, q.qid, "opt", i);
+        const on = row.choice === i ? " on" : "";
+        html += '<label class="opt' + on + '" for="' + id + '">' +
+          '<input type="radio" name="' + key + '" id="' + id + '" value="' + i + '"' +
+          (row.choice === i ? " checked" : "") + "><span>" + opt + "</span></label>";
+      });
+      html += "</div>";
+      const fid = uid(sec.id, q.qid, "free", 0);
+      html += '<div class="free"><label for="' + fid + '">Outro / digite sua resposta</label>' +
+        '<input type="text" id="' + fid + '" data-key="' + key + '" value="' +
+        escapeAttr(row.free || "") + '" placeholder="escrever aqui..." autocomplete="off"></div></div>';
+    });
+    box.innerHTML = html;
+    form.appendChild(box);
+  });
+
+  form.querySelectorAll("input[type=radio]").forEach(function (input) {
+    input.addEventListener("change", function () {
+      const key = input.name;
+      const st = load();
+      st[key] = st[key] || {};
+      st[key].choice = Number(input.value);
+      save(st);
+      const group = input.closest(".opts");
+      if (group) {
+        group.querySelectorAll(".opt").forEach(function (lab) { lab.classList.remove("on"); });
+        input.closest(".opt").classList.add("on");
+      }
+      updateProgress(st);
+    });
+  });
+  form.querySelectorAll("input[data-key]").forEach(function (input) {
+    input.addEventListener("input", function () {
+      const key = input.getAttribute("data-key");
+      const st = load();
+      st[key] = st[key] || {};
+      st[key].free = input.value;
+      save(st);
+      updateProgress(st);
+    });
+  });
+  updateProgress(state);
+}
+
+function buildSummary() {
+  const state = load();
+  const lines = [];
+  lines.push("# Grill de design — UAIDZIN");
+  lines.push("");
+  lines.push("Gerado: " + new Date().toLocaleString("pt-BR"));
+  lines.push("");
+  lines.push("Só decisões de jogo. Stack/ordem de implementação não entram aqui.");
+  lines.push("");
+  DATA.forEach(function (sec) {
+    lines.push("## " + sec.id + " — " + sec.title);
+    sec.questions.forEach(function (q) {
+      const row = state[sec.id + "|" + q.qid] || {};
+      let choice = "(sem resposta)";
+      if (typeof row.choice === "number" && q.options[row.choice] != null) choice = q.options[row.choice];
+      lines.push("- **" + q.qid + "** " + q.text);
+      lines.push("  - Escolha: " + choice);
+      if (row.free && row.free.trim()) lines.push("  - Livre: " + row.free.trim());
+    });
+    lines.push("");
+  });
+  lines.push("## Uso destas respostas");
+  lines.push("1. Viram regra em CHECKLIST / decisões de design.");
+  lines.push("2. Conflito com GDD: resposta atual do grill prevalece se você marcar no campo livre.");
+  lines.push("3. Números de balance entram como provisórios se você não digitar valor.");
+  return lines.join("\n");
+}
+
+document.getElementById("btnSummary").addEventListener("click", function () {
+  outTxt.textContent = buildSummary();
+  out.classList.add("show");
+  out.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  showToast("Resumo gerado.");
+});
+document.getElementById("btnCopy").addEventListener("click", function () {
+  const text = buildSummary();
+  outTxt.textContent = text;
+  out.classList.add("show");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { showToast("Resumo copiado."); })
+      .catch(function () { fallbackCopy(text); });
+  } else fallbackCopy(text);
+});
+function fallbackCopy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); showToast("Resumo copiado."); }
+  catch (e) { showToast("Copie o resumo manualmente."); }
+  document.body.removeChild(ta);
+}
+document.getElementById("btnReset").addEventListener("click", function () {
+  if (!confirm("Limpar todas as respostas de design salvas neste navegador?")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  render();
+  out.classList.remove("show");
+  showToast("Respostas limpas.");
+});
+
+buildFilters();
+render();
+</script>
+</body>
+</html>

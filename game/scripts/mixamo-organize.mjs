@@ -3,14 +3,15 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 
 import { fileURLToPath } from "node:url";
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const incoming = path.join(root, "assets-source/mixamo-incoming");
-const organized = path.join(root, "assets-source/organized");
-const discarded = path.join(root, "assets-source/_discarded");
-const creaturePack = "/tmp/creature-pack";
-const humanOut = path.join(root, "public/models/anims/human");
-const mutantOut = path.join(root, "public/models/anims/mutant");
-const sharedOut = path.join(root, "public/models/player/shared/anims");
+const gameRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const nonGameRoot = path.resolve(gameRoot, "../nongame/game");
+const incoming = path.join(nonGameRoot, "assets-source/mixamo-incoming");
+const organized = path.join(nonGameRoot, "assets-source/organized");
+const discarded = path.join(nonGameRoot, "assets-source/_discarded");
+const creaturePack = path.resolve(nonGameRoot, "../assets/drive/animations/mutant/creature-pack");
+const humanOut = path.join(gameRoot, "public/models/anims/human");
+const mutantOut = path.join(gameRoot, "public/models/anims/mutant");
+const sharedOut = path.join(gameRoot, "public/models/player/shared/anims");
 
 const DROP = [
   /turn/i,
@@ -84,8 +85,8 @@ function shouldDrop(name) {
 function blender(script, args) {
   const res = spawnSync(
     "blender",
-    ["-b", "-P", path.join(root, "scripts", script), "--", ...args],
-    { stdio: "inherit", cwd: root },
+    ["-b", "-P", path.join(gameRoot, "scripts", script), "--", ...args],
+    { stdio: "inherit", cwd: gameRoot },
   );
   if (res.status !== 0) throw new Error(`blender failed: ${script}`);
 }
@@ -121,11 +122,11 @@ for (const [file, clip] of HUMAN_MAP) {
   }
 }
 
-const tkBase = path.join(root, "public/models/player/TK/TK.glb");
+const tkBase = path.join(gameRoot, "public/models/player/TK/TK.glb");
 const idleSrc = path.join(organized, "human", "Breathing Idle.fbx");
-const tkOut = path.join(root, "public/models/player/TK/TK.glb");
+const tkOut = path.join(gameRoot, "public/models/player/TK/TK.glb");
 if (fs.existsSync(tkBase) && fs.existsSync(idleSrc)) {
-  const tmp = path.join(root, "public/models/player/TK/TK.next.glb");
+  const tmp = path.join(gameRoot, "public/models/player/TK/TK.next.glb");
   blender("mixamo-retarget-idle.py", [tkBase, idleSrc, tmp]);
   fs.renameSync(tmp, tkOut);
 }

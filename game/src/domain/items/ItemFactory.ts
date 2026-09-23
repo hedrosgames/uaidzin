@@ -1,5 +1,6 @@
 import { ECONOMY_BALANCE, type Rarity } from "../../data/balance/economy";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
+import { ITEM_CATALOG } from "../../data/items/item-catalog";
 import { nextItemUid, type ItemInstance } from "./ItemModel";
 
 const NAMES = {
@@ -23,6 +24,22 @@ function pickRarity(random: () => number = Math.random): Rarity {
     if (r <= 0) return ECONOMY_BALANCE.rarities[i];
   }
   return "Comum";
+}
+
+function toInstanceSlot(slot: string): ItemInstance["slot"] {
+  if (
+    slot === "weapon" ||
+    slot === "head" ||
+    slot === "armor" ||
+    slot === "ring1" ||
+    slot === "ring2" ||
+    slot === "neck" ||
+    slot === "ear" ||
+    slot === "material"
+  ) {
+    return slot;
+  }
+  return "misc";
 }
 
 export function createEquipDrop(level: number, random: () => number = Math.random): ItemInstance {
@@ -68,5 +85,61 @@ export function createMaterial(kind: "Ori" | "Lac", qty = 1): ItemInstance {
     defenseBonus: 0,
     stack: qty,
     sellValue: kind === "Ori" ? 2 : 8,
+  };
+}
+
+export function createEntrySeal(defId: string, qty = 1): ItemInstance | null {
+  const def = ITEM_CATALOG[defId];
+  if (!def || def.slot !== "entry" || !def.icon) return null;
+  return {
+    uid: nextItemUid(),
+    defId: def.id,
+    name: def.name,
+    rarity: "Comum",
+    slot: "material",
+    refine: 0,
+    attackBonus: 0,
+    defenseBonus: 0,
+    stack: qty,
+    sellValue: def.sellValue ?? 0,
+  };
+}
+
+export function createFromCatalog(defId: string, qty = 1): ItemInstance | null {
+  const def = ITEM_CATALOG[defId];
+  if (!def || !def.icon) return null;
+  if (def.slot === "entry") return createEntrySeal(defId, qty);
+  if (def.slot === "material") {
+    return {
+      uid: nextItemUid(),
+      defId: def.id === "poeira_ori" ? "mat_ori" : def.id === "poeira_lac" ? "mat_lac" : def.id,
+      name: def.name,
+      rarity: (def.rarity as Rarity) || "Comum",
+      slot: "material",
+      refine: 0,
+      attackBonus: 0,
+      defenseBonus: 0,
+      stack: qty,
+      sellValue: def.sellValue ?? 1,
+    };
+  }
+  const slot = toInstanceSlot(def.slot);
+  const reach =
+    slot === "weapon"
+      ? COMBAT_BALANCE.weapon.byName[def.name as keyof typeof COMBAT_BALANCE.weapon.byName] || null
+      : null;
+  return {
+    uid: nextItemUid(),
+    defId: def.id,
+    name: def.name,
+    rarity: (def.rarity as Rarity) || "Comum",
+    slot,
+    refine: 0,
+    attackBonus: def.attackBonus ?? 0,
+    defenseBonus: def.defenseBonus ?? 0,
+    stack: 1,
+    sellValue: def.sellValue ?? 1,
+    attackRange: reach?.attackRange,
+    attackInterval: reach?.attackInterval,
   };
 }

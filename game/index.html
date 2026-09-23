@@ -92,6 +92,12 @@
                 <input type="checkbox" class="toggle" id="opt-armor-aura">
               </div>
             </div>
+            <div class="set-row">
+              <span class="k">Não solicitar confirmação de dungeon</span>
+              <div class="ctrl">
+                <input type="checkbox" class="toggle" id="opt-skip-dungeon-confirm">
+              </div>
+            </div>
 
             <div class="set-session">
               <button type="button" class="btn-ghost" id="btn-change-character">Trocar personagem</button>
@@ -107,6 +113,7 @@
 
         <div id="dungeon-timer" class="dungeon-timer" hidden>10:00</div>
         <div id="farm-stats" class="farm-stats" hidden></div>
+        <div id="drop-log" class="drop-log" hidden aria-live="polite"></div>
         <div id="ui-toast" class="ui-toast" hidden></div>
 
         <div id="player-frame" class="player-frame" data-ui-block-click="true" hidden>

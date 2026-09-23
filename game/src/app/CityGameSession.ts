@@ -2,8 +2,9 @@ import { Raycaster, Vector2, Vector3 } from "three";
 import type { Object3D } from "three";
 import { COMBAT_BALANCE } from "../data/balance/combat";
 import { DUNGEON_BALANCE } from "../data/balance/dungeon";
+import { VFX_BALANCE } from "../data/balance/vfx";
 import { DUNGEON_TEST } from "../data/dungeons/dungeon-definitions";
-import { dungeonsAllowedForLevel, findDungeon } from "../data/dungeons/dungeons-mortal";
+import { DUNGEONS_MORTAL, dungeonsAllowedForLevel, findDungeon } from "../data/dungeons/dungeons-mortal";
 import type { EventBus } from "../core/events/EventBus";
 import { CharacterModel } from "../domain/character/CharacterModel";
 import { AttackController } from "../domain/combat/AttackController";
@@ -19,6 +20,9 @@ import { EnemyService } from "../domain/enemies/EnemyService";
 import { DungeonRun } from "../domain/dungeons/DungeonRun";
 import { ProgressionService } from "../domain/progression/ProgressionService";
 import { SkillTreeService } from "../domain/skills/SkillTreeService";
+import { CompositionService } from "../domain/items/CompositionService";
+import { QuestService } from "../domain/quests/QuestService";
+import { QUEST_BY_ID } from "../data/quests/quest-definitions";
 import { InventoryService } from "../domain/inventory/InventoryService";
 import { BagLockService } from "../domain/inventory/BagLockService";
 import { EconomyService } from "../domain/economy/EconomyService";
@@ -36,7 +40,7 @@ import type { DungeonDef } from "../data/dungeons/dungeon-definitions";
 import type { ClassId } from "../data/classes/class-definitions";
 import type { EvolutionId } from "../data/balance/progression";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
-import type { BootCharacter } from "./BootFlow";
+import { createSceneFadeOverlay, type BootCharacter, type SceneFadeOverlay } from "./BootFlow";
 import { PlayerController } from "../gameplay/PlayerController";
 import { PlayerRuntime } from "../gameplay/PlayerRuntime";
 import { EnemyRuntimeView } from "../presentation/enemies/EnemyRuntimeView";
@@ -49,6 +53,17 @@ import { WorldManager, type WorldId } from "../world/WorldManager";
 import type { InteractableDef } from "../world/definitions";
 
 const INTERACT_RANGE = 1.6;
+const DEATH_HOLD_PAD_SEC = 0.2;
+
+export type DropLogKind = "gold" | "item" | "lost" | "info";
+
+export interface DropLogEntry {
+  id: number;
+  text: string;
+  kind: DropLogKind;
+  atMs: number;
+  life: number;
+}
 
 export interface SessionHud {
   hp: number;
@@ -74,6 +89,8 @@ export interface SessionHud {
   skills: Array<{ key: number; name: string; cdRatio: number; ready: boolean; auto: boolean }>;
   lootToast: string | null;
   uiToastKind: "skill" | "attr" | "level" | "dungeon";
+  dropLog: Array<{ id: number; text: string; kind: DropLogKind }>;
+  moveLocked: boolean;
 }
 
 export type DungeonEnterReason = "missing" | "evolution" | "level" | "entry";
@@ -114,6 +131,8 @@ export class CityGameSession {
   readonly economy = new EconomyService(this.inventory);
   readonly refinement = new RefinementService(this.inventory);
   readonly equipment = new EquipmentService(this.inventory, this.character);
+  readonly composition = new CompositionService(this.inventory, this.equipment);
+  readonly quests = new QuestService(() => this.progressState.quests);
   readonly saveService = new SaveService();
   activeDungeonId = "dungeon-test";
   readonly controller: PlayerController;
@@ -135,6 +154,7 @@ export class CityGameSession {
   private readonly interactRaycaster = new Raycaster();
   private readonly interactNdc = new Vector2();
   private nearby: InteractableDef | null = null;
+  private pendingInteract: InteractableDef | null = null;
   private lastInteractDown = false;
   private panelOpen = false;
   private deathReturnTimer = 0;
@@ -144,7 +164,12 @@ export class CityGameSession {
   private lootToastTimer = 0;
   private uiToastKind: "skill" | "attr" | "level" | "dungeon" = "skill";
   private hitStop = 0;
+  private moveLock = 0;
+  private dropLog: DropLogEntry[] = [];
+  private dropLogSeq = 0;
   private pendingSkillSlot = -1;
+  private sceneFade: SceneFadeOverlay | null = null;
+  private worldFadeBusy = false;
   hadSave = false;
   saveUnreadable = false;
   lastCombatMissAt = 0;
@@ -279,12 +304,15 @@ export class CityGameSession {
 
   enterWorld(id: WorldId): void {
     const world = this.worlds.switchTo(id);
+    this.renderer.setWorldLook(id === "city" ? "city" : "dungeon");
     if (id === "city") this.character.healFull();
     this.player.setPosition(world.spawn.x, world.spawn.z);
     this.player.clearMoveTarget();
+    this.clearPendingInteract();
     this.attack.reset();
     this.skill.reset();
     this.camera.snapTo(world.spawn.x, world.spawn.z);
+    this.renderer.playerView.clearDeath();
     this.renderer.setPlayerTransform(world.spawn.x, world.spawn.z, 0, false);
     this.nearby = null;
     this.panel.close();
@@ -292,6 +320,7 @@ export class CityGameSession {
     this.resultHold = 0;
     this.onResult(null);
     this.pendingSkillSlot = -1;
+    this.moveLock = 0;
 
     if (id === "city") {
       this.enemies.clear();
@@ -320,6 +349,7 @@ export class CityGameSession {
       this.effects.clearNpcNameplates();
       this.character.healFull();
       this.character.isDead = false;
+      this.clearDropLog();
       const def = findDungeon(this.activeDungeonId) ?? DUNGEON_TEST;
       const duration =
         DUNGEON_BALANCE.debugDurationSecondsOverride ?? def.durationSeconds;
@@ -350,16 +380,53 @@ export class CityGameSession {
     if (this.character.level < def.minLevel || this.character.level > def.maxLevel) {
       return { ok: false, reason: "level", def };
     }
+    if (def.entryItemId) {
+      if (this.inventory.countMaterial(def.entryItemId) < 1) {
+        return { ok: false, reason: "entry", def };
+      }
+    }
     return { ok: true, def };
+  }
+
+  entryItemCounts(): Record<string, number> {
+    const counts: Record<string, number> = {};
+    for (const dungeon of DUNGEONS_MORTAL) {
+      const id = dungeon.entryItemId;
+      if (!id || counts[id] != null) continue;
+      counts[id] = this.inventory.countMaterial(id);
+    }
+    return counts;
   }
 
   tryEnterDungeon(dungeonId: string): DungeonEnterResult {
     const gate = this.dungeonEntryGate(dungeonId);
     if (!gate.ok) return { ok: false, reason: gate.reason };
+    if (gate.def.entryItemId) {
+      if (!this.inventory.consumeMaterial(gate.def.entryItemId, 1)) {
+        return { ok: false, reason: "entry" };
+      }
+      void this.persistSave(true);
+    }
     this.activeDungeonId = gate.def.id;
     this.economy.setDungeonIndexFromId(gate.def.id);
-    this.enterWorld("dungeon-test");
+    void this.withWorldFade(() => {
+      this.enterWorld("dungeon-test");
+    });
     return { ok: true };
+  }
+
+  returnToCityWithFade(): void {
+    if (this.worldFadeBusy) {
+      this.renderer.playerView.clearDeath();
+      this.character.isDead = false;
+      this.enterWorld("city");
+      return;
+    }
+    void this.withWorldFade(() => {
+      this.renderer.playerView.clearDeath();
+      this.character.isDead = false;
+      this.enterWorld("city");
+    });
   }
 
   eligibleDungeons(): DungeonDef[] {
@@ -463,8 +530,10 @@ export class CityGameSession {
     this.character.level = p.level;
     if (character.attrs) {
       this.character.attributes = { ...character.attrs };
+    } else {
+      this.character.attributes = { FOR: 5, DES: 5, CONS: 5, INT: 5 };
     }
-    this.inventory.gold = character.gold ?? 100;
+    this.inventory.gold = character.gold ?? 0;
     this.inventory.items.length = 0;
     this.equipment.restoreEquipped({});
     this.bags.apply(null);
@@ -472,13 +541,13 @@ export class CityGameSession {
     this.skillLoadout.applySaved(null);
     const st = this.skillTree.state;
     st.skillPoints = Math.max(0, p.level - 1);
-    if (character.spec) {
-      st.specialization = {
-        controle: character.spec.controle || 0,
-        magia: character.spec.magia || 0,
-        fisica: character.spec.fisica || 0,
-      };
-    }
+    st.levels = {};
+    st.eighthTree = null;
+    st.specialization = {
+      controle: character.spec?.controle || 0,
+      magia: character.spec?.magia || 0,
+      fisica: character.spec?.fisica || 0,
+    };
     this.progression.recomputeCombatStats();
     this.character.healFull();
     this.skillLoadout.refresh();
@@ -505,7 +574,7 @@ export class CityGameSession {
     }
     const s = this.skillTree.state;
     const classId = (data.character.classId || data.skills.classId) as typeof s.classId;
-    s.classId = classId;
+    this.skillTree.setClass(classId);
     this.progression.setClassId(classId);
     s.levels = data.skills.levels;
     s.eighthTree = data.skills.eighthTree as typeof s.eighthTree;
@@ -544,13 +613,29 @@ export class CityGameSession {
     for (const tick of world.tickables) tick.update(dt);
     const inDungeon = world.id === "dungeon-test";
 
-    if (this.character.isDead) {
-      this.deathReturnTimer -= dt;
-      if (this.deathReturnTimer <= 0) {
-        this.finishDungeon("death");
-      }
+    if (this.worldFadeBusy) {
+      this.renderer.updatePlayer(dt);
       this.renderer.render(this.camera.camera);
       this.pushHud(inDungeon);
+      return;
+    }
+
+    if (this.character.isDead) {
+      this.deathReturnTimer -= dt;
+      this.renderer.setPlayerTransform(
+        this.player.x,
+        this.player.z,
+        this.player.facing,
+        false,
+      );
+      this.renderer.updatePlayer(dt);
+      this.camera.follow(this.player.x, this.player.z, dt);
+      this.renderer.render(this.camera.camera);
+      this.effects.update(dt, this.camera.camera, 1, 1);
+      this.pushHud(inDungeon);
+      if (this.deathReturnTimer <= 0) {
+        void this.leaveDungeonWithFade("death");
+      }
       return;
     }
 
@@ -560,13 +645,17 @@ export class CityGameSession {
         this.lootToastTimer -= dt;
         if (this.lootToastTimer <= 0) this.lootToast = null;
       }
-      if (this.resultHold <= 0) {
-        this.character.healFull();
-        this.enterWorld("city");
-        void this.persistSave(true);
-      }
+      this.renderer.updatePlayer(dt);
       this.renderer.render(this.camera.camera);
       this.pushHud(inDungeon);
+      if (this.resultHold <= 0) {
+        void this.withWorldFade(() => {
+          this.character.healFull();
+          this.renderer.playerView.clearDeath();
+          this.enterWorld("city");
+          void this.persistSave(true);
+        });
+      }
       return;
     }
 
@@ -574,6 +663,9 @@ export class CityGameSession {
       this.lootToastTimer -= dt;
       if (this.lootToastTimer <= 0) this.lootToast = null;
     }
+
+    if (this.moveLock > 0) this.moveLock = Math.max(0, this.moveLock - dt);
+    this.tickDropLog(dt);
 
     this.character.regenMp(4 * dt);
     this.buffs.tick(dt);
@@ -588,33 +680,43 @@ export class CityGameSession {
     const hpCap = Math.round(this.character.maxHp * (1 + Math.max(0, this.frameMods.maxHpMul)));
     if (this.character.hp > hpCap) this.character.hp = hpCap;
 
-    const keysBlocked = this.panel.isOpen() || uiBlocked;
+    const locked = this.moveLock > 0;
     const click = this.controller.consumeClickMove();
     if (click) {
-      if (keysBlocked) this.onDismissUi();
+      if (this.panel.isOpen() || uiBlocked) this.onDismissUi();
       const meshHit = this.pickInteractableByRay(click.ndcX, click.ndcY, world.interactables);
-      if (meshHit && this.player.distanceTo(meshHit.x, meshHit.z) <= INTERACT_RANGE) {
-        this.tryInteract(meshHit);
+      if (meshHit) {
+        if (!locked || this.player.distanceTo(meshHit.x, meshHit.z) <= INTERACT_RANGE) {
+          this.queueOrInteract(meshHit);
+        }
       } else {
         const point = this.groundPointFromNdc(click.ndcX, click.ndcY);
         if (point) {
           const hit = this.pickInteractableAt(point.x, point.z, world.interactables);
-          if (hit && this.player.distanceTo(hit.x, hit.z) <= INTERACT_RANGE) {
-            this.tryInteract(hit);
-          } else {
+          if (hit) {
+            if (!locked || this.player.distanceTo(hit.x, hit.z) <= INTERACT_RANGE) {
+              this.queueOrInteract(hit);
+            }
+          } else if (!locked) {
+            this.clearPendingInteract();
             this.player.setMoveTarget(point.x, point.z);
           }
         }
       }
     }
 
+    const keysBlocked = this.panel.isOpen() || uiBlocked || locked;
     if (keysBlocked) {
+      if (locked) this.player.clearMoveTarget();
       this.player.update(dt, 0, 0, world.boundary, world.collision);
     } else {
       const axes = this.controller.getMoveAxes();
+      if (axes.x !== 0 || axes.z !== 0) this.clearPendingInteract();
       const worldAxes = this.camera.toWorldMove(axes.x, axes.z);
       this.player.update(dt, worldAxes.x, worldAxes.z, world.boundary, world.collision);
     }
+
+    this.resolvePendingInteract();
 
     if (this.hitStop > 0) {
       this.hitStop -= dt;
@@ -703,6 +805,8 @@ export class CityGameSession {
       skills: this.skill.slotStates(),
       lootToast: this.lootToastTimer > 0 ? this.lootToast : null,
       uiToastKind: this.uiToastKind,
+      dropLog: this.visibleDropLog(),
+      moveLocked: this.moveLock > 0,
     });
   }
 
@@ -723,19 +827,22 @@ export class CityGameSession {
     this.economy.lootLevel = this.character.level;
     const loot = this.economy.grantKillLoot(key, isBoss);
     if (loot.lostItem) {
-      this.lootToast = "Inventário cheio — item perdido";
-      this.lootToastTimer = 2.5;
+      this.pushDropLog("Inventário cheio — item perdido", "lost");
     } else if (loot.droppedItem) {
-      this.lootToast = `+${loot.gold} Ouro · ${loot.droppedItem}`;
-      this.lootToastTimer = 2.2;
-    } else {
-      this.lootToast = `+${loot.gold} Ouro`;
-      this.lootToastTimer = 1.2;
+      const goldBit = loot.gold > 0 ? `+${loot.gold} Ouro · ` : "";
+      this.pushDropLog(`${goldBit}${loot.droppedItem}`, "item");
+    } else if (loot.gold > 0) {
+      this.pushDropLog(`+${loot.gold} Ouro`, "gold");
     }
+    this.applyQuestKillProgress();
     if (levelsGained > 0) {
       this.skillTree.grantSkillPoints(levelsGained);
       this.skillLoadout.refresh();
-      this.effects.levelUpPulse(this.renderer.playerMesh);
+      this.character.healFull();
+      this.effects.levelUpPulse(this.renderer.playerMesh, {
+        x: this.player.x,
+        z: this.player.z,
+      });
       this.effects.spawnDamageNumber(
         this.player.x,
         2.2,
@@ -743,40 +850,115 @@ export class CityGameSession {
         this.progression.state.level,
         "kill",
       );
-      const levelText = `Nível ${this.progression.state.level}!`;
-      this.lootToast = this.lootToast ? `${this.lootToast} · ${levelText}` : levelText;
-      this.lootToastTimer = 2;
       this.bus.emit("character:level-up", {
         level: this.progression.state.level,
         levelsGained,
       });
     }
+    void this.persistSave(true);
+  }
+
+  private lockMovement(seconds: number): void {
+    const capped = Math.min(COMBAT_BALANCE.moveLock.max, Math.max(0, seconds));
+    if (capped > this.moveLock) this.moveLock = capped;
+    this.player.clearMoveTarget();
+  }
+
+  private lockFromAnim(anim: "attack" | "cast" | "hit_gut" | "hit_right", fallback: number): void {
+    const dur = this.renderer.playerView.getAnimDurationSec(anim);
+    this.lockMovement(Number.isFinite(dur) && dur > 0 ? dur * 0.92 : fallback);
+  }
+
+  private pushDropLog(text: string, kind: DropLogKind): void {
+    this.dropLogSeq += 1;
+    this.dropLog.push({
+      id: this.dropLogSeq,
+      text,
+      kind,
+      atMs: Date.now(),
+      life: VFX_BALANCE.dropLogLifeSeconds,
+    });
+    while (this.dropLog.length > VFX_BALANCE.dropLogCap) this.dropLog.shift();
+  }
+
+  private tickDropLog(dt: number): void {
+    if (this.dropLog.length === 0) return;
+    for (const entry of this.dropLog) entry.life -= dt;
+  }
+
+  private visibleDropLog(): Array<{ id: number; text: string; kind: DropLogKind }> {
+    const alive = this.dropLog.filter((e) => e.life > 0);
+    const slice = alive.slice(-VFX_BALANCE.dropLogVisible);
+    return slice.map((e) => ({ id: e.id, text: e.text, kind: e.kind }));
+  }
+
+  getDropLog(): DropLogEntry[] {
+    return this.dropLog.map((e) => ({ ...e }));
+  }
+
+  clearDropLog(): void {
+    this.dropLog = [];
+  }
+
+  getMoveLockRemaining(): number {
+    return this.moveLock;
   }
 
   private finishDungeon(reason: "timer" | "death" | "exit"): void {
-    const result = this.dungeonRun.end(reason);
-    this.enemies.clear();
-    this.summons.clear();
-    this.summonView.clear();
-    this.effects.hideAllHpBars();
-    const mm = Math.floor(result.elapsedSeconds / 60);
-    const ss = Math.floor(result.elapsedSeconds % 60);
-    const text =
-      reason === "timer"
-        ? `Tempo esgotado!\nNível ${this.progression.state.level} ${this.progression.state.evolution}\nAbates: ${result.kills}\nXP da sessão: ${this.sessionXp}\nPontos livres: ${this.progression.state.unspentAttributePoints}\nDuração: ${mm}m ${ss}s\nRetornando a Aurelion…`
-        : reason === "death"
-          ? `Derrotado.\nNível ${this.progression.state.level} ${this.progression.state.evolution}\nAbates: ${result.kills}\nXP da sessão: ${this.sessionXp}\nRetornando a Aurelion…`
-          : `Expedição encerrada.\nNível ${this.progression.state.level} ${this.progression.state.evolution}\nAbates: ${result.kills}\nXP da sessão: ${this.sessionXp}\nRetornando a Aurelion…`;
-    this.onResult(text);
-    this.onModeChange("RESULT");
-    this.resultHold = 2.6;
+    if (this.worldFadeBusy) return;
+    void this.leaveDungeonWithFade(reason);
+  }
+
+  private ensureSceneFade(): SceneFadeOverlay {
+    if (!this.sceneFade) {
+      this.sceneFade = createSceneFadeOverlay(document.body);
+    }
+    return this.sceneFade;
+  }
+
+  private async withWorldFade(swap: () => void): Promise<void> {
+    if (this.worldFadeBusy) {
+      swap();
+      return;
+    }
+    this.worldFadeBusy = true;
+    const fade = this.ensureSceneFade();
+    try {
+      await fade.fadeIn();
+      swap();
+      await fade.fadeOut();
+    } finally {
+      this.worldFadeBusy = false;
+    }
+  }
+
+  private async leaveDungeonWithFade(reason: "timer" | "death" | "exit"): Promise<void> {
+    if (this.worldFadeBusy) return;
+    this.worldFadeBusy = true;
     this.character.isDead = false;
-    this.bus.emit("dungeon:completed", {
-      dungeonId: result.dungeonId,
-      reason: result.reason,
-      kills: result.kills,
-      xp: result.xpGained,
-    });
+    this.deathReturnTimer = 0;
+    const fade = this.ensureSceneFade();
+    try {
+      await fade.fadeIn();
+      const result = this.dungeonRun.end(reason);
+      this.enemies.clear();
+      this.effects.hideAllHpBars();
+      this.renderer.playerView.clearDeath();
+      this.onResult(null);
+      this.resultHold = 0;
+      this.bus.emit("dungeon:completed", {
+        dungeonId: result.dungeonId,
+        reason: result.reason,
+        kills: result.kills,
+        xp: result.xpGained,
+      });
+      this.character.healFull();
+      this.enterWorld("city");
+      void this.persistSave(true);
+      await fade.fadeOut();
+    } finally {
+      this.worldFadeBusy = false;
+    }
   }
 
   private weaponReach(): { attackRange: number; attackInterval: number } {
@@ -796,7 +978,7 @@ export class CityGameSession {
 
     const hitTarget = this.attack.tick(
       dt,
-      this.player.isMoving,
+      this.player.isMoving || this.moveLock > 0,
       targets,
       this.player.x,
       this.player.z,
@@ -810,6 +992,7 @@ export class CityGameSession {
         this.player.facing = Math.atan2(dx, dz);
         this.effects.playAttackPulse(this.renderer.playerMesh);
         this.renderer.playerView.playAttack();
+        this.lockFromAnim("attack", COMBAT_BALANCE.moveLock.attackFallback);
 
         if (enemy.alive && rollHitSimple()) {
           let atk = this.character.attack * this.frameMods.attackMul;
@@ -840,7 +1023,7 @@ export class CityGameSession {
     const manual = this.skillSlotPressed();
     const cast = this.skill.tick(
       dt,
-      this.player.isMoving,
+      this.player.isMoving || this.moveLock > 0,
       manual,
       targets,
       this.player.x,
@@ -860,6 +1043,7 @@ export class CityGameSession {
       const resolved = cast.resolved;
       const aim = resolved.aim ?? { x: this.player.x, z: this.player.z + 1 };
       this.renderer.playerView.playCast();
+      this.lockFromAnim("cast", COMBAT_BALANCE.moveLock.skillFallback);
       this.effects.playSkillVfx(
         resolved.vfx,
         new Vector3(this.player.x, 0, this.player.z),
@@ -989,6 +1173,8 @@ export class CityGameSession {
         dmg = Math.max(1, Math.round(dmg * (1 - this.frameMods.magicResist)));
       }
       this.hurtPlayer(dmg);
+      this.lockFromAnim("hit_gut", COMBAT_BALANCE.moveLock.hitFallback);
+      if (this.character.isDead) break;
       if (this.frameMods.reflect > 0 && enemy.alive) {
         const reflected = Math.max(1, Math.round(dmg * this.frameMods.reflect));
         const killed = enemy.applyDamage(reflected);
@@ -1131,6 +1317,45 @@ export class CityGameSession {
     return best;
   }
 
+  private clearPendingInteract(): void {
+    this.pendingInteract = null;
+  }
+
+  private approachPoint(tx: number, tz: number, stopDist: number): { x: number; z: number } {
+    const dx = tx - this.player.x;
+    const dz = tz - this.player.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist <= stopDist || dist < 1e-6) return { x: this.player.x, z: this.player.z };
+    const t = (dist - stopDist) / dist;
+    return { x: this.player.x + dx * t, z: this.player.z + dz * t };
+  }
+
+  private queueOrInteract(def: InteractableDef): void {
+    if (this.character.isDead) return;
+    if (this.player.distanceTo(def.x, def.z) <= INTERACT_RANGE) {
+      this.clearPendingInteract();
+      this.tryInteract(def);
+      return;
+    }
+    this.pendingInteract = def;
+    const stopAt = Math.max(0.85, INTERACT_RANGE * 0.72);
+    const point = this.approachPoint(def.x, def.z, stopAt);
+    this.player.setMoveTarget(point.x, point.z);
+  }
+
+  private resolvePendingInteract(): void {
+    const def = this.pendingInteract;
+    if (!def || this.character.isDead) return;
+    if (this.player.distanceTo(def.x, def.z) > INTERACT_RANGE) return;
+    this.clearPendingInteract();
+    this.player.clearMoveTarget();
+    this.tryInteract(def);
+  }
+
+  beginInteract(def: InteractableDef): void {
+    this.queueOrInteract(def);
+  }
+
   private tryInteract(def: InteractableDef): void {
     if (this.player.distanceTo(def.x, def.z) > INTERACT_RANGE) return;
     if (this.openNpcService(def.id)) return;
@@ -1200,7 +1425,6 @@ export class CityGameSession {
 
   private openSage(): void {
     this.closeInteractionOverlay();
-    this.bus.emit("ui:open-panel", { panel: "inv" });
     this.bus.emit("ui:open-panel", { panel: "sage" });
   }
 
@@ -1248,7 +1472,9 @@ export class CityGameSession {
     if (def.kind === "portal-exit") {
       this.closeInteractionOverlay();
       if (this.dungeonRun.getPhase() === "active") this.finishDungeon("exit");
-      else this.enterWorld("city");
+      else {
+        this.returnToCityWithFade();
+      }
       return;
     }
     this.closeInteractionOverlay();
@@ -1266,17 +1492,87 @@ export class CityGameSession {
     this.uiToastKind = kind;
   }
 
+  tryCompose(recipeId: string, itemUid: string, random?: () => number): {
+    attempted: boolean;
+    success: boolean;
+    message: string;
+    recipeId: string;
+  } {
+    const result = this.composition.compose(recipeId, itemUid, random);
+    if (result.attempted || result.message) {
+      this.setUiToast(result.message, result.attempted ? "skill" : "dungeon");
+    }
+    if (result.attempted) void this.persistSave(true);
+    return result;
+  }
+
+  acceptQuest(questId: string): { ok: boolean; message: string } {
+    const result = this.quests.accept(questId);
+    this.setUiToast(result.message, result.ok ? "skill" : "dungeon");
+    if (result.ok) void this.persistSave(true);
+    return result;
+  }
+
+  private applyQuestKillProgress(): void {
+    const { completedIds } = this.quests.recordKill();
+    for (const id of completedIds) {
+      const def = QUEST_BY_ID[id];
+      if (!def) continue;
+      if (def.reward.xp > 0) {
+        const { levelsGained } = this.progression.addXp(def.reward.xp);
+        if (levelsGained > 0) {
+          this.skillTree.grantSkillPoints(levelsGained);
+          this.skillLoadout.refresh();
+        }
+      }
+      if (def.reward.gold > 0) this.inventory.gold += def.reward.gold;
+      this.setUiToast(`Missão concluída: ${def.title}.`, "level");
+    }
+  }
+
   debugSetTimer(seconds: number): void {
     this.dungeonRun.setRemaining(seconds);
   }
 
+  debugForceDeath(): boolean {
+    const world = this.worlds.getCurrent();
+    if (!world || world.id !== "dungeon-test") return false;
+    if (this.character.isDead || this.worldFadeBusy) return false;
+    if (this.dungeonRun.getPhase() !== "active") return false;
+    this.character.applyDamage(this.character.maxHp + 999);
+    if (!this.character.isDead) this.character.isDead = true;
+    this.renderer.playerView.playDeath();
+    this.onModeChange("DEAD");
+    this.deathReturnTimer =
+      this.renderer.playerView.getAnimDurationSec("death") + DEATH_HOLD_PAD_SEC;
+    this.bus.emit("character:death", { at: Date.now() });
+    this.deathEmitCount += 1;
+    return true;
+  }
+
   debugAddLevels(n: number): void {
+    let gained = 0;
     for (let i = 0; i < n; i++) {
       const before = this.progression.state.level;
       this.progression.addXp(this.progression.state.xpToNext);
       if (this.progression.state.level > before) {
-        this.skillTree.grantSkillPoints(this.progression.state.level - before);
+        const delta = this.progression.state.level - before;
+        this.skillTree.grantSkillPoints(delta);
+        gained += delta;
       }
+    }
+    if (gained > 0) {
+      this.skillLoadout.refresh();
+      this.character.healFull();
+      this.effects.levelUpPulse(this.renderer.playerMesh, {
+        x: this.player.x,
+        z: this.player.z,
+      });
+      this.bus.emit("character:level-up", {
+        level: this.progression.state.level,
+        levelsGained: gained,
+      });
+      void this.persistSave(true);
     }
   }
 
@@ -1359,6 +1655,7 @@ export class CityGameSession {
         dying: this.effects.isDying(mesh),
         flashing: this.effects.isFlashing(mesh),
         scale: mesh.scale.x,
+        occlusionIgnore: mesh.userData.occlusionIgnore === true,
       };
     });
   }

@@ -1,5 +1,5 @@
 import { COMBAT_BALANCE, type EnemyArchetype } from "../../data/balance/combat";
-import { DUNGEON_BALANCE } from "../../data/balance/dungeon";
+import { DUNGEON_BALANCE, dungeonCombatScale } from "../../data/balance/dungeon";
 import { DUNGEON_TEST, type DungeonDef } from "../../data/dungeons/dungeon-definitions";
 import { EnemyModel } from "./EnemyModel";
 
@@ -27,22 +27,26 @@ export class EnemyService {
 
   spawnFromDungeon(def: DungeonDef = DUNGEON_TEST): void {
     this.enemies.length = 0;
+    const scale = dungeonCombatScale(def.id);
     for (const arena of def.arenas) {
       for (const sp of arena.spawns) {
-        this.enemies.push(this.makeEnemy(sp));
+        this.enemies.push(this.makeEnemy(sp, scale));
       }
     }
   }
 
-  private makeEnemy(sp: SpawnPointDef): EnemyModel {
+  private makeEnemy(
+    sp: SpawnPointDef,
+    scale: { hpMultiplier: number; attackMultiplier: number; defenseMultiplier: number },
+  ): EnemyModel {
     const s = statsFor(sp.archetype);
-    let maxHp = s.maxHp;
-    let attack = s.attack;
-    let defense = s.defense;
+    let maxHp = Math.max(1, Math.round(s.maxHp * scale.hpMultiplier));
+    let attack = Math.max(1, Math.round(s.attack * scale.attackMultiplier));
+    let defense = Math.max(0, Math.round(s.defense * scale.defenseMultiplier));
     if (sp.isBoss) {
-      maxHp = Math.round(s.maxHp * DUNGEON_BALANCE.boss.hpMultiplier);
-      attack = Math.round(s.attack * DUNGEON_BALANCE.boss.attackMultiplier);
-      defense = s.defense + DUNGEON_BALANCE.boss.defenseBonus;
+      maxHp = Math.round(maxHp * DUNGEON_BALANCE.boss.hpMultiplier);
+      attack = Math.round(attack * DUNGEON_BALANCE.boss.attackMultiplier);
+      defense = defense + DUNGEON_BALANCE.boss.defenseBonus;
     }
     return new EnemyModel({
       id: sp.id,

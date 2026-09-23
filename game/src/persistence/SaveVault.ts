@@ -246,6 +246,8 @@ export class SaveVault {
     evolution?: string;
     gold?: number;
     attrs?: SlotSummary["attrs"];
+    trees?: SlotSummary["trees"];
+    spec?: SlotSummary["spec"];
     resets?: number;
   }): Promise<SlotSummary> {
     const session = this.requireSessionOrThrow();
@@ -258,9 +260,11 @@ export class SaveVault {
       name: input.name,
       level: input.level ?? 1,
       evolution: input.evolution ?? "Mortal",
-      gold: input.gold ?? 100,
+      gold: input.gold ?? 0,
       resets: input.resets ?? 0,
       attrs: input.attrs ? { ...input.attrs } : emptyAttrs(),
+      trees: input.trees ? { ...input.trees } : { controle: 0, magia: 0, fisica: 0 },
+      spec: input.spec ? { ...input.spec } : { controle: 0, magia: 0, fisica: 0 },
     };
     account.slots[input.slotIndex] = summary;
     await this.writeAccount(session, account);
@@ -294,7 +298,11 @@ export class SaveVault {
         classId: summary.classId,
         levels: {},
         eighthTree: null,
-        specialization: { controle: 0, magia: 0, fisica: 0 },
+        specialization: {
+          controle: summary.spec?.controle || 0,
+          magia: summary.spec?.magia || 0,
+          fisica: summary.spec?.fisica || 0,
+        },
         skillPoints: Math.max(0, summary.level - 1),
         specPoints: 0,
       },
@@ -325,7 +333,12 @@ export class SaveVault {
     if (!parsed || parsed.userId !== session.user) return;
     const account = await this.loadAccount(session);
     if (parsed.slotIndex < 0 || parsed.slotIndex >= SLOT_COUNT) return;
-    account.slots[parsed.slotIndex] = { ...summary, attrs: { ...summary.attrs } };
+    account.slots[parsed.slotIndex] = {
+      ...summary,
+      attrs: { ...summary.attrs },
+      trees: { ...(summary.trees || { controle: 0, magia: 0, fisica: 0 }) },
+      spec: { ...(summary.spec || { controle: 0, magia: 0, fisica: 0 }) },
+    };
     await this.writeAccount(session, account);
   }
 

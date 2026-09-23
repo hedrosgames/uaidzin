@@ -9,6 +9,10 @@ const MODEL = {
   HT: "/models/player/HT/HT.glb",
 };
 
+const IDLE_FROM = {
+  TK: "BM",
+};
+
 const TARGET_HEIGHT = 1.72 * 1.1;
 const gltfCache = new Map();
 const _L = new THREE.Vector3();
@@ -122,6 +126,15 @@ async function loadGltf(classId) {
   return gltf;
 }
 
+async function resolveIdleClip(classId, classGltf) {
+  const fromId = IDLE_FROM[classId];
+  if (fromId) {
+    const donor = await loadGltf(fromId);
+    if (donor.animations[0]) return donor.animations[0];
+  }
+  return classGltf.animations[0] || null;
+}
+
 export function mountCharPreview(container, classId) {
   const canvas = document.createElement("canvas");
   canvas.className = "char-3d";
@@ -167,7 +180,9 @@ export function mountCharPreview(container, classId) {
   const clock = new THREE.Clock();
 
   loadGltf(classId)
-    .then((gltf) => {
+    .then(async (gltf) => {
+      if (!alive) return;
+      const clip = await resolveIdleClip(classId, gltf);
       if (!alive) return;
       pivot = new THREE.Group();
       model = cloneSkinned(gltf.scene);
@@ -175,7 +190,6 @@ export function mountCharPreview(container, classId) {
       pivot.add(model);
       scene.add(pivot);
       mixer = new THREE.AnimationMixer(model);
-      const clip = gltf.animations[0];
       if (clip) mixer.clipAction(clip).play();
       fitAndFrame(pivot, model, mixer, camera, shoulders);
       if (clip) {
