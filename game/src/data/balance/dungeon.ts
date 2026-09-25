@@ -49,7 +49,7 @@ export function dungeonArenaScale(
   if (dungeonId === "dungeon-1") {
     if (arenaIndex <= 0) return base;
     if (arenaIndex === 1) {
-      return mulScale(base, { hpMultiplier: 1.2, attackMultiplier: 1.38, defenseMultiplier: 1.1 });
+      return mulScale(base, { hpMultiplier: 1.22, attackMultiplier: 1.58, defenseMultiplier: 1.12 });
     }
     return mulScale(base, { hpMultiplier: 1.65, attackMultiplier: 1.55, defenseMultiplier: 1.35 });
   }
