@@ -53,6 +53,7 @@ export type DebugSnapshot = {
   playerGhostVisible: boolean;
   playerDeadPose: boolean;
   deathEmitCount: number;
+  autoAttackSwings: number;
   moveLock: number;
   dropLogCount: number;
 };
@@ -124,6 +125,7 @@ export function installDebugApi(app: DebugHost): void {
       playerGhostVisible: app.renderer.playerGhostMesh.visible,
       playerDeadPose: app.renderer.playerView.isDeadPose(),
       deathEmitCount: app.session.deathEmitCount,
+      autoAttackSwings: app.session.autoAttackSwings,
       moveLock: app.session.getMoveLockRemaining(),
       dropLogCount: app.session.getDropLog().length,
     }),

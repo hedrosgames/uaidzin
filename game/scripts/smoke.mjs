@@ -286,10 +286,13 @@ async function main() {
     // 4. CIDADE LIMPA
     await page.evaluate(() => window.__UAIDZIN__.setTimeScale(1));
     await page.evaluate(() => window.__UAIDZIN__.toCity());
-    await page.waitForTimeout(600);
-    s = await snap();
-    if (s.mode === "CITY") ok("volta para cidade mode=CITY");
-    else fail(`cidade mode esperado "CITY", recebido "${s.mode}"`);
+    try {
+      s = await waitSnap((x) => x.mode === "CITY", 15000, 'mode "CITY" após sair da dungeon');
+      ok("volta para cidade mode=CITY");
+    } catch (err) {
+      fail(`cidade: ${err.message}`);
+      s = await snap();
+    }
     if (s.enemiesAlive === 0) ok("cidade sem inimigos");
     else fail(`cidade enemiesAlive esperado 0, recebido ${s.enemiesAlive}`);
     if (s.timerPhase === "idle") ok('cidade timerPhase="idle"');

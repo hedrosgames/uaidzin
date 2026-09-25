@@ -177,6 +177,7 @@ export class CityGameSession {
   saveUnreadable = false;
   lastCombatMissAt = 0;
   deathEmitCount = 0;
+  autoAttackSwings = 0;
   progressState = emptyProgress();
   private vaultPersistChain: Promise<void> = Promise.resolve();
 
@@ -363,6 +364,7 @@ export class CityGameSession {
       this.sessionXp = 0;
       this.onModeChange("DUNGEON");
       this.deathEmitCount = 0;
+      this.autoAttackSwings = 0;
       this.bus.emit("dungeon:entered", { dungeonId: def.id });
     }
     this.bus.emit("world:changed", { worldId: world.id });
@@ -999,6 +1001,7 @@ export class CityGameSession {
         this.player.facing = Math.atan2(dx, dz);
         this.effects.playAttackPulse(this.renderer.playerMesh);
         this.renderer.playerView.playAttack();
+        this.autoAttackSwings += 1;
         this.lockFromAnim("attack", COMBAT_BALANCE.moveLock.attackFallback);
 
         if (enemy.alive && rollHitSimple()) {
