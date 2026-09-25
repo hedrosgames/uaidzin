@@ -49,6 +49,43 @@ async function waitForServer(timeoutMs = 30000) {
   throw new Error("preview não respondeu");
 }
 
+async function simulateZoneSeconds(page, { zMin, zMax, gameSeconds, step = 2 }) {
+  return page.evaluate(
+    ({ zMin, zMax, gameSeconds, step }) => {
+      const sess = window.__UAIDZIN__.session;
+      const startTimer = sess.dungeonRun.getRemainingSeconds();
+      let left = gameSeconds;
+      while (left > 0) {
+        const dt = Math.min(step, left);
+        const p = sess.player;
+        const list = sess.enemies.enemies.filter((e) => e.alive);
+        if (p.z < zMin || p.z > zMax) {
+          p.setPosition(p.x, (zMin + zMax) / 2);
+        }
+        if (list.length) {
+          const e = list[0];
+          p.setPosition(e.x, Math.min(zMax, Math.max(zMin, e.z + 0.65)));
+        }
+        sess.update(dt, 16 / 9, false);
+        left -= dt;
+        if (sess.character.isDead) break;
+        if (sess.dungeonRun.getPhase() !== "active") break;
+      }
+      const c = sess.character;
+      return {
+        dead: c.isDead,
+        hp: c.hp,
+        maxHp: c.maxHp,
+        mode: window.__UAIDZIN__.getSnapshot().mode,
+        timerElapsed: Math.round(startTimer - sess.dungeonRun.getRemainingSeconds()),
+        phase: sess.dungeonRun.getPhase(),
+        level: sess.progression.state.level,
+      };
+    },
+    { zMin, zMax, gameSeconds, step },
+  );
+}
+
 async function farmZone(page, { zMin, zMax, realMs, timeScale = 20 }) {
   await page.evaluate(({ zMin, zMax, timeScale }) => {
     window.__UAIDZIN__.setTimeScale(timeScale);
@@ -214,24 +251,49 @@ async function main() {
     else if (z2loss.loss >= 10 && z1loss.loss >= 4) ok(`zona 2 dano absoluto ok (${z1loss.loss} vs ${z2loss.loss} HP)`);
     else fail(`zona 2 deveria doer mais: z1=${z1loss.loss} z2=${z2loss.loss}`);
 
-    const beforeZ1Farm = await readProgress(page);
-    await farmZone(page, { zMin: -8, zMax: 2, realMs: 55000 });
+    await page.evaluate(() => {
+      window.__UAIDZIN__.setTimeScale(1);
+      window.__UAIDZIN__.toCity();
+    });
+    await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "CITY", null, { timeout: 15000 });
+    await page.evaluate(() => window.__UAIDZIN__.enterDungeon());
+    await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, { timeout: 12000 });
+    await page.evaluate(() => window.__UAIDZIN__.session.character.healFull());
+    const goldBeforeTen = await page.evaluate(() => window.__UAIDZIN__.session.inventory.gold);
+    const z1Surv = await simulateZoneSeconds(page, { zMin: -8, zMax: 2, gameSeconds: 600, step: 2 });
+    const hpPct = z1Surv.hp / Math.max(1, z1Surv.maxHp);
+    if (
+      !z1Surv.dead &&
+      z1Surv.timerElapsed >= 580 &&
+      (z1Surv.phase === "active" || z1Surv.phase === "expired") &&
+      hpPct >= 0.2
+    ) {
+      ok(`zona 1 10min sim (${z1Surv.timerElapsed}s, HP ${Math.round(hpPct * 100)}%, phase=${z1Surv.phase})`);
+    } else {
+      fail(`zona 1 survival: ${JSON.stringify({ hpPct, ...z1Surv })}`);
+    }
+
+    await page.evaluate(() => {
+      window.__UAIDZIN__.setTimeScale(1);
+      window.__UAIDZIN__.toCity();
+    });
+    await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "CITY", null, { timeout: 15000 });
     prog = await readProgress(page);
-    const dropAudit = await page.evaluate(() => ({
-      dropLines: window.__UAIDZIN__.session.getDropLog().length,
-      invLen: window.__UAIDZIN__.session.inventory.items.length,
-    }));
-    if (prog.kills > beforeZ1Farm.kills && prog.gold > beforeZ1Farm.gold) {
-      ok(`loot zona 1: kills=${prog.kills} ouro=${prog.gold}`);
-    } else fail(`sem ouro/XP de kills: antes=${JSON.stringify(beforeZ1Farm)} depois=${JSON.stringify(prog)}`);
-    if (dropAudit.dropLines >= 3 || dropAudit.invLen > beforeZ1Farm.invUsed) {
-      ok(`drops registrados (log=${dropAudit.dropLines} inv=${dropAudit.invLen})`);
-    } else fail(`sem drops visíveis: ${JSON.stringify(dropAudit)}`);
+    const goldAfterTen = prog.gold;
+    if (goldAfterTen > goldBeforeTen + 20) ok(`ouro/XP na sim 10min (+${goldAfterTen - goldBeforeTen} ouro)`);
+    else fail(`ouro após 10min: antes=${goldBeforeTen} depois=${goldAfterTen}`);
     const swings = await page.evaluate(() => window.__UAIDZIN__.getSnapshot().autoAttackSwings);
     if (swings >= 8) ok(`auto-ataque disparou (${swings} swings)`);
     else fail(`auto-ataque fraco: swings=${swings}`);
     if (prog.level >= 9 && !prog.dead) ok(`zona 1 D1 level=${prog.level} (meta ~10)`);
     else fail(`zona 1: level=${prog.level} dead=${prog.dead}`);
+    const dropAudit = await page.evaluate(() => ({
+      dropLines: window.__UAIDZIN__.session.getDropLog().length,
+      invLen: window.__UAIDZIN__.session.inventory.items.length,
+    }));
+    if (dropAudit.dropLines >= 5 || dropAudit.invLen >= 3) {
+      ok(`drops registrados (log=${dropAudit.dropLines} inv=${dropAudit.invLen})`);
+    } else fail(`sem drops visíveis: ${JSON.stringify(dropAudit)}`);
 
     await page.evaluate(() => window.__UAIDZIN__.setTimeScale(1));
     await page.evaluate(() => window.__UAIDZIN__.toCity());
@@ -241,12 +303,14 @@ async function main() {
 
     const cityPrep = await page.evaluate(() => {
       const w = window.__UAIDZIN__.wire;
-      const spent = w.spendAllAttributes("FOR");
-      for (let s = 0; s < 8; s++) w.spendSpec("fisica");
-      let learned = 0;
-      for (let i = 0; i < 8; i++) {
-        if (w.learnSkill("fisica", i)) learned += 1;
-        else break;
+      const sess = window.__UAIDZIN__.session;
+      for (let guard = 0; guard < 80; guard += 1) {
+        if (sess.inventory.usedSlots() < sess.inventory.capacity - 6) break;
+        const drop = sess.inventory.items.find(
+          (i) => i.defId !== "machado_leve" && i.defId !== "pocao_menor",
+        );
+        if (!drop) break;
+        sess.inventory.sell(drop.uid);
       }
       let potions = 0;
       for (let n = 0; n < 15; n++) {
@@ -254,27 +318,46 @@ async function main() {
         if (!r.ok) break;
         potions += 1;
       }
+      const spent = w.spendAllAttributes("FOR");
+      for (let s = 0; s < 8; s++) w.spendSpec("fisica");
+      let learned = 0;
+      for (let i = 0; i < 8; i++) {
+        if (w.learnSkill("fisica", i)) learned += 1;
+        else break;
+      }
       return {
         spent,
         learned,
         potions,
-        gold: window.__UAIDZIN__.session.inventory.gold,
-        fisicaSkills: window.__UAIDZIN__.session.skillTree.getTree("fisica").filter(
-          (sk) => window.__UAIDZIN__.session.skillTree.getSkillLevel(sk.id) > 0,
+        gold: sess.inventory.gold,
+        fisicaSkills: sess.skillTree.getTree("fisica").filter(
+          (sk) => sess.skillTree.getSkillLevel(sk.id) > 0,
         ).length,
       };
     });
-    if (cityPrep.learned >= 8) ok("skills física 8/8 (linha TK)");
-    else fail(`skills física incompletas: ${cityPrep.learned}/8 ouro=${cityPrep.gold}`);
+    const tkLine = await page.evaluate(() => {
+      const tree = window.__UAIDZIN__.session.skillTree.getTree("fisica");
+      return tree
+        .filter((sk) => window.__UAIDZIN__.session.skillTree.getSkillLevel(sk.id) > 0)
+        .map((sk) => sk.id);
+    });
+    const specFis = await page.evaluate(
+      () => window.__UAIDZIN__.session.skillTree.state.specialization.fisica,
+    );
+    if (cityPrep.learned >= 8 && tkLine.length >= 8 && tkLine.every((id) => id.startsWith("tk_fis_"))) {
+      ok("skills física 8/8 (linha TK)");
+    } else fail(`skills física incompletas: ${cityPrep.learned}/8 ids=${tkLine.join(",")}`);
+    if (specFis >= 8) ok(`especialidade física ${specFis}`);
+    else fail(`spec física insuficiente: ${specFis}`);
     if (cityPrep.potions >= 5) ok(`comprou ${cityPrep.potions} poções no mercador`);
     else fail(`poções insuficientes: ${cityPrep.potions}`);
     if (cityPrep.spent > 0) ok(`distribuiu ${cityPrep.spent} pontos de atributo`);
 
     let zone3Level = prog.level;
     let runs = 0;
-    while (runs < 16) {
+    while (runs < 20) {
       prog = await readProgress(page);
-      if (prog.level >= 35) break;
+      if (prog.level >= 38) break;
       runs += 1;
       await page.evaluate(() => window.__UAIDZIN__.enterDungeon());
       await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, { timeout: 12000 });
@@ -301,11 +384,11 @@ async function main() {
     prog = await readProgress(page);
     if (prog.level >= 20) ok(`progressão zona 2 meta level>=20 (${prog.level})`);
     else fail(`level após farm zona 2: ${prog.level}`);
-    if (zone3Level >= 24 || prog.level >= 30) ok(`zona 3 contribuiu (level após Z3=${zone3Level}, final=${prog.level})`);
+    if (zone3Level >= 26 || prog.level >= 32) ok(`zona 3 contribuiu (level após Z3=${zone3Level}, final=${prog.level})`);
     else fail(`zona 3 fraca: após Z3=${zone3Level} final=${prog.level}`);
-    if (prog.level >= 35 && prog.level <= 40) ok(`nível D2 desbloqueada (${prog.level}, faixa D1)`);
-    else if (prog.level >= 35) ok(`nível D2 desbloqueada (${prog.level})`);
-    else fail(`level ${prog.level} < 35 para dungeon-2`);
+    if (prog.level < 35) fail(`level ${prog.level} < 35 para dungeon-2`);
+    else if (prog.level >= 38 && prog.level <= 40) ok(`progressão D1 teto + D2 (${prog.level})`);
+    else ok(`nível D2 ok (${prog.level}, meta z3 ~40)`);
 
     const d2 = await page.evaluate(() => window.__UAIDZIN__.enterDungeonById("dungeon-2"));
     if (!d2?.ok) fail(`dungeon-2 bloqueada: ${JSON.stringify(d2)}`);
