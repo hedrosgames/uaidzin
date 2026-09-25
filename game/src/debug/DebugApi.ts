@@ -75,6 +75,20 @@ export function installDebugApi(app: DebugHost): void {
   const w = window as unknown as { __UAIDZIN__?: unknown; __UAIDZIN_DEBUG__?: boolean };
   const isDev = !!(import.meta as { env?: { DEV?: boolean } }).env?.DEV;
   if (!isDev && !w.__UAIDZIN_DEBUG__) return;
+  if (import.meta.env.DEV) {
+    void import("../integrations/threejs-devtools/registerThreeDevTools").then(({ registerThreeDevTools }) => {
+      registerThreeDevTools({
+        scene: app.renderer.scene,
+        renderer: app.renderer.renderer,
+        getCamera: () => app.session.camera.camera,
+        getMixers: () => {
+          const mixer = app.renderer.playerView.getAnimationMixer();
+          return mixer ? [mixer] : [];
+        },
+        composer: app.renderer.getEffectComposer(),
+      });
+    });
+  }
   w.__UAIDZIN__ = {
     session: app.session,
     getState: () => app.state.getMode(),

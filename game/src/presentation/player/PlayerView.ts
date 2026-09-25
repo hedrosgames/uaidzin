@@ -18,6 +18,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import {
   attackClipForWeapon,
   humanAnimUrl,
+  humanCombatUrl,
   type HumanAttackClip,
 } from "./PlayerAnimCatalog";
 import { ArmorAura } from "./ArmorAura";
@@ -62,21 +63,12 @@ const WEAPON_ATTACK_ANIM: Record<WeaponSetId, Extract<PlayerAnim, "attack" | "ca
   bow: "cast",
 };
 
-const ANIM_URLS: Record<Exclude<PlayerAnim, "idle">, string> = {
-  run: "/models/player/shared/anims/run.glb",
-  attack: "/models/player/shared/anims/attack.glb",
-  cast: "/models/player/shared/anims/cast.glb",
-  hit_gut: "/models/player/shared/anims/hit_gut.glb",
-  hit_right: "/models/player/shared/anims/hit_right.glb",
-  death: "/models/player/shared/anims/death.glb",
-};
-
 const FIXED_ANIM_URLS: Record<Exclude<PlayerAnim, "idle" | "attack">, string> = {
-  run: ANIM_URLS.run,
-  cast: ANIM_URLS.cast,
-  hit_gut: ANIM_URLS.hit_gut,
-  hit_right: ANIM_URLS.hit_right,
-  death: ANIM_URLS.death,
+  run: humanCombatUrl("run"),
+  cast: humanCombatUrl("cast"),
+  hit_gut: humanCombatUrl("hit_gut"),
+  hit_right: humanCombatUrl("hit_right"),
+  death: humanCombatUrl("death"),
 };
 
 const ONE_SHOT: ReadonlySet<PlayerAnim> = new Set([
@@ -110,6 +102,7 @@ export class PlayerView {
   private readonly weaponRig = new WeaponRig();
   private weaponSet: WeaponSetId | null = null;
   private attackClip: HumanAttackClip = "attack";
+  private attackBindGen = 0;
   ready = false;
 
   constructor() {
@@ -148,7 +141,7 @@ export class PlayerView {
     }
 
     this.attackClip = attackClipForWeapon(this.weaponSet ?? CLASS_WEAPON_SET[id]);
-    await this.bindAttackClip(this.attackClip);
+    await this.bindAttackClipSafe(this.attackClip);
 
     const entries = Object.entries(FIXED_ANIM_URLS) as Array<
       [Exclude<PlayerAnim, "idle" | "attack">, string]
@@ -184,7 +177,7 @@ export class PlayerView {
     const nextAttack = attackClipForWeapon(set);
     if (nextAttack !== this.attackClip) {
       this.attackClip = nextAttack;
-      await this.bindAttackClip(nextAttack);
+      await this.bindAttackClipSafe(nextAttack);
     }
     await this.weaponRig.equip(this.root, set);
     this.armorAura.apply(this.weaponRig.getVisualRoots());
@@ -212,6 +205,10 @@ export class PlayerView {
 
   getClassId(): PlayerClassId {
     return this.classId;
+  }
+
+  getAnimationMixer(): AnimationMixer | null {
+    return this.mixer;
   }
 
   setPose(x: number, z: number, facing: number, moving: boolean): void {
@@ -433,20 +430,32 @@ export class PlayerView {
     });
   }
 
+  private async bindAttackClipSafe(clipId: HumanAttackClip): Promise<void> {
+    try {
+      await this.bindAttackClip(clipId);
+    } catch {
+      if (clipId === "attack") return;
+      this.attackClip = "attack";
+      await this.bindAttackClip("attack");
+    }
+  }
+
   private async bindAttackClip(clipId: HumanAttackClip): Promise<void> {
     if (!this.mixer) return;
+    const gen = ++this.attackBindGen;
+    const gltf = await this.loader.loadAsync(humanAnimUrl(clipId));
+    if (!this.mixer || gen !== this.attackBindGen) {
+      this.disposeObject(gltf.scene);
+      return;
+    }
+    const clip = gltf.animations[0] ?? null;
+    this.disposeObject(gltf.scene);
+    if (!clip) throw new Error("attack clip missing");
     const prev = this.actions.get("attack");
     if (prev) {
       prev.stop();
       this.mixer.uncacheClip(prev.getClip());
     }
-    this.actions.delete("attack");
-    const gltf = await this.loader.loadAsync(
-      clipId === "attack" ? ANIM_URLS.attack : humanAnimUrl(clipId),
-    );
-    const clip = gltf.animations[0] ?? null;
-    this.disposeObject(gltf.scene);
-    if (!clip) return;
     clip.name = "attack";
     this.actions.set("attack", this.mixer.clipAction(clip));
     if (this.current === "attack") this.play("attack", false);
