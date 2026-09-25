@@ -127,6 +127,9 @@ export class GameApp {
     const mode = this.state.getMode();
     if (mode === "DUNGEON" || mode === "DEAD") return;
     if (this.wireUi) {
+      if (event.code === "KeyC") this.wireUi.toggle("person");
+      if (event.code === "KeyK") this.wireUi.toggle("skills");
+      if (event.code === "KeyI") this.wireUi.toggle("inv");
       if (event.code === "KeyB") this.wireUi.toggle("vault");
       return;
     }

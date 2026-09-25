@@ -1618,8 +1618,12 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   const attrs = { for: 5, des: 5, cons: 5, int: 5 };
   let attrPts = 0;
   let charLevel = 1;
+  let composerWorkKind = null;
+  let composerSelectedUid = null;
   const skillPtsVal = document.getElementById("skillPtsVal");
   const eighthTreeVal = document.getElementById("eighthTreeVal");
+  const ptsEl = document.getElementById("spec-pts");
+  const attrPtsEl = document.getElementById("attr-pts");
 
   function syncSkillMeta() {
     if (skillPtsVal) skillPtsVal.textContent = String(skillPoints);
@@ -1972,11 +1976,11 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
         const vis = skillShopVisual(sk);
         el.className = "sm-slot " + vis;
         if (i === 8) el.classList.add("capstone");
-        el.dataset.skill = sk.id;
+        el.dataset.skill = sk ? sk.id : tree + "-" + i;
         const img = document.createElement("img");
         img.className = "ico";
         img.alt = "";
-        if (vis === "locked") {
+        if (!sk || vis === "locked") {
           img.src = "assets/eq/lock.svg";
         } else {
           img.src = sk.icon;
@@ -1993,7 +1997,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
         });
         el.addEventListener("dblclick", (e) => {
           e.preventDefault();
-          tryBuySkill(sk);
+          if (sk) tryBuySkill(sk);
         });
         grid.appendChild(el);
       }
@@ -2091,10 +2095,6 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     });
   });
   window.addEventListener("keydown", (e) => {
-    const k = e.key.toLowerCase();
-    if (k === "c") togglePanel("person");
-    if (k === "k") togglePanel("skills");
-    if (k === "i") togglePanel("inv");
     if (e.key === "Escape") {
       hideTip(true);
       hideItemTip(true);
@@ -3462,7 +3462,6 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       return true;
     },
   };
-  if (gameApi()) window.__UAIDZIN_WIRE__.syncFromGame();
   void ensureShopConfig();
 
   const COMPOSE_KINDS = [
@@ -3484,8 +3483,6 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   const composeBench = document.getElementById("composeBench");
   const composerTitle = document.getElementById("composerTitle");
   const composerWin = document.getElementById("p-composer");
-  let composerWorkKind = null;
-  let composerSelectedUid = null;
 
   function setComposerTitle(text) {
     if (composerTitle) composerTitle.textContent = text;
@@ -4312,8 +4309,6 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   void ensurePortalConfig();
 
-  const ptsEl = document.getElementById("spec-pts");
-  const attrPtsEl = document.getElementById("attr-pts");
   const powerEl = document.getElementById("char-power");
   const POWER_MAX = 999999999;
   const RARITY_POW = {
@@ -4457,6 +4452,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     );
   });
 
+  if (gameApi()) window.__UAIDZIN_WIRE__.syncFromGame();
   paintAttrs();
   paintSpec();
 })();

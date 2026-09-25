@@ -171,8 +171,9 @@ async function main() {
       window.__UAIDZIN__.session.refreshWeaponSetFromGear();
       return { eq, weaponSet: window.__UAIDZIN__.getWeaponSet?.(), machados: items.length };
     });
-    if (setup.eq && setup.machados >= 2) ok("setup TK: 2 machados + equip");
-    else fail(`setup equip: ${JSON.stringify(setup)}`);
+    if (setup.eq && setup.machados >= 2 && setup.weaponSet === "dual-axe") {
+      ok("setup TK: 2 machados + equip dual-axe");
+    } else fail(`setup equip: ${JSON.stringify(setup)}`);
 
     await page.evaluate(() => window.__UAIDZIN__.enterDungeon());
     await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, { timeout: 12000 });
@@ -190,9 +191,20 @@ async function main() {
     else if (z2loss.loss >= z1loss.loss + 4) ok(`zona 2 pressiona mais (${z1loss.loss}→${z2loss.loss} HP)`);
     else fail(`zona 2 deveria doer mais: z1=${z1loss.loss} z2=${z2loss.loss}`);
 
+    const beforeZ1Farm = await readProgress(page);
     await farmZone(page, { zMin: -8, zMax: 2, realMs: 55000 });
     prog = await readProgress(page);
-    if (prog.level >= 7 && !prog.dead) ok(`zona 1 D1 level=${prog.level} (meta ~10)`);
+    const dropAudit = await page.evaluate(() => ({
+      dropLines: window.__UAIDZIN__.session.getDropLog().length,
+      invLen: window.__UAIDZIN__.session.inventory.items.length,
+    }));
+    if (prog.kills > beforeZ1Farm.kills && prog.gold > beforeZ1Farm.gold) {
+      ok(`loot zona 1: kills=${prog.kills} ouro=${prog.gold}`);
+    } else fail(`sem ouro/XP de kills: antes=${JSON.stringify(beforeZ1Farm)} depois=${JSON.stringify(prog)}`);
+    if (dropAudit.dropLines >= 3 || dropAudit.invLen > beforeZ1Farm.invUsed) {
+      ok(`drops registrados (log=${dropAudit.dropLines} inv=${dropAudit.invLen})`);
+    } else fail(`sem drops visíveis: ${JSON.stringify(dropAudit)}`);
+    if (prog.level >= 8 && !prog.dead) ok(`zona 1 D1 level=${prog.level} (meta ~10)`);
     else fail(`zona 1: level=${prog.level} dead=${prog.dead}`);
 
     await page.evaluate(() => window.__UAIDZIN__.setTimeScale(1));
@@ -263,8 +275,8 @@ async function main() {
     prog = await readProgress(page);
     if (prog.level >= 20) ok(`progressão zona 2 meta level>=20 (${prog.level})`);
     else fail(`level após farm zona 2: ${prog.level}`);
-    if (zone3Level >= 22 || prog.level >= 28) ok(`zona 3 contribuiu (level após Z3=${zone3Level})`);
-    else ok(`zona 3 level=${zone3Level} (continua grind)`);
+    if (zone3Level >= 24 || prog.level >= 30) ok(`zona 3 contribuiu (level após Z3=${zone3Level}, final=${prog.level})`);
+    else fail(`zona 3 fraca: após Z3=${zone3Level} final=${prog.level}`);
     if (prog.level >= 35) ok(`nível D2 desbloqueada (${prog.level})`);
     else fail(`level ${prog.level} < 35 para dungeon-2`);
 

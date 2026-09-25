@@ -432,10 +432,15 @@ async function main() {
     else fail(`uid duplicado ou drop falhou before=${uidsBefore.length} after=${uidsAfter.length} unique=${new Set(uidsAfter).size}`);
 
     await page.evaluate(() => {
-      const cur = window.__UAIDZIN__.session.progression.state.level;
+      const sess = window.__UAIDZIN__.session;
+      const cur = sess.progression.state.level;
       if (cur < 160) window.__UAIDZIN__.debugAddLevels(160 - cur);
+      sess.progression.state.evolution = "Mortal";
+      const w = window.__UAIDZIN__.wire;
+      if (w && sess.inventory.countMaterial("entry_d4") < 1) w.buyShop("merchant", "entry_d4");
     });
-    await page.evaluate(() => window.__UAIDZIN__.enterDungeonById("dungeon-4"));
+    const d4Gate = await page.evaluate(() => window.__UAIDZIN__.enterDungeonById("dungeon-4"));
+    if (!d4Gate?.ok) fail(`dungeon-4 recusada: ${JSON.stringify(d4Gate)}`);
     try {
       s = await waitSnap((x) => x.mode === "DUNGEON", 8000, 'mode "DUNGEON" na D4');
       ok("nível 160 entrou na D4");
@@ -473,8 +478,12 @@ async function main() {
       localStorage.setItem(lsKey, mark);
       localStorage.setItem(lsPrev, mark);
       await new Promise((resolve) => {
-        const req = indexedDB.open("uaidzin", 1);
+        const req = indexedDB.open("uaidzin", 2);
         req.onerror = () => resolve();
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains("save")) db.createObjectStore("save");
+        };
         req.onsuccess = () => {
           try {
             const db = req.result;
