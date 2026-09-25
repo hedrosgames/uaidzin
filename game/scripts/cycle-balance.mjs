@@ -2,6 +2,12 @@ import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import {
+  wipeSave,
+  loginAdmin,
+  createTkAndEnter,
+  openNpcPanel,
+} from "./cycle-boot-helpers.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = 5175;
@@ -70,8 +76,25 @@ async function farmZone(page, { zMin, zMax, realMs, timeScale = 20 }) {
   }
 }
 
+async function measureHpLoss(page, { zMin, zMax, realMs }) {
+  await page.evaluate(() => {
+    const c = window.__UAIDZIN__.session.character;
+    c.healFull();
+  });
+  const start = await readProgress(page);
+  await farmZone(page, { zMin, zMax, realMs, timeScale: 15 });
+  const end = await readProgress(page);
+  return {
+    loss: Math.max(0, start.hp - end.hp),
+    dead: end.dead,
+    startHp: start.hp,
+    endHp: end.hp,
+  };
+}
+
 async function readProgress(page) {
   return page.evaluate(() => ({
+    classId: window.__UAIDZIN__.session.skillTree.state.classId,
     level: window.__UAIDZIN__.session.progression.state.level,
     hp: window.__UAIDZIN__.session.character.hp,
     maxHp: window.__UAIDZIN__.session.character.maxHp,
@@ -84,6 +107,8 @@ async function readProgress(page) {
       (sk) => window.__UAIDZIN__.session.skillTree.getSkillLevel(sk.id) > 0,
     ).length,
     attrPts: window.__UAIDZIN__.session.progression.state.unspentAttributePoints,
+    invUsed: window.__UAIDZIN__.getSnapshot().invUsed,
+    attackFx: window.__UAIDZIN__.getSnapshot().fxCount,
   }));
 }
 
@@ -101,18 +126,40 @@ async function main() {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     await page.addInitScript(() => {
       window.__UAIDZIN_DEBUG__ = true;
-      window.__UAIDZIN_SKIP_BOOT__ = {
-        id: "cycle:slot:0",
-        name: "Cycle",
-        classId: "TK",
-        level: 1,
-        evolution: "Mortal",
-        gold: 0,
-        attrs: { FOR: 5, DES: 5, CONS: 5, INT: 5 },
-      };
     });
-    await page.goto(BASE, { waitUntil: "domcontentloaded" });
-    await page.waitForFunction(() => !!window.__UAIDZIN__?.getSnapshot?.().entered, null, { timeout: 30000 });
+    await wipeSave(page, BASE);
+    await page.goto(BASE, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForTimeout(600);
+    const frame = await loginAdmin(page);
+    await createTkAndEnter(page, frame, "CycleTK");
+
+    let prog = await readProgress(page);
+    if (prog.classId === "TK" && prog.level === 1 && prog.gold === 0 && prog.invUsed === 0) {
+      ok("login → TK lvl1 ouro 0 inventário vazio");
+    } else {
+      fail(`boot state: ${JSON.stringify(prog)}`);
+    }
+
+    const npcIds = [
+      "npc-merchant",
+      "npc-blacksmith",
+      "npc-skill-master",
+      "npc-sage",
+      "npc-composer",
+      "npc-portal-guard",
+      "npc-quest",
+      "vault-chest",
+    ];
+    for (const id of npcIds) {
+      const res = await openNpcPanel(page, id);
+      if (!res.ok) fail(`NPC ${id} não abriu painel: ${JSON.stringify(res)}`);
+      else if (id === "npc-blacksmith" && res.expectedShop && res.shopId !== "blacksmith") {
+        fail(`Ferreiro shopId=${res.shopId}`);
+      } else if (id === "npc-merchant" && res.expectedShop && res.shopId !== "merchant") {
+        fail(`Mercador shopId=${res.shopId}`);
+      } else ok(`NPC ${id} abriu UI`);
+    }
+    await page.evaluate(() => window.__UAIDZIN__.closePanels());
 
     const setup = await page.evaluate(() => {
       const w = window.__UAIDZIN__.wire;
@@ -130,8 +177,21 @@ async function main() {
     await page.evaluate(() => window.__UAIDZIN__.enterDungeon());
     await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, { timeout: 12000 });
 
+    const z1loss = await measureHpLoss(page, { zMin: -8, zMax: 2, realMs: 16000 });
+    await page.evaluate(() => {
+      window.__UAIDZIN__.setTimeScale(1);
+      window.__UAIDZIN__.toCity();
+    });
+    await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "CITY", null, { timeout: 15000 });
+    await page.evaluate(() => window.__UAIDZIN__.enterDungeon());
+    await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, { timeout: 12000 });
+    const z2loss = await measureHpLoss(page, { zMin: -34, zMax: -14, realMs: 16000 });
+    if (z2loss.loss > z1loss.loss && z2loss.loss >= 6) ok(`zona 2 mais perigosa (${z1loss.loss} vs ${z2loss.loss} HP)`);
+    else if (z2loss.loss >= z1loss.loss + 4) ok(`zona 2 pressiona mais (${z1loss.loss}→${z2loss.loss} HP)`);
+    else fail(`zona 2 deveria doer mais: z1=${z1loss.loss} z2=${z2loss.loss}`);
+
     await farmZone(page, { zMin: -8, zMax: 2, realMs: 55000 });
-    let prog = await readProgress(page);
+    prog = await readProgress(page);
     if (prog.level >= 7 && !prog.dead) ok(`zona 1 D1 level=${prog.level} (meta ~10)`);
     else fail(`zona 1: level=${prog.level} dead=${prog.dead}`);
 
