@@ -1,0 +1,171 @@
+[
+  {
+    "id": "mat_ori",
+    "name": "Poeira de Ori",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Material de reforço até +5.",
+    "icon": "items/ori.svg",
+    "sellValue": 2
+  },
+  {
+    "id": "mat_lac",
+    "name": "Poeira de Lac",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Material de reforço de +6 a +10.",
+    "icon": "items/lac.svg",
+    "sellValue": 8
+  },
+  {
+    "id": "poeira_ori",
+    "name": "Poeira de Ori",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Material de reforço até +5.",
+    "icon": "items/ori.svg",
+    "sellValue": 2
+  },
+  {
+    "id": "poeira_lac",
+    "name": "Poeira de Lac",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Material de reforço de +6 a +10.",
+    "icon": "items/lac.svg",
+    "sellValue": 8
+  },
+  {
+    "id": "entry_d4",
+    "name": "Selo D4",
+    "slot": "entry",
+    "rarity": "Comum",
+    "desc": "Consome ao entrar na Dungeon 4.",
+    "icon": "items/seal.svg",
+    "sellValue": 20
+  },
+  {
+    "id": "entry_d5",
+    "name": "Selo D5",
+    "slot": "entry",
+    "rarity": "Comum",
+    "desc": "Consome ao entrar na Dungeon 5.",
+    "icon": "items/seal.svg",
+    "sellValue": 35
+  },
+  {
+    "id": "entry_d6",
+    "name": "Selo D6",
+    "slot": "entry",
+    "rarity": "Comum",
+    "desc": "Consome ao entrar na Dungeon 6.",
+    "icon": "items/seal.svg",
+    "sellValue": 50
+  },
+  {
+    "id": "entry_d7",
+    "name": "Selo D7",
+    "slot": "entry",
+    "rarity": "Comum",
+    "desc": "Consome ao entrar na Dungeon 7.",
+    "icon": "items/seal.svg",
+    "sellValue": 75
+  },
+  {
+    "id": "entry_d8",
+    "name": "Selo D8",
+    "slot": "entry",
+    "rarity": "Comum",
+    "desc": "Consome ao entrar na Dungeon 8.",
+    "icon": "items/seal.svg",
+    "sellValue": 100
+  },
+  {
+    "id": "espada_curta",
+    "name": "Espada Curta",
+    "slot": "weapon",
+    "rarity": "Comum",
+    "desc": "Ataque +4",
+    "icon": "items/espada_curta.svg",
+    "attackBonus": 4,
+    "defenseBonus": 0,
+    "sellValue": 20
+  },
+  {
+    "id": "machado_leve",
+    "name": "Machado Leve",
+    "slot": "weapon",
+    "rarity": "Comum",
+    "desc": "Ataque +5",
+    "icon": "items/machado_leve.svg",
+    "attackBonus": 5,
+    "defenseBonus": 0,
+    "sellValue": 24
+  },
+  {
+    "id": "armadura_leve",
+    "name": "Armadura Leve",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Defesa +3",
+    "icon": "items/armadura_leve.svg",
+    "attackBonus": 0,
+    "defenseBonus": 3,
+    "sellValue": 18
+  },
+  {
+    "id": "capacete",
+    "name": "Capacete",
+    "slot": "head",
+    "rarity": "Comum",
+    "desc": "Defesa +2",
+    "icon": "items/capacete.svg",
+    "attackBonus": 0,
+    "defenseBonus": 2,
+    "sellValue": 14
+  },
+  {
+    "id": "anel_cobre",
+    "name": "Anel de Cobre",
+    "slot": "ring1",
+    "rarity": "Comum",
+    "desc": "Ataque +1 · Defesa +1",
+    "icon": "items/anel_cobre.svg",
+    "attackBonus": 1,
+    "defenseBonus": 1,
+    "sellValue": 10
+  },
+  {
+    "id": "anel_ferro",
+    "name": "Anel de Ferro",
+    "slot": "ring2",
+    "rarity": "Incomum",
+    "desc": "Ataque +2 · Defesa +2",
+    "icon": "items/anel_ferro.svg",
+    "attackBonus": 2,
+    "defenseBonus": 2,
+    "sellValue": 40
+  },
+  {
+    "id": "colar_simples",
+    "name": "Colar Simples",
+    "slot": "neck",
+    "rarity": "Comum",
+    "desc": "Ataque +1 · Defesa +1",
+    "icon": "items/colar_simples.svg",
+    "attackBonus": 1,
+    "defenseBonus": 1,
+    "sellValue": 12
+  },
+  {
+    "id": "brinco_osso",
+    "name": "Brinco de Osso",
+    "slot": "ear",
+    "rarity": "Comum",
+    "desc": "Ataque +1",
+    "icon": "items/brinco_osso.svg",
+    "attackBonus": 1,
+    "defenseBonus": 0,
+    "sellValue": 8
+  }
+]

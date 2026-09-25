@@ -1,3 +1,5 @@
+import rawNpcs from "../data/world/npcs.json";
+
 export type InteractableKind = "npc" | "portal" | "portal-exit" | "chest";
 
 export interface InteractableDef {
@@ -6,85 +8,36 @@ export interface InteractableDef {
   kind: InteractableKind;
   x: number;
   z: number;
-
   color: number;
   body: string;
+  service?: string;
 }
 
-export const CITY_INTERACTABLES: InteractableDef[] = [
-  {
-    id: "npc-portal-guard",
-    label: "Guarda do Portal",
-    kind: "npc",
-    x: 0,
-    z: -10,
-    color: 0xd4a017,
-    body: "",
-  },
-  {
-    id: "npc-merchant",
-    label: "Mercador",
-    kind: "npc",
-    x: 11.9,
-    z: 0.9,
-    color: 0x3d9a6a,
-    body: "",
-  },
-  {
-    id: "npc-blacksmith",
-    label: "Ferreiro",
-    kind: "npc",
-    x: 10.2,
-    z: 10.9,
-    color: 0xc45c26,
-    body: "",
-  },
-  {
-    id: "npc-skill-master",
-    label: "Mestre de Skills",
-    kind: "npc",
-    x: -9.1,
-    z: -10.1,
-    color: 0x6b7cff,
-    body: "",
-  },
-  {
-    id: "npc-sage",
-    label: "Sábio",
-    kind: "npc",
-    x: -4.2,
-    z: -2.6,
-    color: 0xb07cff,
-    body: "",
-  },
-  {
-    id: "npc-composer",
-    label: "Compositor",
-    kind: "npc",
-    x: -9.9,
-    z: 10.9,
-    color: 0x8aa0b8,
-    body: "",
-  },
-  {
-    id: "vault-chest",
-    label: "Baú",
-    kind: "chest",
-    x: 2.6,
-    z: 11.4,
-    color: 0xc4a35a,
-    body: "",
-  },
-  {
-    id: "npc-quest",
-    label: "Mestre de Quests",
-    kind: "npc",
-    x: 5.7,
-    z: -12.6,
-    color: 0xe8c547,
-    body: "",
-  },
-];
+function parseHexColor(color: string | number): number {
+  if (typeof color === "number") return color;
+  const cleaned = color.replace("#", "");
+  return parseInt(cleaned, 16) || 0xd4a017;
+}
+
+export const CITY_INTERACTABLES: InteractableDef[] = (rawNpcs as Array<{
+  id: string;
+  label: string;
+  kind: string;
+  x: number;
+  z: number;
+  color: string | number;
+  body: string;
+  service?: string;
+}>).map((item) => ({
+  id: item.id,
+  label: item.label,
+  kind: item.kind as InteractableKind,
+  x: item.x,
+  z: item.z,
+  color: parseHexColor(item.color),
+  body: item.body || "",
+  service: item.service,
+}));
 
 export const CITY_PORTAL_PROP: InteractableDef = {
   id: "portal-city-decor",
@@ -103,5 +56,5 @@ export const DUNGEON_EXIT: InteractableDef = {
   x: 0,
   z: 0,
   color: 0x44c0ff,
-    body: "",
+  body: "",
 };

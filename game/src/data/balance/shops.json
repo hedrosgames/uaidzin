@@ -1,0 +1,31 @@
+{
+  "merchant": {
+    "id": "merchant",
+    "label": "Mercador",
+    "slots": [
+      { "itemId": "entry_d4", "qty": 20, "price": 200 },
+      { "itemId": "entry_d5", "qty": 15, "price": 350 },
+      { "itemId": "entry_d6", "qty": 12, "price": 500 },
+      { "itemId": "entry_d7", "qty": 10, "price": 750 },
+      { "itemId": "entry_d8", "qty": 8, "price": 1000 },
+      { "itemId": "mat_ori", "qty": 50, "price": 25 },
+      { "itemId": "mat_lac", "qty": 10, "price": 120 }
+    ]
+  },
+  "blacksmith": {
+    "id": "blacksmith",
+    "label": "Ferreiro",
+    "slots": [
+      { "itemId": "mat_ori", "qty": 99, "price": 20 },
+      { "itemId": "mat_lac", "qty": 20, "price": 100 },
+      { "itemId": "espada_curta", "qty": 3, "price": 70 },
+      { "itemId": "machado_leve", "qty": 3, "price": 85 },
+      { "itemId": "armadura_leve", "qty": 3, "price": 70 },
+      { "itemId": "capacete", "qty": 3, "price": 50 },
+      { "itemId": "anel_cobre", "qty": 4, "price": 40 },
+      { "itemId": "anel_ferro", "qty": 4, "price": 160 },
+      { "itemId": "colar_simples", "qty": 4, "price": 45 },
+      { "itemId": "brinco_osso", "qty": 4, "price": 35 }
+    ]
+  }
+}

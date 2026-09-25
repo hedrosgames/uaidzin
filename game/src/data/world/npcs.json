@@ -1,0 +1,82 @@
+[
+  {
+    "id": "npc-portal-guard",
+    "label": "Guarda do Portal",
+    "kind": "npc",
+    "service": "portal",
+    "x": 0,
+    "z": -10,
+    "color": "#d4a017",
+    "body": "Bem-vindo ao Portal de Dungeons. Apenas os fortes sobrevivem."
+  },
+  {
+    "id": "npc-merchant",
+    "label": "Mercador",
+    "kind": "npc",
+    "service": "merchant",
+    "x": 11.9,
+    "z": 0.9,
+    "color": "#3d9a6a",
+    "body": "Tenho provisões, materiais e selos de acesso para suas jornadas."
+  },
+  {
+    "id": "npc-blacksmith",
+    "label": "Ferreiro",
+    "kind": "npc",
+    "service": "blacksmith",
+    "x": 10.2,
+    "z": 10.9,
+    "color": "#c45c26",
+    "body": "Espadas afiadas e armaduras reforçadas. Veja minhas mercadorias."
+  },
+  {
+    "id": "npc-skill-master",
+    "label": "Mestre de Skills",
+    "kind": "npc",
+    "service": "skillmaster",
+    "x": -9.1,
+    "z": -10.1,
+    "color": "#6b7cff",
+    "body": "Deseja aprimorar suas habilidades e maestria?"
+  },
+  {
+    "id": "npc-sage",
+    "label": "Sábio",
+    "kind": "npc",
+    "service": "sage",
+    "x": -4.2,
+    "z": -2.6,
+    "color": "#b07cff",
+    "body": "O conhecimento é a maior arma de um aventureiro."
+  },
+  {
+    "id": "npc-composer",
+    "label": "Compositor",
+    "kind": "npc",
+    "service": "composer",
+    "x": -9.9,
+    "z": 10.9,
+    "color": "#8aa0b8",
+    "body": "Traga seus materiais e ouro para composições especiais."
+  },
+  {
+    "id": "vault-chest",
+    "label": "Baú da Conta",
+    "kind": "chest",
+    "service": "vault",
+    "x": 2.6,
+    "z": 11.4,
+    "color": "#c4a35a",
+    "body": "Guarde seus itens compartilhados com segurança."
+  },
+  {
+    "id": "npc-quest",
+    "label": "Mestre de Quests",
+    "kind": "npc",
+    "service": "quest",
+    "x": 5.7,
+    "z": -12.6,
+    "color": "#e8c547",
+    "body": "Missões diárias e recompensas de caça."
+  }
+]

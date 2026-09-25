@@ -3,6 +3,8 @@ import { COMBAT_BALANCE, type EnemyArchetype } from "../../data/balance/combat";
 export interface EnemyInit {
   id: string;
   archetype: EnemyArchetype;
+  monsterId?: string;
+  name?: string;
   x: number;
   z: number;
   maxHp: number;
@@ -19,11 +21,17 @@ export interface EnemyInit {
   homeZ: number;
   respawnSeconds: number;
   isBoss?: boolean;
+  xpReward?: number;
+  color?: string;
+  modelUrl?: string;
+  modelScale?: number;
 }
 
 export class EnemyModel {
   readonly id: string;
   readonly archetype: EnemyArchetype;
+  readonly monsterId: string;
+  readonly name: string;
   readonly homeX: number;
   readonly homeZ: number;
   readonly maxHp: number;
@@ -38,6 +46,10 @@ export class EnemyModel {
   readonly leashRadius: number;
   readonly respawnSeconds: number;
   readonly isBoss: boolean;
+  readonly xpReward: number;
+  readonly color: string;
+  readonly modelUrl?: string;
+  readonly modelScale: number;
 
   x: number;
   z: number;
@@ -57,6 +69,8 @@ export class EnemyModel {
   constructor(init: EnemyInit) {
     this.id = init.id;
     this.archetype = init.archetype;
+    this.monsterId = init.monsterId ?? init.archetype;
+    this.name = init.name ?? init.archetype;
     this.homeX = init.homeX;
     this.homeZ = init.homeZ;
     this.x = init.x;
@@ -74,6 +88,10 @@ export class EnemyModel {
     this.leashRadius = init.leashRadius ?? 99;
     this.respawnSeconds = init.respawnSeconds;
     this.isBoss = !!init.isBoss;
+    this.xpReward = init.xpReward ?? 8;
+    this.color = init.color ?? "#c45c26";
+    this.modelUrl = init.modelUrl;
+    this.modelScale = init.modelScale ?? 1.0;
   }
 
   applyDamage(amount: number): boolean {
