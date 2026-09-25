@@ -1,0 +1,732 @@
+[
+  {
+    "id": "dungeon-1",
+    "name": "Dungeon 1",
+    "minLevel": 1,
+    "maxLevel": 40,
+    "entryItemId": null,
+    "durationSeconds": 600,
+    "arenas": [
+      {
+        "id": "d1-a1",
+        "centerX": 0,
+        "centerZ": 0,
+        "halfSize": 9,
+        "spawns": [
+          {
+            "id": "d1-a1-f1",
+            "archetype": "fixed",
+            "x": 5,
+            "z": -5
+          },
+          {
+            "id": "d1-a1-f2",
+            "archetype": "fixed",
+            "x": -5,
+            "z": -5
+          }
+        ]
+      },
+      {
+        "id": "d1-a2",
+        "centerX": 0,
+        "centerZ": -24,
+        "halfSize": 9,
+        "spawns": [
+          {
+            "id": "d1-a2-f1",
+            "archetype": "fixed",
+            "x": 5,
+            "z": -29
+          },
+          {
+            "id": "d1-a2-r1",
+            "archetype": "ranged",
+            "x": -4,
+            "z": -31
+          }
+        ]
+      },
+      {
+        "id": "d1-a3",
+        "centerX": 0,
+        "centerZ": -48,
+        "halfSize": 10,
+        "spawns": [
+          {
+            "id": "d1-a3-c1",
+            "archetype": "chaser",
+            "x": 5,
+            "z": -46
+          },
+          {
+            "id": "d1-a3-boss",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -50,
+            "isBoss": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dungeon-2",
+    "name": "Dungeon 2",
+    "minLevel": 35,
+    "maxLevel": 90,
+    "entryItemId": null,
+    "durationSeconds": 600,
+    "arenas": [
+      {
+        "id": "d2-a1",
+        "centerX": 0,
+        "centerZ": 0,
+        "halfSize": 8,
+        "spawns": [
+          {
+            "id": "d2-a1-r1",
+            "archetype": "ranged",
+            "x": 6,
+            "z": -6
+          },
+          {
+            "id": "d2-a1-r2",
+            "archetype": "ranged",
+            "x": -6,
+            "z": -6
+          },
+          {
+            "id": "d2-a1-f1",
+            "archetype": "fixed",
+            "x": 0,
+            "z": 3
+          }
+        ]
+      },
+      {
+        "id": "d2-a2",
+        "centerX": 2,
+        "centerZ": -24,
+        "halfSize": 10,
+        "spawns": [
+          {
+            "id": "d2-a2-r1",
+            "archetype": "ranged",
+            "x": 7,
+            "z": -30
+          },
+          {
+            "id": "d2-a2-c1",
+            "archetype": "chaser",
+            "x": -4,
+            "z": -24
+          },
+          {
+            "id": "d2-a2-f1",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -28
+          },
+          {
+            "id": "d2-a2-r2",
+            "archetype": "ranged",
+            "x": -7,
+            "z": -31
+          }
+        ]
+      },
+      {
+        "id": "d2-a3",
+        "centerX": 0,
+        "centerZ": -48,
+        "halfSize": 11,
+        "spawns": [
+          {
+            "id": "d2-a3-r1",
+            "archetype": "ranged",
+            "x": 6,
+            "z": -54
+          },
+          {
+            "id": "d2-a3-r2",
+            "archetype": "ranged",
+            "x": -6,
+            "z": -54
+          },
+          {
+            "id": "d2-a3-boss",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -50,
+            "isBoss": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dungeon-3",
+    "name": "Dungeon 3",
+    "minLevel": 80,
+    "maxLevel": 150,
+    "entryItemId": null,
+    "durationSeconds": 600,
+    "arenas": [
+      {
+        "id": "d3-a1",
+        "centerX": 0,
+        "centerZ": 0,
+        "halfSize": 10,
+        "spawns": [
+          {
+            "id": "d3-a1-c1",
+            "archetype": "chaser",
+            "x": 5,
+            "z": 4
+          },
+          {
+            "id": "d3-a1-c2",
+            "archetype": "chaser",
+            "x": -5,
+            "z": 4
+          },
+          {
+            "id": "d3-a1-f1",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -6
+          }
+        ]
+      },
+      {
+        "id": "d3-a2",
+        "centerX": -2,
+        "centerZ": -26,
+        "halfSize": 9,
+        "spawns": [
+          {
+            "id": "d3-a2-c1",
+            "archetype": "chaser",
+            "x": 4,
+            "z": -23
+          },
+          {
+            "id": "d3-a2-c2",
+            "archetype": "chaser",
+            "x": -6,
+            "z": -28
+          },
+          {
+            "id": "d3-a2-r1",
+            "archetype": "ranged",
+            "x": 0,
+            "z": -34
+          }
+        ]
+      },
+      {
+        "id": "d3-a3",
+        "centerX": 0,
+        "centerZ": -50,
+        "halfSize": 10,
+        "spawns": [
+          {
+            "id": "d3-a3-c1",
+            "archetype": "chaser",
+            "x": 6,
+            "z": -48
+          },
+          {
+            "id": "d3-a3-c2",
+            "archetype": "chaser",
+            "x": -6,
+            "z": -48
+          },
+          {
+            "id": "d3-a3-boss",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -53,
+            "isBoss": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dungeon-4",
+    "name": "Dungeon 4",
+    "minLevel": 140,
+    "maxLevel": 220,
+    "entryItemId": "entry_d4",
+    "durationSeconds": 600,
+    "arenas": [
+      {
+        "id": "d4-a1",
+        "centerX": 0,
+        "centerZ": 0,
+        "halfSize": 8,
+        "spawns": [
+          {
+            "id": "d4-a1-f1",
+            "archetype": "fixed",
+            "x": 4,
+            "z": -4
+          },
+          {
+            "id": "d4-a1-f2",
+            "archetype": "fixed",
+            "x": -4,
+            "z": -4
+          },
+          {
+            "id": "d4-a1-c1",
+            "archetype": "chaser",
+            "x": 5,
+            "z": 3
+          },
+          {
+            "id": "d4-a1-c2",
+            "archetype": "chaser",
+            "x": -5,
+            "z": 3
+          }
+        ]
+      },
+      {
+        "id": "d4-a2",
+        "centerX": 0,
+        "centerZ": -22,
+        "halfSize": 8,
+        "spawns": [
+          {
+            "id": "d4-a2-f1",
+            "archetype": "fixed",
+            "x": 5,
+            "z": -26
+          },
+          {
+            "id": "d4-a2-r1",
+            "archetype": "ranged",
+            "x": -5,
+            "z": -28
+          },
+          {
+            "id": "d4-a2-c1",
+            "archetype": "chaser",
+            "x": 0,
+            "z": -19
+          },
+          {
+            "id": "d4-a2-r2",
+            "archetype": "ranged",
+            "x": 6,
+            "z": -28
+          }
+        ]
+      },
+      {
+        "id": "d4-a3",
+        "centerX": 0,
+        "centerZ": -46,
+        "halfSize": 9,
+        "spawns": [
+          {
+            "id": "d4-a3-c1",
+            "archetype": "chaser",
+            "x": 5,
+            "z": -45
+          },
+          {
+            "id": "d4-a3-r1",
+            "archetype": "ranged",
+            "x": -5,
+            "z": -52
+          },
+          {
+            "id": "d4-a3-boss",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -48,
+            "isBoss": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dungeon-5",
+    "name": "Dungeon 5",
+    "minLevel": 200,
+    "maxLevel": 280,
+    "entryItemId": "entry_d5",
+    "durationSeconds": 600,
+    "arenas": [
+      {
+        "id": "d5-a1",
+        "centerX": 0,
+        "centerZ": 0,
+        "halfSize": 8,
+        "spawns": [
+          {
+            "id": "d5-a1-r1",
+            "archetype": "ranged",
+            "x": 6,
+            "z": -6
+          },
+          {
+            "id": "d5-a1-r2",
+            "archetype": "ranged",
+            "x": -6,
+            "z": -6
+          },
+          {
+            "id": "d5-a1-f1",
+            "archetype": "fixed",
+            "x": 0,
+            "z": 3
+          }
+        ]
+      },
+      {
+        "id": "d5-a2",
+        "centerX": 2,
+        "centerZ": -24,
+        "halfSize": 10,
+        "spawns": [
+          {
+            "id": "d5-a2-r1",
+            "archetype": "ranged",
+            "x": 7,
+            "z": -30
+          },
+          {
+            "id": "d5-a2-c1",
+            "archetype": "chaser",
+            "x": -4,
+            "z": -24
+          },
+          {
+            "id": "d5-a2-f1",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -28
+          },
+          {
+            "id": "d5-a2-r2",
+            "archetype": "ranged",
+            "x": -7,
+            "z": -31
+          }
+        ]
+      },
+      {
+        "id": "d5-a3",
+        "centerX": 0,
+        "centerZ": -48,
+        "halfSize": 11,
+        "spawns": [
+          {
+            "id": "d5-a3-r1",
+            "archetype": "ranged",
+            "x": 6,
+            "z": -54
+          },
+          {
+            "id": "d5-a3-r2",
+            "archetype": "ranged",
+            "x": -6,
+            "z": -54
+          },
+          {
+            "id": "d5-a3-boss",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -50,
+            "isBoss": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dungeon-6",
+    "name": "Dungeon 6",
+    "minLevel": 260,
+    "maxLevel": 330,
+    "entryItemId": "entry_d6",
+    "durationSeconds": 600,
+    "arenas": [
+      {
+        "id": "d6-a1",
+        "centerX": 0,
+        "centerZ": 0,
+        "halfSize": 10,
+        "spawns": [
+          {
+            "id": "d6-a1-c1",
+            "archetype": "chaser",
+            "x": 5,
+            "z": 4
+          },
+          {
+            "id": "d6-a1-c2",
+            "archetype": "chaser",
+            "x": -5,
+            "z": 4
+          },
+          {
+            "id": "d6-a1-f1",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -6
+          }
+        ]
+      },
+      {
+        "id": "d6-a2",
+        "centerX": -2,
+        "centerZ": -26,
+        "halfSize": 9,
+        "spawns": [
+          {
+            "id": "d6-a2-c1",
+            "archetype": "chaser",
+            "x": 4,
+            "z": -23
+          },
+          {
+            "id": "d6-a2-c2",
+            "archetype": "chaser",
+            "x": -6,
+            "z": -28
+          },
+          {
+            "id": "d6-a2-r1",
+            "archetype": "ranged",
+            "x": 0,
+            "z": -34
+          }
+        ]
+      },
+      {
+        "id": "d6-a3",
+        "centerX": 0,
+        "centerZ": -50,
+        "halfSize": 10,
+        "spawns": [
+          {
+            "id": "d6-a3-c1",
+            "archetype": "chaser",
+            "x": 6,
+            "z": -48
+          },
+          {
+            "id": "d6-a3-c2",
+            "archetype": "chaser",
+            "x": -6,
+            "z": -48
+          },
+          {
+            "id": "d6-a3-boss",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -53,
+            "isBoss": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dungeon-7",
+    "name": "Dungeon 7",
+    "minLevel": 310,
+    "maxLevel": 370,
+    "entryItemId": "entry_d7",
+    "durationSeconds": 600,
+    "arenas": [
+      {
+        "id": "d7-a1",
+        "centerX": 0,
+        "centerZ": 0,
+        "halfSize": 8,
+        "spawns": [
+          {
+            "id": "d7-a1-f1",
+            "archetype": "fixed",
+            "x": 4,
+            "z": -4
+          },
+          {
+            "id": "d7-a1-f2",
+            "archetype": "fixed",
+            "x": -4,
+            "z": -4
+          },
+          {
+            "id": "d7-a1-c1",
+            "archetype": "chaser",
+            "x": 5,
+            "z": 3
+          },
+          {
+            "id": "d7-a1-c2",
+            "archetype": "chaser",
+            "x": -5,
+            "z": 3
+          }
+        ]
+      },
+      {
+        "id": "d7-a2",
+        "centerX": 0,
+        "centerZ": -22,
+        "halfSize": 8,
+        "spawns": [
+          {
+            "id": "d7-a2-f1",
+            "archetype": "fixed",
+            "x": 5,
+            "z": -26
+          },
+          {
+            "id": "d7-a2-r1",
+            "archetype": "ranged",
+            "x": -5,
+            "z": -28
+          },
+          {
+            "id": "d7-a2-c1",
+            "archetype": "chaser",
+            "x": 0,
+            "z": -19
+          },
+          {
+            "id": "d7-a2-r2",
+            "archetype": "ranged",
+            "x": 6,
+            "z": -28
+          }
+        ]
+      },
+      {
+        "id": "d7-a3",
+        "centerX": 0,
+        "centerZ": -46,
+        "halfSize": 9,
+        "spawns": [
+          {
+            "id": "d7-a3-c1",
+            "archetype": "chaser",
+            "x": 5,
+            "z": -45
+          },
+          {
+            "id": "d7-a3-r1",
+            "archetype": "ranged",
+            "x": -5,
+            "z": -52
+          },
+          {
+            "id": "d7-a3-boss",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -48,
+            "isBoss": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dungeon-8",
+    "name": "Dungeon 8",
+    "minLevel": 350,
+    "maxLevel": 400,
+    "entryItemId": "entry_d8",
+    "durationSeconds": 600,
+    "arenas": [
+      {
+        "id": "d8-a1",
+        "centerX": 0,
+        "centerZ": 0,
+        "halfSize": 10,
+        "spawns": [
+          {
+            "id": "d8-a1-c1",
+            "archetype": "chaser",
+            "x": 5,
+            "z": 4
+          },
+          {
+            "id": "d8-a1-c2",
+            "archetype": "chaser",
+            "x": -5,
+            "z": 4
+          },
+          {
+            "id": "d8-a1-f1",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -6
+          }
+        ]
+      },
+      {
+        "id": "d8-a2",
+        "centerX": -2,
+        "centerZ": -26,
+        "halfSize": 9,
+        "spawns": [
+          {
+            "id": "d8-a2-c1",
+            "archetype": "chaser",
+            "x": 4,
+            "z": -23
+          },
+          {
+            "id": "d8-a2-c2",
+            "archetype": "chaser",
+            "x": -6,
+            "z": -28
+          },
+          {
+            "id": "d8-a2-r1",
+            "archetype": "ranged",
+            "x": 0,
+            "z": -34
+          }
+        ]
+      },
+      {
+        "id": "d8-a3",
+        "centerX": 0,
+        "centerZ": -50,
+        "halfSize": 10,
+        "spawns": [
+          {
+            "id": "d8-a3-c1",
+            "archetype": "chaser",
+            "x": 6,
+            "z": -48
+          },
+          {
+            "id": "d8-a3-c2",
+            "archetype": "chaser",
+            "x": -6,
+            "z": -48
+          },
+          {
+            "id": "d8-a3-boss",
+            "archetype": "fixed",
+            "x": 0,
+            "z": -53,
+            "isBoss": true
+          }
+        ]
+      }
+    ]
+  }
+]

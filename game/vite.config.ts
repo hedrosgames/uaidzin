@@ -5,6 +5,17 @@ import { defineConfig, type Plugin } from "vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const wireRoot = path.resolve(__dirname, "../visual/telas");
+const studioRoot = path.resolve(__dirname, "../tools/studio");
+
+const monstersJsonPath = path.resolve(__dirname, "src/data/monsters/monsters.json");
+const dungeonsJsonPath = path.resolve(__dirname, "src/data/dungeons/dungeons.json");
+const itemsJsonPath = path.resolve(__dirname, "src/data/items/items.json");
+const npcsJsonPath = path.resolve(__dirname, "src/data/world/npcs.json");
+const shopsJsonPath = path.resolve(__dirname, "src/data/balance/shops.json");
+const composerJsonPath = path.resolve(__dirname, "src/data/composer/compose-recipes.json");
+
+const modelsPublicRoot = path.resolve(__dirname, "public/models");
+const visualAssetsRoot = path.resolve(__dirname, "../visual/telas/assets");
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -26,6 +37,163 @@ function copyDir(src: string, dest: string): void {
     if (fs.statSync(from).isDirectory()) copyDir(from, to);
     else fs.copyFileSync(from, to);
   }
+}
+
+function findModels(dir: string, baseDir: string = dir): string[] {
+  if (!fs.existsSync(dir)) return [];
+  const results: string[] = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...findModels(fullPath, baseDir));
+    } else if (entry.isFile() && (entry.name.endsWith(".glb") || entry.name.endsWith(".gltf"))) {
+      const rel = path.relative(path.resolve(baseDir, ".."), fullPath).replace(/\\/g, "/");
+      results.push(`/${rel}`);
+    }
+  }
+  return results;
+}
+
+function findSvgIcons(): string[] {
+  const icons: string[] = [];
+  const folders = ["items", "eq", "skills"];
+  for (const folder of folders) {
+    const targetDir = path.join(visualAssetsRoot, folder);
+    if (!fs.existsSync(targetDir)) continue;
+    const files = fs.readdirSync(targetDir);
+    for (const f of files) {
+      if (f.endsWith(".svg")) {
+        icons.push(`${folder}/${f}`);
+      }
+    }
+  }
+  return icons.sort();
+}
+
+function handleJsonEndpoint(
+  req: { method?: string; on: (event: string, cb: (data?: unknown) => void) => void },
+  res: { statusCode: number; setHeader: (k: string, v: string) => void; end: (payload: string) => void },
+  filePath: string,
+): boolean {
+  if (req.method === "GET") {
+    try {
+      const data = fs.readFileSync(filePath, "utf-8");
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.end(data);
+    } catch {
+      res.statusCode = 500;
+      res.end(JSON.stringify({ error: `Falha ao ler ${path.basename(filePath)}` }));
+    }
+    return true;
+  }
+
+  if (req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk: string | Buffer) => {
+      body += chunk;
+    });
+    req.on("end", () => {
+      try {
+        const parsed = JSON.parse(body);
+        fs.writeFileSync(filePath, JSON.stringify(parsed, null, 2), "utf-8");
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify({ ok: true }));
+      } catch {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ error: "JSON invalido" }));
+      }
+    });
+    return true;
+  }
+
+  return false;
+}
+
+function devToolsPlugin(): Plugin {
+  return {
+    name: "uaidzin-dev-tools",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url?.split("?")[0] || "";
+
+        if (url === "/api/dev/monsters") {
+          if (handleJsonEndpoint(req, res, monstersJsonPath)) return;
+        }
+
+        if (url === "/api/dev/dungeons") {
+          if (handleJsonEndpoint(req, res, dungeonsJsonPath)) return;
+        }
+
+        if (url === "/api/dev/items") {
+          if (handleJsonEndpoint(req, res, itemsJsonPath)) return;
+        }
+
+        if (url === "/api/dev/npcs") {
+          if (handleJsonEndpoint(req, res, npcsJsonPath)) return;
+        }
+
+        if (url === "/api/dev/shops") {
+          if (handleJsonEndpoint(req, res, shopsJsonPath)) return;
+        }
+
+        if (url === "/api/dev/composer") {
+          if (handleJsonEndpoint(req, res, composerJsonPath)) return;
+        }
+
+        if (url === "/api/dev/models" && req.method === "GET") {
+          try {
+            const models = findModels(modelsPublicRoot);
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "application/json; charset=utf-8");
+            res.end(JSON.stringify(models));
+          } catch {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: "Falha ao listar modelos" }));
+          }
+          return;
+        }
+
+        if (url === "/api/dev/icons" && req.method === "GET") {
+          try {
+            const icons = findSvgIcons();
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "application/json; charset=utf-8");
+            res.end(JSON.stringify(icons));
+          } catch {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: "Falha ao listar icones" }));
+          }
+          return;
+        }
+
+        if (url.startsWith("/tools")) {
+          try {
+            let rel = decodeURIComponent(url.replace(/^\/tools\/?/, ""));
+            const baseDir = studioRoot;
+            if (rel === "" || rel === "/" || rel === "monsters" || rel === "dungeons" || rel === "items" || rel === "npcs" || rel === "composer" || rel === "studio") {
+              rel = "index.html";
+            }
+            const file = path.normalize(path.join(baseDir, rel));
+            if (!file.startsWith(baseDir) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+              return next();
+            }
+            const ext = path.extname(file).toLowerCase();
+            res.statusCode = 200;
+            res.setHeader("Content-Type", MIME[ext] || "application/octet-stream");
+            fs.createReadStream(file).pipe(res);
+          } catch {
+            next();
+          }
+          return;
+        }
+
+        next();
+      });
+    },
+  };
 }
 
 function wireUiPlugin(): Plugin {
@@ -77,8 +245,9 @@ export default defineConfig({
     },
   },
   server: {
-    host: "127.0.0.1",
+    host: "0.0.0.0",
     port: 5173,
+    allowedHosts: true,
     fs: {
       allow: [path.resolve(__dirname, "..")],
     },
@@ -91,5 +260,5 @@ export default defineConfig({
       ],
     },
   },
-  plugins: [wireUiPlugin()],
+  plugins: [devToolsPlugin(), wireUiPlugin()],
 });

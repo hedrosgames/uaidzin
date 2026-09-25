@@ -3,6 +3,7 @@ import type { EnemyArchetype } from "../balance/combat";
 export interface ArenaSpawnDef {
   id: string;
   archetype: EnemyArchetype;
+  monsterId?: string;
   x: number;
   z: number;
   isBoss?: boolean;

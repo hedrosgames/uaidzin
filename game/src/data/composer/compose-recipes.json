@@ -1,0 +1,35 @@
+[
+  {
+    "id": "compose_plus7_lac",
+    "uiTitle": "+7",
+    "uiDesc": "Poeira de Lac + 1.000.000 Ouro. Chance de 50%.",
+    "materialId": "mat_lac",
+    "materialQty": 1,
+    "goldCost": 1000000,
+    "targetRefine": 7,
+    "successChance": 0.5,
+    "maxCurrentRefineExclusive": 7
+  },
+  {
+    "id": "compose_plus8_lac",
+    "uiTitle": "+8",
+    "uiDesc": "Poeira de Lac x2 + 2.500.000 Ouro. Chance de 40%.",
+    "materialId": "mat_lac",
+    "materialQty": 2,
+    "goldCost": 2500000,
+    "targetRefine": 8,
+    "successChance": 0.4,
+    "maxCurrentRefineExclusive": 8
+  },
+  {
+    "id": "compose_plus9_lac",
+    "uiTitle": "+9",
+    "uiDesc": "Poeira de Lac x4 + 5.000.000 Ouro. Chance de 30%.",
+    "materialId": "mat_lac",
+    "materialQty": 4,
+    "goldCost": 5000000,
+    "targetRefine": 9,
+    "successChance": 0.3,
+    "maxCurrentRefineExclusive": 9
+  }
+]

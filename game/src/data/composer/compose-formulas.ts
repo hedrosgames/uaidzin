@@ -1,7 +1,7 @@
-export type ComposeRecipeId = "compose_plus7_lac";
+import rawRecipes from "./compose-recipes.json";
 
 export type ComposeRecipeDef = {
-  id: ComposeRecipeId;
+  id: string;
   uiTitle: string;
   uiDesc: string;
   materialId: string;
@@ -12,21 +12,13 @@ export type ComposeRecipeDef = {
   maxCurrentRefineExclusive: number;
 };
 
-export const COMPOSE_RECIPES: Record<ComposeRecipeId, ComposeRecipeDef> = {
-  compose_plus7_lac: {
-    id: "compose_plus7_lac",
-    uiTitle: "+7",
-    uiDesc: "Poeira de Lac + 1.000.000 Ouro. Chance de 50%.",
-    materialId: "mat_lac",
-    materialQty: 1,
-    goldCost: 1_000_000,
-    targetRefine: 7,
-    successChance: 0.5,
-    maxCurrentRefineExclusive: 7,
-  },
-};
+export const COMPOSE_RECIPES: Record<string, ComposeRecipeDef> = {};
+
+for (const recipe of (rawRecipes as ComposeRecipeDef[])) {
+  COMPOSE_RECIPES[recipe.id] = recipe;
+}
 
 export function getComposeRecipe(id: string): ComposeRecipeDef | null {
-  if (id in COMPOSE_RECIPES) return COMPOSE_RECIPES[id as ComposeRecipeId];
+  if (id in COMPOSE_RECIPES) return COMPOSE_RECIPES[id];
   return null;
 }

@@ -1,0 +1,2134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UAIDZIN · Game Studio</title>
+  <style>
+    :root {
+      --bg-dark: #100c08;
+      --bg-surface: #18130e;
+      --bg-card: #201a14;
+      --bg-input: #120e0a;
+      --border-subtle: #2d241c;
+      --border-highlight: #d4a017;
+      --border-danger: #a33b3b;
+      --text-main: #f0e6d0;
+      --text-muted: #9c8e7c;
+      --text-dim: #6e6254;
+      --gold: #d4a017;
+      --gold-hover: #f0be38;
+      --red: #a33b3b;
+      --red-hover: #c44747;
+      --green: #3d9a6a;
+      --blue: #4a7bd4;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    header {
+      height: 52px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--gold);
+      text-transform: uppercase;
+    }
+
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+    }
+
+    .nav-tab {
+      height: 100%;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      padding: 0 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-main);
+    }
+
+    .nav-tab.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+      background: rgba(212, 160, 23, 0.04);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 2px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .btn:hover {
+      background: #2a221a;
+      border-color: var(--text-muted);
+    }
+
+    .btn-gold {
+      background: var(--gold);
+      color: #100c08;
+      border-color: var(--gold);
+    }
+
+    .btn-gold:hover {
+      background: var(--gold-hover);
+      border-color: var(--gold-hover);
+    }
+
+    .btn-danger {
+      background: var(--red);
+      color: #fff;
+      border-color: var(--red);
+    }
+
+    .btn-danger:hover {
+      background: var(--red-hover);
+      border-color: var(--red-hover);
+    }
+
+    .tab-view {
+      flex: 1;
+      display: none;
+      grid-template-columns: 320px 1fr 340px;
+      overflow: hidden;
+    }
+
+    .tab-view.active {
+      display: grid;
+    }
+
+    .tab-view.full-layout {
+      grid-template-columns: 320px 1fr;
+    }
+
+    .sidebar {
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .search-box {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 8px 10px;
+      font-size: 12px;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .search-box:focus {
+      border-color: var(--gold);
+    }
+
+    .items-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .list-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 10px 12px;
+      border-radius: 2px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .list-card:hover {
+      background: #261f17;
+      border-color: var(--text-muted);
+    }
+
+    .list-card.active {
+      border-color: var(--gold);
+      background: #281f14;
+    }
+
+    .list-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .list-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .list-card-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: monospace;
+    }
+
+    .list-card-tags {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 2px;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-gold {
+      background: rgba(212, 160, 23, 0.2);
+      color: var(--gold);
+      border: 1px solid var(--gold);
+    }
+
+    .badge-blue {
+      background: rgba(74, 123, 212, 0.2);
+      color: #7da5ea;
+      border: 1px solid rgba(74, 123, 212, 0.4);
+    }
+
+    .badge-green {
+      background: rgba(61, 154, 106, 0.2);
+      color: #6ed19d;
+      border: 1px solid rgba(61, 154, 106, 0.4);
+    }
+
+    .badge-red {
+      background: rgba(163, 59, 59, 0.2);
+      color: #ea7070;
+      border: 1px solid rgba(163, 59, 59, 0.4);
+    }
+
+    .content-area {
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: var(--bg-dark);
+    }
+
+    .section-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 2px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--gold);
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .form-hint {
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    .form-input, .form-select, .form-textarea {
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 7px 9px;
+      font-size: 12px;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--gold);
+    }
+
+    .color-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .color-picker {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-subtle);
+      background: none;
+      cursor: pointer;
+      border-radius: 2px;
+      padding: 0;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 14px;
+      color: var(--text-main);
+    }
+
+    .panel-sidebar {
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-subtle);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 2px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .metric-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+
+    .metric-label {
+      color: var(--text-muted);
+    }
+
+    .metric-value {
+      font-weight: 700;
+      font-family: monospace;
+      color: var(--text-main);
+    }
+
+    .metric-highlight {
+      color: var(--gold);
+      font-size: 13px;
+    }
+
+    .arena-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 2px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .spawns-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    .spawns-table th, .spawns-table td {
+      border: 1px solid var(--border-subtle);
+      padding: 6px 8px;
+      text-align: left;
+    }
+
+    .spawns-table th {
+      background: var(--bg-input);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .status-bar {
+      height: 30px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .status-msg {
+      font-weight: 600;
+    }
+
+    .status-msg.success {
+      color: var(--green);
+    }
+
+    .status-msg.error {
+      color: var(--red);
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-dim);
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .icon-preview-box {
+      width: 44px;
+      height: 44px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 2px;
+    }
+
+    .icon-preview-box img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-title">UAIDZIN STUDIO</span>
+    </div>
+    <nav class="nav-tabs">
+      <button type="button" class="nav-tab active" data-tab="monsters">Monstros</button>
+      <button type="button" class="nav-tab" data-tab="dungeons">Dungeons</button>
+      <button type="button" class="nav-tab" data-tab="items">Itens & Equips</button>
+      <button type="button" class="nav-tab" data-tab="npcs">NPCs & Lojas</button>
+      <button type="button" class="nav-tab" data-tab="composer">Composição & Refino</button>
+    </nav>
+    <div class="header-actions">
+      <button type="button" class="btn btn-gold" id="btn-save-current">Salvar Módulo Ativo</button>
+    </div>
+  </header>
+
+  <section class="tab-view active" id="view-monsters">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <button type="button" class="btn btn-gold" id="btn-monster-new" style="justify-content: center;">+ Novo Monstro</button>
+        <input type="text" class="search-box" id="monster-search" placeholder="Buscar monstros..." />
+      </div>
+      <div class="items-list" id="monsters-list"></div>
+    </aside>
+
+    <main class="content-area" id="monster-content">
+      <div class="empty-state" id="monster-empty">
+        <p>Selecione um monstro na lista ou crie um novo.</p>
+      </div>
+
+      <div id="monster-form" style="display: none; flex-direction: column; gap: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 id="monster-form-title" style="font-size: 16px; color: var(--gold); font-weight: 700;">Detalhes do Monstro</h2>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn" id="btn-monster-dup">Duplicar</button>
+            <button type="button" class="btn btn-danger" id="btn-monster-del">Excluir</button>
+          </div>
+        </div>
+
+        <section class="section-box">
+          <div class="section-title">Identificação & Arquétipo</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="m-id">ID do Monstro</label>
+              <input type="text" class="form-input" id="m-id" spellcheck="false" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-name">Nome no Jogo</label>
+              <input type="text" class="form-input" id="m-name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-archetype">Arquétipo de IA</label>
+              <select class="form-select" id="m-archetype">
+                <option value="fixed">Fixo (Sentinela / Não anda)</option>
+                <option value="chaser">Perseguidor (Avança corpo-a-corpo)</option>
+                <option value="ranged">À Distância (Mantém distância e atira)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label" for="m-boss">
+                <input type="checkbox" id="m-boss" />
+                Classificado como Chefe (Boss)
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-box">
+          <div class="section-title">Modelo 3D & Visual</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="m-model-select">Modelo 3D (.glb)</label>
+              <select class="form-select" id="m-model-select"></select>
+              <input type="text" class="form-input" id="m-model-custom" placeholder="Ou digite caminho..." style="margin-top: 4px;" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-scale">Escala Visual</label>
+              <input type="number" class="form-input" id="m-scale" step="0.1" min="0.2" max="6.0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cor Marcadora / Fallback</label>
+              <div class="color-input-wrapper">
+                <input type="color" class="color-picker" id="m-color-picker" />
+                <input type="text" class="form-input" id="m-color-hex" style="flex: 1;" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-box">
+          <div class="section-title">Atributos & Recompensa</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="m-hp">Vida Máxima (HP)</label>
+              <input type="number" class="form-input" id="m-hp" min="1" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-attack">Poder de Ataque</label>
+              <input type="number" class="form-input" id="m-attack" min="1" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-defense">Defesa Base</label>
+              <input type="number" class="form-input" id="m-defense" min="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-xp">XP Concedido</label>
+              <input type="number" class="form-input" id="m-xp" min="1" />
+            </div>
+          </div>
+        </section>
+
+        <section class="section-box">
+          <div class="section-title">Ritmo de Ataque & Movimento</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="m-range">Alcance do Ataque (m)</label>
+              <input type="number" class="form-input" id="m-range" step="0.1" min="0.5" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-interval">Intervalo Entre Golpes (s)</label>
+              <input type="number" class="form-input" id="m-interval" step="0.05" min="0.2" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-speed">Velocidade</label>
+              <input type="number" class="form-input" id="m-speed" step="0.1" min="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-respawn">Respawn (s)</label>
+              <input type="number" class="form-input" id="m-respawn" step="1" min="1" />
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <aside class="panel-sidebar">
+      <div class="metric-card">
+        <div class="metric-title">Combate Estimado</div>
+        <div class="metric-row">
+          <span class="metric-label">DPS:</span>
+          <span class="metric-value metric-highlight" id="m-dps">0.0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Vida Efetiva:</span>
+          <span class="metric-value" id="m-ehp">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Tempo de Luta (Player LV 1):</span>
+          <span class="metric-value" id="m-ttk">0.0s</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">XP por Minuto:</span>
+          <span class="metric-value" id="m-xpm">0</span>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="tab-view" id="view-dungeons">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <button type="button" class="btn btn-gold" id="btn-dungeon-new" style="justify-content: center;">+ Nova Dungeon</button>
+        <input type="text" class="search-box" id="dungeon-search" placeholder="Buscar dungeons..." />
+      </div>
+      <div class="items-list" id="dungeons-list"></div>
+    </aside>
+
+    <main class="content-area" id="dungeon-content">
+      <div class="empty-state" id="dungeon-empty">
+        <p>Selecione uma dungeon na lista para editar arenas e monstros.</p>
+      </div>
+
+      <div id="dungeon-form" style="display: none; flex-direction: column; gap: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 id="dungeon-form-title" style="font-size: 16px; color: var(--gold); font-weight: 700;">Configuração da Dungeon</h2>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn" id="btn-dungeon-dup">Duplicar</button>
+            <button type="button" class="btn btn-danger" id="btn-dungeon-del">Excluir</button>
+          </div>
+        </div>
+
+        <section class="section-box">
+          <div class="section-title">Geral & Acesso</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="d-id">ID da Dungeon</label>
+              <input type="text" class="form-input" id="d-id" spellcheck="false" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="d-name">Nome da Dungeon</label>
+              <input type="text" class="form-input" id="d-name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="d-min-level">Nível Mínimo</label>
+              <input type="number" class="form-input" id="d-min-level" min="1" max="400" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="d-max-level">Nível Máximo</label>
+              <input type="number" class="form-input" id="d-max-level" min="1" max="400" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="d-duration">Duração (segundos)</label>
+              <input type="number" class="form-input" id="d-duration" min="60" step="30" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="d-entry-item">Item de Entrada Exigido</label>
+              <select class="form-select" id="d-entry-item"></select>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-box">
+          <div class="section-title">
+            <span>Arenas & Spawns de Inimigos</span>
+            <button type="button" class="btn" id="btn-arena-add">+ Adicionar Arena</button>
+          </div>
+          <div id="arenas-container" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        </section>
+      </div>
+    </main>
+
+    <aside class="panel-sidebar">
+      <div class="metric-card">
+        <div class="metric-title">Estatísticas da Dungeon</div>
+        <div class="metric-row">
+          <span class="metric-label">Total de Arenas:</span>
+          <span class="metric-value metric-highlight" id="d-stat-arenas">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Total de Monstros:</span>
+          <span class="metric-value" id="d-stat-monsters">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Chefes / Bosses:</span>
+          <span class="metric-value" id="d-stat-bosses">0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">XP Total do Clear:</span>
+          <span class="metric-value" id="d-stat-xp">0 XP</span>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="tab-view" id="view-items">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <button type="button" class="btn btn-gold" id="btn-item-new" style="justify-content: center;">+ Novo Item</button>
+        <input type="text" class="search-box" id="item-search" placeholder="Buscar itens..." />
+      </div>
+      <div class="items-list" id="items-list"></div>
+    </aside>
+
+    <main class="content-area" id="item-content">
+      <div class="empty-state" id="item-empty">
+        <p>Selecione um item ou equipamento para editar.</p>
+      </div>
+
+      <div id="item-form" style="display: none; flex-direction: column; gap: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 id="item-form-title" style="font-size: 16px; color: var(--gold); font-weight: 700;">Editar Item</h2>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn" id="btn-item-dup">Duplicar</button>
+            <button type="button" class="btn btn-danger" id="btn-item-del">Excluir</button>
+          </div>
+        </div>
+
+        <section class="section-box">
+          <div class="section-title">Informações Básicas</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="i-id">ID do Item</label>
+              <input type="text" class="form-input" id="i-id" spellcheck="false" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="i-name">Nome do Item</label>
+              <input type="text" class="form-input" id="i-name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="i-slot">Slot / Tipo</label>
+              <select class="form-select" id="i-slot">
+                <option value="weapon">Arma (weapon)</option>
+                <option value="armor">Armadura de Peito (armor)</option>
+                <option value="head">Elmo / Cabeça (head)</option>
+                <option value="ring1">Anel 1 (ring1)</option>
+                <option value="ring2">Anel 2 (ring2)</option>
+                <option value="neck">Colar (neck)</option>
+                <option value="ear">Brinco (ear)</option>
+                <option value="material">Material de Refino</option>
+                <option value="entry">Selo de Entrada</option>
+                <option value="misc">Item Diverso / Outro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="i-rarity">Raridade</label>
+              <select class="form-select" id="i-rarity">
+                <option value="Comum">Comum</option>
+                <option value="Incomum">Incomum</option>
+                <option value="Raro">Raro</option>
+                <option value="Épico">Épico</option>
+                <option value="Lendário">Lendário</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-box">
+          <div class="section-title">Ícone & Descrição</div>
+          <div style="display: flex; gap: 14px; align-items: flex-start;">
+            <div class="icon-preview-box" id="i-icon-preview">
+              <img id="i-icon-img" src="" alt="Icon" />
+            </div>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+              <div class="form-group">
+                <label class="form-label" for="i-icon-select">Ícone SVG Oficial</label>
+                <select class="form-select" id="i-icon-select"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="i-desc">Texto de Descrição</label>
+                <input type="text" class="form-input" id="i-desc" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-box">
+          <div class="section-title">Atributos & Economia</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="i-atk">Bônus de Ataque</label>
+              <input type="number" class="form-input" id="i-atk" min="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="i-def">Bônus de Defesa</label>
+              <input type="number" class="form-input" id="i-def" min="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="i-sell">Valor de Venda (Ouro)</label>
+              <input type="number" class="form-input" id="i-sell" min="0" />
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <aside class="panel-sidebar">
+      <div class="metric-card">
+        <div class="metric-title">Visão do Equipamento</div>
+        <div class="metric-row">
+          <span class="metric-label">Slot:</span>
+          <span class="metric-value" id="i-stat-slot">-</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Poder Ofensivo:</span>
+          <span class="metric-value metric-highlight" id="i-stat-atk">+0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Poder Defensivo:</span>
+          <span class="metric-value metric-highlight" id="i-stat-def">+0</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Preço Base:</span>
+          <span class="metric-value" id="i-stat-sell">0 Ouro</span>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="tab-view full-layout" id="view-npcs">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <button type="button" class="btn btn-gold" id="btn-npc-new" style="justify-content: center;">+ Novo NPC</button>
+        <input type="text" class="search-box" id="npc-search" placeholder="Buscar NPCs..." />
+      </div>
+      <div class="items-list" id="npcs-list"></div>
+    </aside>
+
+    <main class="content-area" id="npc-content">
+      <div class="empty-state" id="npc-empty">
+        <p>Selecione um NPC para configurar diálogos, posição e lojas.</p>
+      </div>
+
+      <div id="npc-form" style="display: none; flex-direction: column; gap: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 id="npc-form-title" style="font-size: 16px; color: var(--gold); font-weight: 700;">Detalhes do NPC</h2>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn btn-danger" id="btn-npc-del">Excluir</button>
+          </div>
+        </div>
+
+        <section class="section-box">
+          <div class="section-title">Dados do NPC</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="npc-id">ID Único</label>
+              <input type="text" class="form-input" id="npc-id" spellcheck="false" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="npc-label">Nome / Título</label>
+              <input type="text" class="form-input" id="npc-label" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="npc-service">Serviço / Ação ao Clicar</label>
+              <select class="form-select" id="npc-service">
+                <option value="merchant">Loja do Mercador</option>
+                <option value="blacksmith">Loja do Ferreiro</option>
+                <option value="composer">Painel do Compositor (+7/+8/+9)</option>
+                <option value="skillmaster">Mestre de Habilidades</option>
+                <option value="sage">Sábio (Codex / Tutoriais)</option>
+                <option value="portal">Guarda do Portal de Dungeons</option>
+                <option value="vault">Baú da Conta</option>
+                <option value="quest">Mestre de Quests</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cor no Mapa</label>
+              <div class="color-input-wrapper">
+                <input type="color" class="color-picker" id="npc-color-picker" />
+                <input type="text" class="form-input" id="npc-color-hex" style="flex: 1;" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="npc-x">Posição X no Mundo</label>
+              <input type="number" class="form-input" id="npc-x" step="0.1" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="npc-z">Posição Z no Mundo</label>
+              <input type="number" class="form-input" id="npc-z" step="0.1" />
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 6px;">
+            <label class="form-label" for="npc-body">Fala de Boas-Vindas</label>
+            <input type="text" class="form-input" id="npc-body" />
+          </div>
+        </section>
+
+        <section class="section-box" id="shop-inventory-section">
+          <div class="section-title">
+            <span id="shop-section-title">Itens à Venda na Loja</span>
+            <button type="button" class="btn" id="btn-shop-add-slot">+ Adicionar Item à Loja</button>
+          </div>
+          <div id="shop-slots-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        </section>
+      </div>
+    </main>
+  </section>
+
+  <section class="tab-view full-layout" id="view-composer">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <button type="button" class="btn btn-gold" id="btn-recipe-new" style="justify-content: center;">+ Nova Receita</button>
+        <span style="font-size: 11px; color: var(--text-dim);">Fórmulas especiais do Compositor</span>
+      </div>
+      <div class="items-list" id="recipes-list"></div>
+    </aside>
+
+    <main class="content-area" id="composer-content">
+      <div class="empty-state" id="recipe-empty">
+        <p>Selecione uma receita do compositor para editar.</p>
+      </div>
+
+      <div id="recipe-form" style="display: none; flex-direction: column; gap: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 id="recipe-form-title" style="font-size: 16px; color: var(--gold); font-weight: 700;">Receita de Composição</h2>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn btn-danger" id="btn-recipe-del">Excluir</button>
+          </div>
+        </div>
+
+        <section class="section-box">
+          <div class="section-title">Identificação & Visual</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="r-id">ID da Receita</label>
+              <input type="text" class="form-input" id="r-id" spellcheck="false" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="r-title">Título na UI</label>
+              <input type="text" class="form-input" id="r-title" />
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label" for="r-desc">Descrição na Interface</label>
+              <input type="text" class="form-input" id="r-desc" />
+            </div>
+          </div>
+        </section>
+
+        <section class="section-box">
+          <div class="section-title">Requisitos & Custos</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="r-mat-id">Material Exigido</label>
+              <select class="form-select" id="r-mat-id"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="r-mat-qty">Quantidade do Material</label>
+              <input type="number" class="form-input" id="r-mat-qty" min="1" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="r-gold">Custo em Ouro</label>
+              <input type="number" class="form-input" id="r-gold" min="0" step="50000" />
+            </div>
+          </div>
+        </section>
+
+        <section class="section-box">
+          <div class="section-title">Chances de Sucesso & Alvo</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="r-target">Refinamento Alvo</label>
+              <input type="number" class="form-input" id="r-target" min="1" max="15" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="r-chance">Chance de Sucesso (0.0 a 1.0)</label>
+              <input type="number" class="form-input" id="r-chance" step="0.05" min="0" max="1" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="r-max-curr">Refino Máximo Permitido</label>
+              <input type="number" class="form-input" id="r-max-curr" min="0" max="15" />
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </section>
+
+  <div class="status-bar">
+    <div id="status-indicator" class="status-msg">Carregando dados do estúdio...</div>
+    <div id="status-info">UAIDZIN Game Studio v1.0</div>
+  </div>
+
+  <script>
+    let activeTab = "monsters";
+    let monsters = [];
+    let dungeons = [];
+    let items = [];
+    let npcs = [];
+    let shops = {};
+    let recipes = [];
+    let availableModels = [];
+    let availableIcons = [];
+
+    let selectedMonsterId = null;
+    let selectedDungeonId = null;
+    let selectedItemId = null;
+    let selectedNpcId = null;
+    let selectedRecipeId = null;
+
+    const statusEl = document.getElementById("status-indicator");
+
+    function setStatus(msg, type = "normal") {
+      statusEl.textContent = msg;
+      statusEl.className = "status-msg" + (type === "success" ? " success" : type === "error" ? " error" : "");
+    }
+
+    document.querySelectorAll(".nav-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll(".nav-tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".tab-view").forEach((v) => v.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(`view-${target}`).classList.add("active");
+        activeTab = target;
+      });
+    });
+
+    async function loadAllData() {
+      try {
+        setStatus("Sincronizando com o jogo...");
+        const [mRes, dRes, iRes, nRes, sRes, cRes, modRes, icoRes] = await Promise.all([
+          fetch("/api/dev/monsters"),
+          fetch("/api/dev/dungeons"),
+          fetch("/api/dev/items"),
+          fetch("/api/dev/npcs"),
+          fetch("/api/dev/shops"),
+          fetch("/api/dev/composer"),
+          fetch("/api/dev/models"),
+          fetch("/api/dev/icons"),
+        ]);
+
+        monsters = mRes.ok ? await mRes.json() : [];
+        dungeons = dRes.ok ? await dRes.json() : [];
+        items = iRes.ok ? await iRes.json() : [];
+        npcs = nRes.ok ? await nRes.json() : [];
+        shops = sRes.ok ? await sRes.json() : {};
+        recipes = cRes.ok ? await cRes.json() : [];
+        availableModels = modRes.ok ? await modRes.json() : [];
+        availableIcons = icoRes.ok ? await icoRes.json() : [];
+
+        initMonsters();
+        initDungeons();
+        initItems();
+        initNpcs();
+        initComposer();
+
+        setStatus("Estúdio pronto. Dados sincronizados.", "success");
+      } catch (err) {
+        setStatus("Erro ao conectar à API do Vite.", "error");
+      }
+    }
+
+    document.getElementById("btn-save-current").onclick = async () => {
+      try {
+        setStatus(`Salvando dados de ${activeTab}...`);
+        let endpoint = "";
+        let payload = null;
+
+        if (activeTab === "monsters") {
+          endpoint = "/api/dev/monsters";
+          payload = monsters;
+        } else if (activeTab === "dungeons") {
+          endpoint = "/api/dev/dungeons";
+          payload = dungeons;
+        } else if (activeTab === "items") {
+          endpoint = "/api/dev/items";
+          payload = items;
+        } else if (activeTab === "npcs") {
+          await Promise.all([
+            fetch("/api/dev/npcs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(npcs) }),
+            fetch("/api/dev/shops", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(shops) }),
+          ]);
+          setStatus("NPCs e Lojas gravados com sucesso!", "success");
+          return;
+        } else if (activeTab === "composer") {
+          endpoint = "/api/dev/composer";
+          payload = recipes;
+        }
+
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) throw new Error("Erro");
+        setStatus("Alterações gravadas no disco com sucesso!", "success");
+      } catch (err) {
+        setStatus("Falha ao salvar no disco.", "error");
+      }
+    };
+
+    function initMonsters() {
+      const selectEl = document.getElementById("m-model-select");
+      selectEl.innerHTML = '<option value="">(Nenhum / Cápsula Procedural)</option>';
+      for (const m of availableModels) {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = m;
+        selectEl.appendChild(opt);
+      }
+
+      renderMonstersList();
+      if (monsters.length > 0) selectMonster(monsters[0].id);
+
+      document.getElementById("btn-monster-new").onclick = () => {
+        const id = `monstro_${Date.now().toString().slice(-4)}`;
+        monsters.push({
+          id,
+          name: "Novo Monstro",
+          archetype: "chaser",
+          maxHp: 50,
+          attack: 10,
+          defense: 2,
+          range: 1.5,
+          attackInterval: 1.2,
+          speed: 3.0,
+          leashRadius: 10,
+          minApproach: 1.2,
+          preferred: 1.2,
+          retreatIfCloserThan: 0,
+          respawnSeconds: 6,
+          xpReward: 10,
+          color: "#c45c26",
+          modelUrl: "",
+          modelScale: 1.0,
+          isBoss: false,
+        });
+        selectMonster(id);
+      };
+
+      document.getElementById("btn-monster-dup").onclick = () => {
+        if (!selectedMonsterId) return;
+        const cur = monsters.find((m) => m.id === selectedMonsterId);
+        if (!cur) return;
+        const dupId = `${cur.id}_copia`;
+        const dup = JSON.parse(JSON.stringify(cur));
+        dup.id = dupId;
+        dup.name = `${cur.name} (Cópia)`;
+        monsters.push(dup);
+        selectMonster(dupId);
+      };
+
+      document.getElementById("btn-monster-del").onclick = () => {
+        if (!selectedMonsterId || monsters.length <= 1) return;
+        if (!confirm(`Excluir monstro '${selectedMonsterId}'?`)) return;
+        const idx = monsters.findIndex((m) => m.id === selectedMonsterId);
+        if (idx !== -1) {
+          monsters.splice(idx, 1);
+          selectMonster(monsters[Math.max(0, idx - 1)].id);
+        }
+      };
+
+      document.getElementById("monster-search").addEventListener("input", renderMonstersList);
+
+      const mFields = ["m-id", "m-name", "m-archetype", "m-boss", "m-model-select", "m-model-custom", "m-scale", "m-color-hex", "m-hp", "m-attack", "m-defense", "m-xp", "m-range", "m-interval", "m-speed", "m-respawn"];
+      mFields.forEach((fid) => {
+        const el = document.getElementById(fid);
+        el.addEventListener("input", syncMonsterFromUi);
+        el.addEventListener("change", syncMonsterFromUi);
+      });
+
+      document.getElementById("m-color-picker").addEventListener("input", (e) => {
+        document.getElementById("m-color-hex").value = e.target.value;
+        syncMonsterFromUi();
+      });
+    }
+
+    function renderMonstersList() {
+      const container = document.getElementById("monsters-list");
+      container.innerHTML = "";
+      const q = document.getElementById("monster-search").value.toLowerCase().trim();
+      const filtered = monsters.filter((m) => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q));
+
+      for (const m of filtered) {
+        const card = document.createElement("div");
+        card.className = "list-card" + (m.id === selectedMonsterId ? " active" : "");
+        card.onclick = () => selectMonster(m.id);
+
+        const top = document.createElement("div");
+        top.className = "list-card-top";
+        top.innerHTML = `<span class="list-card-title">${m.name || m.id}</span><span class="list-card-sub">${m.id}</span>`;
+
+        const tags = document.createElement("div");
+        tags.className = "list-card-tags";
+        tags.innerHTML = `<span class="badge badge-gold">${m.archetype}</span>` + (m.isBoss ? '<span class="badge badge-red">BOSS</span>' : '');
+
+        card.appendChild(top);
+        card.appendChild(tags);
+        container.appendChild(card);
+      }
+    }
+
+    function selectMonster(id) {
+      selectedMonsterId = id;
+      const m = monsters.find((item) => item.id === id);
+      const emptyEl = document.getElementById("monster-empty");
+      const formEl = document.getElementById("monster-form");
+
+      if (!m) {
+        emptyEl.style.display = "flex";
+        formEl.style.display = "none";
+        return;
+      }
+      emptyEl.style.display = "none";
+      formEl.style.display = "flex";
+
+      document.getElementById("m-id").value = m.id || "";
+      document.getElementById("m-name").value = m.name || "";
+      document.getElementById("m-archetype").value = m.archetype || "fixed";
+      document.getElementById("m-boss").checked = !!m.isBoss;
+
+      const hasModel = availableModels.includes(m.modelUrl || "");
+      document.getElementById("m-model-select").value = hasModel ? m.modelUrl : "";
+      document.getElementById("m-model-custom").value = hasModel ? "" : (m.modelUrl || "");
+
+      document.getElementById("m-scale").value = m.modelScale || 1.0;
+      document.getElementById("m-color-hex").value = m.color || "#c45c26";
+      document.getElementById("m-color-picker").value = m.color && m.color.startsWith("#") ? m.color : "#c45c26";
+
+      document.getElementById("m-hp").value = m.maxHp || 40;
+      document.getElementById("m-attack").value = m.attack || 8;
+      document.getElementById("m-defense").value = m.defense || 2;
+      document.getElementById("m-xp").value = m.xpReward || 8;
+
+      document.getElementById("m-range").value = m.range || 1.6;
+      document.getElementById("m-interval").value = m.attackInterval || 1.2;
+      document.getElementById("m-speed").value = m.speed || 0;
+      document.getElementById("m-respawn").value = m.respawnSeconds || 6;
+
+      updateMonsterMetrics(m);
+      renderMonstersList();
+    }
+
+    function syncMonsterFromUi() {
+      if (!selectedMonsterId) return;
+      const m = monsters.find((item) => item.id === selectedMonsterId);
+      if (!m) return;
+
+      m.id = document.getElementById("m-id").value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "_");
+      m.name = document.getElementById("m-name").value.trim();
+      m.archetype = document.getElementById("m-archetype").value;
+      m.isBoss = document.getElementById("m-boss").checked;
+
+      const custom = document.getElementById("m-model-custom").value.trim();
+      m.modelUrl = custom !== "" ? custom : document.getElementById("m-model-select").value;
+      m.modelScale = parseFloat(document.getElementById("m-scale").value) || 1.0;
+      m.color = document.getElementById("m-color-hex").value.trim() || "#c45c26";
+
+      m.maxHp = Math.max(1, parseInt(document.getElementById("m-hp").value, 10) || 1);
+      m.attack = Math.max(1, parseInt(document.getElementById("m-attack").value, 10) || 1);
+      m.defense = Math.max(0, parseInt(document.getElementById("m-defense").value, 10) || 0);
+      m.xpReward = Math.max(1, parseInt(document.getElementById("m-xp").value, 10) || 1);
+
+      m.range = Math.max(0.2, parseFloat(document.getElementById("m-range").value) || 1.0);
+      m.attackInterval = Math.max(0.1, parseFloat(document.getElementById("m-interval").value) || 1.0);
+      m.speed = Math.max(0, parseFloat(document.getElementById("m-speed").value) || 0);
+      m.respawnSeconds = Math.max(1, parseFloat(document.getElementById("m-respawn").value) || 5);
+
+      selectedMonsterId = m.id;
+      updateMonsterMetrics(m);
+      renderMonstersList();
+    }
+
+    function updateMonsterMetrics(m) {
+      const dps = (m.attack || 1) / (m.attackInterval || 1);
+      document.getElementById("m-dps").textContent = dps.toFixed(1);
+      const ehp = Math.round((m.maxHp || 1) * (1 + (m.defense || 0) * 0.08));
+      document.getElementById("m-ehp").textContent = String(ehp);
+
+      const dmg = Math.max(1, 18 - (m.defense || 0));
+      const hits = Math.ceil((m.maxHp || 1) / dmg);
+      const ttk = hits * 0.85;
+      document.getElementById("m-ttk").textContent = `${ttk.toFixed(1)}s (${hits} golpes)`;
+
+      const cycle = ttk + (m.respawnSeconds || 6);
+      const xpm = Math.round((60 / cycle) * (m.xpReward || 8));
+      document.getElementById("m-xpm").textContent = `${xpm} XP/min`;
+    }
+
+    function initDungeons() {
+      const entrySelect = document.getElementById("d-entry-item");
+      entrySelect.innerHTML = '<option value="">(Nenhum / Acesso Livre)</option>';
+      for (const it of items.filter((i) => i.slot === "entry" || i.id.startsWith("entry_"))) {
+        const opt = document.createElement("option");
+        opt.value = it.id;
+        opt.textContent = `${it.name} (${it.id})`;
+        entrySelect.appendChild(opt);
+      }
+
+      renderDungeonsList();
+      if (dungeons.length > 0) selectDungeon(dungeons[0].id);
+
+      document.getElementById("btn-dungeon-new").onclick = () => {
+        const id = `dungeon-${dungeons.length + 1}`;
+        dungeons.push({
+          id,
+          name: `Dungeon ${dungeons.length + 1}`,
+          minLevel: 1,
+          maxLevel: 50,
+          entryItemId: null,
+          durationSeconds: 600,
+          arenas: [
+            {
+              id: `${id}-a1`,
+              centerX: 0,
+              centerZ: 0,
+              halfSize: 9,
+              spawns: [
+                { id: `${id}-s1`, archetype: "chaser", x: 3, z: 3 }
+              ]
+            }
+          ]
+        });
+        selectDungeon(id);
+      };
+
+      document.getElementById("btn-dungeon-dup").onclick = () => {
+        if (!selectedDungeonId) return;
+        const cur = dungeons.find((d) => d.id === selectedDungeonId);
+        if (!cur) return;
+        const dup = JSON.parse(JSON.stringify(cur));
+        dup.id = `${cur.id}-copia`;
+        dup.name = `${cur.name} (Cópia)`;
+        dungeons.push(dup);
+        selectDungeon(dup.id);
+      };
+
+      document.getElementById("btn-dungeon-del").onclick = () => {
+        if (!selectedDungeonId || dungeons.length <= 1) return;
+        if (!confirm(`Excluir dungeon '${selectedDungeonId}'?`)) return;
+        const idx = dungeons.findIndex((d) => d.id === selectedDungeonId);
+        if (idx !== -1) {
+          dungeons.splice(idx, 1);
+          selectDungeon(dungeons[Math.max(0, idx - 1)].id);
+        }
+      };
+
+      document.getElementById("dungeon-search").addEventListener("input", renderDungeonsList);
+
+      ["d-id", "d-name", "d-min-level", "d-max-level", "d-duration", "d-entry-item"].forEach((id) => {
+        const el = document.getElementById(id);
+        el.addEventListener("input", syncDungeonFromUi);
+        el.addEventListener("change", syncDungeonFromUi);
+      });
+
+      document.getElementById("btn-arena-add").onclick = () => {
+        if (!selectedDungeonId) return;
+        const d = dungeons.find((item) => item.id === selectedDungeonId);
+        if (!d) return;
+        const arenaIdx = (d.arenas || []).length + 1;
+        d.arenas.push({
+          id: `${d.id}-a${arenaIdx}`,
+          centerX: 0,
+          centerZ: -(arenaIdx - 1) * 24,
+          halfSize: 9,
+          spawns: []
+        });
+        renderArenas(d);
+        updateDungeonStats(d);
+      };
+    }
+
+    function renderDungeonsList() {
+      const container = document.getElementById("dungeons-list");
+      container.innerHTML = "";
+      const q = document.getElementById("dungeon-search").value.toLowerCase().trim();
+      const filtered = dungeons.filter((d) => d.name.toLowerCase().includes(q) || d.id.toLowerCase().includes(q));
+
+      for (const d of filtered) {
+        const card = document.createElement("div");
+        card.className = "list-card" + (d.id === selectedDungeonId ? " active" : "");
+        card.onclick = () => selectDungeon(d.id);
+
+        const top = document.createElement("div");
+        top.className = "list-card-top";
+        top.innerHTML = `<span class="list-card-title">${d.name}</span><span class="list-card-sub">LV ${d.minLevel}–${d.maxLevel}</span>`;
+
+        const tags = document.createElement("div");
+        tags.className = "list-card-tags";
+        const totalSpawns = (d.arenas || []).reduce((acc, a) => acc + (a.spawns || []).length, 0);
+        tags.innerHTML = `<span class="badge badge-blue">${d.arenas?.length || 0} Arenas</span><span class="badge badge-gold">${totalSpawns} Monstros</span>`;
+
+        card.appendChild(top);
+        card.appendChild(tags);
+        container.appendChild(card);
+      }
+    }
+
+    function selectDungeon(id) {
+      selectedDungeonId = id;
+      const d = dungeons.find((item) => item.id === id);
+      const emptyEl = document.getElementById("dungeon-empty");
+      const formEl = document.getElementById("dungeon-form");
+
+      if (!d) {
+        emptyEl.style.display = "flex";
+        formEl.style.display = "none";
+        return;
+      }
+      emptyEl.style.display = "none";
+      formEl.style.display = "flex";
+
+      document.getElementById("d-id").value = d.id || "";
+      document.getElementById("d-name").value = d.name || "";
+      document.getElementById("d-min-level").value = d.minLevel || 1;
+      document.getElementById("d-max-level").value = d.maxLevel || 40;
+      document.getElementById("d-duration").value = d.durationSeconds || 600;
+      document.getElementById("d-entry-item").value = d.entryItemId || "";
+
+      renderArenas(d);
+      updateDungeonStats(d);
+      renderDungeonsList();
+    }
+
+    function syncDungeonFromUi() {
+      if (!selectedDungeonId) return;
+      const d = dungeons.find((item) => item.id === selectedDungeonId);
+      if (!d) return;
+
+      d.id = document.getElementById("d-id").value.trim();
+      d.name = document.getElementById("d-name").value.trim();
+      d.minLevel = parseInt(document.getElementById("d-min-level").value, 10) || 1;
+      d.maxLevel = parseInt(document.getElementById("d-max-level").value, 10) || 40;
+      d.durationSeconds = parseInt(document.getElementById("d-duration").value, 10) || 600;
+      const entryVal = document.getElementById("d-entry-item").value.trim();
+      d.entryItemId = entryVal !== "" ? entryVal : null;
+
+      selectedDungeonId = d.id;
+      updateDungeonStats(d);
+      renderDungeonsList();
+    }
+
+    function renderArenas(d) {
+      const container = document.getElementById("arenas-container");
+      container.innerHTML = "";
+
+      (d.arenas || []).forEach((arena, aIdx) => {
+        const box = document.createElement("div");
+        box.className = "arena-card";
+
+        const top = document.createElement("div");
+        top.style.display = "flex";
+        top.style.justifyContent = "space-between";
+        top.style.alignItems = "center";
+        top.innerHTML = `
+          <strong style="color: var(--gold); font-size: 13px;">Arena ${aIdx + 1} (${arena.id})</strong>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="addSpawnToArena('${d.id}', ${aIdx})">+ Monstro</button>
+            <button type="button" class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="removeArena('${d.id}', ${aIdx})">Excluir Arena</button>
+          </div>
+        `;
+
+        const grid = document.createElement("div");
+        grid.className = "form-grid";
+        grid.style.marginTop = "8px";
+        grid.innerHTML = `
+          <div class="form-group">
+            <label class="form-label">Centro Z (distância do início)</label>
+            <input type="number" class="form-input" value="${arena.centerZ || 0}" step="1" onchange="updateArenaProp('${d.id}', ${aIdx}, 'centerZ', this.value)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Raio / Meio-tamanho (metros)</label>
+            <input type="number" class="form-input" value="${arena.halfSize || 9}" min="5" max="30" onchange="updateArenaProp('${d.id}', ${aIdx}, 'halfSize', this.value)" />
+          </div>
+        `;
+
+        const table = document.createElement("table");
+        table.className = "spawns-table";
+        table.style.marginTop = "8px";
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Monstro</th>
+              <th>Pos X</th>
+              <th>Pos Z</th>
+              <th>Boss</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        `;
+
+        const tbody = table.querySelector("tbody");
+        (arena.spawns || []).forEach((sp, sIdx) => {
+          const tr = document.createElement("tr");
+
+          let monsterOpts = "";
+          for (const m of monsters) {
+            const isSel = (sp.monsterId === m.id) || (!sp.monsterId && sp.archetype === m.id);
+            monsterOpts += `<option value="${m.id}" ${isSel ? "selected" : ""}>${m.name} (${m.id})</option>`;
+          }
+
+          tr.innerHTML = `
+            <td>
+              <select class="form-select" style="padding: 4px; font-size: 11px;" onchange="updateSpawnMonster('${d.id}', ${aIdx}, ${sIdx}, this.value)">
+                ${monsterOpts}
+              </select>
+            </td>
+            <td><input type="number" class="form-input" style="width: 60px; padding: 4px; font-size: 11px;" value="${sp.x}" step="0.5" onchange="updateSpawnCoord('${d.id}', ${aIdx}, ${sIdx}, 'x', this.value)" /></td>
+            <td><input type="number" class="form-input" style="width: 60px; padding: 4px; font-size: 11px;" value="${sp.z}" step="0.5" onchange="updateSpawnCoord('${d.id}', ${aIdx}, ${sIdx}, 'z', this.value)" /></td>
+            <td><input type="checkbox" ${sp.isBoss ? "checked" : ""} onchange="updateSpawnBoss('${d.id}', ${aIdx}, ${sIdx}, this.checked)" /></td>
+            <td><button type="button" class="btn btn-danger" style="padding: 2px 6px; font-size: 10px;" onclick="removeSpawn('${d.id}', ${aIdx}, ${sIdx})">X</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        box.appendChild(top);
+        box.appendChild(grid);
+        box.appendChild(table);
+        container.appendChild(box);
+      });
+    }
+
+    window.updateArenaProp = (dId, aIdx, prop, val) => {
+      const d = dungeons.find((item) => item.id === dId);
+      if (d && d.arenas[aIdx]) {
+        d.arenas[aIdx][prop] = parseFloat(val) || 0;
+      }
+    };
+
+    window.addSpawnToArena = (dId, aIdx) => {
+      const d = dungeons.find((item) => item.id === dId);
+      if (d && d.arenas[aIdx]) {
+        const defaultMonster = monsters[0] ? monsters[0].id : "chaser";
+        const spIdx = (d.arenas[aIdx].spawns || []).length + 1;
+        d.arenas[aIdx].spawns.push({
+          id: `${d.arenas[aIdx].id}-s${spIdx}`,
+          monsterId: defaultMonster,
+          archetype: "chaser",
+          x: 0,
+          z: d.arenas[aIdx].centerZ || 0,
+          isBoss: false,
+        });
+        renderArenas(d);
+        updateDungeonStats(d);
+      }
+    };
+
+    window.removeArena = (dId, aIdx) => {
+      const d = dungeons.find((item) => item.id === dId);
+      if (d && confirm("Excluir esta arena inteira?")) {
+        d.arenas.splice(aIdx, 1);
+        renderArenas(d);
+        updateDungeonStats(d);
+      }
+    };
+
+    window.updateSpawnMonster = (dId, aIdx, sIdx, mId) => {
+      const d = dungeons.find((item) => item.id === dId);
+      if (d && d.arenas[aIdx] && d.arenas[aIdx].spawns[sIdx]) {
+        const sp = d.arenas[aIdx].spawns[sIdx];
+        sp.monsterId = mId;
+        const m = monsters.find((item) => item.id === mId);
+        if (m) sp.archetype = m.archetype;
+        updateDungeonStats(d);
+      }
+    };
+
+    window.updateSpawnCoord = (dId, aIdx, sIdx, coord, val) => {
+      const d = dungeons.find((item) => item.id === dId);
+      if (d && d.arenas[aIdx] && d.arenas[aIdx].spawns[sIdx]) {
+        d.arenas[aIdx].spawns[sIdx][coord] = parseFloat(val) || 0;
+      }
+    };
+
+    window.updateSpawnBoss = (dId, aIdx, sIdx, isBoss) => {
+      const d = dungeons.find((item) => item.id === dId);
+      if (d && d.arenas[aIdx] && d.arenas[aIdx].spawns[sIdx]) {
+        d.arenas[aIdx].spawns[sIdx].isBoss = isBoss;
+        updateDungeonStats(d);
+      }
+    };
+
+    window.removeSpawn = (dId, aIdx, sIdx) => {
+      const d = dungeons.find((item) => item.id === dId);
+      if (d && d.arenas[aIdx] && d.arenas[aIdx].spawns[sIdx]) {
+        d.arenas[aIdx].spawns.splice(sIdx, 1);
+        renderArenas(d);
+        updateDungeonStats(d);
+      }
+    };
+
+    function updateDungeonStats(d) {
+      const arenasCount = d.arenas?.length || 0;
+      let totalMonsters = 0;
+      let bossesCount = 0;
+      let totalXp = 0;
+
+      (d.arenas || []).forEach((a) => {
+        (a.spawns || []).forEach((sp) => {
+          totalMonsters++;
+          if (sp.isBoss) bossesCount++;
+          const m = monsters.find((item) => item.id === (sp.monsterId || sp.archetype));
+          const baseReward = m?.xpReward || 8;
+          totalXp += sp.isBoss ? baseReward * 3 : baseReward;
+        });
+      });
+
+      document.getElementById("d-stat-arenas").textContent = String(arenasCount);
+      document.getElementById("d-stat-monsters").textContent = String(totalMonsters);
+      document.getElementById("d-stat-bosses").textContent = String(bossesCount);
+      document.getElementById("d-stat-xp").textContent = `${totalXp} XP`;
+    }
+
+    function initItems() {
+      const iconSelect = document.getElementById("i-icon-select");
+      iconSelect.innerHTML = '<option value="">(Selecione um ícone)</option>';
+      for (const icon of availableIcons) {
+        const opt = document.createElement("option");
+        opt.value = icon;
+        opt.textContent = icon;
+        iconSelect.appendChild(opt);
+      }
+
+      renderItemsList();
+      if (items.length > 0) selectItem(items[0].id);
+
+      document.getElementById("btn-item-new").onclick = () => {
+        const id = `item_${Date.now().toString().slice(-4)}`;
+        items.push({
+          id,
+          name: "Novo Item",
+          slot: "weapon",
+          rarity: "Comum",
+          desc: "Ataque +1",
+          icon: availableIcons[0] || "items/espada_curta.svg",
+          attackBonus: 1,
+          defenseBonus: 0,
+          sellValue: 10,
+        });
+        selectItem(id);
+      };
+
+      document.getElementById("btn-item-dup").onclick = () => {
+        if (!selectedItemId) return;
+        const cur = items.find((i) => i.id === selectedItemId);
+        if (!cur) return;
+        const dup = JSON.parse(JSON.stringify(cur));
+        dup.id = `${cur.id}_copia`;
+        dup.name = `${cur.name} (Cópia)`;
+        items.push(dup);
+        selectItem(dup.id);
+      };
+
+      document.getElementById("btn-item-del").onclick = () => {
+        if (!selectedItemId || items.length <= 1) return;
+        if (!confirm(`Excluir item '${selectedItemId}'?`)) return;
+        const idx = items.findIndex((i) => i.id === selectedItemId);
+        if (idx !== -1) {
+          items.splice(idx, 1);
+          selectItem(items[Math.max(0, idx - 1)].id);
+        }
+      };
+
+      document.getElementById("item-search").addEventListener("input", renderItemsList);
+
+      ["i-id", "i-name", "i-slot", "i-rarity", "i-desc", "i-icon-select", "i-atk", "i-def", "i-sell"].forEach((id) => {
+        const el = document.getElementById(id);
+        el.addEventListener("input", syncItemFromUi);
+        el.addEventListener("change", syncItemFromUi);
+      });
+    }
+
+    function renderItemsList() {
+      const container = document.getElementById("items-list");
+      container.innerHTML = "";
+      const q = document.getElementById("item-search").value.toLowerCase().trim();
+      const filtered = items.filter((i) => i.name.toLowerCase().includes(q) || i.id.toLowerCase().includes(q));
+
+      for (const it of filtered) {
+        const card = document.createElement("div");
+        card.className = "list-card" + (it.id === selectedItemId ? " active" : "");
+        card.onclick = () => selectItem(it.id);
+
+        const top = document.createElement("div");
+        top.className = "list-card-top";
+        top.innerHTML = `<span class="list-card-title">${it.name}</span><span class="list-card-sub">${it.slot}</span>`;
+
+        const tags = document.createElement("div");
+        tags.className = "list-card-tags";
+        const rarityClass = it.rarity === "Lendário" ? "badge-red" : it.rarity === "Épico" ? "badge-blue" : "badge-gold";
+        tags.innerHTML = `<span class="badge ${rarityClass}">${it.rarity}</span><span style="font-size: 11px; color: var(--gold);">${it.sellValue || 0}g</span>`;
+
+        card.appendChild(top);
+        card.appendChild(tags);
+        container.appendChild(card);
+      }
+    }
+
+    function selectItem(id) {
+      selectedItemId = id;
+      const it = items.find((item) => item.id === id);
+      const emptyEl = document.getElementById("item-empty");
+      const formEl = document.getElementById("item-form");
+
+      if (!it) {
+        emptyEl.style.display = "flex";
+        formEl.style.display = "none";
+        return;
+      }
+      emptyEl.style.display = "none";
+      formEl.style.display = "flex";
+
+      document.getElementById("i-id").value = it.id || "";
+      document.getElementById("i-name").value = it.name || "";
+      document.getElementById("i-slot").value = it.slot || "weapon";
+      document.getElementById("i-rarity").value = it.rarity || "Comum";
+      document.getElementById("i-desc").value = it.desc || "";
+      document.getElementById("i-icon-select").value = it.icon || "";
+
+      document.getElementById("i-atk").value = it.attackBonus || 0;
+      document.getElementById("i-def").value = it.defenseBonus || 0;
+      document.getElementById("i-sell").value = it.sellValue || 0;
+
+      updateItemPreview(it);
+      renderItemsList();
+    }
+
+    function syncItemFromUi() {
+      if (!selectedItemId) return;
+      const it = items.find((item) => item.id === selectedItemId);
+      if (!it) return;
+
+      it.id = document.getElementById("i-id").value.trim();
+      it.name = document.getElementById("i-name").value.trim();
+      it.slot = document.getElementById("i-slot").value;
+      it.rarity = document.getElementById("i-rarity").value;
+      it.desc = document.getElementById("i-desc").value.trim();
+      it.icon = document.getElementById("i-icon-select").value;
+
+      it.attackBonus = parseInt(document.getElementById("i-atk").value, 10) || 0;
+      it.defenseBonus = parseInt(document.getElementById("i-def").value, 10) || 0;
+      it.sellValue = parseInt(document.getElementById("i-sell").value, 10) || 0;
+
+      selectedItemId = it.id;
+      updateItemPreview(it);
+      renderItemsList();
+    }
+
+    function updateItemPreview(it) {
+      const img = document.getElementById("i-icon-img");
+      if (it.icon) {
+        img.src = `/wire/assets/${it.icon}`;
+        img.style.display = "block";
+      } else {
+        img.style.display = "none";
+      }
+
+      document.getElementById("i-stat-slot").textContent = it.slot;
+      document.getElementById("i-stat-atk").textContent = `+${it.attackBonus || 0}`;
+      document.getElementById("i-stat-def").textContent = `+${it.defenseBonus || 0}`;
+      document.getElementById("i-stat-sell").textContent = `${it.sellValue || 0} Ouro`;
+    }
+
+    function initNpcs() {
+      renderNpcsList();
+      if (npcs.length > 0) selectNpc(npcs[0].id);
+
+      document.getElementById("btn-npc-new").onclick = () => {
+        const id = `npc-novo-${Date.now().toString().slice(-4)}`;
+        npcs.push({
+          id,
+          label: "Novo NPC",
+          kind: "npc",
+          service: "merchant",
+          x: 0,
+          z: 0,
+          color: "#d4a017",
+          body: "Olá, viajante!",
+        });
+        selectNpc(id);
+      };
+
+      document.getElementById("btn-npc-del").onclick = () => {
+        if (!selectedNpcId || npcs.length <= 1) return;
+        if (!confirm(`Excluir NPC '${selectedNpcId}'?`)) return;
+        const idx = npcs.findIndex((n) => n.id === selectedNpcId);
+        if (idx !== -1) {
+          npcs.splice(idx, 1);
+          selectNpc(npcs[Math.max(0, idx - 1)].id);
+        }
+      };
+
+      document.getElementById("npc-search").addEventListener("input", renderNpcsList);
+
+      ["npc-id", "npc-label", "npc-service", "npc-color-hex", "npc-x", "npc-z", "npc-body"].forEach((id) => {
+        const el = document.getElementById(id);
+        el.addEventListener("input", syncNpcFromUi);
+        el.addEventListener("change", syncNpcFromUi);
+      });
+
+      document.getElementById("npc-color-picker").addEventListener("input", (e) => {
+        document.getElementById("npc-color-hex").value = e.target.value;
+        syncNpcFromUi();
+      });
+
+      document.getElementById("btn-shop-add-slot").onclick = () => {
+        if (!selectedNpcId) return;
+        const npc = npcs.find((n) => n.id === selectedNpcId);
+        const shopKey = npc?.service === "blacksmith" ? "blacksmith" : "merchant";
+        if (!shops[shopKey]) shops[shopKey] = { id: shopKey, label: shopKey, slots: [] };
+        const defaultItem = items[0] ? items[0].id : "espada_curta";
+        shops[shopKey].slots.push({ itemId: defaultItem, qty: 10, price: 100 });
+        renderShopSlots(shopKey);
+      };
+    }
+
+    function renderNpcsList() {
+      const container = document.getElementById("npcs-list");
+      container.innerHTML = "";
+      const q = document.getElementById("npc-search").value.toLowerCase().trim();
+      const filtered = npcs.filter((n) => n.label.toLowerCase().includes(q) || n.id.toLowerCase().includes(q));
+
+      for (const n of filtered) {
+        const card = document.createElement("div");
+        card.className = "list-card" + (n.id === selectedNpcId ? " active" : "");
+        card.onclick = () => selectNpc(n.id);
+
+        const top = document.createElement("div");
+        top.className = "list-card-top";
+        top.innerHTML = `<span class="list-card-title">${n.label}</span><span class="list-card-sub">${n.id}</span>`;
+
+        const tags = document.createElement("div");
+        tags.className = "list-card-tags";
+        tags.innerHTML = `<span class="badge badge-gold">${n.service || "npc"}</span><span style="font-size: 11px; color: var(--text-dim);">[${n.x}, ${n.z}]</span>`;
+
+        card.appendChild(top);
+        card.appendChild(tags);
+        container.appendChild(card);
+      }
+    }
+
+    function selectNpc(id) {
+      selectedNpcId = id;
+      const n = npcs.find((item) => item.id === id);
+      const emptyEl = document.getElementById("npc-empty");
+      const formEl = document.getElementById("npc-form");
+
+      if (!n) {
+        emptyEl.style.display = "flex";
+        formEl.style.display = "none";
+        return;
+      }
+      emptyEl.style.display = "none";
+      formEl.style.display = "flex";
+
+      document.getElementById("npc-id").value = n.id || "";
+      document.getElementById("npc-label").value = n.label || "";
+      document.getElementById("npc-service").value = n.service || "merchant";
+
+      const hex = typeof n.color === "string" ? n.color : `#${Number(n.color || 0xd4a017).toString(16).padStart(6, "0")}`;
+      document.getElementById("npc-color-hex").value = hex;
+      document.getElementById("npc-color-picker").value = hex.startsWith("#") ? hex : "#d4a017";
+
+      document.getElementById("npc-x").value = n.x || 0;
+      document.getElementById("npc-z").value = n.z || 0;
+      document.getElementById("npc-body").value = n.body || "";
+
+      const shopSection = document.getElementById("shop-inventory-section");
+      const isShop = n.service === "merchant" || n.service === "blacksmith";
+      shopSection.style.display = isShop ? "flex" : "none";
+
+      if (isShop) {
+        const shopKey = n.service;
+        document.getElementById("shop-section-title").textContent = `Itens à Venda na Loja (${shopKey})`;
+        renderShopSlots(shopKey);
+      }
+
+      renderNpcsList();
+    }
+
+    function syncNpcFromUi() {
+      if (!selectedNpcId) return;
+      const n = npcs.find((item) => item.id === selectedNpcId);
+      if (!n) return;
+
+      n.id = document.getElementById("npc-id").value.trim();
+      n.label = document.getElementById("npc-label").value.trim();
+      n.service = document.getElementById("npc-service").value;
+      n.color = document.getElementById("npc-color-hex").value.trim();
+      n.x = parseFloat(document.getElementById("npc-x").value) || 0;
+      n.z = parseFloat(document.getElementById("npc-z").value) || 0;
+      n.body = document.getElementById("npc-body").value.trim();
+
+      const isShop = n.service === "merchant" || n.service === "blacksmith";
+      document.getElementById("shop-inventory-section").style.display = isShop ? "flex" : "none";
+      if (isShop) renderShopSlots(n.service);
+
+      selectedNpcId = n.id;
+      renderNpcsList();
+    }
+
+    function renderShopSlots(shopKey) {
+      const container = document.getElementById("shop-slots-container");
+      container.innerHTML = "";
+      const shopData = shops[shopKey];
+      if (!shopData || !shopData.slots) return;
+
+      shopData.slots.forEach((slot, idx) => {
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.gap = "8px";
+        row.style.alignItems = "center";
+        row.style.background = "var(--bg-input)";
+        row.style.padding = "6px 8px";
+        row.style.borderRadius = "2px";
+        row.style.border = "1px solid var(--border-subtle)";
+
+        let itemOptions = "";
+        for (const it of items) {
+          itemOptions += `<option value="${it.id}" ${it.id === slot.itemId ? "selected" : ""}>${it.name} (${it.id})</option>`;
+        }
+
+        row.innerHTML = `
+          <select class="form-select" style="flex: 2; padding: 4px;" onchange="updateShopSlotItem('${shopKey}', ${idx}, this.value)">
+            ${itemOptions}
+          </select>
+          <input type="number" class="form-input" style="flex: 1; padding: 4px;" value="${slot.qty || 1}" min="1" placeholder="Qtd" onchange="updateShopSlotQty('${shopKey}', ${idx}, this.value)" />
+          <input type="number" class="form-input" style="flex: 1; padding: 4px;" value="${slot.price || 10}" min="1" step="5" placeholder="Preço" onchange="updateShopSlotPrice('${shopKey}', ${idx}, this.value)" />
+          <button type="button" class="btn btn-danger" style="padding: 2px 6px; font-size: 10px;" onclick="removeShopSlot('${shopKey}', ${idx})">X</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    window.updateShopSlotItem = (shopKey, idx, val) => {
+      if (shops[shopKey] && shops[shopKey].slots[idx]) {
+        shops[shopKey].slots[idx].itemId = val;
+      }
+    };
+
+    window.updateShopSlotQty = (shopKey, idx, val) => {
+      if (shops[shopKey] && shops[shopKey].slots[idx]) {
+        shops[shopKey].slots[idx].qty = parseInt(val, 10) || 1;
+      }
+    };
+
+    window.updateShopSlotPrice = (shopKey, idx, val) => {
+      if (shops[shopKey] && shops[shopKey].slots[idx]) {
+        shops[shopKey].slots[idx].price = parseInt(val, 10) || 1;
+      }
+    };
+
+    window.removeShopSlot = (shopKey, idx) => {
+      if (shops[shopKey] && shops[shopKey].slots[idx]) {
+        shops[shopKey].slots.splice(idx, 1);
+        renderShopSlots(shopKey);
+      }
+    };
+
+    function initComposer() {
+      const matSelect = document.getElementById("r-mat-id");
+      matSelect.innerHTML = "";
+      for (const it of items.filter((i) => i.slot === "material" || i.id.startsWith("mat_"))) {
+        const opt = document.createElement("option");
+        opt.value = it.id;
+        opt.textContent = `${it.name} (${it.id})`;
+        matSelect.appendChild(opt);
+      }
+
+      renderRecipesList();
+      if (recipes.length > 0) selectRecipe(recipes[0].id);
+
+      document.getElementById("btn-recipe-new").onclick = () => {
+        const id = `compose_plus${recipes.length + 7}_lac`;
+        recipes.push({
+          id,
+          uiTitle: `+${recipes.length + 7}`,
+          uiDesc: "Poeira de Lac + Ouro. Chance especial.",
+          materialId: "mat_lac",
+          materialQty: 1,
+          goldCost: 1000000,
+          targetRefine: recipes.length + 7,
+          successChance: 0.5,
+          maxCurrentRefineExclusive: recipes.length + 7,
+        });
+        selectRecipe(id);
+      };
+
+      document.getElementById("btn-recipe-del").onclick = () => {
+        if (!selectedRecipeId || recipes.length <= 1) return;
+        if (!confirm(`Excluir receita '${selectedRecipeId}'?`)) return;
+        const idx = recipes.findIndex((r) => r.id === selectedRecipeId);
+        if (idx !== -1) {
+          recipes.splice(idx, 1);
+          selectRecipe(recipes[Math.max(0, idx - 1)].id);
+        }
+      };
+
+      ["r-id", "r-title", "r-desc", "r-mat-id", "r-mat-qty", "r-gold", "r-target", "r-chance", "r-max-curr"].forEach((id) => {
+        const el = document.getElementById(id);
+        el.addEventListener("input", syncRecipeFromUi);
+        el.addEventListener("change", syncRecipeFromUi);
+      });
+    }
+
+    function renderRecipesList() {
+      const container = document.getElementById("recipes-list");
+      container.innerHTML = "";
+
+      for (const r of recipes) {
+        const card = document.createElement("div");
+        card.className = "list-card" + (r.id === selectedRecipeId ? " active" : "");
+        card.onclick = () => selectRecipe(r.id);
+
+        const top = document.createElement("div");
+        top.className = "list-card-top";
+        top.innerHTML = `<span class="list-card-title">${r.uiTitle}</span><span class="list-card-sub">${r.id}</span>`;
+
+        const tags = document.createElement("div");
+        tags.className = "list-card-tags";
+        const pct = Math.round((r.successChance || 0) * 100);
+        tags.innerHTML = `<span class="badge badge-gold">Alvo +${r.targetRefine}</span><span class="badge badge-blue">${pct}% Chance</span>`;
+
+        card.appendChild(top);
+        card.appendChild(tags);
+        container.appendChild(card);
+      }
+    }
+
+    function selectRecipe(id) {
+      selectedRecipeId = id;
+      const r = recipes.find((item) => item.id === id);
+      const emptyEl = document.getElementById("recipe-empty");
+      const formEl = document.getElementById("recipe-form");
+
+      if (!r) {
+        emptyEl.style.display = "flex";
+        formEl.style.display = "none";
+        return;
+      }
+      emptyEl.style.display = "none";
+      formEl.style.display = "flex";
+
+      document.getElementById("r-id").value = r.id || "";
+      document.getElementById("r-title").value = r.uiTitle || "";
+      document.getElementById("r-desc").value = r.uiDesc || "";
+      document.getElementById("r-mat-id").value = r.materialId || "mat_lac";
+      document.getElementById("r-mat-qty").value = r.materialQty || 1;
+      document.getElementById("r-gold").value = r.goldCost || 1000000;
+      document.getElementById("r-target").value = r.targetRefine || 7;
+      document.getElementById("r-chance").value = r.successChance != null ? r.successChance : 0.5;
+      document.getElementById("r-max-curr").value = r.maxCurrentRefineExclusive || 7;
+
+      renderRecipesList();
+    }
+
+    function syncRecipeFromUi() {
+      if (!selectedRecipeId) return;
+      const r = recipes.find((item) => item.id === selectedRecipeId);
+      if (!r) return;
+
+      r.id = document.getElementById("r-id").value.trim();
+      r.uiTitle = document.getElementById("r-title").value.trim();
+      r.uiDesc = document.getElementById("r-desc").value.trim();
+      r.materialId = document.getElementById("r-mat-id").value;
+      r.materialQty = parseInt(document.getElementById("r-mat-qty").value, 10) || 1;
+      r.goldCost = parseInt(document.getElementById("r-gold").value, 10) || 0;
+      r.targetRefine = parseInt(document.getElementById("r-target").value, 10) || 7;
+      r.successChance = parseFloat(document.getElementById("r-chance").value) || 0.5;
+      r.maxCurrentRefineExclusive = parseInt(document.getElementById("r-max-curr").value, 10) || 7;
+
+      selectedRecipeId = r.id;
+      renderRecipesList();
+    }
+
+    loadAllData();
+  </script>
+</body>
+</html>

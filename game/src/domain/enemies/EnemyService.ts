@@ -1,23 +1,16 @@
-import { COMBAT_BALANCE, type EnemyArchetype } from "../../data/balance/combat";
+import { type EnemyArchetype } from "../../data/balance/combat";
 import { DUNGEON_BALANCE, dungeonCombatScale } from "../../data/balance/dungeon";
 import { DUNGEON_TEST, type DungeonDef } from "../../data/dungeons/dungeon-definitions";
+import { getMonsterDef } from "../../data/monsters/monster-definitions";
 import { EnemyModel } from "./EnemyModel";
 
 export interface SpawnPointDef {
   id: string;
-  archetype: EnemyArchetype;
+  archetype?: EnemyArchetype;
+  monsterId?: string;
   x: number;
   z: number;
   isBoss?: boolean;
-}
-
-function statsFor(archetype: EnemyArchetype) {
-  return COMBAT_BALANCE.enemy[archetype];
-}
-
-function respawnDelay(random: () => number = Math.random): number {
-  const [min, max] = COMBAT_BALANCE.enemy.respawnSeconds;
-  return min + random() * (max - min);
 }
 
 export class EnemyService {
@@ -39,18 +32,29 @@ export class EnemyService {
     sp: SpawnPointDef,
     scale: { hpMultiplier: number; attackMultiplier: number; defenseMultiplier: number },
   ): EnemyModel {
-    const s = statsFor(sp.archetype);
-    let maxHp = Math.max(1, Math.round(s.maxHp * scale.hpMultiplier));
-    let attack = Math.max(1, Math.round(s.attack * scale.attackMultiplier));
-    let defense = Math.max(0, Math.round(s.defense * scale.defenseMultiplier));
-    if (sp.isBoss) {
+    const lookupKey = sp.monsterId ?? sp.archetype ?? "fixed";
+    const def = getMonsterDef(lookupKey);
+    const isBoss = !!(sp.isBoss || def.isBoss);
+
+    let maxHp = Math.max(1, Math.round(def.maxHp * scale.hpMultiplier));
+    let attack = Math.max(1, Math.round(def.attack * scale.attackMultiplier));
+    let defense = Math.max(0, Math.round(def.defense * scale.defenseMultiplier));
+
+    if (isBoss) {
       maxHp = Math.round(maxHp * DUNGEON_BALANCE.boss.hpMultiplier);
       attack = Math.round(attack * DUNGEON_BALANCE.boss.attackMultiplier);
       defense = defense + DUNGEON_BALANCE.boss.defenseBonus;
     }
+
+    const respawnTime = isBoss
+      ? DUNGEON_BALANCE.boss.respawnSeconds
+      : (def.respawnSeconds > 0 ? def.respawnSeconds + (this.random() * 0.4 - 0.2) : 6);
+
     return new EnemyModel({
       id: sp.id,
-      archetype: sp.archetype,
+      archetype: def.archetype,
+      monsterId: def.id,
+      name: def.name,
       x: sp.x,
       z: sp.z,
       homeX: sp.x,
@@ -58,18 +62,19 @@ export class EnemyService {
       maxHp,
       attack,
       defense,
-      range: s.range,
-      attackInterval: s.attackInterval,
-      speed: "speed" in s ? (s as { speed?: number }).speed : 0,
-      minApproach: "minApproach" in s ? (s as { minApproach?: number }).minApproach : undefined,
-      preferred: "preferred" in s ? (s as { preferred?: number }).preferred : undefined,
-      retreatIfCloserThan:
-        "retreatIfCloserThan" in s
-          ? (s as { retreatIfCloserThan?: number }).retreatIfCloserThan
-          : undefined,
-      leashRadius: "leashRadius" in s ? (s as { leashRadius?: number }).leashRadius : undefined,
-      respawnSeconds: sp.isBoss ? DUNGEON_BALANCE.boss.respawnSeconds : respawnDelay(this.random),
-      isBoss: !!sp.isBoss,
+      range: def.range,
+      attackInterval: def.attackInterval,
+      speed: def.speed,
+      minApproach: def.minApproach,
+      preferred: def.preferred,
+      retreatIfCloserThan: def.retreatIfCloserThan,
+      leashRadius: def.leashRadius,
+      respawnSeconds: respawnTime,
+      isBoss,
+      xpReward: isBoss ? Math.round(def.xpReward * 3) : def.xpReward,
+      color: def.color,
+      modelUrl: def.modelUrl,
+      modelScale: def.modelScale,
     });
   }
 

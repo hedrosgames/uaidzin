@@ -817,10 +817,10 @@ export class CityGameSession {
     return "Arena 3 / 3";
   }
 
-  private grantKillXp(enemy: { id: string; archetype: string; isBoss: boolean }): void {
+  private grantKillXp(enemy: { id: string; archetype: string; isBoss: boolean; xpReward?: number }): void {
     const isBoss = enemy.isBoss;
     const key = isBoss ? "boss" : (enemy.archetype as "fixed" | "chaser" | "ranged");
-    const xp = DUNGEON_BALANCE.xpPerKill[isBoss ? "boss" : enemy.archetype as "fixed" | "chaser" | "ranged"] ?? 8;
+    const xp = enemy.xpReward ?? DUNGEON_BALANCE.xpPerKill[isBoss ? "boss" : enemy.archetype as "fixed" | "chaser" | "ranged"] ?? 8;
     this.sessionXp += xp;
     const { levelsGained } = this.progression.addXp(xp);
     this.dungeonRun.addKill(xp);

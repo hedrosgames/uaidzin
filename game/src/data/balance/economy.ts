@@ -1,4 +1,5 @@
 import { ITEM_CATALOG, resolveItemIcon, type ItemCatalogDef } from "../items/item-catalog";
+import rawShops from "./shops.json";
 
 export const ECONOMY_BALANCE = {
   inventorySlots: 40,
@@ -63,66 +64,22 @@ function shopItemFromCatalog(id: string): ShopItemDef {
   };
 }
 
-function shopItems(ids: string[]): Record<string, ShopItemDef> {
+function shopItems(): Record<string, ShopItemDef> {
   const out: Record<string, ShopItemDef> = {};
-  for (const id of ids) out[id] = shopItemFromCatalog(id);
+  for (const [id, def] of Object.entries(ITEM_CATALOG)) {
+    if (def && def.icon) {
+      out[id] = shopItemFromCatalog(id);
+    }
+  }
   return out;
 }
-
-const SHOP_ITEM_IDS = [
-  "mat_ori",
-  "mat_lac",
-  "entry_d4",
-  "entry_d5",
-  "entry_d6",
-  "entry_d7",
-  "entry_d8",
-  "espada_curta",
-  "machado_leve",
-  "armadura_leve",
-  "capacete",
-  "anel_cobre",
-  "anel_ferro",
-  "colar_simples",
-  "brinco_osso",
-] as const;
 
 export const SHOP_CATALOG: {
   items: Record<string, ShopItemDef>;
   shops: Record<string, { id: string; label: string; slots: ShopSlotDef[] }>;
 } = {
-  items: shopItems([...SHOP_ITEM_IDS]),
-  shops: {
-    merchant: {
-      id: "merchant",
-      label: "Mercador",
-      slots: [
-        { itemId: "entry_d4", qty: 20, price: 200 },
-        { itemId: "entry_d5", qty: 15, price: 350 },
-        { itemId: "entry_d6", qty: 12, price: 500 },
-        { itemId: "entry_d7", qty: 10, price: 750 },
-        { itemId: "entry_d8", qty: 8, price: 1000 },
-        { itemId: "mat_ori", qty: 50, price: 25 },
-        { itemId: "mat_lac", qty: 10, price: 120 },
-      ],
-    },
-    blacksmith: {
-      id: "blacksmith",
-      label: "Ferreiro",
-      slots: [
-        { itemId: "mat_ori", qty: 99, price: 20 },
-        { itemId: "mat_lac", qty: 20, price: 100 },
-        { itemId: "espada_curta", qty: 3, price: 70 },
-        { itemId: "machado_leve", qty: 3, price: 85 },
-        { itemId: "armadura_leve", qty: 3, price: 70 },
-        { itemId: "capacete", qty: 3, price: 50 },
-        { itemId: "anel_cobre", qty: 4, price: 40 },
-        { itemId: "anel_ferro", qty: 4, price: 160 },
-        { itemId: "colar_simples", qty: 4, price: 45 },
-        { itemId: "brinco_osso", qty: 4, price: 35 },
-      ],
-    },
-  },
+  items: shopItems(),
+  shops: rawShops as Record<string, { id: string; label: string; slots: ShopSlotDef[] }>,
 };
 
 export function shopCatalogForUi(): typeof SHOP_CATALOG {
