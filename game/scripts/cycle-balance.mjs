@@ -144,6 +144,7 @@ async function main() {
     const cityPrep = await page.evaluate(() => {
       const w = window.__UAIDZIN__.wire;
       const spent = w.spendAllAttributes("FOR");
+      for (let s = 0; s < 8; s++) w.spendSpec("fisica");
       let learned = 0;
       for (let i = 0; i < 8; i++) {
         if (w.learnSkill("fisica", i)) learned += 1;
@@ -165,13 +166,13 @@ async function main() {
         ).length,
       };
     });
-    if (cityPrep.learned >= 3) ok(`skills física linha (${cityPrep.learned}/8)`);
-    else if (cityPrep.learned >= 1) ok(`skills física parcial (${cityPrep.learned})`);
-    else fail("não aprendeu skill física");
+    if (cityPrep.learned >= 8) ok("skills física 8/8 (linha TK)");
+    else fail(`skills física incompletas: ${cityPrep.learned}/8 ouro=${cityPrep.gold}`);
     if (cityPrep.potions >= 5) ok(`comprou ${cityPrep.potions} poções no mercador`);
     else fail(`poções insuficientes: ${cityPrep.potions}`);
     if (cityPrep.spent > 0) ok(`distribuiu ${cityPrep.spent} pontos de atributo`);
 
+    let zone3Level = prog.level;
     let runs = 0;
     while (runs < 16) {
       prog = await readProgress(page);
@@ -183,6 +184,7 @@ async function main() {
         await farmZone(page, { zMin: -34, zMax: -14, realMs: 50000 });
       } else if (prog.level < 28) {
         await farmZone(page, { zMin: -52, zMax: -38, realMs: 45000 });
+        zone3Level = (await readProgress(page)).level;
       } else {
         await farmZone(page, { zMin: -52, zMax: 2, realMs: 50000 });
       }
@@ -201,6 +203,8 @@ async function main() {
     prog = await readProgress(page);
     if (prog.level >= 20) ok(`progressão zona 2 meta level>=20 (${prog.level})`);
     else fail(`level após farm zona 2: ${prog.level}`);
+    if (zone3Level >= 22 || prog.level >= 28) ok(`zona 3 contribuiu (level após Z3=${zone3Level})`);
+    else ok(`zona 3 level=${zone3Level} (continua grind)`);
     if (prog.level >= 35) ok(`nível D2 desbloqueada (${prog.level})`);
     else fail(`level ${prog.level} < 35 para dungeon-2`);
 

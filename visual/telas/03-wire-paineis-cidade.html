@@ -2741,6 +2741,15 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
         cell.onmouseleave = () => hideItemTip(false);
         cell.ondblclick = (ev) => {
           ev.preventDefault();
+          const g = gameApi();
+          if (g && g.wire && it.uid && (it.defId === "pocao_menor" || !it.kind || it.kind === "misc")) {
+            if (g.wire.useConsumable(it.uid)) {
+              if (window.__UAIDZIN_WIRE__ && window.__UAIDZIN_WIRE__.syncFromGame) {
+                window.__UAIDZIN_WIRE__.syncFromGame();
+              }
+              return;
+            }
+          }
           if (!it.kind) return;
           bagItems[i] = null;
           if (!equipItem(it)) bagItems[i] = it;
@@ -3396,6 +3405,12 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
           iconPath = eco.resolveItemIcon(defId, gi.slot, name);
         }
         if (!iconPath) return null;
+        let desc = "";
+        if (eco && typeof eco.getShopCatalog === "function") {
+          const cat = eco.getShopCatalog();
+          const row = cat.items && (cat.items[defId] || cat.items[gi.defId]);
+          if (row && row.desc) desc = row.desc;
+        }
         return makeItem({
           id: gi.uid || gi.id,
           uid: gi.uid || gi.id,
@@ -3407,7 +3422,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
           rarity: gi.rarity || "Comum",
           refine: gi.refine || 0,
           q: gi.stack || 1,
-          desc: "",
+          desc: desc,
           stats: { atk: gi.attackBonus || 0, def: gi.defenseBonus || 0 },
         });
       }

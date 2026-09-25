@@ -24,7 +24,7 @@ export class EconomyService {
   } {
     const key = isBoss ? "boss" : archetype;
     let gold = ECONOMY_BALANCE.goldPerKill[key] ?? 2;
-    if (this.dungeonIndex === 1) gold *= 6;
+    if (this.dungeonIndex === 1) gold *= 10;
     this.inventory.gold += gold;
 
     let dropped: string | null = null;
