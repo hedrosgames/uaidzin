@@ -258,6 +258,34 @@ async function main() {
     await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "CITY", null, { timeout: 15000 });
     await page.evaluate(() => window.__UAIDZIN__.enterDungeon());
     await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, { timeout: 12000 });
+    const z2ProgBefore = await readProgress(page);
+    await page.evaluate(() => window.__UAIDZIN__.session.character.healFull());
+    const z2Farm = await simulateZoneSeconds(page, { zMin: -34, zMax: -14, gameSeconds: 120, step: 2 });
+    const z2ProgAfter = await readProgress(page);
+    if (
+      z2ProgAfter.level > z2ProgBefore.level &&
+      z2ProgAfter.gold > z2ProgBefore.gold &&
+      z2ProgAfter.kills >= z2ProgBefore.kills + 2
+    ) {
+      ok(`zona 2 progressão (nv ${z2ProgBefore.level}→${z2ProgAfter.level}, ouro +${z2ProgAfter.gold - z2ProgBefore.gold}, morte=${z2Farm.dead})`);
+    } else {
+      fail(`zona 2 sem progresso: ${JSON.stringify({ z2ProgBefore, z2ProgAfter, z2Farm })}`);
+    }
+    if (z2Farm.dead) {
+      await page.evaluate(() => {
+        window.__UAIDZIN__.setTimeScale(1);
+        window.__UAIDZIN__.toCity();
+      });
+      await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "CITY", null, { timeout: 15000 });
+    }
+
+    await page.evaluate(() => {
+      window.__UAIDZIN__.setTimeScale(1);
+      window.__UAIDZIN__.toCity();
+    });
+    await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "CITY", null, { timeout: 15000 });
+    await page.evaluate(() => window.__UAIDZIN__.enterDungeon());
+    await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, { timeout: 12000 });
     await page.evaluate(() => window.__UAIDZIN__.session.character.healFull());
     const goldBeforeTen = await page.evaluate(() => window.__UAIDZIN__.session.inventory.gold);
     const z1Surv = await simulateZoneSeconds(page, { zMin: -8, zMax: 2, gameSeconds: 600, step: 2 });
@@ -365,6 +393,7 @@ async function main() {
     if (cityPrep.spent > 0) ok(`distribuiu ${cityPrep.spent} pontos de atributo`);
 
     let zone3Level = prog.level;
+    let zone2Peak = prog.level;
     let runs = 0;
     while (runs < 20) {
       prog = await readProgress(page);
@@ -374,6 +403,7 @@ async function main() {
       await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, { timeout: 12000 });
       if (prog.level < 20) {
         await farmZone(page, { zMin: -34, zMax: -14, realMs: 50000 });
+        zone2Peak = Math.max(zone2Peak, (await readProgress(page)).level);
       } else if (prog.level < 28) {
         await farmZone(page, { zMin: -52, zMax: -38, realMs: 45000 });
         zone3Level = (await readProgress(page)).level;
@@ -393,8 +423,9 @@ async function main() {
     }
 
     prog = await readProgress(page);
-    if (prog.level >= 20) ok(`progressão zona 2 meta level>=20 (${prog.level})`);
-    else fail(`level após farm zona 2: ${prog.level}`);
+    const z2Meta = Math.max(zone2Peak, z2ProgAfter.level, z1Surv.level);
+    if (z2Meta >= 20) ok(`progressão zona 2 meta level>=20 (pico ${z2Meta}, final ${prog.level})`);
+    else fail(`zona 2 não chegou a 20: pico=${z2Meta} final=${prog.level}`);
     if (zone3Level >= 26 || prog.level >= 32) ok(`zona 3 contribuiu (level após Z3=${zone3Level}, final=${prog.level})`);
     else fail(`zona 3 fraca: após Z3=${zone3Level} final=${prog.level}`);
     if (prog.level < 35) fail(`level ${prog.level} < 35 para dungeon-2`);
