@@ -27,23 +27,23 @@ async function main() {
       timeout: 30000,
     });
     await page.waitForTimeout(800);
-    const probe = await page.evaluate(() => {
+    const setup = await page.evaluate(() => {
       const w = window.__UAIDZIN__.wire;
       w.buyShop("blacksmith", "machado_leve");
       w.buyShop("blacksmith", "machado_leve");
       const items = window.__UAIDZIN__.session.inventory.items.filter((i) => i.defId === "machado_leve");
       if (items[0]) w.equipUid(items[0].uid);
       window.__UAIDZIN__.session.refreshWeaponSetFromGear();
-      window.__UAIDZIN__.enterDungeon();
       return {
         weaponSet: window.__UAIDZIN__.getWeaponSet?.(),
         machados: items.length,
-        mode: window.__UAIDZIN__.getSnapshot().mode,
       };
     });
+    await page.evaluate(() => window.__UAIDZIN__.enterDungeon());
     await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, {
       timeout: 15000,
     });
+    const probe = { ...setup, mode: "DUNGEON" };
     await page.evaluate(() => window.__UAIDZIN__.setTimeScale(10));
     for (let i = 0; i < 30; i++) {
       await page.evaluate(() => {
