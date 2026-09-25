@@ -1523,6 +1523,9 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     armadilha: "Armadilha",
     marca: "Marca",
     caca: "Caça",
+    fisica: "Físico ofensivo",
+    controle: "Defensivo",
+    magia: "Mágico",
     special: "Special",
   };
 
@@ -1606,7 +1609,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     });
   });
 
-  const SHOP_TREES = ["armadilha", "marca", "caca"];
+  const SHOP_TREES = ["fisica", "controle", "magia"];
   let skillPoints = 6;
   let playerGold = 0;
   const CAP = 40;
@@ -1931,6 +1934,15 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   function tryBuySkill(sk) {
     if (!canBuySkill(sk)) return false;
+    const g = gameApi();
+    if (g && g.wire && sk.tree && sk.idx != null) {
+      const ok = g.wire.learnSkill(sk.tree, sk.idx - 1);
+      if (ok && window.__UAIDZIN_WIRE__ && window.__UAIDZIN_WIRE__.syncFromGame) {
+        window.__UAIDZIN_WIRE__.syncFromGame();
+        return true;
+      }
+      if (g.wire) return false;
+    }
     skillPoints -= sk.pointsCost;
     playerGold = Math.max(0, playerGold - sk.goldCost);
     if (typeof paintGold === "function") paintGold();
@@ -2299,6 +2311,15 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 
   function equipItem(it, slot) {
     if (!it || !it.kind) return false;
+    const g = gameApi();
+    if (g && g.wire && it.uid) {
+      const ok = g.wire.equipUid(it.uid);
+      if (ok && window.__UAIDZIN_WIRE__ && window.__UAIDZIN_WIRE__.syncFromGame) {
+        window.__UAIDZIN_WIRE__.syncFromGame();
+        return true;
+      }
+      return false;
+    }
     const dest = slot || findEquipSlot(it.kind);
     if (!dest || !canDropOn(dest, it)) return false;
     const prev = equipped[dest];
@@ -2310,6 +2331,15 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   }
 
   function unequipSlot(slot) {
+    const g = gameApi();
+    if (g && g.wire) {
+      const ok = g.wire.unequipSlot(slot);
+      if (ok && window.__UAIDZIN_WIRE__ && window.__UAIDZIN_WIRE__.syncFromGame) {
+        window.__UAIDZIN_WIRE__.syncFromGame();
+        return true;
+      }
+      return false;
+    }
     const it = equipped[slot];
     if (!it) return false;
     if (bagItems.filter(Boolean).length >= 40 && firstBagHole() < 0) return false;
@@ -3164,6 +3194,18 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     shopDetail.innerHTML = '<div class="shop-detail-empty"></div>';
   }
 
+  function tryBuyShop(item, slot) {
+    const g = gameApi();
+    if (!g || !g.wire || !activeShopId || !item || !item.id) return false;
+    const itemId = slot.itemId || item.id;
+    const res = g.wire.buyShop(activeShopId, itemId);
+    if (res && res.ok && window.__UAIDZIN_WIRE__ && window.__UAIDZIN_WIRE__.syncFromGame) {
+      window.__UAIDZIN_WIRE__.syncFromGame();
+      return true;
+    }
+    return false;
+  }
+
   function showShopDetail(item, slot) {
     if (!shopDetail || !item) return;
     shopDetail.innerHTML =
@@ -3182,7 +3224,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       "</p>" +
       '<div class="price-row"><span class="lab">Preço</span><span class="val">' +
       formatShopGold(slot.price) +
-      "</span></div>";
+      "</span></div>" +
+      '<button type="button" class="inv-tool sort" id="shopBuyBtn">Comprar</button>';
+    const btn = document.getElementById("shopBuyBtn");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        tryBuyShop(item, slot);
+      });
+    }
   }
 
   async function ensureShopConfig() {
@@ -3270,9 +3319,70 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       paintGold();
       this.syncFromGame();
     },
+    mergeGameSkills: function () {
+      const g = gameApi();
+      if (!g || !g.wire || typeof g.wire.pullSkillCatalog !== "function") return;
+      const cat = g.wire.pullSkillCatalog();
+      if (!cat || !cat.skills) return;
+      SHOP_TREES.length = 0;
+      (cat.trees || []).forEach((t) => SHOP_TREES.push(t));
+      Object.keys(cat.skills).forEach((id) => {
+        skills[id] = cat.skills[id];
+      });
+      skillPoints = cat.skillPoints;
+      playerGold = clampGold(cat.gold);
+      pts = cat.specPoints;
+      spec.controle = cat.spec.controle;
+      spec.magia = cat.spec.magia;
+      spec.fisica = cat.spec.fisica;
+      attrPts = cat.attrPts;
+      attrs.for = cat.attrs.FOR;
+      attrs.des = cat.attrs.DES;
+      attrs.cons = cat.attrs.CONS;
+      attrs.int = cat.attrs.INT;
+      syncSkillMeta();
+      paintSkillMaster();
+      paintSpec();
+      paintAttrs();
+    },
+    pullEquippedFromGame: function () {
+      const g = gameApi();
+      if (!g || !g.wire || typeof g.wire.equippedSnapshot !== "function") return;
+      const snap = g.wire.equippedSnapshot();
+      const slots = ["weapon", "armor", "ring1", "ring2", "neck", "ear"];
+      slots.forEach((s) => {
+        equipped[s] = null;
+      });
+      const eco = window.__UAIDZIN_ECONOMY__;
+      slots.forEach((slot) => {
+        const gi = snap[slot];
+        if (!gi) return;
+        let iconPath = null;
+        if (eco && typeof eco.resolveItemIcon === "function") {
+          iconPath = eco.resolveItemIcon(gi.defId, gi.slot, gi.name);
+        }
+        if (!iconPath) return;
+        const kind = gi.slot === "ring1" || gi.slot === "ring2" ? "ring" : gi.slot;
+        equipped[slot] = makeItem({
+          uid: gi.uid,
+          defId: gi.defId,
+          name: gi.name,
+          short: String(gi.name).slice(0, 8),
+          kind: kind,
+          iconSrc: "assets/" + iconPath,
+          rarity: gi.rarity || "Comum",
+          refine: gi.refine || 0,
+          q: gi.stack || 1,
+          desc: "",
+          stats: { atk: gi.attackBonus || 0, def: gi.defenseBonus || 0 },
+        });
+      });
+      paintDoll();
+    },
     syncFromGame: function () {
       const g = gameApi();
       if (!g || !g.session) return;
+      this.mergeGameSkills();
       playerGold = clampGold(g.session.inventory.gold);
       vaultGold = clampGold(g.session.accountVault.gold);
       function fromGameItem(gi) {
@@ -3319,6 +3429,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       paintGold();
       if (bagPage === "1") paintBag();
       if (vaultPage === "1") paintVault();
+      this.pullEquippedFromGame();
     },
     onVaultBagTransfer: function (kind, it, other) {
       const g = gameApi();
@@ -4291,6 +4402,15 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       btn,
       () => attrPts > 0,
       () => {
+        const g = gameApi();
+        if (g && g.wire) {
+          const map = { for: "FOR", des: "DES", cons: "CONS", int: "INT" };
+          const ok = g.wire.spendAttribute(map[key] || key);
+          if (ok && window.__UAIDZIN_WIRE__ && window.__UAIDZIN_WIRE__.syncFromGame) {
+            window.__UAIDZIN_WIRE__.syncFromGame();
+          }
+          return;
+        }
         if (attrPts <= 0) return;
         attrs[key] += 1;
         attrPts -= 1;
@@ -4306,6 +4426,14 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       btn,
       () => pts > 0 && spec[tree] < CAP,
       () => {
+        const g = gameApi();
+        if (g && g.wire) {
+          const ok = g.wire.spendSpec(tree);
+          if (ok && window.__UAIDZIN_WIRE__ && window.__UAIDZIN_WIRE__.syncFromGame) {
+            window.__UAIDZIN_WIRE__.syncFromGame();
+          }
+          return;
+        }
         if (pts <= 0 || spec[tree] >= CAP) return;
         spec[tree] += 1;
         pts -= 1;

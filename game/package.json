@@ -11,6 +11,7 @@
     "bot": "node scripts/bot-play.mjs",
     "test:save": "node scripts/save-harness.mjs",
     "smoke": "node scripts/smoke.mjs",
+    "cycle-balance": "node scripts/cycle-balance.mjs",
     "devtools:mcp": "DEV_PORT=5173 BROWSER=none npx -y threejs-devtools-mcp@0.4.1",
     "devtools:verify": "node scripts/threejs-devtools-verify.mjs"
   },

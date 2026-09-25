@@ -7,6 +7,7 @@ import type { CityGameSession } from "../app/CityGameSession";
 import type { GameStateStore } from "../core/state/GameStateStore";
 import type { SceneRenderer } from "../presentation/rendering/SceneRenderer";
 import type { WireUi } from "../ui/WireUi";
+import { createWireGameApi } from "../ui/WireGameBridge";
 import type { GamePanels } from "../ui/GamePanels";
 import type { CharacterViewModel } from "../persistence/SaveTypes";
 
@@ -332,6 +333,9 @@ export function installDebugApi(app: DebugHost): void {
         return result;
       },
     },
+    wire: createWireGameApi(app.session, () => {
+      app.wireUi?.applyCharacter(app.currentViewModel());
+    }),
     account: {
       createSlot: (input: {
         slotIndex: number;

@@ -37,7 +37,9 @@ import { adoptItemUidSeq, type ItemInstance } from "../domain/items/ItemModel";
 import type { EquipSlot } from "../domain/items/EquipmentService";
 import { ECONOMY_BALANCE } from "../data/balance/economy";
 import type { DungeonDef } from "../data/dungeons/dungeon-definitions";
-import type { ClassId } from "../data/classes/class-definitions";
+import type { ClassId, TreeId } from "../data/classes/class-definitions";
+import { SKILL_TRAINING } from "../data/balance/economy";
+import { isWeaponSetId } from "../presentation/player/WeaponRig";
 import type { EvolutionId } from "../data/balance/progression";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
 import { createSceneFadeOverlay, type BootCharacter, type SceneFadeOverlay } from "./BootFlow";
@@ -604,6 +606,7 @@ export class CityGameSession {
       : this.character.maxMp;
     this.character.isDead = this.character.hp <= 0;
     this.skillLoadout.refresh();
+    this.refreshWeaponSetFromGear();
   }
 
   update(dt: number, aspect: number, uiBlocked = false): void {
@@ -820,7 +823,10 @@ export class CityGameSession {
   private grantKillXp(enemy: { id: string; archetype: string; isBoss: boolean; xpReward?: number }): void {
     const isBoss = enemy.isBoss;
     const key = isBoss ? "boss" : (enemy.archetype as "fixed" | "chaser" | "ranged");
-    const xp = enemy.xpReward ?? DUNGEON_BALANCE.xpPerKill[isBoss ? "boss" : enemy.archetype as "fixed" | "chaser" | "ranged"] ?? 8;
+    let xp = enemy.xpReward ?? DUNGEON_BALANCE.xpPerKill[isBoss ? "boss" : enemy.archetype as "fixed" | "chaser" | "ranged"] ?? 8;
+    if (this.activeDungeonId === "dungeon-1" && !isBoss) {
+      xp = Math.round(xp * 2);
+    }
     this.sessionXp += xp;
     const { levelsGained } = this.progression.addXp(xp);
     this.dungeonRun.addKill(xp);
@@ -1637,6 +1643,32 @@ export class CityGameSession {
 
   debugSetDodgeChance(value: number): void {
     COMBAT_BALANCE.dodgeChance = value;
+  }
+
+  tryLearnSkill(tree: TreeId, index: number): boolean {
+    const goldCost = SKILL_TRAINING.goldCost(index);
+    if (this.inventory.gold < goldCost) return false;
+    if (!this.skillTree.canLearn(tree, index)) return false;
+    if (!this.skillTree.learn(tree, index)) return false;
+    this.inventory.gold -= goldCost;
+    this.skillLoadout.refresh();
+    void this.persistSave(true);
+    return true;
+  }
+
+  refreshWeaponSetFromGear(): void {
+    const weapon = this.equipment.equipped.weapon;
+    let machados = this.inventory.items.filter((i) => i.defId === "machado_leve").length;
+    if (weapon?.defId === "machado_leve") machados += 1;
+    let set: import("../presentation/player/WeaponRig").WeaponSetId | null = null;
+    if (weapon?.defId === "machado_leve") {
+      set = machados >= 2 ? "dual-axe" : "axe-shield";
+    } else if (weapon?.defId === "espada_curta") {
+      set = "sword-shield";
+    }
+    if (set && isWeaponSetId(set)) {
+      void this.renderer.playerView.setWeaponSet(set);
+    }
   }
 
   enemyViewMesh(id: string) {

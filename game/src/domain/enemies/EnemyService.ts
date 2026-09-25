@@ -1,5 +1,5 @@
 import { type EnemyArchetype } from "../../data/balance/combat";
-import { DUNGEON_BALANCE, dungeonCombatScale } from "../../data/balance/dungeon";
+import { DUNGEON_BALANCE, dungeonArenaScale } from "../../data/balance/dungeon";
 import { DUNGEON_TEST, type DungeonDef } from "../../data/dungeons/dungeon-definitions";
 import { getMonsterDef } from "../../data/monsters/monster-definitions";
 import { EnemyModel } from "./EnemyModel";
@@ -20,8 +20,9 @@ export class EnemyService {
 
   spawnFromDungeon(def: DungeonDef = DUNGEON_TEST): void {
     this.enemies.length = 0;
-    const scale = dungeonCombatScale(def.id);
-    for (const arena of def.arenas) {
+    for (let arenaIndex = 0; arenaIndex < def.arenas.length; arenaIndex++) {
+      const arena = def.arenas[arenaIndex];
+      const scale = dungeonArenaScale(def.id, arenaIndex);
       for (const sp of arena.spawns) {
         this.enemies.push(this.makeEnemy(sp, scale));
       }
