@@ -136,5 +136,33 @@ export function createWireGameApi(session: CityGameSession, onChanged: () => voi
       return ok;
     },
     equippedSnapshot: () => session.equipment.snapshotEquipped(),
+    useConsumable: (uid: string) => {
+      const ok = session.tryUseConsumable(uid);
+      if (ok) onChanged();
+      return ok;
+    },
+    learnFisicaLine: () => {
+      let learned = 0;
+      for (let i = 0; i < 8; i++) {
+        if (session.tryLearnSkill("fisica", i)) learned += 1;
+        else break;
+      }
+      if (learned > 0) onChanged();
+      return learned;
+    },
+    spendAllAttributes: (primary: "FOR" | "CONS" = "FOR") => {
+      let spent = 0;
+      const other = primary === "FOR" ? "CONS" : "FOR";
+      while (session.progression.state.unspentAttributePoints > 0) {
+        const attr = spent % 2 === 0 ? primary : other;
+        if (!session.progression.spendAttribute(attr, 1)) break;
+        spent += 1;
+      }
+      if (spent > 0) {
+        void session.persistSave(true);
+        onChanged();
+      }
+      return spent;
+    },
   };
 }

@@ -45,6 +45,7 @@ const NAME_ICON: Record<string, string> = {
   "Brinco de Osso": "items/brinco_osso.svg",
   "Poeira de Ori": "items/ori.svg",
   "Poeira de Lac": "items/lac.svg",
+  "Poção Menor": "items/potion.svg",
   "Selo D4": "items/seal.svg",
   "Selo D5": "items/seal.svg",
   "Selo D6": "items/seal.svg",

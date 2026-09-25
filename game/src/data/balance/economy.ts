@@ -105,7 +105,7 @@ export { resolveItemIcon };
 
 export const SKILL_TRAINING = {
   pointsCost: 1,
-  goldPerTier: 250,
+  goldPerTier: 55,
   goldCost(index: number): number {
     return (index + 1) * SKILL_TRAINING.goldPerTier;
   },

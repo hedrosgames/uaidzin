@@ -39,6 +39,7 @@ import { ECONOMY_BALANCE } from "../data/balance/economy";
 import type { DungeonDef } from "../data/dungeons/dungeon-definitions";
 import type { ClassId, TreeId } from "../data/classes/class-definitions";
 import { SKILL_TRAINING } from "../data/balance/economy";
+import { CONSUMABLE_BALANCE, isConsumableId } from "../data/balance/consumables";
 import { isWeaponSetId } from "../presentation/player/WeaponRig";
 import type { EvolutionId } from "../data/balance/progression";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
@@ -825,7 +826,7 @@ export class CityGameSession {
     const key = isBoss ? "boss" : (enemy.archetype as "fixed" | "chaser" | "ranged");
     let xp = enemy.xpReward ?? DUNGEON_BALANCE.xpPerKill[isBoss ? "boss" : enemy.archetype as "fixed" | "chaser" | "ranged"] ?? 8;
     if (this.activeDungeonId === "dungeon-1" && !isBoss) {
-      xp = Math.round(xp * 2);
+      xp = Math.round(xp * 3);
     }
     this.sessionXp += xp;
     const { levelsGained } = this.progression.addXp(xp);
@@ -1643,6 +1644,19 @@ export class CityGameSession {
 
   debugSetDodgeChance(value: number): void {
     COMBAT_BALANCE.dodgeChance = value;
+  }
+
+  tryUseConsumable(uid: string): boolean {
+    const item = this.inventory.items.find((i) => i.uid === uid);
+    if (!item || !isConsumableId(item.defId)) return false;
+    const spec = CONSUMABLE_BALANCE[item.defId];
+    const heal = Math.max(1, Math.round(this.character.maxHp * spec.healRatio));
+    if (this.character.hp >= this.character.maxHp) return false;
+    this.character.heal(heal, this.character.maxHp);
+    item.stack -= 1;
+    if (item.stack <= 0) this.inventory.remove(item.uid);
+    void this.persistSave(true);
+    return true;
   }
 
   tryLearnSkill(tree: TreeId, index: number): boolean {

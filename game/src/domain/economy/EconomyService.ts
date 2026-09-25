@@ -23,7 +23,8 @@ export class EconomyService {
     lostItem: boolean;
   } {
     const key = isBoss ? "boss" : archetype;
-    const gold = ECONOMY_BALANCE.goldPerKill[key] ?? 2;
+    let gold = ECONOMY_BALANCE.goldPerKill[key] ?? 2;
+    if (this.dungeonIndex === 1) gold *= 6;
     this.inventory.gold += gold;
 
     let dropped: string | null = null;

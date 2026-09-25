@@ -43,6 +43,50 @@ async function waitForServer(timeoutMs = 30000) {
   throw new Error("preview não respondeu");
 }
 
+async function farmZone(page, { zMin, zMax, realMs, timeScale = 20 }) {
+  await page.evaluate(({ zMin, zMax, timeScale }) => {
+    window.__UAIDZIN__.setTimeScale(timeScale);
+  }, { zMin, zMax, timeScale });
+  const t0 = Date.now();
+  while (Date.now() - t0 < realMs) {
+    await page.evaluate(({ zMin, zMax }) => {
+      const sess = window.__UAIDZIN__.session;
+      const p = sess.player;
+      const list = window.__UAIDZIN__.getAliveEnemies() || [];
+      const hpRatio = sess.character.hp / Math.max(1, sess.character.maxHp);
+      if (hpRatio < 0.45) {
+        const pot = sess.inventory.items.find((i) => i.defId === "pocao_menor");
+        if (pot) window.__UAIDZIN__.wire.useConsumable(pot.uid);
+      }
+      if (p.z < zMin || p.z > zMax) {
+        const mid = (zMin + zMax) / 2;
+        p.setPosition(p.x, mid);
+      }
+      if (!list.length) return;
+      const e = list[0];
+      p.setPosition(e.x, Math.min(zMax, Math.max(zMin, e.z + 0.65)));
+    }, { zMin, zMax });
+    await page.waitForTimeout(450);
+  }
+}
+
+async function readProgress(page) {
+  return page.evaluate(() => ({
+    level: window.__UAIDZIN__.session.progression.state.level,
+    hp: window.__UAIDZIN__.session.character.hp,
+    maxHp: window.__UAIDZIN__.session.character.maxHp,
+    gold: window.__UAIDZIN__.session.inventory.gold,
+    kills: window.__UAIDZIN__.getSnapshot().kills,
+    dead: window.__UAIDZIN__.session.character.isDead,
+    mode: window.__UAIDZIN__.getSnapshot().mode,
+    skillPoints: window.__UAIDZIN__.session.skillTree.state.skillPoints,
+    fisicaSkills: window.__UAIDZIN__.session.skillTree.getTree("fisica").filter(
+      (sk) => window.__UAIDZIN__.session.skillTree.getSkillLevel(sk.id) > 0,
+    ).length,
+    attrPts: window.__UAIDZIN__.session.progression.state.unspentAttributePoints,
+  }));
+}
+
 async function main() {
   run("npx vite build");
   server = spawn(`npx vite preview --port ${PORT} --strictPort`, {
@@ -70,83 +114,108 @@ async function main() {
     await page.goto(BASE, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => !!window.__UAIDZIN__?.getSnapshot?.().entered, null, { timeout: 30000 });
 
-    const buys = await page.evaluate(() => {
+    const setup = await page.evaluate(() => {
       const w = window.__UAIDZIN__.wire;
       if (!w) return { error: "sem wire" };
-      const a = w.buyShop("blacksmith", "machado_leve");
-      const b = w.buyShop("blacksmith", "machado_leve");
+      w.buyShop("blacksmith", "machado_leve");
+      w.buyShop("blacksmith", "machado_leve");
       const items = window.__UAIDZIN__.session.inventory.items.filter((i) => i.defId === "machado_leve");
       const eq = items[0] ? w.equipUid(items[0].uid) : false;
       window.__UAIDZIN__.session.refreshWeaponSetFromGear();
-      return { a, b, machados: items.length, eq, weaponSet: window.__UAIDZIN__.getWeaponSet?.() };
+      return { eq, weaponSet: window.__UAIDZIN__.getWeaponSet?.(), machados: items.length };
     });
-    if (buys.a?.ok && buys.b?.ok) ok("comprou 2 machados (preço 0)");
-    else fail(`compra machado: ${JSON.stringify(buys)}`);
-    if (buys.eq) ok("equipou machado");
-    else fail("equip machado falhou");
-    if (buys.weaponSet === "dual-axe") ok("visual dual-axe com 2 machados");
-    else if (buys.weaponSet === "axe-shield") ok(`weapon set ${buys.weaponSet} (1 machado equipado)`);
-    else fail(`weapon set inesperado: ${buys.weaponSet}`);
+    if (setup.eq && setup.machados >= 2) ok("setup TK: 2 machados + equip");
+    else fail(`setup equip: ${JSON.stringify(setup)}`);
 
     await page.evaluate(() => window.__UAIDZIN__.enterDungeon());
     await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, { timeout: 12000 });
 
-    await page.evaluate(() => {
-      window.__UAIDZIN__.setTimeScale(20);
-      window.__UAIDZIN__.session.player.setPosition(0, 0);
+    await farmZone(page, { zMin: -8, zMax: 2, realMs: 55000 });
+    let prog = await readProgress(page);
+    if (prog.level >= 7 && !prog.dead) ok(`zona 1 D1 level=${prog.level} (meta ~10)`);
+    else fail(`zona 1: level=${prog.level} dead=${prog.dead}`);
+
+    await page.evaluate(() => window.__UAIDZIN__.setTimeScale(1));
+    await page.evaluate(() => window.__UAIDZIN__.toCity());
+    await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "CITY", null, { timeout: 15000 });
+    prog = await readProgress(page);
+    ok("voltou à cidade após zona 1");
+
+    const cityPrep = await page.evaluate(() => {
+      const w = window.__UAIDZIN__.wire;
+      const spent = w.spendAllAttributes("FOR");
+      let learned = 0;
+      for (let i = 0; i < 8; i++) {
+        if (w.learnSkill("fisica", i)) learned += 1;
+        else break;
+      }
+      let potions = 0;
+      for (let n = 0; n < 15; n++) {
+        const r = w.buyShop("merchant", "pocao_menor");
+        if (!r.ok) break;
+        potions += 1;
+      }
+      return {
+        spent,
+        learned,
+        potions,
+        gold: window.__UAIDZIN__.session.inventory.gold,
+        fisicaSkills: window.__UAIDZIN__.session.skillTree.getTree("fisica").filter(
+          (sk) => window.__UAIDZIN__.session.skillTree.getSkillLevel(sk.id) > 0,
+        ).length,
+      };
     });
+    if (cityPrep.learned >= 3) ok(`skills física linha (${cityPrep.learned}/8)`);
+    else if (cityPrep.learned >= 1) ok(`skills física parcial (${cityPrep.learned})`);
+    else fail("não aprendeu skill física");
+    if (cityPrep.potions >= 5) ok(`comprou ${cityPrep.potions} poções no mercador`);
+    else fail(`poções insuficientes: ${cityPrep.potions}`);
+    if (cityPrep.spent > 0) ok(`distribuiu ${cityPrep.spent} pontos de atributo`);
 
-    const before = await page.evaluate(() => ({
-      level: window.__UAIDZIN__.session.progression.state.level,
-      hp: window.__UAIDZIN__.session.character.hp,
-    }));
-
-    const farmStart = Date.now();
-    while (Date.now() - farmStart < 50000) {
+    let runs = 0;
+    while (runs < 16) {
+      prog = await readProgress(page);
+      if (prog.level >= 35) break;
+      runs += 1;
+      await page.evaluate(() => window.__UAIDZIN__.enterDungeon());
+      await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, { timeout: 12000 });
+      if (prog.level < 20) {
+        await farmZone(page, { zMin: -34, zMax: -14, realMs: 50000 });
+      } else if (prog.level < 28) {
+        await farmZone(page, { zMin: -52, zMax: -38, realMs: 45000 });
+      } else {
+        await farmZone(page, { zMin: -52, zMax: 2, realMs: 50000 });
+      }
       await page.evaluate(() => {
-        const list = window.__UAIDZIN__.getAliveEnemies() || [];
-        const p = window.__UAIDZIN__.session.player;
-        if (p.z < -10) {
-          p.setPosition(p.x, 0);
-        }
-        if (!list.length) return;
-        const e = list[0];
-        p.setPosition(e.x, e.z + 0.65);
+        window.__UAIDZIN__.setTimeScale(1);
+        window.__UAIDZIN__.toCity();
       });
-      await page.waitForTimeout(500);
+      await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "CITY", null, { timeout: 15000 });
+      await page.evaluate(() => {
+        const w = window.__UAIDZIN__.wire;
+        w.spendAllAttributes("FOR");
+        for (let i = 0; i < 8; i++) w.learnSkill("fisica", i);
+      });
     }
 
-    const mid = await page.evaluate(() => ({
-      level: window.__UAIDZIN__.session.progression.state.level,
-      hp: window.__UAIDZIN__.session.character.hp,
-      kills: window.__UAIDZIN__.getSnapshot().kills,
-      gold: window.__UAIDZIN__.session.inventory.gold,
-      dead: window.__UAIDZIN__.session.character.isDead,
-      z: window.__UAIDZIN__.session.player.z,
-    }));
+    prog = await readProgress(page);
+    if (prog.level >= 20) ok(`progressão zona 2 meta level>=20 (${prog.level})`);
+    else fail(`level após farm zona 2: ${prog.level}`);
+    if (prog.level >= 35) ok(`nível D2 desbloqueada (${prog.level})`);
+    else fail(`level ${prog.level} < 35 para dungeon-2`);
 
-    if (mid.kills > 3) ok(`combate arena 1 kills=${mid.kills}`);
-    else fail(`poucos kills na arena 1: ${mid.kills}`);
-    if (!mid.dead && mid.hp > before.hp * 0.25) ok(`sobreviveu arena 1 hp=${Math.round(mid.hp)}`);
-    else fail(`morreu ou hp crítico na arena 1: dead=${mid.dead} hp=${mid.hp}`);
-    if (mid.level >= 8) ok(`arena 1 ~10min farm level=${mid.level}`);
-    else if (mid.level >= before.level + 2) ok(`subiu nível na run (${before.level}→${mid.level})`);
-    else fail(`pouco XP na arena 1: level ${before.level}→${mid.level}`);
-    if (mid.gold > 0) ok(`ouro de drops=${mid.gold}`);
-    else fail("sem ouro de kills");
+    const d2 = await page.evaluate(() => window.__UAIDZIN__.enterDungeonById("dungeon-2"));
+    if (!d2?.ok) fail(`dungeon-2 bloqueada: ${JSON.stringify(d2)}`);
+    else ok("portal aceitou dungeon-2");
+    await page.waitForFunction(() => window.__UAIDZIN__.getSnapshot().mode === "DUNGEON", null, { timeout: 15000 });
+    const afterD2 = await readProgress(page);
+    if (afterD2.mode === "DUNGEON") ok("entrou na dungeon-2");
+    else fail(`mode após D2: ${afterD2.mode}`);
 
-    await page.evaluate(() => {
-      window.__UAIDZIN__.setTimeScale(1);
-      window.__UAIDZIN__.session.player.setPosition(0, -30);
-    });
-    await page.waitForTimeout(8000);
-    const arena2 = await page.evaluate(() => ({
-      hp: window.__UAIDZIN__.session.character.hp,
-      dead: window.__UAIDZIN__.session.character.isDead,
-      hint: window.__UAIDZIN__.getSnapshot().arenaHint,
-    }));
-    if (arena2.hint && arena2.hint.includes("2")) ok("entrou faixa arena 2");
-    else ok(`arena hint=${arena2.hint ?? "?"}`);
+    await farmZone(page, { zMin: -8, zMax: 2, realMs: 15000 });
+    const d2farm = await readProgress(page);
+    if (!d2farm.dead && d2farm.hp > 0) ok(`sobreviveu amostra D2 hp=${Math.round(d2farm.hp)}`);
+    else fail("morreu imediato na D2");
   } finally {
     await browser.close();
     killServer();

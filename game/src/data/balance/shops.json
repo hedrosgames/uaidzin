@@ -8,6 +8,7 @@
       { "itemId": "entry_d6", "qty": 12, "price": 500 },
       { "itemId": "entry_d7", "qty": 10, "price": 750 },
       { "itemId": "entry_d8", "qty": 8, "price": 1000 },
+      { "itemId": "pocao_menor", "qty": 99, "price": 12 },
       { "itemId": "mat_ori", "qty": 50, "price": 25 },
       { "itemId": "mat_lac", "qty": 10, "price": 120 }
     ]

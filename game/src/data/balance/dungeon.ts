@@ -49,14 +49,14 @@ export function dungeonArenaScale(
   if (dungeonId === "dungeon-1") {
     if (arenaIndex <= 0) return base;
     if (arenaIndex === 1) {
-      return mulScale(base, { hpMultiplier: 1.35, attackMultiplier: 1.45, defenseMultiplier: 1.25 });
+      return mulScale(base, { hpMultiplier: 1.12, attackMultiplier: 1.08, defenseMultiplier: 1.05 });
     }
-    return mulScale(base, { hpMultiplier: 2.1, attackMultiplier: 2.05, defenseMultiplier: 1.65 });
+    return mulScale(base, { hpMultiplier: 1.65, attackMultiplier: 1.55, defenseMultiplier: 1.35 });
   }
   if (dungeonId === "dungeon-2") {
-    if (arenaIndex <= 0) return mulScale(base, { hpMultiplier: 0.72, attackMultiplier: 0.68, defenseMultiplier: 0.75 });
-    if (arenaIndex === 1) return mulScale(base, { hpMultiplier: 0.95, attackMultiplier: 0.92, defenseMultiplier: 0.9 });
-    return mulScale(base, { hpMultiplier: 1.25, attackMultiplier: 1.2, defenseMultiplier: 1.1 });
+    if (arenaIndex <= 0) return mulScale(base, { hpMultiplier: 0.62, attackMultiplier: 0.58, defenseMultiplier: 0.68 });
+    if (arenaIndex === 1) return mulScale(base, { hpMultiplier: 0.82, attackMultiplier: 0.78, defenseMultiplier: 0.8 });
+    return mulScale(base, { hpMultiplier: 1.05, attackMultiplier: 1.0, defenseMultiplier: 0.95 });
   }
   if (arenaIndex <= 0) return base;
   if (arenaIndex === 1) return mulScale(base, { hpMultiplier: 1.08, attackMultiplier: 1.06, defenseMultiplier: 1.04 });

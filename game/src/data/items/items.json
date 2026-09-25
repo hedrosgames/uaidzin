@@ -1,5 +1,14 @@
 [
   {
+    "id": "pocao_menor",
+    "name": "Poção Menor",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Restaura parte do HP.",
+    "icon": "items/potion.svg",
+    "sellValue": 4
+  },
+  {
     "id": "mat_ori",
     "name": "Poeira de Ori",
     "slot": "material",

@@ -17,7 +17,7 @@ export class InventoryService {
 
   
   add(item: ItemInstance): boolean {
-    if (item.slot === "material") {
+    if (item.slot === "material" || item.defId === "pocao_menor") {
       const stack = this.items.find((i) => i.defId === item.defId);
       if (stack) {
         stack.stack = Math.min(ECONOMY_BALANCE.materialStack, stack.stack + item.stack);
