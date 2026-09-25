@@ -273,6 +273,22 @@ export class PlayerView {
     return Math.max(0.25, action.getClip().duration / Math.max(action.timeScale, 0.01));
   }
 
+  getCombatAnimProbe(): {
+    weaponSet: WeaponSetId | null;
+    attackClipId: HumanAttackClip;
+    attackDurationSec: number;
+    attackActionReady: boolean;
+  } {
+    const set = this.weaponRig.getSet() ?? this.weaponSet ?? CLASS_WEAPON_SET[this.classId];
+    const action = this.actions.get("attack");
+    return {
+      weaponSet: set,
+      attackClipId: this.attackClip,
+      attackDurationSec: this.getAnimDurationSec("attack"),
+      attackActionReady: !!(this.ready && action && action.getClip()),
+    };
+  }
+
   update(dt: number): void {
     this.mixer?.update(dt);
     this.armorAura.update(dt);

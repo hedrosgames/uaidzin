@@ -141,6 +141,7 @@ export function installDebugApi(app: DebugHost): void {
       return id;
     },
     getWeaponSet: () => app.renderer.playerView.getWeaponSet(),
+    getCombatAnimProbe: () => app.renderer.playerView.getCombatAnimProbe(),
     openPanel: (name: string, title?: string, shopId?: string) => {
       if (app.wireUi) {
         if (isWirePanelName(name)) {

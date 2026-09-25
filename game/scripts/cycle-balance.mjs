@@ -285,8 +285,19 @@ async function main() {
     const swings = await page.evaluate(() => window.__UAIDZIN__.getSnapshot().autoAttackSwings);
     if (swings >= 8) ok(`auto-ataque disparou (${swings} swings)`);
     else fail(`auto-ataque fraco: swings=${swings}`);
+    const animProbe = await page.evaluate(() => window.__UAIDZIN__.getCombatAnimProbe());
+    if (
+      animProbe.weaponSet === "dual-axe" &&
+      animProbe.attackClipId === "attack_1h" &&
+      animProbe.attackActionReady &&
+      animProbe.attackDurationSec > 0.2
+    ) {
+      ok(`animação ataque bound (${animProbe.attackClipId}, ${animProbe.attackDurationSec.toFixed(2)}s)`);
+    } else fail(`animação ataque: ${JSON.stringify(animProbe)}`);
     if (prog.level >= 9 && !prog.dead) ok(`zona 1 D1 level=${prog.level} (meta ~10)`);
     else fail(`zona 1: level=${prog.level} dead=${prog.dead}`);
+    if (z1Surv.level >= 10 && z1Surv.level <= 28) ok(`progressão pós-10min nv=${z1Surv.level} (z1→z2)`);
+    else fail(`level após 10min fora da faixa z1/z2: ${z1Surv.level}`);
     const dropAudit = await page.evaluate(() => ({
       dropLines: window.__UAIDZIN__.session.getDropLog().length,
       invLen: window.__UAIDZIN__.session.inventory.items.length,
