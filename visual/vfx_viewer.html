@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UAIDZIN — Master VFX & Skills Studio</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+
+    <!-- Offline Library Imports -->
+    <script src="CartoonFX_VFX_Quarks/libs/three.min.js"></script>
+    <script src="CartoonFX_VFX_Quarks/libs/OrbitControls.js"></script>
+    <script src="CartoonFX_VFX_Quarks/libs/three.quarks.min.js"></script>
+    <script src="CartoonFX_VFX_Quarks/libs/Pass.js"></script>
+    <script src="CartoonFX_VFX_Quarks/libs/CopyShader.js"></script>
+    <script src="CartoonFX_VFX_Quarks/libs/LuminosityHighPassShader.js"></script>
+    <script src="CartoonFX_VFX_Quarks/libs/ShaderPass.js"></script>
+    <script src="CartoonFX_VFX_Quarks/libs/RenderPass.js"></script>
+    <script src="CartoonFX_VFX_Quarks/libs/UnrealBloomPass.js"></script>
+    <script src="CartoonFX_VFX_Quarks/libs/EffectComposer.js"></script>
+
+    <!-- Master Database: 96 Skills (3 Versions Each) + 67 VFX Pack texturizados em Base64 -->
+    <script src="CartoonFX_VFX_Quarks/uaidzin_vfx_data.js"></script>
+
+    <style>
+        :root {
+            /* UAIDZIN Canônico: Paleta Salão / Brasa */
+            --bg0: #0a0705;
+            --bg1: #140e0a;
+            --bg2: #1e150f;
+            --panel: rgba(22, 15, 10, 0.94);
+            --panel-card: rgba(32, 22, 16, 0.85);
+            --panel-card-hover: rgba(50, 36, 26, 0.95);
+            --panel-card-active: #4a2810;
+            --iron: #3d3228;
+            --iron-hi: #5a4a38;
+            --gold: #d4a017;
+            --gold-hi: #f6dfae;
+            --gold-dim: #9e7611;
+            --blood: #a33b3b;
+            --ember: #ff8c2e;
+            --ember-hot: #ffbe6a;
+            --ember-deep: #c2410f;
+            --ink: #f0e6d0;
+            --ink-dim: #b8a88c;
+            --ink-mute: #7a6b58;
+            --cyan: #38bdf8;
+            --border-panel: 1px solid var(--iron-hi);
+            --font-display: Georgia, "Palatino Linotype", Cinzel, serif;
+            --font-ui: "Segoe UI", Tahoma, system-ui, sans-serif;
+            --font-num: ui-monospace, Consolas, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg0);
+            font-family: var(--font-ui);
+            color: var(--ink);
+        }
+
+        /* 3D Viewport Layer */
+        #viewport-container {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background: #000;
+        }
+
+        #canvas-3d {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Master Header (UAIDZIN Estilo Salão / Brasa) */
+        #master-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 62px;
+            background: linear-gradient(180deg, rgba(26, 18, 12, 0.98) 0%, rgba(14, 9, 6, 0.94) 100%);
+            border-bottom: 1px solid var(--iron-hi);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8), inset 0 1px 0 rgba(212,160,23,0.18);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 20;
+        }
+
+        .brand-zone {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-logo {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            color: var(--gold-hi);
+            text-shadow: 0 2px 10px rgba(255, 140, 46, 0.35);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-badge {
+            background: linear-gradient(180deg, #421c08, #240e04);
+            border: 1px solid var(--ember-deep);
+            color: var(--ember-hot);
+            font-family: var(--font-num);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 2px;
+            letter-spacing: 0.08em;
+        }
+
+        /* Top Navigation Tabs: GAME SKILLS vs VFX PACK */
+        .top-mode-nav {
+            display: flex;
+            background: #140e0a;
+            border: 1px solid var(--iron);
+            border-radius: 2px;
+            padding: 3px;
+            gap: 4px;
+        }
+
+        .mode-tab {
+            padding: 8px 22px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-dim);
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-tab:hover {
+            color: var(--gold-hi);
+            border-color: var(--iron-hi);
+        }
+
+        .mode-tab.active {
+            background: linear-gradient(180deg, #3d2210, #24140a);
+            border-color: var(--gold);
+            color: var(--gold-hi);
+            box-shadow: 0 0 14px rgba(212, 160, 23, 0.25);
+        }
+
+        /* Header Quick Controls */
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-saloon {
+            appearance: none;
+            background: linear-gradient(180deg, #302419, #1c140e);
+            border: 1px solid var(--iron-hi);
+            border-radius: 2px;
+            color: var(--ink);
+            padding: 7px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-saloon:hover {
+            border-color: var(--gold);
+            color: var(--gold-hi);
+        }
+
+        .btn-saloon:active {
+            transform: translateY(1px);
+        }
+
+        .btn-saloon.primary {
+            background: linear-gradient(180deg, #5c2409, #331304);
+            border-color: var(--ember);
+            color: var(--ember-hot);
+            font-weight: 700;
+        }
+
+        .btn-saloon.active {
+            background: linear-gradient(180deg, #3d2913, #21160a);
+            border-color: var(--gold);
+            color: var(--gold-hi);
+            box-shadow: inset 0 0 8px rgba(212, 160, 23, 0.3);
+        }
+
+        /* Main Workspace Layout */
+        #workspace {
+            position: absolute;
+            top: 62px;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+        }
+
+        /* Left Sidebar: Organização Limpa Salão/Brasa */
+        #sidebar {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            bottom: 14px;
+            width: 360px;
+            background: var(--panel);
+            border: 1px solid var(--iron-hi);
+            border-radius: 2px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.75), inset 0 0 0 1px rgba(212, 160, 23, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            pointer-events: auto;
+            transition: transform 0.22s ease;
+        }
+
+        #sidebar.collapsed {
+            transform: translateX(-390px);
+        }
+
+        .sidebar-header {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--iron);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(14, 9, 6, 0.8);
+        }
+
+        /* Character Class Tabs (TK, FM, BM, HT) */
+        .char-tab-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+        }
+
+        .char-btn {
+            background: #19120c;
+            border: 1px solid var(--iron);
+            border-radius: 2px;
+            padding: 6px 2px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .char-btn:hover {
+            border-color: var(--gold-dim);
+        }
+
+        .char-btn.active {
+            background: linear-gradient(180deg, #44220b, #281406);
+            border-color: var(--gold);
+            box-shadow: 0 0 8px rgba(212, 160, 23, 0.3);
+        }
+
+        .char-btn-id {
+            font-family: var(--font-display);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--gold-hi);
+            display: block;
+        }
+
+        .char-btn-name {
+            font-size: 9px;
+            color: var(--ink-dim);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+
+        /* Search and Sub-filters */
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            background: #140e0a;
+            border: 1px solid var(--iron);
+            border-radius: 2px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: var(--ink);
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        .search-box input:focus {
+            border-color: var(--gold);
+        }
+
+        .tree-filter-bar {
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .tree-filter-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tree-pill {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            background: #18110b;
+            border: 1px solid var(--iron);
+            border-radius: 2px;
+            color: var(--ink-dim);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+        }
+
+        .tree-pill:hover {
+            border-color: var(--gold-dim);
+            color: var(--gold-hi);
+        }
+
+        .tree-pill.active {
+            background: #331f11;
+            border-color: var(--gold);
+            color: var(--gold-hi);
+        }
+
+        /* Sidebar Item List */
+        .item-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--iron-hi) transparent;
+        }
+
+        .item-list::-webkit-scrollbar {
+            width: 5px;
+        }
+        .item-list::-webkit-scrollbar-thumb {
+            background: var(--iron-hi);
+            border-radius: 2px;
+        }
+
+        /* Card de Item / Skill */
+        .vfx-card {
+            background: var(--panel-card);
+            border: 1px solid var(--iron);
+            padding: 10px 12px;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.14s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .vfx-card:hover {
+            background: var(--panel-card-hover);
+            border-color: var(--gold-dim);
+            transform: translateX(2px);
+        }
+
+        .vfx-card.active {
+            background: var(--panel-card-active);
+            border-color: var(--gold);
+            box-shadow: 0 0 12px rgba(212, 160, 23, 0.25);
+        }
+
+        .vfx-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .vfx-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .vfx-card.active .vfx-card-title {
+            color: var(--gold-hi);
+        }
+
+        .vfx-card-badge {
+            font-size: 10px;
+            font-family: var(--font-num);
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 2px;
+            border: 1px solid var(--iron-hi);
+            background: #140d08;
+            color: var(--ink-dim);
+        }
+
+        .vfx-card-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--ink-mute);
+        }
+
+        /* Sidebar Toggle Tab Button */
+        #btn-toggle-sidebar {
+            position: absolute;
+            left: 382px;
+            top: 20px;
+            z-index: 15;
+            background: var(--panel);
+            border: 1px solid var(--iron-hi);
+            color: var(--gold);
+            width: 28px;
+            height: 32px;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: left 0.22s ease;
+        }
+
+        /* Bottom Floating Inspection Bar / HUD */
+        #vfx-hud {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(920px, 92vw);
+            background: var(--panel);
+            border: 1px solid var(--iron-hi);
+            border-radius: 2px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.85), inset 0 0 0 1px rgba(212,160,23,0.15);
+            padding: 14px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: auto;
+            z-index: 25;
+        }
+
+        .hud-row-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .hud-info-main {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .hud-char-badge {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--gold-hi);
+            background: linear-gradient(180deg, #421c08, #210d03);
+            border: 1px solid var(--gold);
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+        }
+
+        .hud-titles h2 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gold-hi);
+            letter-spacing: 0.04em;
+        }
+
+        .hud-titles p {
+            font-size: 11px;
+            color: var(--ink-dim);
+            letter-spacing: 0.04em;
+        }
+
+        /* 3 Visual Versions Selector Bar */
+        .version-selector-group {
+            display: flex;
+            align-items: center;
+            background: #140e0a;
+            border: 1px solid var(--iron);
+            border-radius: 2px;
+            padding: 3px;
+            gap: 4px;
+        }
+
+        .version-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 2px;
+            color: var(--ink-dim);
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .version-btn:hover {
+            color: var(--gold-hi);
+            border-color: var(--iron-hi);
+        }
+
+        .version-btn.active {
+            background: linear-gradient(180deg, #44220b, #281406);
+            border-color: var(--gold);
+            color: var(--gold-hi);
+            box-shadow: 0 0 10px rgba(212, 160, 23, 0.3);
+        }
+
+        .hud-row-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--iron);
+            padding-top: 10px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .playback-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--ink-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0 8px;
+        }
+
+        .speed-control input[type="range"] {
+            width: 90px;
+            accent-color: var(--gold);
+        }
+
+        .telemetry-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-family: var(--font-num);
+            font-size: 12px;
+            color: var(--ink-mute);
+        }
+
+        .telemetry-group span strong {
+            color: var(--gold-hi);
+            font-weight: 600;
+        }
+
+        /* Top-Right Camera / Scene Presets */
+        #scene-presets {
+            position: absolute;
+            top: 76px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 15;
+            pointer-events: auto;
+        }
+
+        /* Click to spawn hint */
+        #ground-hint {
+            position: absolute;
+            bottom: 110px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+            background: rgba(14, 9, 6, 0.75);
+            border: 1px solid rgba(90, 74, 56, 0.5);
+            padding: 4px 14px;
+            border-radius: 2px;
+            pointer-events: none;
+            z-index: 12;
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D WebGL Canvas Layer -->
+    <div id="viewport-container">
+        <canvas id="canvas-3d"></canvas>
+    </div>
+
+    <!-- Master Header -->
+    <header id="master-header">
+        <div class="brand-zone">
+            <div class="brand-logo">
+                <span>UAIDZIN</span>
+                <span style="font-size:14px;color:var(--gold);font-weight:400;">· Studio VFX</span>
+            </div>
+            <span class="brand-badge" id="stats-badge">96 SKILLS / 67 PACK VFX</span>
+        </div>
+
+        <!-- Mode Switcher -->
+        <nav class="top-mode-nav">
+            <button class="mode-tab active" id="tab-game-skills">
+                <span>⚔️ Game Skills VFX (96)</span>
+            </button>
+            <button class="mode-tab" id="tab-vfx-pack">
+                <span>✨ VFX Pack (67)</span>
+            </button>
+        </nav>
+
+        <!-- Right Quick Controls -->
+        <div class="header-controls">
+            <button class="btn-saloon" id="btn-theme-arena" title="Alternar Cenário 3D">
+                <span>🏛️ Arena Brasa</span>
+            </button>
+            <button class="btn-saloon" id="btn-toggle-bloom" title="Alternar Bloom HDR">
+                <span>✨ Bloom On</span>
+            </button>
+            <button class="btn-saloon" id="btn-cam-reset" title="Centralizar Câmera">
+                <span>⌖ Reset Cam</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Interactive Workspace -->
+    <div id="workspace">
+        <!-- Sidebar Navigation Drawer -->
+        <aside id="sidebar">
+            <div class="sidebar-header" id="sidebar-header">
+                <!-- Mode-specific controls populated by JS -->
+            </div>
+
+            <!-- List of VFX / Skills -->
+            <div class="item-list" id="item-list">
+                <!-- Populated dynamically -->
+            </div>
+        </aside>
+
+        <!-- Toggle Sidebar Button -->
+        <button id="btn-toggle-sidebar" title="Recolher / Expandir Painel">◀</button>
+
+        <!-- Camera Presets -->
+        <div id="scene-presets">
+            <button class="btn-saloon" id="cam-front">👁️ Frontal</button>
+            <button class="btn-saloon" id="cam-iso">⬡ Isométrica</button>
+            <button class="btn-saloon" id="cam-top">⬇ Topo</button>
+        </div>
+
+        <!-- Ground Click Hint -->
+        <div id="ground-hint">Clique com o botão esquerdo no solo para disparar o efeito na coordenada</div>
+
+        <!-- Bottom Inspection HUD -->
+        <footer id="vfx-hud">
+            <div class="hud-row-top">
+                <div class="hud-info-main">
+                    <div class="hud-char-badge" id="hud-char-badge">TK</div>
+                    <div class="hud-titles">
+                        <h2 id="hud-title">Force Wave</h2>
+                        <p id="hud-desc">Física · Dano Único · Alcance 6.5m · Multiplicador 1.25x</p>
+                    </div>
+                </div>
+
+                <!-- 5 Visual Versions -->
+                <div class="version-selector-group" id="version-selector">
+                    <button class="version-btn active" data-v="0">V1 · Tática</button>
+                    <button class="version-btn" data-v="1">V2 · Arcana</button>
+                    <button class="version-btn" data-v="2">V3 · Épica</button>
+                    <button class="version-btn" data-v="3">V4 · Astral</button>
+                    <button class="version-btn" data-v="4">V5 · Mítica</button>
+                </div>
+            </div>
+
+            <div class="hud-row-bottom">
+                <div class="playback-controls">
+                    <button class="btn-saloon primary" id="btn-replay">
+                        <span>▶ Replay (Espaço)</span>
+                    </button>
+                    <button class="btn-saloon active" id="btn-loop">
+                        <span>↻ Loop: Ligado</span>
+                    </button>
+                    <div class="speed-control">
+                        <span>Velocidade:</span>
+                        <input type="range" id="slider-speed" min="0.1" max="2.0" step="0.1" value="1.0">
+                        <span id="speed-label" style="font-family:var(--font-num);color:var(--gold-hi);">1.0×</span>
+                    </div>
+                </div>
+
+                <div class="telemetry-group">
+                    <span>Emissores: <strong id="tel-emitters">3</strong></span>
+                    <span>Partículas: <strong id="tel-particles">0</strong></span>
+                    <span>FPS: <strong id="tel-fps">60</strong></span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Main Logic Script -->
+    <script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const QUARKS = THREE.QUARKS;
+
+        // 1. Initial State
+        let currentMode = 'game-skills'; // 'game-skills' | 'vfx-pack'
+        let selectedChar = 'TK';
+        let selectedTree = 'all';
+        let selectedSkillId = 'tk_fis_force_wave';
+        let selectedSkillVersion = 0; // 0=V1, 1=V2, 2=V3
+        let selectedVFXPackId = 'raio_strike_7x1';
+
+        let isLooping = true;
+        let timeScale = 1.0;
+        let bloomActive = true;
+        let currentArenaTheme = 'saloon'; // 'saloon' | 'minimal' | 'void'
+
+        // 2. Setup Three.js Scene, Camera, WebGLRenderer
+        const container = document.getElementById('viewport-container');
+        const canvas = document.getElementById('canvas-3d');
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0705);
+        scene.fog = new THREE.FogExp2(0x0a0705, 0.025);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 150);
+        camera.position.set(0, 5.5, 11);
+
+        const renderer = new THREE.WebGLRenderer({
+            canvas: canvas,
+            antialias: true,
+            powerPreference: 'high-performance',
+            stencil: false
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.25;
+
+        const controls = new THREE.OrbitControls(camera, canvas);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 - 0.02; // Não atravessar o chão
+        controls.minDistance = 2.0;
+        controls.maxDistance = 45;
+        controls.target.set(0, 1.2, 0);
+
+        // 3. Post-Processing: UnrealBloomPass
+        const renderScene = new THREE.RenderPass(scene, camera);
+        const bloomPass = new THREE.UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            1.25, // strength
+            0.45, // radius
+            0.82  // threshold
+        );
+
+        const composer = new THREE.EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // 4. Lighting & Environment
+        const ambientLight = new THREE.AmbientLight(0xffecd0, 0.45);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfff3db, 1.1);
+        dirLight.position.set(8, 16, 10);
+        scene.add(dirLight);
+
+        const groundWarmLight = new THREE.PointLight(0xff8c2e, 0.8, 12, 2);
+        groundWarmLight.position.set(0, 0.8, 0);
+        scene.add(groundWarmLight);
+
+        // 5. Arena Ground (Salão / Brasa Stone Floor)
+        const arenaGroup = new THREE.Group();
+        scene.add(arenaGroup);
+
+        // Stone Base Mesh
+        const groundGeo = new THREE.PlaneGeometry(36, 36);
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: 0x140e0a,
+            roughness: 0.88,
+            metalness: 0.12
+        });
+        const groundMesh = new THREE.Mesh(groundGeo, groundMat);
+        groundMesh.rotation.x = -Math.PI / 2;
+        groundMesh.receiveShadow = true;
+        arenaGroup.add(groundMesh);
+
+        // Grid com paleta Salão / Brasa (Zero linhas azuis!)
+        const gridHelper = new THREE.GridHelper(36, 36, 0xd4a017, 0x2e2016);
+        gridHelper.position.y = 0.01;
+        arenaGroup.add(gridHelper);
+
+        // Decorative Concentric Runic Rings (Salão / Brasa)
+        const ringMatA = new THREE.MeshBasicMaterial({ color: 0xd4a017, transparent: true, opacity: 0.35 });
+        const ringA = new THREE.Mesh(new THREE.RingGeometry(3.9, 4.02, 64), ringMatA);
+        ringA.rotation.x = -Math.PI / 2;
+        ringA.position.y = 0.015;
+        arenaGroup.add(ringA);
+
+        const ringMatB = new THREE.MeshBasicMaterial({ color: 0xff8c2e, transparent: true, opacity: 0.22 });
+        const ringB = new THREE.Mesh(new THREE.RingGeometry(7.8, 7.95, 64), ringMatB);
+        ringB.rotation.x = -Math.PI / 2;
+        ringB.position.y = 0.015;
+        arenaGroup.add(ringB);
+
+        // Target / Character Dummy Marker
+        const dummyGroup = new THREE.Group();
+        const dummyGeo = new THREE.CapsuleGeometry(0.35, 1.1, 8, 16);
+        const dummyMat = new THREE.MeshStandardMaterial({
+            color: 0x3d3228,
+            roughness: 0.7,
+            metalness: 0.2,
+            emissive: new THREE.Color(0x24140a),
+            emissiveIntensity: 0.2
+        });
+        const dummyMesh = new THREE.Mesh(dummyGeo, dummyMat);
+        dummyMesh.position.y = 0.9;
+        dummyGroup.add(dummyMesh);
+        scene.add(dummyGroup);
+
+        // 6. Quarks Batched Renderer
+        const batchRenderer = new QUARKS.BatchedRenderer();
+        scene.add(batchRenderer);
+
+        // 7. Textures Cache (Loaded from embedded Base64 with ClampToEdgeWrapping for ZERO bleeding)
+        const textureCache = {};
+        const textureLoader = new THREE.TextureLoader();
+        if (window.CFXR_DATA && window.CFXR_DATA.textures) {
+            for (const [name, dataUrl] of Object.entries(window.CFXR_DATA.textures)) {
+                const tex = textureLoader.load(dataUrl);
+                tex.wrapS = THREE.ClampToEdgeWrapping;
+                tex.wrapT = THREE.ClampToEdgeWrapping;
+                textureCache[name] = tex;
+            }
+        }
+
+        // Procedural fallback texture
+        const defaultCanvas = document.createElement('canvas');
+        defaultCanvas.width = defaultCanvas.height = 64;
+        const dCtx = defaultCanvas.getContext('2d');
+        const dGrad = dCtx.createRadialGradient(32, 32, 2, 32, 32, 32);
+        dGrad.addColorStop(0, 'rgba(255,255,255,1)');
+        dGrad.addColorStop(0.3, 'rgba(255,255,255,0.7)');
+        dGrad.addColorStop(1, 'rgba(255,255,255,0)');
+        dCtx.fillStyle = dGrad;
+        dCtx.fillRect(0, 0, 64, 64);
+        const fallbackTex = new THREE.CanvasTexture(defaultCanvas);
+
+        // 7.1 Dynamic VFX Point Light Flash (3x Visual Punch)
+        const vfxPointLight = new THREE.PointLight(0xffffff, 0, 18, 1.8);
+        vfxPointLight.position.set(0, 1.6, 0);
+        scene.add(vfxPointLight);
+
+        // 7.2 Ground Runic Sigil Decal Mesh
+        const sigilGeo = new THREE.PlaneGeometry(3.6, 3.6);
+        sigilGeo.rotateX(-Math.PI / 2);
+        const sigilMat = new THREE.MeshBasicMaterial({
+            map: textureCache['cfxr aura runic.png'] || fallbackTex,
+            color: new THREE.Color(0xd4a017),
+            transparent: true,
+            opacity: 0,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const sigilMesh = new THREE.Mesh(sigilGeo, sigilMat);
+        sigilMesh.position.y = 0.02;
+        scene.add(sigilMesh);
+
+        let cameraShakeAmount = 0;
+        function triggerCameraShake(intensity = 0.15) {
+            cameraShakeAmount = intensity;
+        }
+
+        // 8. VFX Instantiation System
+        let activeSystems = [];
+        const currentVFXGroup = new THREE.Group();
+        scene.add(currentVFXGroup);
+
+        function clearCurrentVFX() {
+            activeSystems.forEach(sys => {
+                batchRenderer.deleteSystem(sys);
+                if (sys.emitter && sys.emitter.parent) {
+                    sys.emitter.parent.remove(sys.emitter);
+                }
+            });
+            activeSystems = [];
+            while (currentVFXGroup.children.length > 0) {
+                currentVFXGroup.remove(currentVFXGroup.children[0]);
+            }
+        }
+
+        function resolveSmartTexture(reqTex, emName = '') {
+            if (reqTex && textureCache[reqTex]) return textureCache[reqTex];
+            const query = ((reqTex || '') + ' ' + (emName || '')).toLowerCase();
+
+            if (query.includes('raio') || query.includes('lightning') || query.includes('thunder')) {
+                return textureCache['raio 7x1.png'] || fallbackTex;
+            }
+            if (query.includes('ice') || query.includes('frost') || query.includes('gelo') || query.includes('neve') || query.includes('nevasca') || query.includes('glacial')) {
+                return textureCache['cfxr ring ice.png'] || textureCache['cfxr spikes impact.png'] || fallbackTex;
+            }
+            if (query.includes('fire') || query.includes('flame') || query.includes('fogo') || query.includes('brasa') || query.includes('ígnea') || query.includes('queimadura')) {
+                return textureCache['cfxr flamme stepped.png'] || textureCache['cfxr flamme blur.png'] || fallbackTex;
+            }
+            if (query.includes('star') || query.includes('estrela') || query.includes('luz') || query.includes('sagrado') || query.includes('holy') || query.includes('divin') || query.includes('arcano')) {
+                return textureCache['cfxr magic star.png'] || textureCache['cfxr star.png'] || fallbackTex;
+            }
+            if (query.includes('ring') || query.includes('circle') || query.includes('shockwave') || query.includes('anel') || query.includes('onda') || query.includes('impacto radial') || query.includes('consagra')) {
+                return textureCache['cfxr fire circle plain.png'] || textureCache['cfxr ring ice.png'] || fallbackTex;
+            }
+            if (query.includes('glow') || query.includes('flare') || query.includes('flash') || query.includes('clarão') || query.includes('núcleo') || query.includes('burst')) {
+                return textureCache['cfxr flare.png'] || fallbackTex;
+            }
+            if (query.includes('slash') || query.includes('trail') || query.includes('corte') || query.includes('linha') || query.includes('lâmina') || query.includes('tiro') || query.includes('flecha')) {
+                return textureCache['cfxr stretch trait blur.png'] || textureCache['cfxr stretch rectangle ray.png'] || fallbackTex;
+            }
+            if (query.includes('leaf') || query.includes('nature') || query.includes('folha') || query.includes('planta') || query.includes('flora') || query.includes('gaia')) {
+                return textureCache['cfxr leave a.png'] || fallbackTex;
+            }
+            if (query.includes('blood') || query.includes('poison') || query.includes('sangue') || query.includes('veneno') || query.includes('splash') || query.includes('ácido')) {
+                return textureCache['cfxr blood splash.png'] || textureCache['cfxr water drop blur anim.png'] || fallbackTex;
+            }
+            if (query.includes('smoke') || query.includes('fumaça') || query.includes('poeira') || query.includes('earth') || query.includes('terra')) {
+                return textureCache['cfxr smoke cloud x4.png'] || textureCache['cfxr explosion smoke alpha.png'] || fallbackTex;
+            }
+            if (query.includes('spark') || query.includes('electric') || query.includes('faísca') || query.includes('fagulha') || query.includes('detrito')) {
+                return textureCache['cfxr electric spark.png'] || textureCache['cfxr ember blur.png'] || fallbackTex;
+            }
+            return fallbackTex;
+        }
+
+        function instantiateVFXEmitterList(emitters, targetGroup, loopOverride = null, targetPos = null) {
+            const loopingState = loopOverride !== null ? loopOverride : isLooping;
+            const createdSystems = [];
+
+            emitters.forEach(em => {
+                // Texture
+                const tex = resolveSmartTexture(em.renderer?.texture, em.name);
+
+                const isAdd = em.renderer?.isAdditive !== false;
+                const tint = em.renderer?.tint || [1, 1, 1, 1];
+
+                const mat = new THREE.MeshBasicMaterial({
+                    map: tex,
+                    color: new THREE.Color(tint[0], tint[1], tint[2]),
+                    transparent: true,
+                    blending: isAdd ? THREE.AdditiveBlending : THREE.NormalBlending,
+                    depthWrite: false,
+                    side: THREE.DoubleSide
+                });
+
+                // Shape
+                let shape;
+                const s = em.shape || { type: 'sphere', radius: 1, angle: 25, arc: 360 };
+                const rad = Math.max(0.01, s.radius || 0.5);
+                const arc = ((s.arc || 360) * Math.PI) / 180;
+                const ang = ((s.angle || 25) * Math.PI) / 180;
+
+                if (s.type === 'cone') {
+                    shape = new QUARKS.ConeEmitter({ radius: rad, angle: ang, arc: arc });
+                } else if (s.type === 'donut') {
+                    shape = new QUARKS.DonutEmitter({ radius: rad, arc: arc });
+                } else if (s.type === 'hemisphere') {
+                    shape = new QUARKS.HemisphereEmitter({ radius: rad, arc: arc });
+                } else {
+                    shape = new QUARKS.SphereEmitter({ radius: rad, arc: arc });
+                }
+
+                // Value Generators
+                const lifeMin = em.life?.min ?? 0.35;
+                const lifeMax = em.life?.max ?? 0.35;
+                const life = lifeMin === lifeMax
+                    ? new QUARKS.ConstantValue(Math.max(0.05, lifeMin))
+                    : new QUARKS.IntervalValue(Math.max(0.05, lifeMin), Math.max(0.05, lifeMax));
+
+                const spdMin = em.speed?.min ?? 0;
+                const spdMax = em.speed?.max ?? 0;
+                const speed = spdMin === spdMax
+                    ? new QUARKS.ConstantValue(spdMin)
+                    : new QUARKS.IntervalValue(spdMin, spdMax);
+
+                const szMin = em.size?.min ?? 1.0;
+                const szMax = em.size?.max ?? 1.0;
+                const size = szMin === szMax
+                    ? new QUARKS.ConstantValue(Math.max(0.05, szMin))
+                    : new QUARKS.IntervalValue(Math.max(0.05, szMin), Math.max(0.05, szMax));
+
+                const rotMin = em.startRot?.min ?? 0;
+                const rotMax = em.startRot?.max ?? 0;
+                const startRot = rotMin === rotMax
+                    ? new QUARKS.ConstantValue(rotMin * Math.PI / 180)
+                    : new QUARKS.IntervalValue(rotMin * Math.PI / 180, rotMax * Math.PI / 180);
+
+                const sc = em.startColor || [1, 1, 1, 1];
+                const startColor = new QUARKS.ConstantColor(new THREE.Vector4(sc[0], sc[1], sc[2], sc[3]));
+
+                // Bursts
+                const bursts = [];
+                if (em.emission?.bursts && em.emission.bursts.length > 0) {
+                    em.emission.bursts.forEach(b => {
+                        bursts.push({
+                            time: b.time || 0,
+                            count: new QUARKS.ConstantValue(Math.max(1, b.count || 1)),
+                            cycle: 1,
+                            interval: 0,
+                            probability: 1
+                        });
+                    });
+                }
+                const rateOverTime = new QUARKS.ConstantValue(em.emission?.rateOverTime || 0);
+
+                // Behaviors
+                const behaviors = [];
+
+                // Color Over Life
+                if (em.modules?.colorOverLifetime && em.modules.colorOverLifetime.length >= 2) {
+                    const keys = em.modules.colorOverLifetime;
+                    const k0 = keys[0];
+                    const kEnd = keys[keys.length - 1];
+                    behaviors.push(new QUARKS.ColorOverLife(new QUARKS.ColorRange(
+                        new THREE.Vector4(k0.r, k0.g, k0.b, Math.max(0.85, k0.a ?? 1.0)),
+                        new THREE.Vector4(kEnd.r, kEnd.g, kEnd.b, 0.0)
+                    )));
+                }
+
+                // Size Over Life
+                if (em.modules?.sizeOverLifetime === false) {
+                    // Constant size quad (for flipbooks)
+                } else if (em.modules?.sizeCurve) {
+                    const sc_c = em.modules.sizeCurve;
+                    behaviors.push(new QUARKS.SizeOverLife(new QUARKS.PiecewiseBezier([
+                        [new QUARKS.Bezier(sc_c[0], sc_c[1], sc_c[2], sc_c[3]), 0]
+                    ])));
+                } else {
+                    behaviors.push(new QUARKS.SizeOverLife(new QUARKS.PiecewiseBezier([
+                        [new QUARKS.Bezier(1, 0.8, 0.4, 0), 0]
+                    ])));
+                }
+
+                // Flipbook Animation
+                let uTileCount = 1;
+                let vTileCount = 1;
+                if (em.modules?.texSheet) {
+                    uTileCount = em.modules.texSheet.tilesX || 1;
+                    vTileCount = em.modules.texSheet.tilesY || 1;
+                    const totalFrames = uTileCount * vTileCount;
+                    behaviors.push(new QUARKS.FrameOverLife(new QUARKS.PiecewiseBezier([
+                        [new QUARKS.Bezier(0, (totalFrames - 1) * 0.33, (totalFrames - 1) * 0.66, totalFrames - 0.001), 0]
+                    ])));
+                }
+
+                // Rotation Speed
+                if (em.modules?.rotSpeed) {
+                    behaviors.push(new QUARKS.RotationOverLife(new QUARKS.ConstantValue(em.modules.rotSpeed * Math.PI / 180)));
+                }
+
+                // Render Mode
+                let renderMode = QUARKS.RenderMode.BillBoard;
+                let speedFactor = 0;
+                if (em.renderer?.renderMode === 1) {
+                    renderMode = QUARKS.RenderMode.StretchedBillBoard;
+                    speedFactor = em.renderer.speedFactor || 1;
+                }
+
+                // Custom Geometry (Aspect Ratio & Pivot Translation)
+                let instGeo = undefined;
+                if (em.geometry) {
+                    const gw = em.geometry.width || 1;
+                    const gh = em.geometry.height || 1;
+                    instGeo = new THREE.PlaneGeometry(gw, gh);
+                    if (em.geometry.offsetY) {
+                        instGeo.translate(0, em.geometry.offsetY, 0);
+                    }
+                }
+
+                const psConfig = {
+                    duration: Math.max(0.1, em.duration || 0.4),
+                    looping: loopingState,
+                    startLife: life,
+                    startSpeed: speed,
+                    startSize: size,
+                    startRotation: startRot,
+                    startColor: startColor,
+                    emissionOverTime: rateOverTime,
+                    emissionBursts: bursts,
+                    shape: shape,
+                    material: mat,
+                    behaviors: behaviors,
+                    renderMode: renderMode,
+                    speedFactor: speedFactor,
+                    uTileCount: uTileCount,
+                    vTileCount: vTileCount,
+                    worldSpace: false
+                };
+                if (instGeo) psConfig.instancingGeometry = instGeo;
+
+                const ps = new QUARKS.ParticleSystem(psConfig);
+
+                const tPos = em.transform?.pos || [0, 0, 0];
+                const tRot = em.transform?.rot || [0, 0, 0];
+                const tSc = em.transform?.scale || [1, 1, 1];
+                ps.emitter.position.set(tPos[0], tPos[1], tPos[2]);
+                ps.emitter.rotation.set(tRot[0], tRot[1], tRot[2]);
+                ps.emitter.scale.set(tSc[0], tSc[1], tSc[2]);
+
+                if (targetPos) {
+                    ps.emitter.position.add(targetPos);
+                }
+
+                batchRenderer.addSystem(ps);
+                targetGroup.add(ps.emitter);
+                createdSystems.push(ps);
+            });
+
+            return createdSystems;
+        }
+
+        // 9. Play Current Selection
+        function playCurrent() {
+            clearCurrentVFX();
+
+            if (currentMode === 'game-skills') {
+                const skill = window.UAIDZIN_SKILLS.find(s => s.id === selectedSkillId);
+                if (!skill) return;
+                const version = skill.versions[selectedSkillVersion] || skill.versions[0];
+                activeSystems = instantiateVFXEmitterList(version.emitters, currentVFXGroup, isLooping);
+
+                // Update HUD
+                document.getElementById('hud-char-badge').innerText = skill.character;
+                document.getElementById('hud-title').innerText = skill.name;
+                document.getElementById('hud-desc').innerText = `${skill.character} · Árvore ${skill.tree.toUpperCase()} · ${skill.kind.toUpperCase()} · ${version.name}`;
+                document.getElementById('tel-emitters').innerText = version.emitters.length;
+
+                // 3x Visual Polish: Dynamic Point Light Flash, Ground Sigil & Camera Shake
+                const hex = skill.lightColor || '#d4a017';
+                vfxPointLight.color.set(hex);
+                vfxPointLight.intensity = (selectedSkillVersion >= 2) ? 6.5 : 3.5;
+
+                // Sigil Decal for Arcana (V2), Astral (V4) and Mítica (V5)
+                if (selectedSkillVersion === 1 || selectedSkillVersion === 3 || selectedSkillVersion === 4) {
+                    sigilMesh.material.color.set(hex);
+                    sigilMesh.material.opacity = 0.9;
+                    sigilMesh.scale.set(1, 1, 1);
+                } else {
+                    sigilMesh.material.opacity = 0;
+                }
+
+                // Screen / Camera Shake for Épica (V3) and Mítica (V5)
+                if (selectedSkillVersion === 2) triggerCameraShake(0.12);
+                if (selectedSkillVersion === 4) triggerCameraShake(0.25);
+            } else {
+                const vfx = window.CFXR_DATA.vfxList.find(v => v.id === selectedVFXPackId);
+                if (!vfx) return;
+                activeSystems = instantiateVFXEmitterList(vfx.emitters, currentVFXGroup, isLooping);
+
+                // Update HUD
+                document.getElementById('hud-char-badge').innerText = 'PACK';
+                document.getElementById('hud-title').innerText = vfx.name;
+                document.getElementById('hud-desc').innerText = `Categoria: ${vfx.category} · ${vfx.emittersCount} ${vfx.emittersCount === 1 ? 'Emissor' : 'Emissores'}`;
+                document.getElementById('tel-emitters').innerText = vfx.emittersCount;
+
+                // Light & Shake for Pack
+                vfxPointLight.color.set(0x60a5fa);
+                vfxPointLight.intensity = 5.0;
+                if (vfx.name.toLowerCase().includes('raio') || vfx.category === 'Explosions') {
+                    triggerCameraShake(0.18);
+                }
+            }
+        }
+
+        // 10. Render Sidebar based on Mode
+        function renderSidebar() {
+            const headerEl = document.getElementById('sidebar-header');
+            const listEl = document.getElementById('item-list');
+            headerEl.innerHTML = '';
+            listEl.innerHTML = '';
+
+            if (currentMode === 'game-skills') {
+                // Character Tabs
+                const charBar = document.createElement('div');
+                charBar.className = 'char-tab-bar';
+                const chars = [
+                    { id: 'TK', name: 'Thegn Knight' },
+                    { id: 'FM', name: 'Frost Maiden' },
+                    { id: 'BM', name: 'Beast Master' },
+                    { id: 'HT', name: 'Huntress' }
+                ];
+                chars.forEach(c => {
+                    const btn = document.createElement('div');
+                    btn.className = `char-btn ${c.id === selectedChar ? 'active' : ''}`;
+                    btn.innerHTML = `<span class="char-btn-id">${c.id}</span><span class="char-btn-name">${c.name.split(' ')[0]}</span>`;
+                    btn.addEventListener('click', () => {
+                        selectedChar = c.id;
+                        // Select first skill of this char
+                        const firstSkill = window.UAIDZIN_SKILLS.find(s => s.character === c.id);
+                        if (firstSkill) selectedSkillId = firstSkill.id;
+                        renderSidebar();
+                        playCurrent();
+                    });
+                    charBar.appendChild(btn);
+                });
+                headerEl.appendChild(charBar);
+
+                // Search box
+                const searchBox = document.createElement('div');
+                searchBox.className = 'search-box';
+                searchBox.innerHTML = '<input type="text" id="skill-search" placeholder="Buscar 24 skills de ' + selectedChar + '...">';
+                headerEl.appendChild(searchBox);
+
+                // Tree filter pills
+                const treeBar = document.createElement('div');
+                treeBar.className = 'tree-filter-bar';
+                const trees = ['all', 'fisica', 'controle', 'magia'];
+                trees.forEach(t => {
+                    const pill = document.createElement('div');
+                    pill.className = `tree-pill ${t === selectedTree ? 'active' : ''}`;
+                    pill.innerText = t === 'all' ? 'Todas (24)' : `${t.charAt(0).toUpperCase() + t.slice(1)} (8)`;
+                    pill.addEventListener('click', () => {
+                        selectedTree = t;
+                        renderSkillCards();
+                    });
+                    treeBar.appendChild(pill);
+                });
+                headerEl.appendChild(treeBar);
+
+                // Input listener
+                searchBox.querySelector('input').addEventListener('input', () => renderSkillCards());
+
+                renderSkillCards();
+            } else {
+                // VFX Pack Sidebar
+                const searchBox = document.createElement('div');
+                searchBox.className = 'search-box';
+                searchBox.innerHTML = '<input type="text" id="pack-search" placeholder="Buscar 67 VFX reutilizáveis...">';
+                headerEl.appendChild(searchBox);
+
+                const catBar = document.createElement('div');
+                catBar.className = 'tree-filter-bar';
+                const categories = ['all'];
+                window.CFXR_DATA.vfxList.forEach(v => {
+                    if (!categories.includes(v.category)) categories.push(v.category);
+                });
+
+                categories.forEach(cat => {
+                    const count = cat === 'all' ? window.CFXR_DATA.vfxList.length : window.CFXR_DATA.vfxList.filter(v => v.category === cat).length;
+                    const pill = document.createElement('div');
+                    pill.className = `tree-pill ${cat === selectedTree ? 'active' : ''}`;
+                    pill.innerText = cat === 'all' ? `Todos (${count})` : `${cat} (${count})`;
+                    pill.addEventListener('click', () => {
+                        selectedTree = cat;
+                        renderPackCards();
+                    });
+                    catBar.appendChild(pill);
+                });
+                headerEl.appendChild(catBar);
+
+                searchBox.querySelector('input').addEventListener('input', () => renderPackCards());
+
+                renderPackCards();
+            }
+        }
+
+        function renderSkillCards() {
+            const listEl = document.getElementById('item-list');
+            listEl.innerHTML = '';
+            const searchTxt = (document.getElementById('skill-search')?.value || '').toLowerCase().trim();
+
+            const skills = window.UAIDZIN_SKILLS.filter(s => {
+                const matchChar = s.character === selectedChar;
+                const matchTree = selectedTree === 'all' || s.tree === selectedTree;
+                const matchSearch = s.name.toLowerCase().includes(searchTxt) || s.id.toLowerCase().includes(searchTxt);
+                return matchChar && matchTree && matchSearch;
+            });
+
+            skills.forEach(s => {
+                const card = document.createElement('div');
+                card.className = `vfx-card ${s.id === selectedSkillId ? 'active' : ''}`;
+                card.dataset.id = s.id;
+
+                card.innerHTML = `
+                    <div class="vfx-card-top">
+                        <span class="vfx-card-title">${s.name}</span>
+                        <span class="vfx-card-badge">${s.tree.toUpperCase()}</span>
+                    </div>
+                    <div class="vfx-card-meta">
+                        <span>${s.kind} ${s.shape ? '· ' + s.shape : ''}</span>
+                        <span>${s.versions ? s.versions.length : 5} Versões</span>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    selectedSkillId = s.id;
+                    document.querySelectorAll('.vfx-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    playCurrent();
+                });
+
+                listEl.appendChild(card);
+            });
+        }
+
+        function renderPackCards() {
+            const listEl = document.getElementById('item-list');
+            listEl.innerHTML = '';
+            const searchTxt = (document.getElementById('pack-search')?.value || '').toLowerCase().trim();
+
+            const vfxs = window.CFXR_DATA.vfxList.filter(v => {
+                const matchCat = selectedTree === 'all' || v.category === selectedTree;
+                const matchSearch = v.name.toLowerCase().includes(searchTxt) || v.category.toLowerCase().includes(searchTxt);
+                return matchCat && matchSearch;
+            });
+
+            vfxs.forEach(v => {
+                const card = document.createElement('div');
+                card.className = `vfx-card ${v.id === selectedVFXPackId ? 'active' : ''}`;
+                card.dataset.id = v.id;
+
+                card.innerHTML = `
+                    <div class="vfx-card-top">
+                        <span class="vfx-card-title">${v.name}</span>
+                        <span class="vfx-card-badge">${v.category}</span>
+                    </div>
+                    <div class="vfx-card-meta">
+                        <span>${v.emittersCount} ${v.emittersCount === 1 ? 'emissor' : 'emissores'}</span>
+                        <span>${v.id.includes('raio') ? '7x1 Spritesheet' : 'Quarks VFX'}</span>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    selectedVFXPackId = v.id;
+                    document.querySelectorAll('.vfx-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    playCurrent();
+                });
+
+                listEl.appendChild(card);
+            });
+        }
+
+        // 11. Tab Switcher
+        const tabGameSkills = document.getElementById('tab-game-skills');
+        const tabVfxPack = document.getElementById('tab-vfx-pack');
+        const versionSelector = document.getElementById('version-selector');
+
+        tabGameSkills.addEventListener('click', () => {
+            currentMode = 'game-skills';
+            selectedTree = 'all';
+            tabGameSkills.classList.add('active');
+            tabVfxPack.classList.remove('active');
+            versionSelector.style.display = 'flex';
+            renderSidebar();
+            playCurrent();
+        });
+
+        tabVfxPack.addEventListener('click', () => {
+            currentMode = 'vfx-pack';
+            selectedTree = 'all';
+            tabVfxPack.classList.add('active');
+            tabGameSkills.classList.remove('active');
+            versionSelector.style.display = 'none'; // Pack effects use their dedicated composition
+            renderSidebar();
+            playCurrent();
+        });
+
+        // 12. Version Selector Buttons
+        document.querySelectorAll('.version-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.version-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedSkillVersion = parseInt(btn.dataset.v);
+                playCurrent();
+            });
+        });
+
+        // 13. Playback Controls
+        const btnReplay = document.getElementById('btn-replay');
+        btnReplay.addEventListener('click', () => playCurrent());
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+                playCurrent();
+            } else if (e.code === 'KeyL' && e.target.tagName !== 'INPUT') {
+                toggleLoop();
+            }
+        });
+
+        const btnLoop = document.getElementById('btn-loop');
+        function toggleLoop() {
+            isLooping = !isLooping;
+            btnLoop.classList.toggle('active', isLooping);
+            btnLoop.querySelector('span').innerText = isLooping ? '↻ Loop: Ligado' : '↻ Loop: Desligado';
+            playCurrent();
+        }
+        btnLoop.addEventListener('click', toggleLoop);
+
+        const sliderSpeed = document.getElementById('slider-speed');
+        const speedLabel = document.getElementById('speed-label');
+        sliderSpeed.addEventListener('input', () => {
+            timeScale = parseFloat(sliderSpeed.value);
+            speedLabel.innerText = `${timeScale.toFixed(1)}×`;
+        });
+
+        // 14. Camera Presets
+        document.getElementById('cam-front').addEventListener('click', () => {
+            camera.position.set(0, 2.5, 9);
+            controls.target.set(0, 1.2, 0);
+        });
+        document.getElementById('cam-iso').addEventListener('click', () => {
+            camera.position.set(7, 6.5, 8.5);
+            controls.target.set(0, 1.0, 0);
+        });
+        document.getElementById('cam-top').addEventListener('click', () => {
+            camera.position.set(0, 14, 0.1);
+            controls.target.set(0, 0, 0);
+        });
+        document.getElementById('btn-cam-reset').addEventListener('click', () => {
+            camera.position.set(0, 5.5, 11);
+            controls.target.set(0, 1.2, 0);
+        });
+
+        // 15. Arena Theme Selector
+        const btnTheme = document.getElementById('btn-theme-arena');
+        btnTheme.addEventListener('click', () => {
+            if (currentArenaTheme === 'saloon') {
+                currentArenaTheme = 'minimal';
+                btnTheme.innerText = '🌐 Grid Minimal';
+                groundMesh.visible = false;
+                gridHelper.material.color.setHex(0x5a4a38);
+                scene.background.setHex(0x0e0e0e);
+                scene.fog.color.setHex(0x0e0e0e);
+            } else if (currentArenaTheme === 'minimal') {
+                currentArenaTheme = 'void';
+                btnTheme.innerText = '🌌 Vazio Preto';
+                arenaGroup.visible = false;
+                scene.background.setHex(0x000000);
+                scene.fog.color.setHex(0x000000);
+            } else {
+                currentArenaTheme = 'saloon';
+                btnTheme.innerText = '🏛️ Arena Brasa';
+                arenaGroup.visible = true;
+                groundMesh.visible = true;
+                gridHelper.material.color.setHex(0xd4a017);
+                scene.background.setHex(0x0a0705);
+                scene.fog.color.setHex(0x0a0705);
+            }
+        });
+
+        // 16. Bloom Toggle
+        const btnBloom = document.getElementById('btn-toggle-bloom');
+        btnBloom.addEventListener('click', () => {
+            bloomActive = !bloomActive;
+            bloomPass.enabled = bloomActive;
+            btnBloom.innerText = bloomActive ? '✨ Bloom On' : '✨ Bloom Off';
+            btnBloom.classList.toggle('active', bloomActive);
+        });
+
+        // 17. Toggle Sidebar Drawer
+        const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+        const sidebar = document.getElementById('sidebar');
+        let sidebarCollapsed = false;
+        btnToggleSidebar.addEventListener('click', () => {
+            sidebarCollapsed = !sidebarCollapsed;
+            sidebar.classList.toggle('collapsed', sidebarCollapsed);
+            btnToggleSidebar.innerText = sidebarCollapsed ? '▶' : '◀';
+            btnToggleSidebar.style.left = sidebarCollapsed ? '14px' : '382px';
+        });
+
+        // 18. Ground Click Raycasting Spawner
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+        canvas.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0) return; // Só botão esquerdo
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const hitPoint = new THREE.Vector3();
+            if (raycaster.ray.intersectPlane(groundPlane, hitPoint)) {
+                // Animate click indicator
+                const clickRipple = new THREE.Mesh(
+                    new THREE.RingGeometry(0.1, 0.45, 32),
+                    new THREE.MeshBasicMaterial({ color: 0xd4a017, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+                );
+                clickRipple.rotation.x = -Math.PI / 2;
+                clickRipple.position.copy(hitPoint);
+                clickRipple.position.y += 0.02;
+                scene.add(clickRipple);
+
+                // Spawn one-shot instance at cursor location
+                if (currentMode === 'game-skills') {
+                    const skill = window.UAIDZIN_SKILLS.find(s => s.id === selectedSkillId);
+                    if (skill) {
+                        const version = skill.versions[selectedSkillVersion] || skill.versions[0];
+                        instantiateVFXEmitterList(version.emitters, scene, false, hitPoint);
+                    }
+                } else {
+                    const vfx = window.CFXR_DATA.vfxList.find(v => v.id === selectedVFXPackId);
+                    if (vfx) {
+                        instantiateVFXEmitterList(vfx.emitters, scene, false, hitPoint);
+                    }
+                }
+
+                // Fade ripple
+                let rScale = 1;
+                const ripInterval = setInterval(() => {
+                    rScale += 0.15;
+                    clickRipple.scale.set(rScale, rScale, rScale);
+                    clickRipple.material.opacity -= 0.08;
+                    if (clickRipple.material.opacity <= 0) {
+                        clearInterval(ripInterval);
+                        scene.remove(clickRipple);
+                    }
+                }, 16);
+            }
+        });
+
+        // 19. Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 20. Main Animation Loop
+        let clock = new THREE.Clock();
+        let frameCount = 0;
+        let lastFpsUpdate = performance.now();
+        const fpsEl = document.getElementById('tel-fps');
+        const partsEl = document.getElementById('tel-particles');
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const rawDelta = clock.getDelta();
+            const delta = Math.min(rawDelta, 0.1) * timeScale;
+
+            controls.update();
+            batchRenderer.update(delta);
+
+            // Rotate decorative rings gently
+            ringA.rotation.z += delta * 0.12;
+            ringB.rotation.z -= delta * 0.08;
+
+            // Decay dynamic point light
+            if (vfxPointLight.intensity > 0.01) {
+                vfxPointLight.intensity *= 0.93;
+            }
+            // Rotate & fade ground sigil decal
+            if (sigilMesh.material.opacity > 0.01) {
+                sigilMesh.rotation.z += delta * 0.6;
+                sigilMesh.material.opacity *= 0.98;
+            }
+            // Visceral camera shake punch
+            if (cameraShakeAmount > 0.002) {
+                camera.position.x += (Math.random() - 0.5) * cameraShakeAmount;
+                camera.position.y += (Math.random() - 0.5) * cameraShakeAmount;
+                camera.position.z += (Math.random() - 0.5) * cameraShakeAmount;
+                cameraShakeAmount *= 0.86;
+            }
+
+            // Render
+            composer.render();
+
+            // Telemetry updates
+            frameCount++;
+            const now = performance.now();
+            if (now - lastFpsUpdate >= 400) {
+                const fps = Math.round((frameCount * 1000) / (now - lastFpsUpdate));
+                fpsEl.innerText = fps;
+                frameCount = 0;
+                lastFpsUpdate = now;
+
+                // Particle count
+                let totalP = 0;
+                activeSystems.forEach(s => totalP += (s.particleCount || 0));
+                partsEl.innerText = totalP;
+            }
+        }
+
+        // Initialize UI and play default
+        renderSidebar();
+        playCurrent();
+        animate();
+    });
+    </script>
+</body>
+</html>

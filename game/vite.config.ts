@@ -6,6 +6,7 @@ import { defineConfig, type Plugin } from "vite";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const wireRoot = path.resolve(__dirname, "../visual/telas");
 const studioRoot = path.resolve(__dirname, "../tools/studio");
+const vfxRoot = path.resolve(__dirname, "vfx");
 
 const monstersJsonPath = path.resolve(__dirname, "src/data/monsters/monsters.json");
 const dungeonsJsonPath = path.resolve(__dirname, "src/data/dungeons/dungeons.json");
@@ -231,12 +232,71 @@ function wireUiPlugin(): Plugin {
   };
 }
 
+function vfxStudioPlugin(): Plugin {
+  return {
+    name: "uaidzin-vfx-studio",
+    closeBundle() {
+      const out = path.resolve(__dirname, "dist/vfx");
+      copyDir(path.join(vfxRoot, "libs"), path.join(out, "libs"));
+      fs.copyFileSync(
+        path.join(vfxRoot, "uaidzin_skill_catalog.js"),
+        path.join(out, "uaidzin_skill_catalog.js"),
+      );
+      const localPack = process.env.UAIDZIN_VFX_LOCAL_PACK === "1";
+      if (localPack) {
+        fs.copyFileSync(
+          path.join(vfxRoot, "uaidzin_vfx_data.js"),
+          path.join(out, "uaidzin_vfx_data.js"),
+        );
+      } else {
+        fs.writeFileSync(
+          path.join(out, "uaidzin_vfx_data.js"),
+          "window.CFXR_DATA=null;\n",
+          "utf8",
+        );
+      }
+      fs.writeFileSync(path.join(out, "cfxr_data.js"), "window.CFXR_DATA=null;\n", "utf8");
+    },
+  };
+}
+
 export default defineConfig({
   base: "./",
   build: {
     chunkSizeWarningLimit: 650,
     sourcemap: false,
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        fireBurst: path.resolve(__dirname, "vfx/fire-burst.html"),
+        fireBurst3d: path.resolve(__dirname, "vfx/fire-burst-3d.html"),
+        tkGolpe: path.resolve(__dirname, "vfx/tk-golpe.html"),
+        tkInvestida: path.resolve(__dirname, "vfx/tk-investida.html"),
+        tkCorte: path.resolve(__dirname, "vfx/tk-corte.html"),
+        tkMachado: path.resolve(__dirname, "vfx/tk-machado.html"),
+        tkQuebra: path.resolve(__dirname, "vfx/tk-quebra.html"),
+        tkFuria: path.resolve(__dirname, "vfx/tk-furia.html"),
+        tkAvalanche: path.resolve(__dirname, "vfx/tk-avalanche.html"),
+        tkBencao: path.resolve(__dirname, "vfx/tk-bencao.html"),
+        tkSelo: path.resolve(__dirname, "vfx/tk-selo.html"),
+        tkAura: path.resolve(__dirname, "vfx/tk-aura.html"),
+        tkEscudoSagrado: path.resolve(__dirname, "vfx/tk-escudo-sagrado.html"),
+        tkJulgamento: path.resolve(__dirname, "vfx/tk-julgamento.html"),
+        tkLuz: path.resolve(__dirname, "vfx/tk-luz.html"),
+        tkPurificar: path.resolve(__dirname, "vfx/tk-purificar.html"),
+        tkTribunal: path.resolve(__dirname, "vfx/tk-tribunal.html"),
+        tkProvocacao: path.resolve(__dirname, "vfx/tk-provocacao.html"),
+        tkPostura: path.resolve(__dirname, "vfx/tk-postura.html"),
+        tkRugido: path.resolve(__dirname, "vfx/tk-rugido.html"),
+        tkMuralha: path.resolve(__dirname, "vfx/tk-muralha.html"),
+        tkAncora: path.resolve(__dirname, "vfx/tk-ancora.html"),
+        tkDesafio: path.resolve(__dirname, "vfx/tk-desafio.html"),
+        tkGuarda: path.resolve(__dirname, "vfx/tk-guarda.html"),
+        tkBastiao: path.resolve(__dirname, "vfx/tk-bastiao.html"),
+        skillCatalog: path.resolve(__dirname, "vfx/skill-catalog.html"),
+        vfxLab: path.resolve(__dirname, "vfx/vfx_lab.html"),
+        vfxMaster: path.resolve(__dirname, "vfx/vfx_master.html"),
+      },
       output: {
         manualChunks(id) {
           if (id.includes("node_modules/three")) return "three";
@@ -259,5 +319,5 @@ export default defineConfig({
       ],
     },
   },
-  plugins: [devToolsPlugin(), wireUiPlugin()],
+  plugins: [devToolsPlugin(), wireUiPlugin(), vfxStudioPlugin()],
 });

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#100c08">
+  <link rel="icon" href="data:,">
+  <title>UAIDZIN · Atelier de efeitos</title>
+  <link rel="stylesheet" href="./lab/atelier.css">
+</head>
+<body>
+  <div class="viewport">
+    <main id="stage">
+      <header class="masthead">
+        <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 36 20 20 37 4 20ZM20 9v22M12 16l8 7 8-7"/></svg><div>UAIDZIN<small>ATELIER DE EFEITOS</small></div></div>
+        <nav aria-label="Modos de visualização">
+          <button id="mode-stage" class="active">Arena</button>
+          <button id="mode-gallery">Galeria</button>
+          <button id="mode-compare">Comparar propostas</button>
+        </nav>
+        <div class="header-right"><span id="total">96 SKILLS</span><button id="export">Exportar escolhas</button></div>
+      </header>
+      <aside class="catalog frame">
+        <div class="section-head"><h1>Arsenal</h1><span id="count">96</span></div>
+        <label class="search"><span>Buscar skill</span><input id="search" type="search" placeholder="Nome ou identificador" autocomplete="off"></label>
+        <div id="classes" class="class-tabs" aria-label="Classes"><button data-class="" class="active">Todas</button><button data-class="TK">TK</button><button data-class="FM">FM</button><button data-class="BM">BM</button><button data-class="HT">HT</button></div>
+        <div class="filters">
+          <label>Árvore<select id="tree"><option value="">Todas</option><option value="fisica">Física</option><option value="controle">Controle</option><option value="magia">Magia</option></select></label>
+          <label>Elemento<select id="element"><option value="">Todos</option></select></label>
+          <label>Forma<select id="shape"><option value="">Todas</option><option value="single">Alvo único</option><option value="line">Linha</option><option value="aoe">Área</option><option value="self">Pessoal</option></select></label>
+          <label>Revisão<select id="review-filter"><option value="">Todas</option><option value="pending">Pendente</option><option value="approved">Aprovada</option><option value="rejected">Reprovada</option></select></label>
+        </div>
+        <div id="skill-list" role="list" aria-label="Skills"></div>
+        <div class="catalog-foot"><span id="review-count">0 escolhas</span><span>24 por classe</span></div>
+      </aside>
+      <section class="arena">
+        <div class="arena-head">
+          <div><span id="breadcrumb" class="eyebrow"></span><h2 id="skill-name"></h2></div>
+          <div class="view-tools"><button id="cam-iso" class="active" aria-label="Câmera isométrica">¾</button><button id="cam-front">Frente</button><button id="cam-top">Topo</button><button id="bloom" aria-pressed="true">Bloom</button></div>
+        </div>
+        <div id="views"></div>
+        <div id="gallery" hidden></div>
+        <div class="arena-foot"><span id="phase">Pronta</span><span id="telemetry"></span></div>
+      </section>
+      <aside class="inspector frame">
+        <div class="section-head"><span class="eyebrow">PROPOSTA VISUAL</span><span id="tier"></span></div>
+        <div id="versions" class="version-tabs"></div>
+        <h3 id="concept-title"></h3>
+        <p id="description"></p>
+        <div id="technique" class="technique"></div>
+        <div class="rule"></div>
+        <h4>Dados da skill</h4>
+        <dl id="metadata"></dl>
+        <h4>Composição</h4>
+        <div id="layers"></div>
+        <div class="review">
+          <div id="review-state">Pendente de revisão</div>
+          <div class="review-actions"><button id="approve">Aprovar</button><button id="reject">Reprovar</button><button id="clear-review" aria-label="Limpar escolha">Limpar</button></div>
+          <label>Notas da revisão<textarea id="notes" rows="2" maxlength="2000" placeholder="Silhueta, ritmo, impacto…"></textarea></label>
+          <span id="save-status" role="status"></span>
+        </div>
+      </aside>
+      <footer class="transport frame">
+        <div class="transport-main"><button id="replay" class="primary">Reproduzir</button><button id="pause" aria-pressed="false">Pausar</button><button id="loop" aria-pressed="true">Repetir</button><button id="sequence" aria-pressed="false">Sequência da árvore</button></div>
+        <div class="timeline"><label for="scrub"><span id="time">0,00 s</span><span>ANTECIPAÇÃO · AÇÃO · IMPACTO · DISSIPAÇÃO</span><span id="duration"></span></label><input id="scrub" type="range" min="0" max="4" step="0.01" value="0"></div>
+        <label class="speed">Velocidade<select id="speed"><option value="0.25">0,25×</option><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="1.5">1,5×</option><option value="2">2×</option></select></label>
+        <span class="footnote">ESTUDOS VISUAIS<br>Sem alteração no combate</span>
+      </footer>
+      <div id="fatal" role="alert" hidden></div>
+    </main>
+  </div>
+  <script type="module" src="./lab/atelier.js"></script>
+</body>
+</html>

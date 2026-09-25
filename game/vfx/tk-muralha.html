@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UAIDZIN — Muralha do TK</title>
+  <style>
+    :root {
+      --bg0: #100c08;
+      --bg1: #241c14;
+      --bg2: #2e241a;
+      --iron: #3d3228;
+      --iron-hi: #5a4a38;
+      --gold: #d4a017;
+      --gold-hi: #e8c547;
+      --blood: #a33b3b;
+      --ink: #f0e6d0;
+      --ink-dim: #b8a88c;
+      --ink-mute: #7a6b58;
+      --fire: #ff7a1a;
+      --fire-hot: #fff275;
+      --font-display: Georgia, "Palatino Linotype", serif;
+      --font-ui: "Segoe UI", Tahoma, system-ui, sans-serif;
+      --font-num: ui-monospace, Consolas, monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      color: var(--ink);
+      font-family: var(--font-ui);
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    input, select {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    select {
+      padding: 10px;
+      border: 1px solid var(--iron-hi);
+      border-radius: 2px;
+      color: var(--ink);
+      background: var(--bg1);
+    }
+
+    .viewport {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    .stage {
+      position: relative;
+      width: 1600px;
+      height: 900px;
+      overflow: hidden;
+      transform-origin: center center;
+      background:
+        radial-gradient(circle at 22% 28%, rgba(88, 42, 16, 0.28), transparent 30%),
+        radial-gradient(circle at 78% 30%, rgba(96, 28, 14, 0.24), transparent 32%),
+        linear-gradient(180deg, #1c1510 0%, #100c08 72%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    .hud {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 34px 40px 38px;
+      pointer-events: none;
+    }
+
+    .title {
+      position: relative;
+      width: max-content;
+      padding: 16px 24px 18px;
+      border: 1px solid var(--iron-hi);
+      border-radius: 2px;
+      background: linear-gradient(180deg, rgba(46, 36, 26, 0.94), rgba(16, 12, 8, 0.94));
+      box-shadow: inset 0 0 0 1px rgba(212, 160, 23, 0.16), 0 14px 36px rgba(0, 0, 0, 0.35);
+    }
+
+    .title::before,
+    .title::after {
+      content: "";
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-color: var(--gold);
+      border-style: solid;
+      pointer-events: none;
+    }
+
+    .title::before {
+      top: -1px;
+      left: -1px;
+      border-width: 2px 0 0 2px;
+    }
+
+    .title::after {
+      right: -1px;
+      bottom: -1px;
+      border-width: 0 2px 2px 0;
+    }
+
+    .title h1 {
+      margin: 0;
+      color: var(--gold-hi);
+      font-family: var(--font-display);
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 12px rgba(255, 198, 60, 0.3);
+    }
+
+    .title p {
+      margin: 5px 0 0;
+      color: var(--ink-mute);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .bottom {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .controls,
+    .status {
+      pointer-events: auto;
+      border: 1px solid var(--iron-hi);
+      border-radius: 2px;
+      background: linear-gradient(180deg, rgba(46, 36, 26, 0.96), rgba(16, 12, 8, 0.96));
+      box-shadow: inset 0 0 0 1px rgba(212, 160, 23, 0.1), 0 14px 36px rgba(0, 0, 0, 0.4);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      flex-wrap: wrap;
+      max-width: 1010px;
+    }
+
+    button {
+      min-height: 42px;
+      padding: 9px 18px;
+      border: 1px solid var(--iron-hi);
+      border-radius: 2px;
+      background: linear-gradient(180deg, #3a2e20, #241c14);
+      color: var(--ink-dim);
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--gold);
+      color: var(--gold-hi);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.primary {
+      min-width: 150px;
+      border-color: var(--gold);
+      background: linear-gradient(180deg, #6b5210, #3a2c08);
+      color: var(--fire-hot);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .speed {
+      display: grid;
+      grid-template-columns: auto 54px;
+      align-items: center;
+      gap: 3px 10px;
+      min-width: 200px;
+      padding: 0 10px;
+      color: var(--ink-mute);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .speed input {
+      grid-column: 1 / -1;
+      width: 100%;
+      accent-color: var(--gold);
+    }
+
+    .speed span {
+      font-family: var(--font-num);
+      color: var(--fire-hot);
+      text-align: right;
+    }
+
+    .status {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(90px, 1fr));
+      min-width: 330px;
+      padding: 13px 18px 15px;
+    }
+
+    .metric {
+      padding: 0 18px;
+      border-left: 1px solid rgba(90, 74, 56, 0.65);
+    }
+
+    .metric:first-child {
+      padding-left: 0;
+      border-left: 0;
+    }
+
+    .metric:last-child {
+      padding-right: 0;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--ink-mute);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink);
+      font-family: var(--font-num);
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    #phase {
+      color: var(--fire-hot);
+    }
+  </style>
+</head>
+<body>
+  <div class="viewport">
+    <main class="stage" id="stage">
+      <canvas id="gl" aria-label="Visualização da Muralha do TK"></canvas>
+      <section class="hud">
+        <div class="title">
+          <h1>Muralha</h1>
+          <p>Thegn Knight · Pedra e ferro · tk_ctrl_4 · 0,70 s</p>
+        </div>
+        <div class="bottom">
+          <div class="controls">
+            <button type="button" class="primary" id="cast">Invocar</button>
+            <button type="button" id="loop" aria-pressed="true">Repetição: ligada</button>
+            <button type="button" id="pause" aria-pressed="false">Pausar</button>
+            <button type="button" id="reset-camera">Câmera</button>
+            <select id="target-direction" aria-label="Direção da muralha">
+              <option value="0">Frente</option>
+              <option value="1">Direita</option>
+              <option value="2">Esquerda</option>
+              <option value="3">Atrás</option>
+              <option value="4">Diagonal frente</option>
+              <option value="5">Diagonal atrás</option>
+            </select>
+            <label class="speed" for="speed">
+              Velocidade
+              <span id="speed-value">1,00×</span>
+              <input id="speed" type="range" min="0.1" max="2" step="0.05" value="1">
+            </label>
+          </div>
+          <div class="status" aria-live="polite">
+            <div class="metric">
+              <span>Estado</span>
+              <strong id="phase">pronta</strong>
+            </div>
+            <div class="metric">
+              <span>Partículas</span>
+              <strong id="particles">0</strong>
+            </div>
+            <div class="metric">
+              <span>Lanços</span>
+              <strong id="casts">0</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="/src/presentation/effects/tkSkills/muralha/demo.ts"></script>
+</body>
+</html>

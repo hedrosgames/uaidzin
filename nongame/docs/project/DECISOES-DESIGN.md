@@ -83,6 +83,15 @@ Conflito com protótipo/HUD que assume **4** skills: grill vence — **10 slots*
 
 ## COMBATE
 
+### Fire Burst — correção de direção em 24/09/2026
+
+- A arte 2D em `visual/fire-burst-art/` foi aprovada como arte; **billboard do ataque inteiro não atende ao jogo 3D**, conforme correção posterior do Felipe.
+- Pedido atualizado **X10**, sobre a base 3D **X11**: um disparo lança **cinco correntes simultâneas**, com curvas distintas e rotação pelo ar, todas chegando ao inimigo em **0,20 s**.
+- Referência visual: **Fire Burst do Dark Lord de MU Online**, conforme imagens enviadas pelo Felipe. Elos metálicos escuros e volumétricos, ponta metálica em cada corrente, fogo natural entre os elos e explosão concentrada no contato. Pode usar `three.quarks` nas partículas, não um billboard do ataque inteiro.
+- A trajetória e os elos existem no espaço 3D e funcionam em qualquer direção, inclusive com diferença de altura. A câmera não determina o caminho.
+- O contato produz explosão breve; corrente e partículas desaparecem depois do ataque.
+- O pedido posterior remove a espera pela validação isolada de X11: a entrega atual é a salva de cinco correntes. A mudança visual não multiplica aplicações de dano nem altera mana ou cooldown.
+
 | Tópico | Regra |
 |---|---|
 | Ataque básico | Auto quando **parado**; **não** ataca andando |

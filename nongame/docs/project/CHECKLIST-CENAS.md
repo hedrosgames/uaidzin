@@ -200,6 +200,14 @@ Legenda de status da cena: `Em spec` · `Em implementação` · `Validando` · `
 | 4.12 | **Documentar** save/load | Doc: quando grava/carrega + F5 | `[~]` D11 em `docs/inventarios/save-load.md`; **D11b Feito técnico** (path + INDEX) — aguarda Felipe no produto |
 | 4.13 | **Iluminação + assets + level design** por dungeon | Cada dungeon legível (luz), com assets finais no lugar de placeholder e layout montado (D1 primeiro) | `[~]` D13a D1 greybox — aguarda Felipe; **D13b bloqueado** (sem assets bioma) |
 | 4.14 | **Animações por arma** (transversal X4) | Personagens usam anim coerente com a arma equipada (idle/ataque/run) | `[~]` X4 parcial: ataque melee/cast; idle/run shared — aguarda Felipe |
+| 4.15 | **Fire Burst dedicado** (transversal X5) | TK usa correntes de fogo em arco, rastro/faíscas e impacto no alvo; sem VFX residual após o cast | `[x]` técnico Playwright — aguarda Felipe |
+| 4.16 | **VFX Studio das 96 skills + VFX Pack** (transversal X6) | Catálogo real separado por classe, 3 composições distintas por skill quando aplicável, reprodução, comparação, raio de referência, faixa azul removida e assets sem breakage | `[x]` técnico — 96×3, 67 pack, comparação, 7 viewports, sem erros; aguarda Felipe |
+| 4.17 | **Lab autoral separado** (X7) | 96 skills com V1/V2/V3 distintas, filtros, comparação sincronizada, sequência da árvore, aprovação persistente e exportação; sem alterar master ou jogo por esta tarefa | `[x]` técnico: 288 render/dispose + 17 verificações de UI, reload e exportação via CDP; **arte aguarda Felipe** |
+| 4.18 | **Fire Burst 2D isolado** (X8) | Antecipação, vários fluxos de fogo curvos e simultâneos, impactos breves e dissipação; fundo transparente, sem personagens, cenário, UI ou metal; original preservado | `[x]` testes técnicos e arte aprovados; Felipe, 24/09/2026 |
+| 4.19 | **Prévia da arte 2D no 3D** (X9) | Billboard sobre chão, câmera orbitável e reprodução | `[~]` técnico testado; Felipe rejeitou como solução de efeito 3D; estudo preservado |
+| 4.20 | **Cinco correntes de fogo** (X10) | Um disparo lança cinco correntes escuras com pontas metálicas; giram em curvas diferentes no espaço e chegam juntas em 0,20 s; fogo entre elos, explosão no contato e limpeza | `[x]` FireBurstUAID validado pelo Felipe, 24/09/2026. 174 verificações, 11 direções, 30/60/144 fps, atlas Quarks e cleanup |
+| 4.21 | **Corrente real 3D** (X11) | Elos e pontas volumétricos funcionam em várias direções/alturas, explodem no contato e desaparecem sem resíduos | `[x]` validado com X10, 24/09/2026. Base incorporada à salva; sem mudar dano, mana ou cooldown |
+| 4.22 | **VFX do TK no padrão FireBurstUAID** (X12) | Cada skill física do TK (Golpe, Investida, Corte, Machado, Quebra, Fúria, Avalanche) com VFX de malha real + Quarks na qualidade do FireBurstUAID, lab próprio e gate de qualidade cheio, sem alterar dano/mana/CD | `[~]` sete controllers, labs e scripts de QA criados; Vite/EffectManager integrados; typecheck passa. QAs CDP e validação visual do Felipe pendentes |
 
 ### Comportamento detalhado esperado
 
@@ -212,6 +220,7 @@ Legenda de status da cena: `Em spec` · `Em implementação` · `Validando` · `
 ### Validação (quando implementar)
 
 - [x] Dungeon visível; morte → anim na dungeon → fade → cidade; morte de novo ok. (técnico Playwright D2/D3/X3b — aguarda Felipe)
+- [x] Fire Burst com corrente em arco, rastro, faíscas, impacto e cleanup (técnico Playwright — aguarda Felipe)
 - [ ] Monstro sem x-ray; loot canto esquerdo; up com fanfarra + full bars.
 - [ ] Acentos ok; lock de movimento conforme regra; F5 testado sem corromper save.
 - [ ] Doc save/load escrito.

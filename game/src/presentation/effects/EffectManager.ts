@@ -9,9 +9,38 @@ import {
   Object3D,
   PerspectiveCamera,
   RingGeometry,
+  Scene,
   Vector3,
 } from "three";
 import { VFX_BALANCE } from "../../data/balance/vfx";
+import { AncoraVfxController } from "./tkSkills/ancora/AncoraVfx";
+import { AvalancheVfxController } from "./tkSkills/avalanche/AvalancheVfx";
+import { AuraVfxController } from "./tkSkills/aura/AuraVfx";
+import { BastiaoVfxController } from "./tkSkills/bastiao/BastiaoVfx";
+import { BencaoVfxController } from "./tkSkills/bencao/BencaoVfx";
+import { CorteVfxController } from "./tkSkills/corte/CorteVfx";
+import { DesafioVfxController } from "./tkSkills/desafio/DesafioVfx";
+import { EscudoSagradoVfxController } from "./tkSkills/escudo-sagrado/EscudoSagradoVfx";
+import { FuriaVfxController } from "./tkSkills/furia/FuriaVfx";
+import { GolpeVfxController } from "./tkSkills/golpe/GolpeVfx";
+import { GuardaVfxController } from "./tkSkills/guarda/GuardaVfx";
+import { InvestidaVfxController } from "./tkSkills/investida/InvestidaVfx";
+import { JulgamentoVfxController } from "./tkSkills/julgamento/JulgamentoVfx";
+import { LuzVfxController } from "./tkSkills/luz/LuzVfx";
+import { MachadoVfxController } from "./tkSkills/machado/MachadoVfx";
+import { MuralhaVfxController } from "./tkSkills/muralha/MuralhaVfx";
+import { PosturaVfxController } from "./tkSkills/postura/PosturaVfx";
+import { ProvocacaoVfxController } from "./tkSkills/provocacao/ProvocacaoVfx";
+import { PurificarVfxController } from "./tkSkills/purificar/PurificarVfx";
+import { QuebraVfxController } from "./tkSkills/quebra/QuebraVfx";
+import { RugidoVfxController } from "./tkSkills/rugido/RugidoVfx";
+import { SeloVfxController } from "./tkSkills/selo/SeloVfx";
+import { TribunalVfxController } from "./tkSkills/tribunal/TribunalVfx";
+import { FireBurstVfxController } from "./fireBurst/FireBurstVfx";
+import { getSkillVfxProfile } from "./skill/SkillVfxCatalog";
+import { SkillVfxDirector } from "./skill/SkillVfxRuntime";
+import type { SkillDef } from "../../data/classes/skill-types";
+import type { SkillVfxRequest } from "./skill/SkillVfxTypes";
 
 type DmgKind = "enemy" | "player" | "skill" | "kill" | "miss";
 
@@ -51,14 +80,61 @@ export class EffectManager {
   private shakeAmp = 0;
   private frame = 0;
   private tokenSeq = 1;
+  private readonly fireBurst: FireBurstVfxController;
+  private readonly skillVfx: SkillVfxDirector;
+  private readonly tkGolpe: GolpeVfxController;
+  private readonly tkInvestida: InvestidaVfxController;
+  private readonly tkCorte: CorteVfxController;
+  private readonly tkMachado: MachadoVfxController;
+  private readonly tkQuebra: QuebraVfxController;
+  private readonly tkFuria: FuriaVfxController;
+  private readonly tkAvalanche: AvalancheVfxController;
+  private readonly tkBencao: BencaoVfxController;
+  private readonly tkSelo: SeloVfxController;
+  private readonly tkAura: AuraVfxController;
+  private readonly tkEscudoSagrado: EscudoSagradoVfxController;
+  private readonly tkJulgamento: JulgamentoVfxController;
+  private readonly tkLuz: LuzVfxController;
+  private readonly tkPurificar: PurificarVfxController;
+  private readonly tkTribunal: TribunalVfxController;
+  private readonly tkProvocacao: ProvocacaoVfxController;
+  private readonly tkPostura: PosturaVfxController;
+  private readonly tkRugido: RugidoVfxController;
+  private readonly tkMuralha: MuralhaVfxController;
+  private readonly tkAncora: AncoraVfxController;
+  private readonly tkDesafio: DesafioVfxController;
+  private readonly tkGuarda: GuardaVfxController;
+  private readonly tkBastiao: BastiaoVfxController;
 
   constructor(
     parent: HTMLElement,
-    private readonly sceneRoot: {
-      add(o: object): void;
-      remove(o: object): void;
-    },
+    private readonly sceneRoot: Scene,
   ) {
+    this.fireBurst = new FireBurstVfxController(sceneRoot);
+    this.skillVfx = new SkillVfxDirector(sceneRoot);
+    this.tkGolpe = new GolpeVfxController(sceneRoot);
+    this.tkInvestida = new InvestidaVfxController(sceneRoot);
+    this.tkCorte = new CorteVfxController(sceneRoot);
+    this.tkMachado = new MachadoVfxController(sceneRoot);
+    this.tkQuebra = new QuebraVfxController(sceneRoot);
+    this.tkFuria = new FuriaVfxController(sceneRoot);
+    this.tkAvalanche = new AvalancheVfxController(sceneRoot);
+    this.tkBencao = new BencaoVfxController(sceneRoot);
+    this.tkSelo = new SeloVfxController(sceneRoot);
+    this.tkAura = new AuraVfxController(sceneRoot);
+    this.tkEscudoSagrado = new EscudoSagradoVfxController(sceneRoot);
+    this.tkJulgamento = new JulgamentoVfxController(sceneRoot);
+    this.tkLuz = new LuzVfxController(sceneRoot);
+    this.tkPurificar = new PurificarVfxController(sceneRoot);
+    this.tkTribunal = new TribunalVfxController(sceneRoot);
+    this.tkProvocacao = new ProvocacaoVfxController(sceneRoot);
+    this.tkPostura = new PosturaVfxController(sceneRoot);
+    this.tkRugido = new RugidoVfxController(sceneRoot);
+    this.tkMuralha = new MuralhaVfxController(sceneRoot);
+    this.tkAncora = new AncoraVfxController(sceneRoot);
+    this.tkDesafio = new DesafioVfxController(sceneRoot);
+    this.tkGuarda = new GuardaVfxController(sceneRoot);
+    this.tkBastiao = new BastiaoVfxController(sceneRoot);
     this.overlay = document.createElement("div");
     this.overlay.id = "combat-overlay";
     this.overlay.className = "combat-overlay";
@@ -140,12 +216,16 @@ export class EffectManager {
     this.slashes.push({ line, t: VFX_BALANCE.slashSeconds, max: VFX_BALANCE.slashSeconds });
   }
 
-  playDeath(mesh: Mesh | null | undefined): void {
+  playDeath(
+    mesh: Mesh | null | undefined,
+    duration: number = VFX_BALANCE.deathSeconds,
+  ): void {
     if (!mesh) return;
+    const previousDeath = this.deaths.get(mesh);
     this.deaths.set(mesh, {
-      t: VFX_BALANCE.deathSeconds,
-      max: VFX_BALANCE.deathSeconds,
-      baseScale: mesh.scale.clone(),
+      t: duration,
+      max: duration,
+      baseScale: previousDeath?.baseScale.clone() ?? mesh.scale.clone(),
     });
   }
 
@@ -169,12 +249,210 @@ export class EffectManager {
   }
 
 
+  clearSkillVfx(): void {
+    this.fireBurst.clear();
+    this.skillVfx.clear();
+    this.tkGolpe.clear();
+    this.tkInvestida.clear();
+    this.tkCorte.clear();
+    this.tkMachado.clear();
+    this.tkQuebra.clear();
+    this.tkFuria.clear();
+    this.tkAvalanche.clear();
+    this.tkBencao.clear();
+    this.tkSelo.clear();
+    this.tkAura.clear();
+    this.tkEscudoSagrado.clear();
+    this.tkJulgamento.clear();
+    this.tkLuz.clear();
+    this.tkPurificar.clear();
+    this.tkTribunal.clear();
+    this.tkProvocacao.clear();
+    this.tkPostura.clear();
+    this.tkRugido.clear();
+    this.tkMuralha.clear();
+    this.tkAncora.clear();
+    this.tkDesafio.clear();
+    this.tkGuarda.clear();
+    this.tkBastiao.clear();
+  }
+
+  clearFireBurst(): void {
+    this.fireBurst.clear();
+  }
+
+  syncPassiveVfx(skills: SkillDef[], origin: Vector3): void {
+    const profiles = skills
+      .map((skill) => getSkillVfxProfile(skill.id))
+      .filter((profile) => profile !== undefined);
+    this.skillVfx.syncPassives(profiles, origin);
+  }
+
+  dispatchSkillVfx(input: SkillVfxRequest): void {
+    if (input.profile.family === "chain") {
+      this.fireBurst.castFireBurst(input.origin, input.target ?? input.center);
+      return;
+    }
+    const target = input.target ?? input.center;
+    switch (input.profile.dedicatedVfx) {
+      case "golpe":
+        this.tkGolpe.castGolpe(input.origin, target.clone().sub(input.origin));
+        return;
+      case "investida":
+        this.tkInvestida.castInvestida(input.origin, target);
+        return;
+      case "corte":
+        this.tkCorte.castCorte(input.origin, target);
+        return;
+      case "machado":
+        this.tkMachado.castMachado(target);
+        return;
+      case "quebra":
+        this.tkQuebra.castQuebra(target);
+        return;
+      case "furia":
+        this.tkFuria.castFuria(input.center);
+        return;
+      case "avalanche":
+        this.tkAvalanche.castAvalanche(input.origin, target);
+        return;
+      case "bencao":
+        this.tkBencao.castBencao(input.center);
+        return;
+      case "selo":
+        this.tkSelo.castSelo(input.center);
+        return;
+      case "aura":
+        this.tkAura.castAura(input.center);
+        return;
+      case "escudo-sagrado":
+        this.tkEscudoSagrado.castEscudo(input.origin, target.clone().sub(input.origin));
+        return;
+      case "julgamento":
+        this.tkJulgamento.castJulgamento(target);
+        return;
+      case "luz":
+        this.tkLuz.castLuz(input.origin, target);
+        return;
+      case "purificar":
+        this.tkPurificar.castPurificar(target);
+        return;
+      case "tribunal":
+        this.tkTribunal.castTribunal(target);
+        return;
+      case "provocacao":
+        this.tkProvocacao.castProvocacao(input.center);
+        return;
+      case "postura":
+        this.tkPostura.castPostura(input.center);
+        return;
+      case "rugido":
+        this.tkRugido.castRugido(input.origin);
+        return;
+      case "muralha":
+        this.tkMuralha.castMuralha(input.origin, target.clone().sub(input.origin));
+        return;
+      case "ancora":
+        this.tkAncora.castAncora(input.origin, target);
+        return;
+      case "desafio":
+        this.tkDesafio.castDesafio(input.origin, target);
+        return;
+      case "guarda":
+        this.tkGuarda.castGuarda(input.origin, target.clone().sub(input.origin));
+        return;
+      case "bastiao":
+        this.tkBastiao.castBastiao(input.origin);
+        return;
+      default:
+        break;
+    }
+    this.skillVfx.play(input);
+  }
+
+  getSkillVfxState(): { active: number; particles: number } {
+    return {
+      active:
+        this.skillVfx.getActiveCastCount() +
+        this.fireBurst.getActiveCastCount() +
+        this.tkGolpe.getActiveCastCount() +
+        this.tkInvestida.getActiveCastCount() +
+        this.tkCorte.getActiveCastCount() +
+        this.tkMachado.getActiveCastCount() +
+        this.tkQuebra.getActiveCastCount() +
+        this.tkFuria.getActiveCastCount() +
+        this.tkAvalanche.getActiveCastCount() +
+        this.tkBencao.getActiveCastCount() +
+        this.tkSelo.getActiveCastCount() +
+        this.tkAura.getActiveCastCount() +
+        this.tkEscudoSagrado.getActiveCastCount() +
+        this.tkJulgamento.getActiveCastCount() +
+        this.tkLuz.getActiveCastCount() +
+        this.tkPurificar.getActiveCastCount() +
+        this.tkTribunal.getActiveCastCount() +
+        this.tkProvocacao.getActiveCastCount() +
+        this.tkPostura.getActiveCastCount() +
+        this.tkRugido.getActiveCastCount() +
+        this.tkMuralha.getActiveCastCount() +
+        this.tkAncora.getActiveCastCount() +
+        this.tkDesafio.getActiveCastCount() +
+        this.tkGuarda.getActiveCastCount() +
+        this.tkBastiao.getActiveCastCount(),
+      particles:
+        this.skillVfx.getParticleCount() +
+        this.fireBurst.getParticleCount() +
+        this.tkGolpe.getParticleCount() +
+        this.tkInvestida.getParticleCount() +
+        this.tkCorte.getParticleCount() +
+        this.tkMachado.getParticleCount() +
+        this.tkQuebra.getParticleCount() +
+        this.tkFuria.getParticleCount() +
+        this.tkAvalanche.getParticleCount() +
+        this.tkBencao.getParticleCount() +
+        this.tkSelo.getParticleCount() +
+        this.tkAura.getParticleCount() +
+        this.tkEscudoSagrado.getParticleCount() +
+        this.tkJulgamento.getParticleCount() +
+        this.tkLuz.getParticleCount() +
+        this.tkPurificar.getParticleCount() +
+        this.tkTribunal.getParticleCount() +
+        this.tkProvocacao.getParticleCount() +
+        this.tkPostura.getParticleCount() +
+        this.tkRugido.getParticleCount() +
+        this.tkMuralha.getParticleCount() +
+        this.tkAncora.getParticleCount() +
+        this.tkDesafio.getParticleCount() +
+        this.tkGuarda.getParticleCount() +
+        this.tkBastiao.getParticleCount(),
+    };
+  }
+
   playSkillVfx(
     kind: "burst" | "bolt" | "zone",
     from: Vector3,
     to: Vector3,
     colorHex: number,
+    skillId?: string,
   ): void {
+    const profile = skillId ? getSkillVfxProfile(skillId) : undefined;
+    if (profile) {
+      this.dispatchSkillVfx({
+        profile,
+        origin: from,
+        target: to,
+        center: to,
+        colorHex,
+        facing: 0,
+        range: profile.range,
+        radius: profile.radius,
+        hits: [],
+        hasHeal: false,
+        hasBuff: profile.family === "buff",
+        hasTransform: profile.family === "transform",
+        hasSummon: profile.family === "summon",
+      });
+      return;
+    }
     if (kind === "bolt") {
       const geo = new BufferGeometry().setFromPoints([
         from.clone().setY(1.1),
@@ -337,6 +615,31 @@ export class EffectManager {
   }
 
   update(dt: number, camera: PerspectiveCamera, width: number, height: number): void {
+    this.fireBurst.update(dt, width, height);
+    this.skillVfx.update(dt, width, height);
+    this.tkGolpe.update(dt, width, height);
+    this.tkInvestida.update(dt, width, height);
+    this.tkCorte.update(dt, width, height);
+    this.tkMachado.update(dt, width, height);
+    this.tkQuebra.update(dt, width, height);
+    this.tkFuria.update(dt, width, height);
+    this.tkAvalanche.update(dt, width, height);
+    this.tkBencao.update(dt, width, height);
+    this.tkSelo.update(dt, width, height);
+    this.tkAura.update(dt, width, height);
+    this.tkEscudoSagrado.update(dt, width, height);
+    this.tkJulgamento.update(dt, width, height);
+    this.tkLuz.update(dt, width, height);
+    this.tkPurificar.update(dt, width, height);
+    this.tkTribunal.update(dt, width, height);
+    this.tkProvocacao.update(dt, width, height);
+    this.tkPostura.update(dt, width, height);
+    this.tkRugido.update(dt, width, height);
+    this.tkMuralha.update(dt, width, height);
+    this.tkAncora.update(dt, width, height);
+    this.tkDesafio.update(dt, width, height);
+    this.tkGuarda.update(dt, width, height);
+    this.tkBastiao.update(dt, width, height);
     for (let i = this.floating.length - 1; i >= 0; i--) {
       const f = this.floating[i];
       f.life -= dt;
@@ -408,7 +711,7 @@ export class EffectManager {
       const k = Math.max(0, death.t / death.max);
       mesh.scale.set(death.baseScale.x * k, death.baseScale.y * k, death.baseScale.z * k);
       if (death.t <= 0) {
-        mesh.scale.copy(death.baseScale);
+        mesh.scale.set(0, 0, 0);
         this.deaths.delete(mesh);
       }
     }
@@ -445,6 +748,31 @@ export class EffectManager {
   }
 
   dispose(): void {
+    this.fireBurst.dispose();
+    this.skillVfx.dispose();
+    this.tkGolpe.dispose();
+    this.tkInvestida.dispose();
+    this.tkCorte.dispose();
+    this.tkMachado.dispose();
+    this.tkQuebra.dispose();
+    this.tkFuria.dispose();
+    this.tkAvalanche.dispose();
+    this.tkBencao.dispose();
+    this.tkSelo.dispose();
+    this.tkAura.dispose();
+    this.tkEscudoSagrado.dispose();
+    this.tkJulgamento.dispose();
+    this.tkLuz.dispose();
+    this.tkPurificar.dispose();
+    this.tkTribunal.dispose();
+    this.tkProvocacao.dispose();
+    this.tkPostura.dispose();
+    this.tkRugido.dispose();
+    this.tkMuralha.dispose();
+    this.tkAncora.dispose();
+    this.tkDesafio.dispose();
+    this.tkGuarda.dispose();
+    this.tkBastiao.dispose();
     this.drainMeshFx();
     for (const el of this.hpBars.values()) el.remove();
     this.hpBars.clear();

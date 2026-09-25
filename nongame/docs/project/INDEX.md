@@ -9,6 +9,7 @@ A documentação de trabalho foi movida para `nongame`. O runtime continua em `g
 - [`PLAN-finalizacao-sistemas.md`](PLAN-finalizacao-sistemas.md): ciclo de trabalho.
 - [`TAREFAS-ABERTAS.md`](TAREFAS-ABERTAS.md): trabalho aberto.
 - [`CHECKLIST-CENAS.md`](CHECKLIST-CENAS.md): aceite observável por cena.
+- [`VFX-KIT-FIREBURST.md`](VFX-KIT-FIREBURST.md): material de produção de VFX no padrão FireBurstUAID (TK primeiro).
 - [`GRILL-FORM.html`](GRILL-FORM.html): formulário de decisões.
 - [`PLAN-assets-cenario-dungeons.md`](PLAN-assets-cenario-dungeons.md): catálogo de props de dungeon.
 
@@ -42,6 +43,7 @@ A documentação de trabalho foi movida para `nongame`. O runtime continua em `g
 
 - [`../../../game/`](../../../game/): Vite, TypeScript, Three.js e assets consumidos.
 - [`../../../visual/telas/`](../../../visual/telas/): wire e protótipos publicados pelo Vite.
+- [`../../../game/vfx/vfx_lab.html`](../../../game/vfx/vfx_lab.html): Atelier X7, 96 skills × 3 propostas; [fichas autorais](../../../game/vfx/skills-vfx-brief.md) e [resultados técnicos](../../../game/vfx/evidence/ui-results.json).
 - [`../../../AGENTS.md`](../../../AGENTS.md): regras operacionais do repositório.
 
 ## Histórico

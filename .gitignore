@@ -15,3 +15,6 @@ nongame/game/assets-source/creature-pack/
 nongame/assets/drive/
 nongame/assets/animations/unused/
 nongame/assets/models/unused/
+game/vfx/uaidzin_vfx_data.js
+game/vfx/uaidzin_vfx_lab_data.js
+visual/uaidzin_vfx_data.js

@@ -45,7 +45,7 @@ _(I4 em validação; demais I* já em Aguardando)_
 
 ## Em implementação
 
-_(vazio)_
+_(vazio — X10/X11 em Aguardando validação do Felipe)_
 
 ---
 
@@ -67,6 +67,13 @@ _(vazio)_
 
 | ID | Tarefa | Nota |
 |---|---|---|
+| X10 | Fire Burst: cinco correntes 3D curvas e giratórias, em 0,20 s | **FireBurstUAID** validado pelo Felipe em 24/09/2026. Lab `/vfx/fire-burst.html`: cinco caminhos aleatórios, elos escuros, pontas metálicas e fogo Quarks em atlas animado; explosão compartilhada. 174 verificações, 11 direções, passos de 30/60/144 fps, integração TK, limpeza e memória estável; typecheck/build OK. Evidências em `game/vfx/evidence/fire-chain-*` |
+| X11 | Fire Burst: base de corrente com elos 3D e explosão no inimigo | Validado com X10; malhas de elos e pontas em várias direções/alturas, sem billboard. Não altera dano, mana ou cooldown |
+| X12 | VFX no padrão FireBurstUAID para as outras 7 skills físicas do TK | Controllers dedicados, sete labs standalone e sete scripts de QA criados. Vite e `EffectManager` integrados; typecheck global passa. QAs CDP aguardam execução central e validação visual do Felipe. Direção "Muralha de Terra" para a Avalanche aprovada (pedras/terra ótimas; refino do desenho vetorial pendente); backup v1 em `game/scripts/_tk-work/avalanche-v1` |
+| X13 | VFX no padrão FireBurstUAID para as 8 skills de magia do TK | Onda 1: 8 agentes paralelos (Benção, Selo, Aura, Escudo Sagrado, Julgamento, Luz, Purificar, Tribunal), escopo isolado (pasta própria + lab + QA script). Integração central e QA CDP ficam com a sessão principal. Base: melhores visuais de hoje (Fúria aura, Quebra shards, Machado impacto, Corte blades, Avalanche onda, FireBurst chains) |
+| X14 | VFX no padrão FireBurstUAID para as 8 skills de controle do TK | Onda 2: dispara quando a onda 1 (X13) terminar. Mesmo padrão e fluxo da X13 (Provocação, Postura, Rugido, Muralha, Âncora, Desafio, Guarda, Bastião) |
+| X9 | Prévia da arte 2D em cenário 3D | `/vfx/fire-burst-3d.html`: billboard técnico testado, **reprovado como solução do VFX 3D** pelo Felipe; preservado somente como estudo. Substituição real em X11 |
+| X7 | Lab autoral: 96 skills × 3 propostas | `/vfx/vfx_lab.html`: 288 conceitos/receitas autorais, galeria com prévia, comparação sincronizada, sequência por árvore e escolhas locais/exportação JSON. Render/dispose das 288, persistência e fluxo de revisão testados; evidências em `game/vfx/evidence/`. Direção cartoon restrita aos efeitos do lab; criaturas são silhuetas de estudo. Sem integração destas propostas ao runtime; aprovação artística pendente |
 | S2 | Painel direito com **status da classe** no create (padrão) e do **personagem salvo** depois | Bug status/create resolvido via **S1** (`normalizeSlots`) + **S5** (create 5/5/5/5 gold 0); aguarda Felipe |
 | C1 | Definir + implementar **mestre de quests** | Coberto por **C1i** (+ **C1d**); UI + `q_mortal_kill_01`; aguarda Felipe |
 | C7 | **Compositor**: criar fórmulas + implementar | Coberto por **C7i** (+ **C7d**); `compose_plus7_lac`; aguarda Felipe |
@@ -81,6 +88,8 @@ _(vazio)_
 | C26 | Visual da área da fonte | Meio-fio ouro, plinto + anel sob a fonte, praça dedicada; amarra C12/C13 |
 | D13a | D1: luz + assets + LD | Greybox campo: chão/path quente, cercas, anéis, rack/bulletin existentes; sem pasta dungeons; typecheck OK |
 | X4 | Animações por arma (idle/run/attack) | Matriz shared: melee→`attack`, staff/arco→`cast`; idle/run sem variação (gap clips); typecheck OK |
+| X5 | Fire Burst modular com `three.quarks` | Correntes Bézier + rastro + faíscas + impacto; lab `/vfx/fire-burst.html`; TK integrado; Playwright visual/cleanup OK; aguarda Felipe |
+| X6 | VFX Audit, Rework e Quality Pass | 96 skills reais, 288 versões no Studio, 67 efeitos do pack local, catálogo runtime, fallback de 3 efeitos vazios/3 shapes e QA em 7 viewports; aguarda Felipe |
 | C18 | Tela dungeon: **cards com info** + wire | Cards: nível, tempo, inimigos, entrada + ícone selo; wire `03-wire-paineis-cidade.html`; Playwright `check-c18-d5.mjs` |
 | C10 | **Ferreiro**: lista de itens feita | Catálogo I9/I7 em `SHOP_CATALOG.blacksmith` (materiais + peças); wire pinta lista real; Playwright `check-c10-c14-c11.mjs` |
 | C14 | **Mercador**: lista montada | Catálogo I9/I6: selos `entry_d4`–`entry_d8` + `mat_ori`/`mat_lac`; sem gear; preços provisórios; Playwright `check-c10-c14-c11.mjs` |
@@ -149,6 +158,9 @@ _(vazio)_
 
 | ID | Tarefa | Nota |
 |---|---|---|
+| X10 | FireBurstUAID: cinco correntes 3D curvas, em 0,20 s | Validado pelo Felipe em 24/09/2026. Detalhe na seção Aguardando abaixo |
+| X11 | FireBurstUAID: base de corrente 3D com explosão | Validado junto do X10 em 24/09/2026 |
+| X8 | Fire Burst: arte 2D e animação transparente | Arte e animação aprovadas pelo Felipe em 24/09/2026. HTML, PNG, APNG e spritesheet em `visual/fire-burst-art/`; testes de alfa, reprodução e cleanup aprovados. Prévia 3D e cinco correntes são X9/X10 |
 | X1 | Backlog 5 msgs do Felipe → checklist + tarefas | Feito — checklist + linhas em `TAREFAS-ABERTAS.md` |
 | D11b | Doc save/load versionado no repo | Visível em `docs/inventarios/save-load.md` + `INDEX.md` (D11/D11b). Conteúdo produto ainda aguarda Felipe em D10/D11. |
 | L5 | Boot conta única `admin` → seleção | Validação técnica Playwright: wipe limpa accounts; reload `01-login` / `/` → só `admin`; `admin`/`admin` → `02-selecao-personagem.html`. Sem mudança de código. |

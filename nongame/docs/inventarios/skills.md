@@ -5,6 +5,8 @@ Documento de discovery. Depois de ler isto, dá para listar **todas as skills** 
 **Fontes:** GDD `12-skills-builds-e-equipamentos.md` · I10 (`docs/inventarios/classes.md`) · `game/src/data/classes/class-definitions.ts` · `game/src/data/balance/skills.ts` · `SkillLoadout` / `SkillController` · wire `visual/telas/03-wire-paineis-cidade.html` · `DECISOES-DESIGN.md` (SKILLS).  
 **Conflito GDD × grill:** o grill vence.
 
+**Catálogo VFX derivado:** `game/vfx/skills-manifest.json` e `game/vfx/uaidzin_skill_catalog.js` são gerados a partir da mesma fonte canônica e preservam os 96 IDs reais; o catálogo não substitui este inventário de regras.
+
 ---
 
 ## Regra canônica (grill)
@@ -83,13 +85,13 @@ Colunas: id | nome | classe | árvore | custo/CD | efeito | status
 | `tk_mag_6` | Luz | TK | magia | MP 8 · CD 3.5s | TBD | placeholder |
 | `tk_mag_7` | Purificar | TK | magia | MP 8 · CD 4.0s | TBD | placeholder |
 | `tk_mag_8` | Tribunal | TK | magia | MP 8 · CD 4.5s | TBD — **8ª exclusiva** | placeholder |
-| `tk_fis_1` | Golpe | TK | fisica | MP 8 · CD 3.0s | TBD (GDD Impacto/Ímpeto: melee) | placeholder |
-| `tk_fis_2` | Corte | TK | fisica | MP 8 · CD 3.5s | TBD | placeholder |
-| `tk_fis_3` | Investida | TK | fisica | MP 8 · CD 4.0s | TBD | placeholder |
-| `tk_fis_4` | Machado | TK | fisica | MP 8 · CD 4.5s | TBD | placeholder |
-| `tk_fis_5` | Quebra | TK | fisica | MP 8 · CD 3.0s | TBD | placeholder |
-| `tk_fis_6` | Fúria | TK | fisica | MP 8 · CD 3.5s | TBD | placeholder |
-| `tk_fis_7` | Avalanche | TK | fisica | MP 8 · CD 4.0s | TBD | placeholder |
+| `tk_fis_1` | Golpe | TK | fisica | MP 8 · CD 3.0s | VFX dedicado em `tkSkills/golpe` | VFX técnico; skill canônica pendente |
+| `tk_fis_2` | Corte | TK | fisica | MP 8 · CD 3.5s | VFX dedicado em `tkSkills/corte` | VFX técnico; skill canônica pendente |
+| `tk_fis_3` | Investida | TK | fisica | MP 8 · CD 4.0s | VFX dedicado em `tkSkills/investida` | VFX técnico; skill canônica pendente |
+| `tk_fis_4` | Machado | TK | fisica | MP 8 · CD 4.5s | VFX dedicado em `tkSkills/machado` | VFX técnico; skill canônica pendente |
+| `tk_fis_5` | Quebra | TK | fisica | MP 8 · CD 3.0s | VFX dedicado em `tkSkills/quebra` | VFX técnico; skill canônica pendente |
+| `tk_fis_6` | Fúria | TK | fisica | MP 8 · CD 3.5s | VFX dedicado em `tkSkills/furia` | VFX técnico; skill canônica pendente |
+| `tk_fis_7` | Avalanche | TK | fisica | MP 8 · CD 4.0s | VFX dedicado em `tkSkills/avalanche` | VFX técnico; skill canônica pendente |
 | `tk_fis_8` | Colosso | TK | fisica | MP 8 · CD 4.5s | TBD — **8ª exclusiva** | placeholder |
 
 ### FM — Frost Maiden

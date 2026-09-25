@@ -1,0 +1,2353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#100c08">
+  <title>UAIDZIN | Studio de VFX</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23100c08' d='M2 2h28v28H2z'/%3E%3Cpath fill='none' stroke='%23d4a017' stroke-width='2' d='M5 7h7l4 6 4-6h7M5 25h7l4-6 4 6h7'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg0: #100c08;
+      --bg1: #241c14;
+      --bg2: #2e241a;
+      --iron: #3d3228;
+      --iron-hi: #5a4a38;
+      --gold: #d4a017;
+      --gold-hi: #e8c547;
+      --gold-dim: #8a6d18;
+      --blood: #a33b3b;
+      --blood-hi: #d45555;
+      --frost: #5b9fd4;
+      --mp: #3b7dd4;
+      --ok: #3d9a6a;
+      --ink: #f0e6d0;
+      --ink-dim: #b8a88c;
+      --ink-mute: #7a6b58;
+      --r-comum: #8b9aab;
+      --r-incomum: #3d8b4a;
+      --r-raro: #3b7dd4;
+      --r-epico: #8b4ac9;
+      --r-lendario: #c9a227;
+      --font-display: Georgia, "Palatino Linotype", "Book Antiqua", Palatino, serif;
+      --font-ui: "Segoe UI", Tahoma, system-ui, sans-serif;
+      --font-num: ui-monospace, Consolas, monospace;
+      --panel: #16100a;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      color: var(--ink);
+      font-family: var(--font-ui);
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    input, textarea, [contenteditable="true"] { -webkit-user-select: text; user-select: text; }
+    button, input { font: inherit; }
+    button { border-radius: 2px; }
+    .hidden { display: none !important; }
+    .viewport { position: fixed; inset: 0; overflow: hidden; background: #000; }
+    .stage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1600px;
+      height: 900px;
+      overflow: hidden;
+      transform-origin: 0 0;
+      background: var(--bg0);
+    }
+    #stage-canvas { position: absolute; inset: 0; display: block; width: 1600px; height: 900px; }
+    .scene-shade {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: radial-gradient(circle at 58% 43%, transparent 0 30%, rgba(16, 12, 8, 0.12) 54%, rgba(8, 5, 3, 0.72) 100%);
+    }
+    .master-header {
+      position: absolute;
+      z-index: 40;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      display: grid;
+      grid-template-columns: 340px 1fr 340px;
+      align-items: center;
+      gap: 18px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--iron-hi);
+      background: linear-gradient(180deg, #2a2016 0%, #17100a 100%);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.72), inset 0 1px 0 rgba(212, 160, 23, 0.18);
+    }
+    .brand { min-width: 0; display: flex; align-items: center; gap: 11px; }
+    .brand-mark { width: 34px; height: 34px; flex: 0 0 34px; color: var(--gold-hi); filter: drop-shadow(0 0 8px rgba(212, 160, 23, 0.25)); }
+    .brand-copy { min-width: 0; }
+    .brand-copy strong {
+      display: block;
+      overflow: hidden;
+      color: var(--gold-hi);
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .brand-copy span {
+      display: block;
+      margin-top: 2px;
+      overflow: hidden;
+      color: var(--ink-mute);
+      font-size: 9px;
+      letter-spacing: 0.13em;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .tabs { justify-self: center; display: flex; gap: 4px; padding: 3px; border: 1px solid var(--iron); background: #120d09; }
+    .tab {
+      min-height: 38px;
+      padding: 8px 18px;
+      border: 1px solid transparent;
+      border-radius: 2px;
+      background: transparent;
+      color: var(--ink-dim);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+    }
+    .tab:hover { border-color: var(--iron-hi); color: var(--gold-hi); }
+    .tab.active { border-color: var(--gold); background: linear-gradient(180deg, #4a2b12, #281609); color: var(--gold-hi); box-shadow: inset 0 0 12px rgba(212, 160, 23, 0.18); }
+    .header-actions { justify-self: end; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+    .count-badge {
+      min-width: 112px;
+      padding: 7px 9px;
+      border: 1px solid var(--gold-dim);
+      border-radius: 2px;
+      background: #130d08;
+      color: var(--gold-hi);
+      font-family: var(--font-num);
+      font-size: 10px;
+      text-align: center;
+    }
+    .frame {
+      position: relative;
+      border: 1px solid #6a5638;
+      background: linear-gradient(180deg, #2a2118 0%, #18120c 100%);
+      box-shadow: inset 0 0 0 1px rgba(212, 160, 23, 0.08), inset 0 0 24px rgba(0, 0, 0, 0.42), 0 12px 34px rgba(0, 0, 0, 0.5);
+    }
+    .frame::before, .frame::after {
+      position: absolute;
+      z-index: 2;
+      width: 18px;
+      height: 18px;
+      border-color: var(--gold);
+      border-style: solid;
+      content: "";
+      pointer-events: none;
+    }
+    .frame::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+    .frame::after { right: -1px; bottom: -1px; border-width: 0 2px 2px 0; }
+    .icon {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 17px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.8;
+      pointer-events: none;
+    }
+    .icon-button, .saloon-button {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 7px 10px;
+      border: 1px solid var(--iron-hi);
+      border-radius: 2px;
+      background: linear-gradient(180deg, #3a2d20, #211810);
+      color: var(--ink-dim);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.035em;
+      cursor: pointer;
+    }
+    .icon-button:hover, .saloon-button:hover { border-color: var(--gold); color: var(--gold-hi); }
+    .icon-button:active, .saloon-button:active { transform: translateY(1px); }
+    .saloon-button.active { border-color: var(--gold); background: linear-gradient(180deg, #4b2c11, #291707); color: var(--gold-hi); }
+    .saloon-button.primary { border-color: #b56a20; background: linear-gradient(180deg, #6a2c0b, #351506); color: #ffe3a4; }
+    .icon-button.square { width: 34px; padding: 0; }
+    .sidebar {
+      position: absolute;
+      z-index: 30;
+      top: 78px;
+      bottom: 226px;
+      left: 14px;
+      width: 358px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      transition: transform 180ms ease, opacity 180ms ease;
+    }
+    .sidebar-collapsed .sidebar { transform: translateX(-390px); opacity: 0; pointer-events: none; }
+    .sidebar-head { flex: 0 0 auto; padding: 14px 14px 12px; border-bottom: 1px solid var(--iron); background: rgba(16, 12, 8, 0.72); }
+    .sidebar-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 11px; }
+    .sidebar-heading span { display: block; color: var(--ink-mute); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; }
+    .sidebar-heading strong { display: block; margin-top: 2px; color: var(--gold-hi); font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+    .result-count { flex: 0 0 auto; padding: 4px 7px; border: 1px solid var(--iron-hi); border-radius: 2px; color: var(--ink-dim) !important; font-family: var(--font-num); font-size: 9px !important; letter-spacing: 0 !important; }
+    .class-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 9px; }
+    .class-button { min-width: 0; min-height: 42px; padding: 5px 3px; border: 1px solid var(--iron); border-radius: 2px; background: #171009; color: var(--ink-dim); cursor: pointer; }
+    .class-button strong, .class-button span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .class-button strong { color: var(--gold-hi); font-family: var(--font-display); font-size: 12px; }
+    .class-button span { margin-top: 2px; font-size: 8px; letter-spacing: 0.02em; }
+    .class-button:hover { border-color: var(--gold-dim); }
+    .class-button.active { border-color: var(--gold); background: linear-gradient(180deg, #4a2a11, #281608); color: var(--gold-hi); }
+    .search-wrap { position: relative; }
+    .search-wrap .icon { position: absolute; top: 9px; left: 10px; color: var(--ink-mute); pointer-events: none; }
+    .search-input { width: 100%; height: 36px; padding: 7px 10px 7px 34px; border: 1px solid var(--iron-hi); border-radius: 2px; outline: 0; background: #100b07; color: var(--ink); font-size: 11px; }
+    .search-input::placeholder { color: var(--ink-mute); }
+    .search-input:focus { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(212, 160, 23, 0.12); }
+    .filter-row { display: flex; gap: 4px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-button { flex: 0 0 auto; min-height: 27px; padding: 5px 8px; border: 1px solid var(--iron); border-radius: 2px; background: #171009; color: var(--ink-dim); font-size: 9px; font-weight: 700; cursor: pointer; }
+    .filter-button:hover { border-color: var(--gold-dim); color: var(--gold-hi); }
+    .filter-button.active { border-color: var(--frost); background: #172534; color: #b9dcfa; }
+    .item-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 9px; scrollbar-color: var(--iron-hi) transparent; scrollbar-width: thin; }
+    .item-list::-webkit-scrollbar { width: 6px; }
+    .item-list::-webkit-scrollbar-thumb { background: var(--iron-hi); border-radius: 2px; }
+    .vfx-card { position: relative; width: 100%; margin-bottom: 6px; padding: 10px 10px 9px 13px; border: 1px solid var(--iron); border-radius: 2px; background: linear-gradient(180deg, #241a12, #181009); color: var(--ink); text-align: left; cursor: pointer; }
+    .vfx-card::before { position: absolute; top: 9px; bottom: 9px; left: 0; width: 3px; background: var(--iron-hi); content: ""; }
+    .vfx-card:hover { border-color: var(--gold-dim); background: linear-gradient(180deg, #342418, #20150c); }
+    .vfx-card.active { border-color: var(--gold); background: linear-gradient(180deg, #4b2a12, #281608); box-shadow: inset 0 0 14px rgba(212, 160, 23, 0.12); }
+    .vfx-card.active::before { background: var(--gold-hi); box-shadow: 0 0 8px rgba(232, 197, 71, 0.42); }
+    .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .card-title { min-width: 0; overflow: hidden; color: var(--ink); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .vfx-card.active .card-title { color: var(--gold-hi); }
+    .card-badge { flex: 0 0 auto; padding: 2px 5px; border: 1px solid var(--iron-hi); border-radius: 2px; color: var(--ink-dim); font-family: var(--font-num); font-size: 8px; text-transform: uppercase; }
+    .card-id { display: block; margin-top: 3px; overflow: hidden; color: var(--ink-mute); font-family: var(--font-num); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+    .card-meta, .card-power, .card-state { display: flex; gap: 5px; margin-top: 6px; color: var(--ink-dim); font-size: 9px; line-height: 1.25; }
+    .card-meta span, .card-power span, .card-state span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card-state { color: var(--ink-mute); }
+    .card-state.experimental { color: #f2a464; }
+    .card-state.reference { color: #b8c7d4; }
+    .pack-license { flex: 0 0 auto; padding: 9px 12px; border-top: 1px solid var(--iron); background: #120d09; color: var(--ink-mute); font-size: 8px; line-height: 1.45; }
+    .pack-license strong { display: block; margin-bottom: 2px; color: var(--gold); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .sidebar-toggle { position: absolute; z-index: 35; top: 78px; left: 382px; transition: left 180ms ease, transform 180ms ease; }
+    .sidebar-collapsed .sidebar-toggle { left: 14px; transform: rotate(180deg); }
+    .camera-tools { position: absolute; z-index: 25; top: 78px; right: 20px; display: flex; flex-direction: column; gap: 5px; }
+    .camera-tools .saloon-button { min-width: 112px; justify-content: flex-start; }
+    .compare-labels { position: absolute; z-index: 24; top: 82px; left: 23%; right: 23%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; pointer-events: none; }
+    .compare-label { padding: 7px 8px; border: 1px solid rgba(212, 160, 23, 0.62); background: rgba(16, 12, 8, 0.82); color: var(--gold-hi); font-family: var(--font-num); font-size: 10px; text-align: center; }
+    .vfx-hud { position: absolute; z-index: 32; right: 20px; bottom: 18px; left: 386px; min-height: 190px; padding: 14px 16px 12px; transition: left 180ms ease; }
+    .sidebar-collapsed .vfx-hud { left: 60px; }
+    .hud-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+    .hud-title-zone { min-width: 0; display: flex; align-items: flex-start; gap: 12px; }
+    .class-badge { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border: 1px solid var(--gold-dim); border-radius: 2px; background: linear-gradient(180deg, #4a2b12, #211207); color: var(--gold-hi); font-family: var(--font-display); font-size: 15px; font-weight: 700; }
+    .hud-copy { min-width: 0; }
+    .hud-copy h1 { margin: 0; overflow: hidden; color: var(--gold-hi); font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: 0.025em; text-overflow: ellipsis; white-space: nowrap; }
+    .hud-copy p { margin: 3px 0 0; overflow: hidden; color: var(--ink-dim); font-size: 10px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+    .hud-copy .brief { max-width: 560px; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.3; color: var(--ink-mute); font-size: 9px; }
+    .hud-copy .strategy { margin-top: 4px; color: var(--gold-dim); font-size: 9px; }
+    .version-selector { flex: 0 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 3px; border: 1px solid var(--iron); background: #120d09; }
+    .version-button { min-width: 112px; min-height: 38px; padding: 6px 9px; border: 1px solid transparent; border-radius: 2px; background: transparent; color: var(--ink-dim); font-size: 9px; font-weight: 800; cursor: pointer; }
+    .version-button:hover { border-color: var(--iron-hi); color: var(--gold-hi); }
+    .version-button.active { border-color: var(--gold); background: linear-gradient(180deg, #4a2b12, #281609); color: var(--gold-hi); }
+    .hud-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--iron); }
+    .playback-controls { min-width: 0; display: flex; align-items: center; gap: 7px; }
+    .speed-control { display: flex; align-items: center; gap: 7px; color: var(--ink-mute); font-size: 9px; font-weight: 700; text-transform: uppercase; }
+    .speed-control input { width: 86px; accent-color: var(--gold); }
+    .speed-value { min-width: 32px; color: var(--gold-hi); font-family: var(--font-num); font-size: 10px; }
+    .compare-control { display: flex; align-items: center; gap: 6px; color: var(--ink-dim); font-size: 9px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
+    .compare-control input { accent-color: var(--gold); }
+    .compare-control.disabled { color: var(--ink-mute); cursor: not-allowed; }
+    .metrics { display: flex; align-items: center; gap: 15px; color: var(--ink-mute); font-family: var(--font-num); font-size: 9px; }
+    .metrics strong { color: var(--gold-hi); font-size: 11px; font-weight: 600; }
+    .error-strip { display: none; margin-top: 9px; padding: 6px 8px; border: 1px solid var(--blood); background: #2b1110; color: #efb1a4; font-size: 9px; }
+    .error-strip.visible { display: block; }
+    .icon-library { position: absolute; width: 0; height: 0; overflow: hidden; }
+    @media (max-width: 1199px) {
+      .master-header { height: 58px; grid-template-columns: 1fr auto; padding: 0 12px; }
+      .brand, .count-badge { display: none; }
+      .tabs { justify-self: start; }
+      .workspace { top: 58px; }
+      .sidebar { top: 68px; bottom: 202px; width: min(360px, calc(100vw - 56px)); }
+      .sidebar-collapsed .sidebar { transform: translateX(calc(-1 * min(390px, 100vw))); }
+      .sidebar-toggle { top: 68px; }
+      .camera-tools { top: 68px; right: 12px; }
+      .camera-tools .saloon-button { min-width: 96px; padding: 6px 8px; }
+      .vfx-hud { right: 12px; bottom: 12px; left: 12px; min-height: 178px; }
+      .sidebar-collapsed .vfx-hud { left: 12px; }
+      .hud-top { flex-wrap: wrap; gap: 8px 12px; }
+      .version-selector { flex: 1 0 100%; }
+      .version-button { min-width: 0; }
+      .hud-controls { align-items: flex-start; }
+      .playback-controls { flex-wrap: wrap; }
+      .compare-labels { top: 70px; left: 5%; right: 5%; gap: 10px; }
+    }
+    @media (max-width: 699px) {
+      .master-header { height: 52px; grid-template-columns: 1fr; padding: 0 8px; }
+      .tabs { justify-self: stretch; }
+      .tab { flex: 1; min-width: 0; padding: 7px 5px; font-size: 9px; }
+      .header-actions { display: none; }
+      .workspace { top: 52px; }
+      .sidebar { top: 60px; bottom: 220px; }
+      .sidebar-toggle { top: 60px; }
+      .camera-tools { display: none; }
+      .vfx-hud { min-height: 196px; padding: 10px; }
+      .hud-title-zone { width: 100%; }
+      .class-badge { width: 36px; height: 36px; flex-basis: 36px; font-size: 13px; }
+      .hud-copy h1 { font-size: 15px; }
+      .hud-copy .brief { -webkit-line-clamp: 1; font-size: 8px; }
+      .hud-copy .strategy { font-size: 8px; }
+      .version-button { padding: 6px 4px; font-size: 8px; }
+      .hud-controls { flex-direction: column; gap: 8px; }
+      .playback-controls { width: 100%; gap: 5px; }
+      .speed-control input { width: 64px; }
+      .metrics { width: 100%; justify-content: flex-end; gap: 10px; }
+      .compare-labels { top: 62px; left: 3%; right: 3%; }
+      .compare-label { padding: 5px 2px; font-size: 8px; }
+    }
+  </style>
+  <script>
+    (function () {
+      var prefix = location.pathname.indexOf("Desktop") !== -1 ? "CartoonFX_VFX_Quarks/" : "";
+      var sources = [
+        prefix + "libs/three.min.js",
+        prefix + "libs/OrbitControls.js",
+        prefix + "libs/three.quarks.min.js",
+        prefix + "libs/Pass.js",
+        prefix + "libs/CopyShader.js",
+        prefix + "libs/LuminosityHighPassShader.js",
+        prefix + "libs/ShaderPass.js",
+        prefix + "libs/RenderPass.js",
+        prefix + "libs/UnrealBloomPass.js",
+        prefix + "libs/EffectComposer.js",
+        prefix + "uaidzin_skill_catalog.js",
+        prefix + "uaidzin_vfx_data.js"
+      ];
+      for (var index = 0; index < sources.length; index += 1) {
+        document.write('<script src="' + sources[index] + '"><' + '/script>');
+      }
+    }());
+  </script>
+</head>
+<body>
+  <svg class="icon-library" aria-hidden="true">
+    <symbol id="icon-mark" viewBox="0 0 32 32"><path d="M3 7h8l5 7 5-7h8M3 25h8l5-7 5 7h8M11 3v5M21 3v5M11 24v5M21 24v5"></path><path d="M13 14h6v4h-6z"></path></symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M15.5 15.5L21 21"></path></symbol>
+    <symbol id="icon-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16"></rect><path d="M9 4v16M14 9l-3 3 3 3"></path></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"></path></symbol>
+    <symbol id="icon-loop" viewBox="0 0 24 24"><path d="M17 4l3 3-3 3M4 11V9a2 2 0 012-2h14M7 20l-3-3 3-3M20 13v2a2 2 0 01-2 2H4"></path></symbol>
+    <symbol id="icon-bloom" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"></path></symbol>
+    <symbol id="icon-camera" viewBox="0 0 24 24"><path d="M4 7h4l2-2h4l2 2h4v12H4z"></path><circle cx="12" cy="13" r="4"></circle></symbol>
+    <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z"></path><circle cx="12" cy="12" r="2.5"></circle></symbol>
+    <symbol id="icon-diamond" viewBox="0 0 24 24"><path d="M12 3l8 9-8 9-8-9zM4 12h16"></path></symbol>
+    <symbol id="icon-top" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9l4-3 4 3M12 6v12"></path></symbol>
+  </svg>
+  <div class="viewport" id="viewport">
+    <main class="stage" id="stage" aria-label="Studio tridimensional de efeitos visuais">
+      <canvas id="stage-canvas"></canvas>
+      <div class="scene-shade"></div>
+      <header class="master-header">
+        <div class="brand">
+          <svg class="brand-mark" aria-hidden="true"><use href="#icon-mark"></use></svg>
+          <div class="brand-copy"><strong>UAIDZIN</strong><span>Studio de efeitos visuais</span></div>
+        </div>
+        <nav class="tabs" aria-label="Catálogos de VFX">
+          <button class="tab active" id="tab-skills" type="button">GAME SKILLS VFX</button>
+          <button class="tab" id="tab-pack" type="button">VFX PACK</button>
+        </nav>
+        <div class="header-actions">
+          <span class="count-badge" id="header-count">96 skills, 288 versões</span>
+          <button class="icon-button square active" id="bloom-button" type="button" aria-label="Alternar bloom"><svg class="icon" aria-hidden="true"><use href="#icon-bloom"></use></svg></button>
+        </div>
+      </header>
+      <button class="icon-button square sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Recolher ou expandir catálogo"><svg class="icon" aria-hidden="true"><use href="#icon-panel"></use></svg></button>
+      <section class="frame sidebar" id="sidebar" aria-label="Catálogo de efeitos">
+        <div class="sidebar-head">
+          <div class="sidebar-heading"><div><span>Catálogo</span><strong id="sidebar-title">Game Skills VFX</strong></div><span class="result-count" id="result-count">24 de 96</span></div>
+          <div id="sidebar-filters"></div>
+        </div>
+        <div class="item-list" id="item-list" role="listbox"></div>
+        <div class="pack-license hidden" id="pack-license"><strong>Licença do pacote</strong>Jean Moreno / Unity Asset Store. Uso sujeito à Standard Unity Asset Store EULA. Uso local; não redistribuição no repositório.</div>
+      </section>
+      <div class="camera-tools" id="camera-tools">
+        <button class="saloon-button" data-camera="front" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-eye"></use></svg>Frontal</button>
+        <button class="saloon-button active" data-camera="iso" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-diamond"></use></svg>Isométrica</button>
+        <button class="saloon-button" data-camera="top" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-top"></use></svg>Topo</button>
+        <button class="saloon-button" data-camera="arena" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-camera"></use></svg>Arena</button>
+      </div>
+      <div class="compare-labels hidden" id="compare-labels" aria-hidden="true"><span class="compare-label">V1 Direta</span><span class="compare-label">V2 Orbital</span><span class="compare-label">V3 Ritual</span></div>
+      <section class="frame vfx-hud" id="vfx-hud" aria-label="Controles do efeito">
+        <div class="hud-top">
+          <div class="hud-title-zone">
+            <div class="class-badge" id="hud-class">TK</div>
+            <div class="hud-copy"><h1 id="hud-title">Fire Burst</h1><p id="hud-meta">Thegn Knight</p><p class="brief" id="hud-brief">Direção visual da skill</p><p class="strategy" id="hud-strategy">Conceito de efeito</p></div>
+          </div>
+          <div class="version-selector" id="version-selector">
+            <button class="version-button active" data-version="0" type="button">V1 Direta</button>
+            <button class="version-button" data-version="1" type="button">V2 Orbital</button>
+            <button class="version-button" data-version="2" type="button">V3 Ritual</button>
+          </div>
+        </div>
+        <div class="hud-controls">
+          <div class="playback-controls">
+            <button class="saloon-button primary" id="replay-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-play"></use></svg>Reproduzir</button>
+            <button class="saloon-button active" id="loop-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-loop"></use></svg><span id="loop-label">Loop ligado</span></button>
+            <label class="speed-control" for="speed-input">Velocidade<input id="speed-input" type="range" min="0.25" max="2" step="0.05" value="1"><span class="speed-value" id="speed-value">1.00x</span></label>
+            <label class="compare-control" id="compare-control"><input id="compare-input" type="checkbox">Comparar versões</label>
+          </div>
+          <div class="metrics" aria-live="polite"><span>Sistemas <strong id="metric-systems">0</strong></span><span>Partículas <strong id="metric-particles">0</strong></span><span>Quadros <strong id="metric-fps">0</strong></span></div>
+        </div>
+        <div class="error-strip" id="error-strip"></div>
+      </section>
+    </main>
+  </div>
+  <script>
+    (function () {
+      "use strict";
+      var stage = document.getElementById("stage");
+      var canvas = document.getElementById("stage-canvas");
+      var errors = [];
+      var missingTextureNames = new Set();
+      var textureCache = new Map();
+      var textureLoader = new THREE.TextureLoader();
+      var selectedRuntimes = [];
+      var oneShotRuntimes = [];
+      var activeRuntimes = [];
+      var animationFrame = 0;
+      var lastFrameTime = performance.now();
+      var fpsFrames = 0;
+      var fpsStartedAt = performance.now();
+      var disposed = false;
+      var ready = false;
+      var state = {
+        mode: "game-skills", classId: "TK", tree: "all", search: "", skillId: "tk_fis_fire_burst",
+        versionIndex: 0, packId: "", loop: true, speed: 1, compare: false, bloom: true,
+        sidebarOpen: window.innerWidth >= 1200, camera: "iso", stageScale: 1, layoutBoundsOk: true
+      };
+      var compactLayoutActive = window.innerWidth < 1200;
+      function recordError(error) {
+        var message = error && error.message ? error.message : String(error);
+        if (errors.some(function (entry) { return entry.message === message; })) return;
+        errors.push({ message: message, time: new Date().toISOString() });
+        var strip = document.getElementById("error-strip");
+        strip.textContent = message;
+        strip.classList.add("visible");
+      }
+      window.addEventListener("error", function (event) { recordError(event.error || event.message); });
+      window.addEventListener("unhandledrejection", function (event) { recordError(event.reason); });
+      var catalog = window.UAIDZIN_SKILL_CATALOG || { classes: {}, skills: [], counts: {} };
+      var skills = Array.isArray(catalog.skills) ? catalog.skills : [];
+      var skillById = new Map();
+      var skillAlias = { "tk_fag_moon_ray": "tk_mag_moon_ray" };
+      skills.forEach(function (skill) { skillById.set(skill.id, skill); });
+      function resolveSkillId(skillId) { return skillAlias[skillId] || skillId; }
+      function getSkill(skillId) { return skillById.get(resolveSkillId(skillId)) || null; }
+      var categoryLabels = {
+        "all": "Todas", "Eerie": "Sombrio", "Electric": "Elétrico", "Explosions": "Explosões",
+        "Fire": "Fogo", "Ice": "Gelo", "Impacts": "Impactos", "Light": "Luz", "Liquids": "Líquidos",
+        "Magic Misc": "Magia diversa", "Misc": "Diversos", "Nature": "Natureza",
+        "Sword Trails/Fire": "Trilhas de espada: fogo", "Sword Trails/Ice": "Trilhas de espada: gelo",
+        "Sword Trails/Plain": "Trilhas de espada: simples", "Texts": "Textos"
+      };
+      var treeLabels = { "fisica": "Física", "controle": "Controle", "magia": "Magia" };
+      var kindLabels = { "damage": "Dano", "buff": "Aprimoramento", "passive": "Passiva", "heal": "Cura", "transform": "Transformação", "summon": "Invocação" };
+      var shapeLabels = { "single": "alvo único", "self": "sobre si", "line": "linha", "aoe": "área" };
+      var elementLabels = { "physical": "Físico", "earth": "Terra", "fire": "Fogo", "shadow": "Sombra", "holy": "Sagrado", "ice": "Gelo", "poison": "Veneno", "lightning": "Relâmpago", "mixed": "Misto", "water": "Água" };
+      var proposalPalette = { physical: 0xdf9b55, holy: 0xffe6a0, fire: 0xff762c, ice: 0x89dfff, lightning: 0xd7b7ff, poison: 0xa3d944, shadow: 0x9564b7, earth: 0xc59157, water: 0x5ccce4, mixed: 0xefd06b, leaf: 0x79b98a, wind: 0xcde7dc };
+      var powerLabels = { "weapon": "arma", "magic": "magia" };
+      var archetypeLabels = { "strike": "Golpe", "buff": "Aprimoramento", "passive": "Passiva", "line": "Linha", "area": "Área", "taunt": "Provocação", "heal": "Cura", "projectile": "Projétil", "pierce": "Perfuração", "transform": "Transformação", "summon": "Invocação", "arrow": "Flecha", "multi-hit": "Múltiplos golpes" };
+      var stateLabels = { "concept": "Conceito", "passive-preview": "Prévia passiva", "integrated-experimental": "Integrado experimental", "runtime-reference-placeholder": "Referência de runtime" };
+      function stripEmoji(value) {
+        return String(value || "").replace(/\p{Extended_Pictographic}|\p{Emoji_Presentation}|\uFE0F|\u200D/gu, "").replace(/\s{2,}/g, " ").trim();
+      }
+      function translateCategory(category) {
+        var clean = stripEmoji(category) || "Diversos";
+        if (categoryLabels[clean]) return categoryLabels[clean];
+        return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+      }
+      function translatedTreeLabel(classDefinition, treeId) {
+        if (!classDefinition || !classDefinition.treeLabels) return treeLabels[treeId] || treeId;
+        var label = classDefinition.treeLabels[treeId] || treeLabels[treeId] || treeId;
+        var overrides = { "Nature": "Natureza", "Element": "Elemental", "Summon": "Invocação", "Survival": "Sobrevivência", "Capture": "Captura", "Arcane Archer": "Arqueiro arcano", "White Mage": "Mago branco", "Maga negra": "Magia negra" };
+        return overrides[label] || label;
+      }
+      function makeFallbackEmitter(index) {
+        return {
+          name: "Fallback procedural " + (index + 1), duration: 2.4, startDelay: index * 0.025,
+          life: { min: 1.2, max: 2.1 }, speed: { min: 0.4, max: 2.2 }, size: { min: 0.7, max: 1.8 },
+          startRot: { min: 0, max: 360 }, startColor: [1, 0.72, 0.28, 1],
+          emission: { rateOverTime: 18, bursts: [{ time: 0, count: 20 }] },
+          shape: { type: index % 2 === 0 ? "donut" : "sphere", radius: 0.6 + index * 0.05, arc: 360 },
+          modules: { sizeOverLifetime: { curve: [0.35, 1, 0.55, 0] }, colorOverLifetime: [{ r: 1, g: 0.88, b: 0.56, a: 1 }, { r: 0.35, g: 0.08, b: 0.02, a: 0 }], rotSpeed: 0.6, texSheet: null },
+          renderer: { renderMode: index % 3, lengthScale: 1, speedFactor: 1, texture: "", isAdditive: true, tint: [1, 0.72, 0.28, 1] },
+          transform: { pos: [0, 0.1 + index * 0.08, 0], rot: [0, 0, 0], scale: [1, 1, 1] }
+        };
+      }
+      function createFallbackPack() {
+        var definitions = [
+          ["fallback_ember_orbit", "Brasa orbital", "Fire", "Fogo"], ["fallback_iron_rune", "Runa de ferro", "Magic Misc", "Magia diversa"],
+          ["fallback_frost_impact", "Impacto de gelo", "Ice", "Gelo"], ["fallback_electric_current", "Corrente elétrica", "Electric", "Elétrico"],
+          ["fallback_restoration_circle", "Círculo de restauração", "Light", "Luz"], ["fallback_poison_burst", "Ruptura de veneno", "Nature", "Natureza"],
+          ["fallback_sword_cut", "Corte de espada", "Sword Trails/Plain", "Trilhas de espada: simples"], ["fallback_ground_wave", "Onda de impacto", "Impacts", "Impactos"]
+        ];
+        return definitions.map(function (definition, index) {
+          return { id: definition[0], name: definition[1], category: definition[2], categoryLabel: definition[3], emittersCount: 1, emitters: [makeFallbackEmitter(index)], rebuilt: false, source: "fallback" };
+        });
+      }
+      var emptyPackRepairs = 0;
+      var shapeFallbacks = 0;
+      function normalizePackEffect(rawEffect, index) {
+        var raw = rawEffect && typeof rawEffect === "object" ? rawEffect : {};
+        var emitters = Array.isArray(raw.emitters) ? raw.emitters.slice() : [];
+        var rebuilt = false;
+        if (emitters.length === 0) {
+          emitters = [makeFallbackEmitter(index)];
+          rebuilt = true;
+          emptyPackRepairs += 1;
+        }
+        emitters.forEach(function (emitter) {
+          var shape = emitter && emitter.shape ? String(emitter.shape.type || "").toLowerCase() : "sphere";
+          if (["cone", "sphere", "hemisphere", "circle", "donut"].indexOf(shape) === -1) shapeFallbacks += 1;
+        });
+        var category = stripEmoji(raw.category) || "Misc";
+        return {
+          id: String(raw.id || "pack_effect_" + index), name: stripEmoji(raw.name) || "Efeito " + (index + 1),
+          category: category, categoryLabel: translateCategory(category), emittersCount: emitters.length,
+          emitters: emitters, rebuilt: rebuilt, source: "cfxr"
+        };
+      }
+      var rawVfxList = window.CFXR_DATA && Array.isArray(window.CFXR_DATA.vfxList) && window.CFXR_DATA.vfxList.length ? window.CFXR_DATA.vfxList : null;
+      var packEffects = rawVfxList ? rawVfxList.map(normalizePackEffect) : createFallbackPack();
+      var packSource = rawVfxList ? "CFXR local" : "Fallback procedural";
+      var packById = new Map();
+      packEffects.forEach(function (effect) { packById.set(effect.id, effect); });
+      state.packId = packEffects.length ? packEffects[0].id : "";
+      var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false, powerPreference: "high-performance", stencil: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setSize(1600, 900, false);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.18;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      var scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x100c08);
+      scene.fog = new THREE.FogExp2(0x100c08, 0.022);
+      var camera = new THREE.PerspectiveCamera(43, 16 / 9, 0.1, 120);
+      camera.position.set(10, 7, 14);
+      var controls = new THREE.OrbitControls(camera, canvas);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.07;
+      controls.minDistance = 5;
+      controls.maxDistance = 36;
+      controls.maxPolarAngle = Math.PI * 0.49;
+      controls.target.set(0, 1.1, 0);
+      var renderPass = new THREE.RenderPass(scene, camera);
+      var bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(1600, 900), 0.95, 0.52, 0.72);
+      bloomPass.enabled = state.bloom;
+      var composer = new THREE.EffectComposer(renderer);
+      composer.addPass(renderPass);
+      composer.addPass(bloomPass);
+      var quarks = THREE.QUARKS;
+      var batchRenderer = new quarks.BatchedRenderer();
+      scene.add(batchRenderer);
+      var arenaRoot = new THREE.Group();
+      var rigRoot = new THREE.Group();
+      var effectsRoot = new THREE.Group();
+      scene.add(arenaRoot, rigRoot, effectsRoot);
+      var arenaLights = [];
+      var rigPairs = [];
+      function createCanvasTexture(width, height, draw) {
+        var textureCanvas = document.createElement("canvas");
+        textureCanvas.width = width;
+        textureCanvas.height = height;
+        var context = textureCanvas.getContext("2d");
+        draw(context, width, height);
+        var texture = new THREE.CanvasTexture(textureCanvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.generateMipmaps = true;
+        texture.needsUpdate = true;
+        return texture;
+      }
+      function createSoftTexture() {
+        return createCanvasTexture(256, 256, function (context, width, height) {
+          var gradient = context.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width / 2);
+          gradient.addColorStop(0, "rgba(255,255,255,1)");
+          gradient.addColorStop(0.18, "rgba(255,255,255,0.9)");
+          gradient.addColorStop(0.48, "rgba(255,255,255,0.28)");
+          gradient.addColorStop(1, "rgba(255,255,255,0)");
+          context.fillStyle = gradient;
+          context.fillRect(0, 0, width, height);
+        });
+      }
+      function createSparkTexture() {
+        return createCanvasTexture(512, 128, function (context, width, height) {
+          var gradient = context.createLinearGradient(0, 0, width, 0);
+          gradient.addColorStop(0, "rgba(255,255,255,0)");
+          gradient.addColorStop(0.35, "rgba(255,255,255,0.25)");
+          gradient.addColorStop(0.72, "rgba(255,255,255,1)");
+          gradient.addColorStop(1, "rgba(255,255,255,0)");
+          context.fillStyle = gradient;
+          context.fillRect(0, height * 0.43, width, height * 0.14);
+          var core = context.createRadialGradient(width * 0.78, height * 0.5, 0, width * 0.78, height * 0.5, height * 0.5);
+          core.addColorStop(0, "rgba(255,255,255,1)");
+          core.addColorStop(1, "rgba(255,255,255,0)");
+          context.fillStyle = core;
+          context.fillRect(0, 0, width, height);
+        });
+      }
+      function createSmokeTexture() {
+        return createCanvasTexture(256, 256, function (context) {
+          for (var puff = 0; puff < 18; puff += 1) {
+            var x = 42 + ((puff * 73) % 172);
+            var y = 44 + ((puff * 47) % 164);
+            var radius = 28 + ((puff * 19) % 42);
+            var gradient = context.createRadialGradient(x, y, 2, x, y, radius);
+            gradient.addColorStop(0, "rgba(255,255,255,0.2)");
+            gradient.addColorStop(0.55, "rgba(255,255,255,0.08)");
+            gradient.addColorStop(1, "rgba(255,255,255,0)");
+            context.fillStyle = gradient;
+            context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+          }
+        });
+      }
+      function createRuneTexture() {
+        return createCanvasTexture(256, 256, function (context) {
+          context.clearRect(0, 0, 256, 256);
+          context.strokeStyle = "rgba(255,255,255,0.95)";
+          context.lineWidth = 7;
+          context.beginPath();
+          context.arc(128, 128, 96, 0, Math.PI * 2);
+          context.stroke();
+          context.lineWidth = 5;
+          context.beginPath();
+          context.moveTo(128, 42); context.lineTo(128, 214);
+          context.moveTo(72, 76); context.lineTo(184, 180);
+          context.moveTo(184, 76); context.lineTo(72, 180);
+          context.moveTo(84, 128); context.lineTo(172, 128);
+          context.stroke();
+          context.beginPath();
+          context.arc(128, 128, 24, 0, Math.PI * 2);
+          context.stroke();
+        });
+      }
+      function createStarTexture() {
+        return createCanvasTexture(256, 256, function (context) {
+          var center = 128;
+          var glow = context.createRadialGradient(center, center, 0, center, center, center);
+          glow.addColorStop(0, "rgba(255,255,255,1)");
+          glow.addColorStop(0.2, "rgba(255,255,255,0.58)");
+          glow.addColorStop(1, "rgba(255,255,255,0)");
+          context.fillStyle = glow;
+          context.fillRect(0, 0, 256, 256);
+          context.fillStyle = "rgba(255,255,255,0.92)";
+          context.beginPath();
+          for (var point = 0; point < 16; point += 1) {
+            var angle = -Math.PI / 2 + point * Math.PI / 8;
+            var radius = point % 2 === 0 ? 100 : 26;
+            var x = center + Math.cos(angle) * radius;
+            var y = center + Math.sin(angle) * radius;
+            if (point === 0) context.moveTo(x, y); else context.lineTo(x, y);
+          }
+          context.closePath();
+          context.fill();
+        });
+      }
+      function createSlashTexture() {
+        return createCanvasTexture(512, 128, function (context) {
+          var gradient = context.createLinearGradient(0, 0, 512, 0);
+          gradient.addColorStop(0, "rgba(255,255,255,0)");
+          gradient.addColorStop(0.45, "rgba(255,255,255,0.18)");
+          gradient.addColorStop(0.78, "rgba(255,255,255,1)");
+          gradient.addColorStop(1, "rgba(255,255,255,0)");
+          context.strokeStyle = gradient;
+          context.lineWidth = 18;
+          context.lineCap = "round";
+          context.beginPath();
+          context.moveTo(28, 98);
+          context.quadraticCurveTo(250, 18, 484, 58);
+          context.stroke();
+          context.strokeStyle = "rgba(255,255,255,0.95)";
+          context.lineWidth = 3;
+          context.stroke();
+        });
+      }
+      function createLightningTexture() {
+        var texture = createCanvasTexture(2940, 2000, function (context, width, height) {
+          context.clearRect(0, 0, width, height);
+          var frameWidth = width / 7;
+          for (var frame = 0; frame < 7; frame += 1) {
+            var offsetX = frame * frameWidth;
+            var seed = (frame + 1) * 991;
+            context.save();
+            context.beginPath();
+            context.rect(offsetX, 0, frameWidth, height);
+            context.clip();
+            context.lineCap = "round";
+            context.lineJoin = "round";
+            [{ color: "rgba(255,255,255,0.22)", width: 70, jitter: 78 }, { color: "rgba(151,220,255,0.78)", width: 30, jitter: 52 }, { color: "rgba(255,255,255,1)", width: 9, jitter: 42 }].forEach(function (layer) {
+              context.strokeStyle = layer.color;
+              context.lineWidth = layer.width;
+              context.beginPath();
+              for (var segment = 0; segment <= 18; segment += 1) {
+                var y = height * segment / 18;
+                var noise = Math.sin(seed * 0.17 + segment * 2.13) * layer.jitter;
+                var noise2 = Math.cos(seed * 0.09 + segment * 1.37) * layer.jitter * 0.42;
+                var x = offsetX + frameWidth * 0.5 + noise;
+                if (segment === 0) context.moveTo(x, y); else context.lineTo(x, y + noise2);
+              }
+              context.stroke();
+            });
+            context.restore();
+          }
+        });
+        texture.userData.tilesX = 7;
+        texture.userData.tilesY = 1;
+        texture.userData.source = "procedural-lightning-2940x2000";
+        return texture;
+      }
+      var textureAliases = {
+        "raio 7x1.png": ["raio 7x1.png", "raio_strike_7x1"],
+        "raio_strike_7x1": ["raio_strike_7x1", "raio 7x1.png"],
+        "cfxr glow.png": ["cfxr glow.png", "cfxr flare.png", "flare.png"],
+        "cfxr light circle.png": ["cfxr light circle.png", "cfxr fire circle plain.png", "cfxr ring ice.png"],
+        "cfxr spark.png": ["cfxr spark.png", "cfxr electric spark.png", "cfxr ember blur.png"]
+      };
+      function normalizeTextureName(name) { return String(name || "").replace(/\\/g, "/").split("/").pop().toLowerCase(); }
+      function findDataTextureKey(candidates) {
+        var textures = window.CFXR_DATA && window.CFXR_DATA.textures;
+        if (!textures || typeof textures !== "object") return "";
+        var keys = Object.keys(textures);
+        for (var index = 0; index < candidates.length; index += 1) {
+          var candidate = normalizeTextureName(candidates[index]);
+          for (var keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
+            if (normalizeTextureName(keys[keyIndex]) === candidate) return keys[keyIndex];
+          }
+        }
+        return "";
+      }
+      function loadDataTexture(key) {
+        var cacheKey = "data:" + normalizeTextureName(key);
+        if (textureCache.has(cacheKey)) return textureCache.get(cacheKey);
+        var source = window.CFXR_DATA.textures[key];
+        if (source && typeof source === "object") source = source.data || source.url || source.base64 || "";
+        if (typeof source !== "string" || !source) return null;
+        var texture = textureLoader.load(source);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        if (normalizeTextureName(key).indexOf("raio 7x1") !== -1) {
+          texture.userData.tilesX = 7;
+          texture.userData.tilesY = 1;
+        }
+        texture.userData.source = "cfxr-lazy";
+        textureCache.set(cacheKey, texture);
+        return texture;
+      }
+      function getTexture(requestedName, semantic) {
+        var requested = normalizeTextureName(requestedName);
+        if (requested && textureCache.has(requested)) return textureCache.get(requested);
+        if (semantic && textureCache.has("procedural:" + semantic)) return textureCache.get("procedural:" + semantic);
+        var candidates = requested && textureAliases[requested] ? textureAliases[requested] : requested ? [requested] : [];
+        var dataKey = findDataTextureKey(candidates);
+        if (dataKey) {
+          var dataTexture = loadDataTexture(dataKey);
+          if (dataTexture) {
+            textureCache.set(requested || semantic, dataTexture);
+            return dataTexture;
+          }
+        }
+        if (requested) missingTextureNames.add(requested);
+        var proceduralName = semantic || "soft";
+        if (requested.indexOf("raio") !== -1 || requested.indexOf("lightning") !== -1 || requested.indexOf("electric") !== -1) proceduralName = "lightning";
+        else if (requested.indexOf("spark") !== -1 || requested.indexOf("streak") !== -1) proceduralName = "spark";
+        else if (requested.indexOf("smoke") !== -1 || requested.indexOf("cloud") !== -1) proceduralName = "smoke";
+        else if (requested.indexOf("rune") !== -1 || requested.indexOf("runic") !== -1) proceduralName = "rune";
+        else if (requested.indexOf("star") !== -1 || requested.indexOf("flare") !== -1 || requested.indexOf("glow") !== -1) proceduralName = "star";
+        else if (requested.indexOf("slash") !== -1 || requested.indexOf("sword") !== -1 || requested.indexOf("trail") !== -1) proceduralName = "slash";
+        var cacheKey = "procedural:" + proceduralName;
+        var texture;
+        if (textureCache.has(cacheKey)) texture = textureCache.get(cacheKey);
+        else if (proceduralName === "spark") texture = createSparkTexture();
+        else if (proceduralName === "smoke") texture = createSmokeTexture();
+        else if (proceduralName === "rune") texture = createRuneTexture();
+        else if (proceduralName === "star") texture = createStarTexture();
+        else if (proceduralName === "slash") texture = createSlashTexture();
+        else if (proceduralName === "lightning") texture = createLightningTexture();
+        else texture = createSoftTexture();
+        texture.userData.source = "procedural-lazy";
+        textureCache.set(cacheKey, texture);
+        if (requested) textureCache.set(requested, texture);
+        return texture;
+      }
+      function standardMaterial(color, roughness, metalness, emissive, emissiveIntensity) {
+        return new THREE.MeshStandardMaterial({ color: color, roughness: roughness, metalness: metalness, emissive: emissive || 0x000000, emissiveIntensity: emissiveIntensity || 0 });
+      }
+      function addMesh(parent, geometry, material, position, rotation, scale, shadows) {
+        var mesh = new THREE.Mesh(geometry, material);
+        if (position) mesh.position.set(position[0], position[1], position[2]);
+        if (rotation) mesh.rotation.set(rotation[0], rotation[1], rotation[2]);
+        if (scale) mesh.scale.set(scale[0], scale[1], scale[2]);
+        mesh.castShadow = shadows !== false;
+        mesh.receiveShadow = shadows !== false;
+        parent.add(mesh);
+        return mesh;
+      }
+      function createBrazier(x, z) {
+        var group = new THREE.Group();
+        group.position.set(x, 0, z);
+        var iron = standardMaterial(0x2a2118, 0.52, 0.72);
+        var bronze = standardMaterial(0x76501d, 0.38, 0.78, 0x2a1200, 0.35);
+        addMesh(group, new THREE.CylinderGeometry(0.1, 0.16, 1.4, 10), iron, [0, 0.7, 0]);
+        addMesh(group, new THREE.CylinderGeometry(0.48, 0.24, 0.28, 12), bronze, [0, 1.48, 0]);
+        var flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: getTexture("cfxr glow.png", "soft"), color: 0xffa13b, transparent: true, opacity: 0.82, blending: THREE.AdditiveBlending, depthWrite: false }));
+        flame.position.set(0, 1.84, 0);
+        flame.scale.set(1.1, 1.7, 1);
+        group.add(flame);
+        var light = new THREE.PointLight(0xff7b24, 2.2, 10, 2);
+        light.position.set(0, 1.9, 0);
+        group.add(light);
+        arenaLights.push({ light: light, sprite: flame, phase: x * 0.17 + z * 0.11 });
+        arenaRoot.add(group);
+      }
+      function createArena() {
+        var floor = addMesh(arenaRoot, new THREE.PlaneGeometry(36, 28), standardMaterial(0x1a120c, 0.86, 0.12), [0, 0, 0], [-Math.PI / 2, 0, 0]);
+        floor.castShadow = false;
+        var grid = new THREE.GridHelper(34, 34, 0xd4a017, 0x4b3420);
+        grid.position.y = 0.012;
+        var gridMaterial = grid.material;
+        if (Array.isArray(gridMaterial)) gridMaterial.forEach(function (material) { material.transparent = true; material.opacity = 0.34; });
+        else { gridMaterial.transparent = true; gridMaterial.opacity = 0.34; }
+        arenaRoot.add(grid);
+        [4.4, 7.2, 11.5].forEach(function (radius, index) {
+          var ring = new THREE.Mesh(new THREE.RingGeometry(radius, radius + 0.045, 96), new THREE.MeshBasicMaterial({ color: 0xd4a017, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+          ring.rotation.x = -Math.PI / 2;
+          ring.position.y = 0.025 + index * 0.002;
+          arenaRoot.add(ring);
+        });
+        var stone = standardMaterial(0x241a13, 0.9, 0.08);
+        var stoneEdge = standardMaterial(0x3a2a1d, 0.78, 0.18);
+        addMesh(arenaRoot, new THREE.BoxGeometry(34, 7, 1.2), standardMaterial(0x120d09, 0.94, 0.04), [0, 3.5, -8.4], null, null, false);
+        for (var column = -4; column <= 4; column += 1) {
+          var x = column * 3.8;
+          addMesh(arenaRoot, new THREE.BoxGeometry(0.72, 6.6, 0.9), stone, [x, 3.3, -7.6]);
+          addMesh(arenaRoot, new THREE.BoxGeometry(1.1, 0.5, 1.15), stoneEdge, [x, 6.5, -7.6]);
+          addMesh(arenaRoot, new THREE.BoxGeometry(1.1, 0.46, 1.15), stoneEdge, [x, 0.25, -7.6]);
+        }
+        for (var arch = -3; arch <= 3; arch += 1) {
+          var archMesh = new THREE.Mesh(new THREE.TorusGeometry(1.9, 0.24, 10, 32, Math.PI), stoneEdge);
+          archMesh.position.set(arch * 3.8 + 1.9, 5.25, -7.52);
+          arenaRoot.add(archMesh);
+        }
+        scene.add(new THREE.HemisphereLight(0xffd9a3, 0x1a0e08, 1.3));
+        var keyLight = new THREE.DirectionalLight(0xffe1b2, 2.2);
+        keyLight.position.set(7, 13, 8);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.set(2048, 2048);
+        keyLight.shadow.camera.left = -14;
+        keyLight.shadow.camera.right = 14;
+        keyLight.shadow.camera.top = 12;
+        keyLight.shadow.camera.bottom = -12;
+        scene.add(keyLight);
+        var warmFill = new THREE.PointLight(0xff7928, 1.3, 18, 2);
+        warmFill.position.set(0, 3, 3);
+        scene.add(warmFill);
+        createBrazier(-10.5, -4.8);
+        createBrazier(10.5, -4.8);
+      }
+      function disposeObjectResources(root) {
+        var geometries = new Set();
+        var materials = new Set();
+        root.traverse(function (object) {
+          if (object.geometry) geometries.add(object.geometry);
+          if (object.material) {
+            (Array.isArray(object.material) ? object.material : [object.material]).forEach(function (material) { materials.add(material); });
+          }
+        });
+        geometries.forEach(function (geometry) { geometry.dispose(); });
+        materials.forEach(function (material) { material.dispose(); });
+      }
+      function createCaster(position, classId) {
+        var group = new THREE.Group();
+        group.position.copy(position);
+        group.rotation.y = -0.08;
+        var iron = standardMaterial(0x4c4033, 0.42, 0.72);
+        var darkIron = standardMaterial(0x201914, 0.58, 0.66);
+        var leather = standardMaterial(0x4a291b, 0.82, 0.05);
+        var skin = standardMaterial(0xb98965, 0.78, 0.02);
+        var accentColors = { TK: 0xd4a017, FM: 0x5b9fd4, BM: 0x3d8b4a, HT: 0xc47a35 };
+        var accentColor = accentColors[classId] || 0xd4a017;
+        var accent = standardMaterial(accentColor, 0.34, 0.55, accentColor, 0.32);
+        addMesh(group, new THREE.CylinderGeometry(0.18, 0.22, 0.72, 10), leather, [-0.18, 0.42, 0]);
+        addMesh(group, new THREE.CylinderGeometry(0.18, 0.22, 0.72, 10), leather, [0.18, 0.42, 0]);
+        addMesh(group, new THREE.BoxGeometry(0.22, 0.72, 0.28), darkIron, [-0.18, 0.12, 0.04]);
+        addMesh(group, new THREE.BoxGeometry(0.22, 0.72, 0.28), darkIron, [0.18, 0.12, 0.04]);
+        addMesh(group, new THREE.CapsuleGeometry(0.38, 0.62, 8, 14), iron, [0, 1.15, 0]);
+        addMesh(group, new THREE.SphereGeometry(0.43, 18, 12), darkIron, [0, 1.58, 0]);
+        addMesh(group, new THREE.BoxGeometry(0.18, 0.28, 0.24), skin, [0.34, 1.6, 0.06]);
+        addMesh(group, new THREE.BoxGeometry(0.68, 0.18, 0.7), iron, [0, 1.42, 0]);
+        addMesh(group, new THREE.BoxGeometry(0.3, 0.36, 0.66), accent, [-0.46, 1.48, 0]);
+        addMesh(group, new THREE.BoxGeometry(0.3, 0.36, 0.66), accent, [0.46, 1.48, 0]);
+        addMesh(group, new THREE.CylinderGeometry(0.055, 0.075, 1.8, 8), darkIron, [0.64, 1.02, 0], [0, 0, -0.15]);
+        addMesh(group, new THREE.OctahedronGeometry(0.16, 0), accent, [0.78, 1.88, 0]);
+        var aura = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.025, 8, 48), new THREE.MeshBasicMaterial({ color: accentColor, transparent: true, opacity: 0.38, blending: THREE.AdditiveBlending, depthWrite: false }));
+        aura.rotation.x = Math.PI / 2;
+        aura.position.y = 0.06;
+        group.add(aura);
+        rigRoot.add(group);
+        return group;
+      }
+      function createTargetDummy(position) {
+        var group = new THREE.Group();
+        group.position.copy(position);
+        var wood = standardMaterial(0x5a3821, 0.9, 0.03);
+        var rope = standardMaterial(0x8c6a36, 0.94, 0.01);
+        var iron = standardMaterial(0x3c3329, 0.5, 0.68);
+        addMesh(group, new THREE.CylinderGeometry(0.16, 0.24, 1.9, 10), wood, [0, 0.95, 0]);
+        addMesh(group, new THREE.BoxGeometry(1.65, 0.22, 0.24), wood, [0, 1.45, 0]);
+        addMesh(group, new THREE.SphereGeometry(0.42, 16, 12), rope, [0, 1.95, 0], [0, 0, 0], [1, 1.08, 0.92]);
+        addMesh(group, new THREE.TorusGeometry(0.41, 0.035, 8, 28), iron, [0, 1.95, 0], [Math.PI / 2, 0, 0]);
+        var target = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.31, 32), new THREE.MeshBasicMaterial({ color: 0xa33b3b, transparent: true, opacity: 0.72, side: THREE.DoubleSide }));
+        target.position.set(0, 1.48, 0.15);
+        group.add(target);
+        var base = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.82, 0.18, 12), iron);
+        base.position.y = 0.09;
+        base.castShadow = true;
+        base.receiveShadow = true;
+        group.add(base);
+        rigRoot.add(group);
+        return group;
+      }
+      function disposeRig() {
+        if (rigRoot.parent) scene.remove(rigRoot);
+        disposeObjectResources(rigRoot);
+        rigRoot = new THREE.Group();
+        scene.add(rigRoot);
+        rigPairs = [];
+      }
+      function rebuildRig() {
+        disposeRig();
+        if (state.compare && state.mode === "game-skills") {
+          [-8, 0, 8].forEach(function (center) {
+            var casterPosition = new THREE.Vector3(center - 2.1, 0, 0);
+            var targetPosition = new THREE.Vector3(center + 2.1, 0, 0);
+            rigPairs.push({ caster: createCaster(casterPosition, state.classId), target: createTargetDummy(targetPosition), casterPosition: casterPosition, targetPosition: targetPosition });
+          });
+        } else {
+          var casterPosition = new THREE.Vector3(-1.8, 0, 0);
+          var targetPosition = new THREE.Vector3(3.5, 0, 0);
+          rigPairs.push({ caster: createCaster(casterPosition, state.classId), target: createTargetDummy(targetPosition), casterPosition: casterPosition, targetPosition: targetPosition });
+        }
+        var labels = document.getElementById("compare-labels");
+        labels.classList.toggle("hidden", !state.compare || state.mode !== "game-skills");
+        labels.setAttribute("aria-hidden", String(!state.compare || state.mode !== "game-skills"));
+      }
+      function setCameraPreset(name) {
+        if (["front", "iso", "top", "arena"].indexOf(name) === -1) return false;
+        var compact = window.innerWidth < 1200;
+        state.camera = name;
+        if (name === "front") {
+          camera.position.set(state.compare ? 0 : 1, compact ? 4.2 : 3.4, state.compare ? (compact ? 29 : 26) : (compact ? 19 : 17));
+          controls.target.set(state.compare ? 0 : 1, 1.1, 0);
+        } else if (name === "iso") {
+          camera.position.set(compact ? 6 : 10, state.compare ? (compact ? 11 : 10) : (compact ? 8 : 7), state.compare ? (compact ? 27 : 26) : (compact ? 18 : 14));
+          controls.target.set(state.compare ? 0 : 1, 1.1, 0);
+        } else if (name === "top") {
+          camera.position.set(0, state.compare ? (compact ? 33 : 28) : (compact ? 27 : 22), 0.01);
+          controls.target.set(0, 0, 0);
+        } else {
+          camera.position.set(compact ? 8 : 12, compact ? 9 : 8, compact ? 20 : 17);
+          controls.target.set(0, 1, -1.2);
+        }
+        camera.lookAt(controls.target);
+        controls.update();
+        document.querySelectorAll("[data-camera]").forEach(function (button) { button.classList.toggle("active", button.getAttribute("data-camera") === name); });
+        return true;
+      }
+      function createElement(tagName, className, text) {
+        var element = document.createElement(tagName);
+        if (className) element.className = className;
+        if (text !== undefined && text !== null) element.textContent = text;
+        return element;
+      }
+      function renderSidebar() {
+        var filters = document.getElementById("sidebar-filters");
+        var list = document.getElementById("item-list");
+        filters.replaceChildren();
+        list.replaceChildren();
+        var searchWrap = createElement("div", "search-wrap");
+        var searchIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        searchIcon.setAttribute("class", "icon");
+        var searchUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        searchUse.setAttribute("href", "#icon-search");
+        searchIcon.appendChild(searchUse);
+        var search = document.createElement("input");
+        search.className = "search-input";
+        search.type = "search";
+        search.value = state.search;
+        search.placeholder = state.mode === "game-skills" ? "Buscar nome, ID, tipo ou elemento" : "Buscar efeito ou categoria";
+        search.setAttribute("aria-label", "Buscar no catálogo");
+        search.addEventListener("input", function () { state.search = search.value; renderItems(); });
+        searchWrap.appendChild(searchIcon);
+        searchWrap.appendChild(search);
+        filters.appendChild(searchWrap);
+        if (state.mode === "game-skills") {
+          var classGrid = createElement("div", "class-grid");
+          Object.keys(catalog.classes).forEach(function (classId) {
+            var definition = catalog.classes[classId];
+            var button = createElement("button", "class-button" + (state.classId === classId ? " active" : ""), "");
+            button.type = "button";
+            button.appendChild(createElement("strong", "", classId));
+            button.appendChild(createElement("span", "", definition.name));
+            button.addEventListener("click", function () { setClass(classId); });
+            classGrid.appendChild(button);
+          });
+          filters.appendChild(classGrid);
+          var treeRow = createElement("div", "filter-row");
+          var treeIds = catalog.classes[state.classId] ? catalog.classes[state.classId].treeOrder : ["fisica", "controle", "magia"];
+          [{ id: "all", label: "Todas" }].concat(treeIds.map(function (treeId) { return { id: treeId, label: translatedTreeLabel(catalog.classes[state.classId], treeId) }; })).forEach(function (option) {
+            var button = createElement("button", "filter-button" + (state.tree === option.id ? " active" : ""), option.label);
+            button.type = "button";
+            button.addEventListener("click", function () { setTree(option.id); });
+            treeRow.appendChild(button);
+          });
+          filters.appendChild(treeRow);
+        } else {
+          var categoryRow = createElement("div", "filter-row");
+          var categories = [{ id: "all", label: "Todas" }];
+          var seenCategories = new Set();
+          packEffects.forEach(function (effect) {
+            if (!seenCategories.has(effect.category)) {
+              seenCategories.add(effect.category);
+              categories.push({ id: effect.category, label: effect.categoryLabel });
+            }
+          });
+          categories.forEach(function (option) {
+            var button = createElement("button", "filter-button" + (state.tree === option.id ? " active" : ""), option.label);
+            button.type = "button";
+            button.addEventListener("click", function () { setTree(option.id); });
+            categoryRow.appendChild(button);
+          });
+          filters.appendChild(categoryRow);
+        }
+        renderItems();
+      }
+      function normalizedSearch(value) { return stripEmoji(value).toLocaleLowerCase("pt-BR"); }
+      function createCard(title, id, type, power, stateText, stateClass, selected, onSelect) {
+        var card = createElement("button", "vfx-card" + (selected ? " active" : ""));
+        card.type = "button";
+        card.setAttribute("role", "option");
+        card.setAttribute("aria-selected", String(selected));
+        var top = createElement("div", "card-top");
+        top.appendChild(createElement("span", "card-title", title));
+        top.appendChild(createElement("span", "card-badge", state.mode === "game-skills" ? "3 versões" : String(type)));
+        card.appendChild(top);
+        card.appendChild(createElement("span", "card-id", id));
+        var meta = createElement("div", "card-meta");
+        meta.appendChild(createElement("span", "", state.mode === "game-skills" ? "Tipo: " + type : "Categoria: " + type));
+        card.appendChild(meta);
+        var powerRow = createElement("div", "card-power");
+        powerRow.appendChild(createElement("span", "", power));
+        card.appendChild(powerRow);
+        var stateRow = createElement("div", "card-state" + (stateClass ? " " + stateClass : ""));
+        stateRow.appendChild(createElement("span", "", stateText));
+        card.appendChild(stateRow);
+        card.addEventListener("click", onSelect);
+        return card;
+      }
+      function renderItems() {
+        var list = document.getElementById("item-list");
+        var query = normalizedSearch(state.search);
+        var visible;
+        if (state.mode === "game-skills") {
+          visible = skills.filter(function (skill) {
+            var matchesClass = skill.classId === state.classId;
+            var matchesTree = state.tree === "all" || skill.tree === state.tree;
+            var haystack = normalizedSearch([skill.name, skill.id, skill.kind, skill.shape, skill.element, skill.power, skill.visual.archetype, skill.visual.motif].join(" "));
+            return matchesClass && matchesTree && (!query || haystack.indexOf(query) !== -1);
+          });
+        } else {
+          visible = packEffects.filter(function (effect) {
+            var matchesCategory = state.tree === "all" || effect.category === state.tree;
+            var haystack = normalizedSearch(effect.name + " " + effect.id + " " + effect.categoryLabel + " " + effect.category);
+            return matchesCategory && (!query || haystack.indexOf(query) !== -1);
+          });
+        }
+        document.getElementById("result-count").textContent = visible.length + (state.mode === "game-skills" ? " de 96" : " de " + packEffects.length);
+        visible.forEach(function (item) {
+          if (state.mode === "game-skills") {
+            var type = [kindLabels[item.kind] || item.kind, shapeLabels[item.shape] || item.shape, archetypeLabels[item.visual.archetype] || item.visual.archetype].join(", ");
+            var power = "Elemento: " + (elementLabels[item.element] || "Sem elemento") + " | Poder: " + (powerLabels[item.power] || "não definido");
+            var stateText = stateLabels[item.visual.state] || item.visual.state;
+            var stateClass = item.visual.state === "integrated-experimental" ? "experimental" : item.visual.state === "runtime-reference-placeholder" ? "reference" : "";
+            list.appendChild(createCard(item.name, item.id, type, power, "Estado: " + stateText, stateClass, item.id === state.skillId, function () { selectSkill(item.id); }));
+          } else {
+            var packState = item.rebuilt ? "Reconstruído proceduralmente" : "Estrutura CFXR local";
+            list.appendChild(createCard(item.name, item.id, item.categoryLabel, item.emittersCount + (item.emittersCount === 1 ? " emissor" : " emissores"), packState, item.rebuilt ? "experimental" : "", item.id === state.packId, function () { selectPack(item.id); }));
+          }
+        });
+        if (visible.length === 0) {
+          var empty = createElement("div", "card-meta", "Nenhum efeito corresponde ao filtro.");
+          empty.style.padding = "18px 10px";
+          empty.style.textAlign = "center";
+          list.appendChild(empty);
+        }
+      }
+      function versionPlan(skill, versionIndex) {
+        if (skill.kind === "passive") return [
+          { strands: 1, charge: 0, flight: 0, impact: 1, orbit: 1, sigil: false, duration: 3.2, trajectory: "aura estável" },
+          { strands: 2, charge: 0, flight: 0, impact: 1, orbit: 2, sigil: false, duration: 3.6, trajectory: "aura dupla" },
+          { strands: 3, charge: 0.18, flight: 0, impact: 1, orbit: 3, sigil: true, duration: 4.1, trajectory: "aura ritual" }
+        ][versionIndex];
+        if (["buff", "heal", "transform", "summon", "area"].indexOf(skill.visual.archetype) !== -1) return [
+          { strands: 1, charge: 0.1, flight: 0.24, impact: 1, orbit: 1, sigil: false, duration: 2.25, trajectory: "foco direto" },
+          { strands: 2, charge: 0.2, flight: 0.34, impact: 2, orbit: 2, sigil: false, duration: 2.65, trajectory: "órbita ampliada" },
+          { strands: 3, charge: 0.55, flight: 0.48, impact: 3, orbit: 3, sigil: true, duration: 3.15, trajectory: "eixos múltiplos" }
+        ][versionIndex];
+        return [
+          { strands: 1, charge: 0.08, flight: 0.42, impact: 1, orbit: 0, sigil: false, duration: 1.65, trajectory: "linear" },
+          { strands: 2, charge: 0.18, flight: 0.52, impact: 2, orbit: 2, sigil: false, duration: 2.05, trajectory: "arco" },
+          { strands: 3, charge: 0.58, flight: 0.66, impact: 3, orbit: 3, sigil: true, duration: 2.65, trajectory: "curva múltipla" }
+        ][versionIndex];
+      }
+      function skillColor(skill) {
+        return ({ physical: 0xe8c26a, fire: 0xff7a24, earth: 0xa66b34, ice: 0x76c7ef, holy: 0xffe4a3, shadow: 0x76527f, poison: 0x6f9f4f, lightning: 0xc5efff, water: 0x69aeb6, mixed: 0xd4a017 })[skill.element] || 0xd4a017;
+      }
+      function buildRecipe(skill, versionIndex) {
+        var version = skill.visual.versions[versionIndex] || skill.visual.versions[0];
+        var plan = versionPlan(skill, versionIndex);
+        var motif = skill.visual.motif;
+        var color = motif === "moon-ray" ? 0xc5efff : skillColor(skill);
+        var layers = version.layers || [];
+        var layerDuration = layers.reduce(function (maximum, layer) {
+          return Math.max(maximum, Number(layer.delay || 0) + 1.35);
+        }, 0);
+        return {
+          archetype: skill.visual.archetype, motif: motif, brief: version.brief || skill.visual.brief, artTitle: version.artTitle || skill.visual.artTitle, technique: version.technique || "", layers: layers, color: color, version: version,
+          strands: plan.strands, chargeDuration: plan.charge, flightDuration: plan.flight, impactCount: plan.impact,
+          orbitCount: plan.orbit, hasSigil: plan.sigil, duration: Math.max(plan.duration, layerDuration), trajectory: plan.trajectory,
+          isPassive: skill.kind === "passive"
+        };
+      }
+      function createRuntime(group) {
+        return {
+          group: group, systems: [], geometries: new Set(), materials: new Set(), lights: [], updates: [],
+          elapsed: 0, cycle: 0, duration: 1, loop: false, phase: "Preparada", isDisposed: false
+        };
+      }
+      function registerGeometry(runtime, geometry) { runtime.geometries.add(geometry); return geometry; }
+      function registerMaterial(runtime, material) { runtime.materials.add(material); return material; }
+      function createValueGenerator(range, fallback, minimum) {
+        var min = Number.isFinite(Number(range && range.min)) ? Number(range.min) : fallback;
+        var max = Number.isFinite(Number(range && range.max)) ? Number(range.max) : fallback;
+        min = Math.max(minimum, Math.min(min, max));
+        max = Math.max(minimum, Math.max(min, max));
+        return Math.abs(max - min) < 0.0001 ? new quarks.ConstantValue(min) : new quarks.IntervalValue(min, max);
+      }
+      function createCurveGenerator(values, fallback) {
+        var curve = Array.isArray(values) && values.length === 4 && values.every(function (value) { return Number.isFinite(Number(value)); }) ? values.map(Number) : fallback;
+        return new quarks.PiecewiseBezier([[new quarks.Bezier(curve[0], curve[1], curve[2], curve[3]), 0]]);
+      }
+      function createEmitterShape(shape) {
+        var safeShape = shape && typeof shape === "object" ? shape : {};
+        var type = String(safeShape.type || "sphere").toLowerCase();
+        var radius = Math.max(0.01, Number(safeShape.radius) || 0.5);
+        var arc = THREE.MathUtils.degToRad(Number.isFinite(Number(safeShape.arc)) ? Number(safeShape.arc) : 360);
+        if (type === "cone") return new quarks.ConeEmitter({ radius: radius, arc: arc, thickness: Math.max(0.001, Math.min(1, Number(safeShape.thickness) || 1)), angle: THREE.MathUtils.clamp(THREE.MathUtils.degToRad(Number(safeShape.angle) || 25), 0.01, Math.PI / 2) });
+        if (type === "hemisphere") return new quarks.HemisphereEmitter({ radius: radius, arc: arc });
+        if (type === "circle") return new quarks.CircleEmitter({ radius: radius, arc: arc, thickness: Math.max(0.001, Math.min(1, Number(safeShape.thickness) || 0.35)) });
+        if (type === "donut") return new quarks.DonutEmitter({ radius: radius, arc: arc, thickness: Math.max(0.001, Math.min(1, Number(safeShape.thickness) || 0.5)), donutRadius: Math.max(0.01, Number(safeShape.donutRadius) || radius * 0.28) });
+        return new quarks.SphereEmitter({ radius: radius, arc: arc });
+      }
+      function normalizedRenderMode(value) {
+        var mode = Number(value);
+        return mode >= 0 && mode <= 5 && Math.floor(mode) === mode ? mode : 0;
+      }
+      function createParticleSystem(runtime, options) {
+        var texture = getTexture(options.texture, options.semantic);
+        var width = Math.max(0.01, Number(options.width) || 1);
+        var height = Math.max(0.01, Number(options.height) || 1);
+        var geometry = registerGeometry(runtime, new THREE.PlaneGeometry(width, height));
+        if (Number(options.offsetY)) geometry.translate(0, Number(options.offsetY), 0);
+        var color = new THREE.Color(options.color === undefined ? 0xffffff : options.color);
+        if (options.tint) color.multiply(new THREE.Color(options.tint));
+        var material = registerMaterial(runtime, new THREE.MeshBasicMaterial({
+          map: texture, color: color, transparent: true, opacity: options.opacity === undefined ? 1 : options.opacity,
+          blending: options.additive === false ? THREE.NormalBlending : THREE.AdditiveBlending,
+          depthWrite: false, depthTest: true, side: THREE.DoubleSide
+        }));
+        var renderMode = normalizedRenderMode(options.renderMode);
+        var rendererSettings = {};
+        if (renderMode === 1) {
+          rendererSettings.speedFactor = Math.max(0.001, Number(options.speedFactor) || 1);
+          rendererSettings.lengthFactor = Math.max(0, Number(options.lengthScale) || 1);
+        }
+        if (renderMode === 3) {
+          rendererSettings.startLength = new quarks.ConstantValue(Math.max(0.1, Number(options.lengthScale) || 1.4));
+          rendererSettings.followLocalOrigin = false;
+        }
+        var behaviors = [];
+        if (options.sizeCurve) behaviors.push(new quarks.SizeOverLife(createCurveGenerator(options.sizeCurve, [1, 0.8, 0.4, 0])));
+        if (options.startColor && options.endColor) {
+          behaviors.push(new quarks.ColorOverLife(new quarks.ColorRange(
+            new THREE.Vector4(options.startColor[0], options.startColor[1], options.startColor[2], options.startColor[3] === undefined ? 1 : options.startColor[3]),
+            new THREE.Vector4(options.endColor[0], options.endColor[1], options.endColor[2], options.endColor[3] === undefined ? 0 : options.endColor[3])
+          )));
+        }
+        var tileSheet = options.tileSheet || (texture.userData.tilesX ? { tilesX: texture.userData.tilesX, tilesY: texture.userData.tilesY || 1 } : { tilesX: 1, tilesY: 1 });
+        if (tileSheet.tilesX > 1 || tileSheet.tilesY > 1) {
+          var lastFrame = Math.max(0, tileSheet.tilesX * tileSheet.tilesY - 1);
+          behaviors.push(new quarks.FrameOverLife(new quarks.PiecewiseBezier([[new quarks.Bezier(0, lastFrame * 0.33, lastFrame * 0.66, lastFrame - 0.001), 0]])));
+        }
+        if (options.rotationSpeed) behaviors.push(new quarks.RotationOverLife(new quarks.ConstantValue(options.rotationSpeed)));
+        var bursts = [];
+        if (Array.isArray(options.bursts)) {
+          options.bursts.forEach(function (burst) {
+            bursts.push({ time: Math.max(0, Number(burst.time) || 0), count: new quarks.ConstantValue(Math.max(1, Math.round(Number(burst.count) || 1))), cycle: 1, interval: 0, probability: 1 });
+          });
+        }
+        var duration = Math.max(0.1, Number(options.duration) || 1);
+        var startColor = options.startColor || [color.r, color.g, color.b, 1];
+        var system = new quarks.ParticleSystem({
+          autoDestroy: false, looping: Boolean(options.looping), prewarm: false, duration: duration,
+          shape: createEmitterShape(options.shape), startLife: createValueGenerator(options.life, 0.8, 0.05),
+          startSpeed: createValueGenerator(options.speed, 0, 0), startSize: createValueGenerator(options.size, 1, 0.01),
+          startRotation: createValueGenerator(options.rotation, 0, -Math.PI * 1000),
+          startColor: new quarks.ConstantColor(new THREE.Vector4(startColor[0], startColor[1], startColor[2], startColor[3] === undefined ? 1 : startColor[3])),
+          emissionOverTime: new quarks.ConstantValue(Math.max(0, Number(options.rate) || 0)),
+          emissionOverDistance: new quarks.ConstantValue(Math.max(0, Number(options.emissionDistance) || 0)),
+          emissionBursts: bursts, behaviors: behaviors, instancingGeometry: geometry, renderMode: renderMode,
+          rendererEmitterSettings: rendererSettings, speedFactor: Math.max(0.001, Number(options.speedFactor) || 1),
+          material: material, uTileCount: tileSheet.tilesX, vTileCount: tileSheet.tilesY, blendTiles: true,
+          renderOrder: options.renderOrder || 2, worldSpace: true
+        });
+        var position = options.position || new THREE.Vector3();
+        var rotation = options.rotation || new THREE.Euler();
+        var scale = options.scale || new THREE.Vector3(1, 1, 1);
+        system.emitter.position.copy(position);
+        system.emitter.rotation.copy(rotation);
+        system.emitter.scale.copy(scale);
+        system.emitter.visible = false;
+        system.pause();
+        system.emitter.userData.windowStart = Number(options.windowStart) || 0;
+        system.emitter.userData.windowEnd = Number.isFinite(Number(options.windowEnd)) ? Number(options.windowEnd) : Infinity;
+        system.emitter.userData.wasActive = false;
+        batchRenderer.addSystem(system);
+        runtime.group.add(system.emitter);
+        runtime.systems.push(system);
+        return system;
+      }
+      function setSystemWindow(system, start, end) { system.emitter.userData.windowStart = start; system.emitter.userData.windowEnd = end; }
+      function applySystemWindows(system, time) {
+        var isInside = time >= system.emitter.userData.windowStart && time <= system.emitter.userData.windowEnd;
+        system.emitter.visible = isInside;
+        if (isInside && !system.emitter.userData.wasActive) {
+          system.play();
+          system.emitter.userData.wasActive = true;
+        }
+        if (!isInside && system.emitter.userData.wasActive) {
+          system.restart();
+          system.pause();
+          system.emitter.userData.wasActive = false;
+        }
+      }
+      function createGlowSprite(runtime, position, color, size) {
+        var material = registerMaterial(runtime, new THREE.SpriteMaterial({ map: getTexture("cfxr glow.png", "soft"), color: color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false }));
+        var sprite = new THREE.Sprite(material);
+        sprite.position.copy(position);
+        sprite.scale.setScalar(size || 1);
+        runtime.group.add(sprite);
+        return sprite;
+      }
+      function createRuneSprite(runtime, position, color, size) {
+        var material = registerMaterial(runtime, new THREE.SpriteMaterial({ map: getTexture("cfxr aura runic.png", "rune"), color: color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false }));
+        var sprite = new THREE.Sprite(material);
+        sprite.position.copy(position);
+        sprite.scale.setScalar(size || 1);
+        runtime.group.add(sprite);
+        return sprite;
+      }
+      function createGroundRing(runtime, position, color, start, duration, maxScale) {
+        var geometry = registerGeometry(runtime, new THREE.RingGeometry(0.82, 1, 64));
+        var material = registerMaterial(runtime, new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+        var ring = new THREE.Mesh(geometry, material);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.copy(position);
+        ring.position.y += 0.035;
+        ring.visible = false;
+        runtime.group.add(ring);
+        runtime.updates.push(function (time) {
+          var progress = THREE.MathUtils.clamp((time - start) / Math.max(0.01, duration), 0, 1);
+          var isVisible = time >= start && time <= start + duration;
+          ring.visible = isVisible;
+          if (isVisible) {
+            ring.scale.setScalar(THREE.MathUtils.lerp(0.18, maxScale, 1 - Math.pow(1 - progress, 2)));
+            material.opacity = Math.sin(progress * Math.PI) * 0.88;
+            ring.rotation.z += 0.008;
+          }
+        });
+        return ring;
+      }
+      function proposalLayerColor(layer, recipe) {
+        return proposalPalette[layer.tint] || recipe.color;
+      }
+      function proposalAnchor(layer, caster, target) {
+        var position;
+        if (layer.anchor === "s") position = caster.clone();
+        else if (layer.anchor === "m") position = caster.clone().lerp(target, 0.5);
+        else position = target.clone();
+        if (["sigil", "wave", "crown", "vortex", "rift", "mark", "moon"].includes(layer.type)) position.y = 0.06;
+        else if (["shield", "cage", "crystal", "echo", "wolf", "bear", "tiger", "condor", "dragon", "titan"].includes(layer.type)) position.y = 1.05;
+        else position.y = 0.28;
+        return position;
+      }
+      function createProposalParticleLayer(runtime, layer, position, color) {
+        var semantic = layer.type === "dust" ? "smoke" : ["motes", "heal", "leaves"].includes(layer.type) ? "star" : "spark";
+        var count = Math.min(64, Math.max(1, Math.round(layer.count)));
+        var size = Math.max(0.25, Number(layer.size) || 1);
+        createParticleSystem(runtime, {
+          position: position,
+          texture: semantic === "smoke" ? "cfxr smoke cloud x4.png" : semantic === "star" ? "cfxr magic star.png" : "cfxr electric spark.png",
+          semantic: semantic,
+          color: color,
+          additive: layer.type !== "dust",
+          size: { min: 0.05 * size, max: (layer.type === "dust" ? 0.52 : 0.24) * size },
+          life: { min: layer.type === "heal" ? 0.8 : 0.38, max: layer.type === "heal" ? 1.6 : 1.05 },
+          speed: { min: 0.25, max: (layer.type === "heal" ? 1.1 : 2.8) * size },
+          rate: 0,
+          bursts: [{ time: 0, count: count }],
+          shape: { type: layer.type === "heal" ? "sphere" : layer.type === "motes" ? "donut" : "hemisphere", radius: Math.max(0.18, 0.42 * size), arc: 360, thickness: 0.7, donutRadius: 0.16 * size },
+          sizeCurve: [0.45, 1, 0.58, 0],
+          startColor: [1, 1, 1, 1],
+          endColor: [0.42, 0.3, 0.16, 0],
+          duration: layer.type === "heal" ? 1.7 : 1.15,
+          renderMode: 0,
+          windowStart: layer.delay,
+          windowEnd: layer.delay + (layer.type === "heal" ? 1.8 : 1.25)
+        });
+      }
+      function createProposalStreakLayer(runtime, layer, caster, target, color) {
+        var repeat = Math.min(3, Math.max(1, Math.round(layer.count)));
+        var size = Math.max(0.3, Number(layer.size) || 1);
+        for (var streak = 0; streak < repeat; streak += 1) {
+          var lateral = (streak - (repeat - 1) / 2) * 0.32 * size;
+          var start;
+          var end;
+          if (layer.anchor === "s") {
+            start = caster.clone().add(new THREE.Vector3(lateral, 0.92, 0));
+            end = caster.clone().add(new THREE.Vector3(lateral * 0.35, 2.25 + size * 0.18, 0.15));
+          } else {
+            start = caster.clone().add(new THREE.Vector3(0, 1.35, lateral * 0.3));
+            end = target.clone().add(new THREE.Vector3(0, layer.anchor === "t" ? 1.15 : 1.3, lateral * 0.3));
+          }
+          var direction = end.clone().sub(start);
+          var side = new THREE.Vector3(-direction.z, 0, direction.x).normalize();
+          if (side.lengthSq() < 0.01) side.set(1, 0, 0);
+          var midpoint = start.clone().lerp(end, 0.5).addScaledVector(side, lateral).add(new THREE.Vector3(0, 0.55 + size * 0.25, 0));
+          var curve = new THREE.QuadraticBezierCurve3(start, midpoint, end);
+          var radius = Math.max(0.012, 0.026 * size * (["beam", "bolt", "chain", "lance"].includes(layer.type) ? 1.45 : 1));
+          var geometry = registerGeometry(runtime, new THREE.TubeGeometry(curve, 32, radius, 6, false));
+          var material = registerMaterial(runtime, new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+          var mesh = new THREE.Mesh(geometry, material);
+          mesh.visible = false;
+          runtime.group.add(mesh);
+          var sprite = createGlowSprite(runtime, start, color, 0.45 + size * 0.3);
+          var duration = 0.58 + Math.min(0.45, size * 0.18);
+          runtime.updates.push(function (time) {
+            var progress = THREE.MathUtils.clamp((time - layer.delay - streak * 0.045) / duration, 0, 1);
+            var visible = time >= layer.delay + streak * 0.045 && time <= layer.delay + streak * 0.045 + duration + 0.16;
+            mesh.visible = visible;
+            sprite.visible = visible;
+            if (visible) {
+              var point = curve.getPoint(THREE.MathUtils.clamp(progress, 0, 1));
+              sprite.position.copy(point);
+              sprite.material.opacity = Math.sin(progress * Math.PI) * 0.9;
+              sprite.scale.setScalar(0.38 + size * 0.32 + Math.sin(progress * Math.PI) * 0.24);
+              material.opacity = Math.sin(progress * Math.PI) * 0.72;
+            }
+          });
+        }
+      }
+      function createProposalShellLayer(runtime, layer, position, color) {
+        var size = Math.max(0.35, Number(layer.size) || 1);
+        var repeat = Math.min(3, Math.max(1, Math.round(layer.count)));
+        for (var shellIndex = 0; shellIndex < repeat; shellIndex += 1) {
+          var geometry;
+          if (layer.type === "rock") geometry = registerGeometry(runtime, new THREE.OctahedronGeometry(0.16 * size, 0));
+          else geometry = registerGeometry(runtime, new THREE.IcosahedronGeometry(0.72 * size, 1));
+          var material = registerMaterial(runtime, new THREE.MeshBasicMaterial({ color: color, wireframe: layer.type !== "rock", transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+          var mesh = new THREE.Mesh(geometry, material);
+          var angle = shellIndex / repeat * Math.PI * 2;
+          var base = position.clone().add(new THREE.Vector3(layer.type === "rock" ? Math.cos(angle) * size * 0.55 : 0, layer.type === "rock" ? 0.16 : 0, layer.type === "rock" ? Math.sin(angle) * size * 0.55 : 0));
+          mesh.position.copy(base);
+          mesh.visible = false;
+          runtime.group.add(mesh);
+          runtime.updates.push((function (entry, index) {
+            return function (time) {
+              var start = layer.delay + index * 0.08;
+              var duration = layer.type === "rock" ? 1.25 : 1.45;
+              var progress = THREE.MathUtils.clamp((time - start) / duration, 0, 1);
+              var visible = time >= start && time <= start + duration;
+              entry.visible = visible;
+              if (!visible) return;
+              var pulse = Math.sin(progress * Math.PI);
+              entry.material.opacity = pulse * 0.82;
+              if (layer.type === "rock") {
+                entry.position.y = 0.12 + progress * (0.65 + size * 0.32);
+                entry.rotation.set(progress * 2.4, progress * 3.1, progress * 1.7);
+                entry.scale.setScalar(0.35 + progress * 0.9);
+              } else {
+                entry.scale.setScalar(0.22 + progress * 0.95);
+                entry.rotation.y = time * (0.8 + index * 0.2);
+                entry.rotation.x = time * 0.45;
+              }
+            };
+          }(mesh, shellIndex)));
+        }
+      }
+      function createProposalBeastLayer(runtime, layer, position, color) {
+        var size = Math.max(0.45, Number(layer.size) || 1);
+        var geometry;
+        if (layer.type === "bear") geometry = registerGeometry(runtime, new THREE.IcosahedronGeometry(0.48 * size, 1));
+        else if (["dragon", "titan"].includes(layer.type)) geometry = registerGeometry(runtime, new THREE.OctahedronGeometry(0.58 * size, 0));
+        else geometry = registerGeometry(runtime, new THREE.ConeGeometry(0.32 * size, 1.1 * size, layer.type === "condor" ? 5 : 7));
+        var material = registerMaterial(runtime, new THREE.MeshBasicMaterial({ color: color, wireframe: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+        var mesh = new THREE.Mesh(geometry, material);
+        mesh.position.copy(position).add(new THREE.Vector3(0, -0.8, 0));
+        if (["wolf", "tiger"].includes(layer.type)) mesh.rotation.z = Math.PI / 2;
+        mesh.visible = false;
+        runtime.group.add(mesh);
+        runtime.updates.push(function (time) {
+          var progress = THREE.MathUtils.clamp((time - layer.delay) / 1.65, 0, 1);
+          var visible = time >= layer.delay && time <= layer.delay + 1.8;
+          mesh.visible = visible;
+          if (!visible) return;
+          mesh.position.y = -0.8 + progress * 1.75;
+          mesh.rotation.y = time * 1.4;
+          mesh.scale.setScalar(0.3 + progress * 0.82);
+          material.opacity = Math.sin(progress * Math.PI) * 0.88;
+        });
+      }
+      function createProposalAccents(runtime, caster, target, recipe) {
+        var particleTypes = ["embers", "shards", "dust", "leaves", "motes", "heal"];
+        var ringTypes = ["sigil", "wave", "crown", "vortex", "rift", "mark", "moon"];
+        var streakTypes = ["slash", "claw", "arrow", "lance", "orb", "beam", "bolt", "chain", "feather", "drain"];
+        var shellTypes = ["shield", "cage", "crystal", "echo", "rock"];
+        var beastTypes = ["wolf", "bear", "tiger", "condor", "dragon", "titan"];
+        recipe.layers.forEach(function (layer) {
+          var color = proposalLayerColor(layer, recipe);
+          var position = proposalAnchor(layer, caster, target);
+          if (recipe.motif === "moon-ray" && ["beam", "moon"].includes(layer.type)) return;
+          if (particleTypes.includes(layer.type)) {
+            createProposalParticleLayer(runtime, layer, position, color);
+            return;
+          }
+          if (ringTypes.includes(layer.type)) {
+            var scale = layer.type === "mark" ? 0.65 : layer.type === "wave" || layer.type === "vortex" ? 2.2 + layer.size * 0.35 : 1.2 + layer.size * 0.45;
+            createGroundRing(runtime, position, color, layer.delay, 0.68 + layer.size * 0.22, scale);
+            return;
+          }
+          if (streakTypes.includes(layer.type)) {
+            createProposalStreakLayer(runtime, layer, caster, target, color);
+            return;
+          }
+          if (shellTypes.includes(layer.type)) {
+            createProposalShellLayer(runtime, layer, position, color);
+            return;
+          }
+          if (beastTypes.includes(layer.type)) {
+            createProposalBeastLayer(runtime, layer, position, color);
+            return;
+          }
+          var rune = createRuneSprite(runtime, position, color, 0.9 + layer.size * 0.35);
+          runtime.updates.push(function (time) {
+            var visible = time >= layer.delay && time <= layer.delay + 1.1;
+            rune.visible = visible;
+            rune.material.opacity = visible ? Math.sin(THREE.MathUtils.clamp((time - layer.delay) / 1.1, 0, 1) * Math.PI) * 0.75 : 0;
+            rune.material.rotation += 0.02;
+          });
+        });
+      }
+      function createChargeSequence(runtime, origin, recipe) {
+        if (recipe.isPassive || recipe.chargeDuration <= 0) return;
+        var ringCount = recipe.version.id === "v3" ? 3 : recipe.version.id === "v2" ? 2 : 1;
+        for (var index = 0; index < ringCount; index += 1) createGroundRing(runtime, origin, recipe.color, index * 0.035, recipe.chargeDuration, 1.5 + index * 0.22);
+        if (recipe.hasSigil) {
+          var rune = createRuneSprite(runtime, origin.clone().add(new THREE.Vector3(0, 0.14, 0)), recipe.color, 2.2);
+          runtime.updates.push(function (time) {
+            var progress = THREE.MathUtils.clamp(time / Math.max(0.01, recipe.chargeDuration), 0, 1);
+            var isVisible = time >= 0 && time <= recipe.chargeDuration + 0.1;
+            rune.visible = isVisible;
+            rune.material.opacity = isVisible ? Math.sin(progress * Math.PI) * 0.8 : 0;
+            rune.position.y = 0.18 + progress * 0.5;
+            rune.material.rotation += 0.018;
+          });
+        }
+      }
+      function makePath(start, end, versionIndex, strandIndex, strandCount) {
+        var offset = (strandIndex - (strandCount - 1) / 2) * 0.28;
+        var perpendicular = new THREE.Vector3(-(end.z - start.z), 0, end.x - start.x).normalize();
+        if (versionIndex === 0) return new THREE.LineCurve3(start, end);
+        var midpoint = start.clone().lerp(end, 0.52).addScaledVector(perpendicular, offset);
+        midpoint.y += versionIndex === 1 ? 1.2 : 1.5;
+        if (versionIndex === 1) return new THREE.QuadraticBezierCurve3(start, midpoint, end);
+        var firstControl = start.clone().lerp(end, 0.28).addScaledVector(perpendicular, offset * 1.8);
+        firstControl.y += 1.4;
+        var secondControl = start.clone().lerp(end, 0.72).addScaledVector(perpendicular, -offset * 1.2);
+        secondControl.y += 0.85;
+        return new THREE.CubicBezierCurve3(start, firstControl, secondControl, end);
+      }
+      function createPathMesh(runtime, curve, color) {
+        var geometry = registerGeometry(runtime, new THREE.TubeGeometry(curve, 48, 0.045, 6, false));
+        var material = registerMaterial(runtime, new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+        var mesh = new THREE.Mesh(geometry, material);
+        mesh.visible = false;
+        runtime.group.add(mesh);
+        return mesh;
+      }
+      function createBurstSequence(runtime, position, recipe, start, count) {
+        var burstCount = count || recipe.impactCount;
+        for (var index = 0; index < burstCount; index += 1) {
+          var at = start + index * 0.11;
+          createGroundRing(runtime, position, recipe.color, at, 0.5 + index * 0.08, 1.6 + index * 0.45);
+          createParticleSystem(runtime, {
+            position: position, texture: "cfxr electric spark.png",
+            semantic: "spark", color: recipe.color,
+            size: { min: 0.3, max: 0.85 }, life: { min: 0.35, max: 0.75 }, speed: { min: 1.6, max: 5.2 },
+            rate: 0, bursts: [{ time: 0, count: recipe.version.id === "v3" ? 42 : recipe.version.id === "v2" ? 28 : 18 }],
+            shape: { type: index % 2 === 0 ? "sphere" : "hemisphere", radius: 0.4 + index * 0.08, arc: 360 },
+            sizeCurve: [0.35, 1.2, 0.62, 0], startColor: [1, 1, 1, 1], endColor: [0.6, 0.35, 0.08, 0],
+            duration: 0.8, renderMode: 0, windowStart: at, windowEnd: at + 0.9
+          });
+        }
+        if (recipe.hasSigil) {
+          var rune = createRuneSprite(runtime, position.clone().add(new THREE.Vector3(0, 0.08, 0)), recipe.color, 2.8);
+          runtime.updates.push(function (time) {
+            var progress = THREE.MathUtils.clamp((time - start) / 0.7, 0, 1);
+            var isVisible = time >= start && time <= start + 0.82;
+            rune.visible = isVisible;
+            rune.material.opacity = isVisible ? Math.sin(progress * Math.PI) * 0.88 : 0;
+            rune.material.rotation += 0.025;
+          });
+        }
+      }
+      function createProjectileSequence(runtime, caster, target, recipe) {
+        var startPosition = caster.clone().add(new THREE.Vector3(0, 1.42, 0));
+        var endPosition = target.clone().add(new THREE.Vector3(0, 1.28, 0));
+        createChargeSequence(runtime, caster, recipe);
+        var launchAt = recipe.chargeDuration;
+        var impactAt = launchAt + recipe.flightDuration;
+        var moonRay = recipe.motif === "moon-ray" || recipe.motif === "lightning";
+        var coreGeometry = registerGeometry(runtime, recipe.archetype === "arrow" ? new THREE.ConeGeometry(0.13, 0.62, 8) : new THREE.IcosahedronGeometry(0.22, 1));
+        var coreMaterial = registerMaterial(runtime, new THREE.MeshBasicMaterial({ color: recipe.color, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }));
+        var core = new THREE.Mesh(coreGeometry, coreMaterial);
+        core.visible = false;
+        runtime.group.add(core);
+        var glow = createGlowSprite(runtime, startPosition, recipe.color, 1.3);
+        var light = new THREE.PointLight(recipe.color, 0, 7, 2);
+        runtime.group.add(light);
+        runtime.lights.push(light);
+        var curves = [];
+        var pathMeshes = [];
+        var trailSystems = [];
+        var satellites = [];
+        for (var strand = 0; strand < recipe.strands; strand += 1) {
+          var versionIndex = recipe.version.id === "v1" ? 0 : recipe.version.id === "v2" ? 1 : 2;
+          var curve = makePath(startPosition, endPosition, versionIndex, strand, recipe.strands);
+          curves.push(curve);
+          pathMeshes.push(createPathMesh(runtime, curve, recipe.color));
+          var trail = createParticleSystem(runtime, {
+            position: startPosition,
+            texture: moonRay ? "raio 7x1.png" : recipe.archetype === "arrow" || recipe.archetype === "pierce" || recipe.archetype === "line" ? "cfxr stretch trait blur.png" : "cfxr glow.png",
+            semantic: moonRay ? "lightning" : recipe.archetype === "arrow" || recipe.archetype === "pierce" || recipe.archetype === "line" ? "spark" : "soft",
+            color: recipe.color, width: moonRay ? 1.5 : 0.55, height: moonRay ? 5.6 : 0.55, offsetY: moonRay ? 1.5 : 0,
+            lengthScale: moonRay ? 4.5 : 2.4, size: { min: moonRay ? 0.42 : 0.28, max: moonRay ? 0.66 : 0.48 },
+            life: { min: moonRay ? 0.24 : 0.4, max: moonRay ? 0.42 : 0.75 }, speed: { min: 0.05, max: 0.16 },
+            rate: moonRay ? 4 : 0, emissionDistance: moonRay ? 10 : 26, renderMode: 3,
+            rotationSpeed: recipe.version.id === "v3" ? 0.8 : 0, sizeCurve: [0.8, 1, 0.72, 0.1],
+            startColor: [1, 1, 1, 1], endColor: [0.45, 0.42, 0.12, 0],
+            duration: Math.max(0.5, recipe.flightDuration + 0.5), windowStart: launchAt, windowEnd: impactAt + 0.5
+          });
+          trailSystems.push(trail);
+          if (recipe.orbitCount > 0) {
+            satellites.push(createParticleSystem(runtime, {
+              position: startPosition, texture: "cfxr magic star.png", semantic: "star", color: recipe.color,
+              size: { min: 0.12, max: 0.34 }, life: { min: 0.24, max: 0.52 }, speed: { min: 0.2, max: 1.2 },
+              rate: recipe.version.id === "v3" ? 42 : 24, shape: { type: "donut", radius: 0.48, arc: 360, thickness: 0.35, donutRadius: 0.18 },
+              renderMode: 0, sizeCurve: [0.5, 1, 0.6, 0], startColor: [1, 1, 1, 1], endColor: [0.8, 0.35, 0.08, 0],
+              rotationSpeed: 2.6, duration: 1.2, windowStart: launchAt, windowEnd: impactAt + 0.3
+            }));
+          }
+        }
+        runtime.updates.push(function (time) {
+          var isTraveling = time >= launchAt && time <= impactAt;
+          var progress = THREE.MathUtils.clamp((time - launchAt) / Math.max(0.01, recipe.flightDuration), 0, 1);
+          var mainCurve = curves[0];
+          var point = mainCurve.getPoint(progress);
+          var tangent = mainCurve.getTangent(Math.min(0.999, progress)).normalize();
+          core.visible = isTraveling;
+          glow.visible = isTraveling;
+          if (isTraveling) {
+            core.position.copy(point);
+            if (recipe.archetype === "arrow") core.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent);
+            core.scale.setScalar(0.88 + Math.sin(progress * Math.PI) * 0.24);
+            coreMaterial.opacity = 0.72 + Math.sin(progress * Math.PI) * 0.28;
+            glow.position.copy(point);
+            glow.material.opacity = 0.72;
+            glow.scale.setScalar(1.05 + Math.sin(progress * Math.PI) * 0.75);
+            light.position.copy(point);
+            light.intensity = 2.8 + Math.sin(progress * Math.PI) * 2.4;
+          } else {
+            light.intensity = 0;
+          }
+          curves.forEach(function (curve, index) {
+            var strandPoint = curve.getPoint(progress);
+            trailSystems[index].emitter.position.copy(strandPoint);
+            if (satellites[index]) satellites[index].emitter.position.copy(strandPoint);
+          });
+          pathMeshes.forEach(function (mesh) {
+            mesh.visible = isTraveling;
+            if (isTraveling) mesh.material.opacity = Math.sin(progress * Math.PI) * 0.38;
+          });
+        });
+        createBurstSequence(runtime, endPosition, recipe, impactAt, recipe.archetype === "multi-hit" ? Math.max(2, recipe.impactCount + 1) : recipe.impactCount);
+        if (["line", "pierce", "taunt"].indexOf(recipe.archetype) !== -1) {
+          var lineLength = 3.4 + recipe.strands * 0.7;
+          var lineGeometry = registerGeometry(runtime, new THREE.CylinderGeometry(0.025, 0.08, lineLength, 8));
+          var lineMaterial = registerMaterial(runtime, new THREE.MeshBasicMaterial({ color: recipe.color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+          var line = new THREE.Mesh(lineGeometry, lineMaterial);
+          line.position.copy(target).add(new THREE.Vector3(0, 1.2, 0));
+          line.rotation.z = Math.PI / 2;
+          runtime.group.add(line);
+          runtime.updates.push(function (time) {
+            var progress = THREE.MathUtils.clamp((time - impactAt) / 0.42, 0, 1);
+            var visible = time >= impactAt && time <= impactAt + 0.5;
+            line.visible = visible;
+            line.scale.y = 0.2 + progress;
+            lineMaterial.opacity = visible ? Math.sin(progress * Math.PI) * 0.75 : 0;
+          });
+        }
+      }
+      function createAuraParticles(runtime, position, recipe, rate, shapeType) {
+        return createParticleSystem(runtime, {
+          position: position, texture: recipe.motif === "restoration" || recipe.motif === "holy" ? "cfxr magic star.png" : "cfxr glow.png",
+          semantic: recipe.motif === "restoration" || recipe.motif === "holy" ? "star" : "soft", color: recipe.color,
+          size: { min: 0.12, max: 0.42 }, life: { min: 0.8, max: 1.7 }, speed: { min: 0.15, max: 0.9 },
+          rate: rate, shape: { type: shapeType || "sphere", radius: 0.65, arc: 360, thickness: 0.55, donutRadius: 0.22 },
+          renderMode: 0, sizeCurve: [0.4, 1, 0.58, 0], startColor: [1, 1, 1, 1], endColor: [0.75, 0.32, 0.08, 0],
+          rotationSpeed: 1.8, duration: 1.7, windowStart: recipe.isPassive ? 0 : recipe.chargeDuration, windowEnd: recipe.duration
+        });
+      }
+      function createSelfSequence(runtime, caster, target, recipe) {
+        if (recipe.archetype === "passive") {
+          createAuraParticles(runtime, caster.clone().add(new THREE.Vector3(0, 1.15, 0)), recipe, 18 + recipe.orbitCount * 8, "sphere");
+          createAuraParticles(runtime, caster.clone().add(new THREE.Vector3(0, 0.65, 0)), recipe, 12 + recipe.orbitCount * 6, "donut");
+          var passiveRune = createRuneSprite(runtime, caster.clone().add(new THREE.Vector3(0, 1.15, 0)), recipe.color, 1.7);
+          runtime.updates.push(function (time) {
+            passiveRune.visible = true;
+            passiveRune.material.opacity = 0.22 + Math.sin(time * 2.2) * 0.08;
+            passiveRune.material.rotation += 0.006;
+          });
+          if (recipe.hasSigil) createGroundRing(runtime, caster, recipe.color, 0, recipe.duration, 2.1);
+          return;
+        }
+        createChargeSequence(runtime, caster, recipe);
+        var focus = new THREE.Vector3().lerpVectors(caster, target, recipe.archetype === "summon" ? 0.82 : 0.08);
+        focus.y = recipe.archetype === "heal" ? 1.2 : 1.45;
+        createAuraParticles(runtime, focus, recipe, 18 + recipe.impactCount * 12, "sphere");
+        if (recipe.orbitCount > 0) createAuraParticles(runtime, focus, recipe, recipe.orbitCount * 10, "donut");
+        var focusRune = createRuneSprite(runtime, focus.clone().add(new THREE.Vector3(0, 0.24, 0)), recipe.color, 1.5 + recipe.orbitCount * 0.25);
+        var focusGlow = createGlowSprite(runtime, focus, recipe.color, 1.2);
+        runtime.updates.push(function (time) {
+          var chargeProgress = THREE.MathUtils.clamp(time / Math.max(0.01, recipe.chargeDuration), 0, 1);
+          var afterCharge = time >= recipe.chargeDuration;
+          focusRune.visible = afterCharge;
+          focusGlow.visible = afterCharge;
+          focusRune.material.opacity = afterCharge ? 0.5 + Math.sin(time * 3) * 0.18 : chargeProgress * 0.4;
+          focusGlow.material.opacity = afterCharge ? 0.5 : chargeProgress * 0.25;
+          focusRune.material.rotation += 0.012 + recipe.orbitCount * 0.003;
+          focusGlow.scale.setScalar(1.1 + Math.sin(time * 2.6) * 0.18);
+        });
+        if (recipe.archetype === "area") {
+          createGroundRing(runtime, target, recipe.color, recipe.chargeDuration, 0.8, 2.4 + recipe.impactCount * 0.25);
+          createBurstSequence(runtime, target, recipe, recipe.chargeDuration + 0.18, recipe.impactCount);
+        }
+        if (recipe.archetype === "summon") {
+          var gatePosition = target.clone().add(new THREE.Vector3(0, 1.1, 0));
+          var gateGeometry = registerGeometry(runtime, new THREE.TorusGeometry(0.9, 0.045, 8, 48));
+          var gateMaterial = registerMaterial(runtime, new THREE.MeshBasicMaterial({ color: recipe.color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+          var gate = new THREE.Mesh(gateGeometry, gateMaterial);
+          gate.position.copy(gatePosition);
+          gate.visible = false;
+          runtime.group.add(gate);
+          runtime.updates.push(function (time) {
+            var start = recipe.chargeDuration;
+            var visible = time >= start && time <= start + 1.1;
+            gate.visible = visible;
+            if (visible) {
+              var progress = THREE.MathUtils.clamp((time - start) / 1.1, 0, 1);
+              gate.scale.setScalar(0.35 + progress * 0.9);
+              gate.rotation.z = time * 1.8;
+              gateMaterial.opacity = Math.sin(progress * Math.PI) * 0.86;
+            }
+          });
+        }
+        if (recipe.archetype === "transform") {
+          for (var ringIndex = 0; ringIndex < recipe.impactCount; ringIndex += 1) {
+            var shellGeometry = registerGeometry(runtime, new THREE.IcosahedronGeometry(0.95 + ringIndex * 0.2, 1));
+            var shellMaterial = registerMaterial(runtime, new THREE.MeshBasicMaterial({ color: recipe.color, wireframe: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+            var shell = new THREE.Mesh(shellGeometry, shellMaterial);
+            shell.position.copy(caster).add(new THREE.Vector3(0, 1.15, 0));
+            shell.visible = false;
+            runtime.group.add(shell);
+            runtime.updates.push((function (mesh, index) {
+              return function (time) {
+                var start = recipe.chargeDuration + index * 0.12;
+                var visible = time >= start && time <= start + 0.9;
+                mesh.visible = visible;
+                if (visible) {
+                  var progress = THREE.MathUtils.clamp((time - start) / 0.9, 0, 1);
+                  mesh.scale.setScalar(0.4 + progress * 1.1);
+                  mesh.rotation.y = time * (1.2 + index * 0.2);
+                  mesh.rotation.x = time * 0.7;
+                  mesh.material.opacity = Math.sin(progress * Math.PI) * 0.8;
+                }
+              };
+            }(shell, ringIndex)));
+          }
+        }
+      }
+      function createMoonRaySequence(runtime, caster, target, recipe) {
+        createChargeSequence(runtime, target, recipe);
+        var launchAt = recipe.chargeDuration;
+        var impactAt = launchAt + recipe.flightDuration;
+        var raySystems = [];
+        var rayGlows = [];
+        var light = new THREE.PointLight(recipe.color, 0, 10, 2);
+        runtime.group.add(light);
+        runtime.lights.push(light);
+        for (var strand = 0; strand < recipe.strands; strand += 1) {
+          var lateral = recipe.strands === 1 ? 0 : (strand - (recipe.strands - 1) / 2) * 0.42;
+          var system = createParticleSystem(runtime, {
+            position: target.clone().add(new THREE.Vector3(lateral, 8.5, 0)),
+            texture: "raio 7x1.png",
+            semantic: "lightning",
+            color: recipe.color,
+            width: 1.42 + strand * 0.16,
+            height: 5.4 + strand * 0.35,
+            size: { min: 0.86, max: 1.08 },
+            life: { min: 0.16, max: 0.28 },
+            speed: { min: 0, max: 0 },
+            rate: 32,
+            bursts: [],
+            shape: { type: "sphere", radius: 0.01, arc: 360 },
+            sizeCurve: [1, 1, 1, 0.18],
+            startColor: [1, 1, 1, 1],
+            endColor: [0.48, 0.72, 1, 0],
+            duration: Math.max(0.48, recipe.flightDuration),
+            renderMode: 0,
+            windowStart: launchAt + strand * 0.035,
+            windowEnd: impactAt + 0.44
+          });
+          raySystems.push({ system: system, lateral: lateral });
+          rayGlows.push(createGlowSprite(runtime, target.clone().add(new THREE.Vector3(lateral, 8.5, 0)), recipe.color, 1.5));
+        }
+        var columnGeometry = registerGeometry(runtime, new THREE.CylinderGeometry(0.035, 0.14, 1, 20, 1, true));
+        var columnMaterial = registerMaterial(runtime, new THREE.MeshBasicMaterial({ color: recipe.color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+        var column = new THREE.Mesh(columnGeometry, columnMaterial);
+        column.visible = false;
+        runtime.group.add(column);
+        var impactTriggered = false;
+        runtime.updates.push(function (time) {
+          var progress = THREE.MathUtils.clamp((time - launchAt) / Math.max(0.01, recipe.flightDuration), 0, 1);
+          var descending = time >= launchAt && time <= impactAt + 0.3;
+          var eased = 1 - Math.pow(1 - progress, 3);
+          var boltY = THREE.MathUtils.lerp(8.5, 0.35, eased);
+          raySystems.forEach(function (entry, index) {
+            var jitter = Math.sin(time * 31 + index * 2.1) * 0.07;
+            entry.system.emitter.position.set(target.x + entry.lateral + jitter, boltY, target.z + Math.cos(time * 27 + index) * 0.05);
+            entry.system.emitter.visible = descending;
+            var glow = rayGlows[index];
+            glow.visible = descending;
+            glow.position.copy(entry.system.emitter.position);
+            glow.material.opacity = descending ? 0.38 + Math.sin(progress * Math.PI) * 0.38 : 0;
+            glow.scale.setScalar(1.25 + Math.sin(progress * Math.PI) * 0.65);
+          });
+          var visibleColumn = time >= launchAt + recipe.flightDuration * 0.42 && time <= impactAt + 0.22;
+          column.visible = visibleColumn;
+          if (visibleColumn) {
+            var columnProgress = THREE.MathUtils.clamp((time - launchAt) / Math.max(0.01, recipe.flightDuration), 0, 1);
+            var columnHeight = 1.2 + columnProgress * 7.8;
+            column.scale.set(0.32 + columnProgress * 0.16, columnHeight, 0.32 + columnProgress * 0.16);
+            column.position.set(target.x, columnHeight * 0.5, target.z);
+            columnMaterial.opacity = Math.sin(THREE.MathUtils.clamp((time - impactAt + 0.22) / 0.44, 0, 1) * Math.PI) * 0.035;
+            column.rotation.y = time * 1.7;
+          }
+          light.position.set(target.x, THREE.MathUtils.lerp(8, 1.2, eased), target.z);
+          light.intensity = descending ? 2.4 + Math.sin(progress * Math.PI) * 5.2 : 0;
+          if (!impactTriggered && time >= impactAt) {
+            impactTriggered = true;
+            createBurstSequence(runtime, target, recipe, impactAt, recipe.impactCount);
+          }
+        });
+      }
+      function createSkillEffect(skill, versionIndex, casterPosition, targetPosition, loop) {
+        var recipe = buildRecipe(skill, versionIndex);
+        var runtime = createRuntime(new THREE.Group());
+        runtime.duration = recipe.duration;
+        runtime.loop = loop;
+        createProposalAccents(runtime, casterPosition, targetPosition, recipe);
+        if (recipe.motif === "moon-ray") createMoonRaySequence(runtime, casterPosition, targetPosition, recipe);
+        else if (["passive", "buff", "heal", "transform", "summon", "area"].indexOf(recipe.archetype) !== -1) createSelfSequence(runtime, casterPosition, targetPosition, recipe);
+        else createProjectileSequence(runtime, casterPosition, targetPosition, recipe);
+        effectsRoot.add(runtime.group);
+        activeRuntimes.push(runtime);
+        return runtime;
+      }
+      function valueOr(value, fallback) { return Number.isFinite(Number(value)) ? Number(value) : fallback; }
+      function createPackEmitter(runtime, emitter, index) {
+        var duration = Math.max(0.1, valueOr(emitter.duration, 1));
+        var delay = Math.max(0, valueOr(emitter.startDelay, 0));
+        var life = emitter.life || { min: 0.5, max: 0.5 };
+        var size = emitter.size || { min: 1, max: 1 };
+        var speed = emitter.speed || { min: 0, max: 0 };
+        var startColor = Array.isArray(emitter.startColor) ? emitter.startColor : [1, 1, 1, 1];
+        var rendererData = emitter.renderer || {};
+        var modules = emitter.modules || {};
+        var sizeCurve = modules.sizeOverLifetime && Array.isArray(modules.sizeOverLifetime.curve) ? modules.sizeOverLifetime.curve : modules.sizeCurve;
+        var endColorData = Array.isArray(modules.colorOverLifetime) && modules.colorOverLifetime.length ? modules.colorOverLifetime[modules.colorOverLifetime.length - 1] : [0.6, 0.3, 0.08, 0];
+        var endColor = [endColorData.r === undefined ? endColorData[0] : endColorData.r, endColorData.g === undefined ? endColorData[1] : endColorData.g, endColorData.b === undefined ? endColorData[2] : endColorData.b, endColorData.a === undefined ? endColorData[3] : endColorData.a];
+        var renderMode = normalizedRenderMode(rendererData.renderMode);
+        var lengthScale = Math.max(0, valueOr(rendererData.lengthScale, 1));
+        var textureName = typeof rendererData.texture === "string" ? rendererData.texture : "";
+        var semantic = textureName.indexOf("raio") !== -1 || textureName.indexOf("electric") !== -1 ? "lightning" : textureName.indexOf("smoke") !== -1 || textureName.indexOf("cloud") !== -1 ? "smoke" : textureName.indexOf("rune") !== -1 || textureName.indexOf("runic") !== -1 ? "rune" : textureName.indexOf("star") !== -1 ? "star" : textureName.indexOf("trail") !== -1 || textureName.indexOf("sword") !== -1 ? "slash" : "soft";
+        var transform = emitter.transform || {};
+        var positionData = Array.isArray(transform.pos) ? transform.pos : [0, 0, 0];
+        var rotationData = Array.isArray(transform.rot) ? transform.rot : [0, 0, 0];
+        var scaleData = Array.isArray(transform.scale) ? transform.scale : [1, 1, 1];
+        var geometryData = emitter.geometry || {};
+        var bursts = emitter.emission && Array.isArray(emitter.emission.bursts) ? emitter.emission.bursts.map(function (burst) { return { time: valueOr(burst.time, 0), count: Math.max(1, Math.round(valueOr(burst.count, 1))) }; }) : [];
+        var end = delay + duration + valueOr(life.max, life.min) + 0.5;
+        var system = createParticleSystem(runtime, {
+          position: new THREE.Vector3(positionData[0] || 0, positionData[1] || 0, positionData[2] || 0),
+          rotation: new THREE.Euler(THREE.MathUtils.degToRad(rotationData[0] || 0), THREE.MathUtils.degToRad(rotationData[1] || 0), THREE.MathUtils.degToRad(rotationData[2] || 0)),
+          scale: new THREE.Vector3(scaleData[0] || 1, scaleData[1] || 1, scaleData[2] || 1),
+          texture: textureName, semantic: semantic, tint: rendererData.tint, color: 0xffffff,
+          width: valueOr(geometryData.width, 1) * (renderMode === 1 ? Math.max(0.5, lengthScale) : 1), height: valueOr(geometryData.height, 1),
+          offsetY: valueOr(geometryData.offsetY, 0), lengthScale: lengthScale, speedFactor: valueOr(rendererData.speedFactor, 1),
+          life: life, speed: speed, size: size, rotation: emitter.startRot || { min: 0, max: 0 },
+          startColor: startColor, endColor: endColor, rate: valueOr(emitter.emission && emitter.emission.rateOverTime, 0),
+          emissionDistance: 0, bursts: bursts, shape: emitter.shape, sizeCurve: sizeCurve,
+          rotationSpeed: valueOr(modules.rotSpeed, 0), tileSheet: modules.texSheet, duration: duration,
+          renderMode: renderMode, additive: rendererData.isAdditive !== false, windowStart: delay, windowEnd: end,
+          renderOrder: 2 + index, looping: !state.loop && Boolean(emitter.looping)
+        });
+        setSystemWindow(system, delay, end);
+        return { system: system, start: delay, end: end, internalLoop: Boolean(emitter.looping) };
+      }
+      function createPackEffect(effect, origin, loopOverride) {
+        var runtime = createRuntime(new THREE.Group());
+        runtime.group.position.copy(origin);
+        var maximumEnd = 0;
+        effect.emitters.forEach(function (emitter, index) {
+          var windowData = createPackEmitter(runtime, emitter, index);
+          maximumEnd = Math.max(maximumEnd, windowData.end);
+        });
+        runtime.duration = Math.max(0.5, maximumEnd + 0.2);
+        runtime.loop = typeof loopOverride === "boolean" ? loopOverride : state.loop;
+        runtime.phase = "Pacote VFX";
+        effectsRoot.add(runtime.group);
+        activeRuntimes.push(runtime);
+        return runtime;
+      }
+      function pruneBatches() {
+        for (var batchIndex = batchRenderer.batches.length - 1; batchIndex >= 0; batchIndex -= 1) {
+          var batch = batchRenderer.batches[batchIndex];
+          if (batch.systems.size > 0) continue;
+          if (batch.parent) batch.parent.remove(batch);
+          if (batch.geometry && typeof batch.geometry.dispose === "function") batch.geometry.dispose();
+          if (batch.material && typeof batch.material.dispose === "function") batch.material.dispose();
+          if (batch.settings && batch.settings.material && batch.settings.material !== batch.material && typeof batch.settings.material.dispose === "function") batch.settings.material.dispose();
+          batchRenderer.batches.splice(batchIndex, 1);
+        }
+        var systemMap = new Map();
+        batchRenderer.batches.forEach(function (batch, index) { batch.systems.forEach(function (system) { systemMap.set(system, index); }); });
+        batchRenderer.systemToBatchIndex = systemMap;
+      }
+      function disposeEffect(runtime) {
+        if (!runtime || runtime.isDisposed) return;
+        runtime.isDisposed = true;
+        runtime.systems.forEach(function (system) {
+          batchRenderer.deleteSystem(system);
+          if (system.emitter && system.emitter.parent) system.emitter.parent.remove(system.emitter);
+          system.particles.length = 0;
+          system.emitter.visible = false;
+        });
+        runtime.systems.length = 0;
+        runtime.lights.forEach(function (light) { if (light.parent) light.parent.remove(light); });
+        runtime.lights.length = 0;
+        runtime.geometries.forEach(function (geometry) { if (typeof geometry.dispose === "function") geometry.dispose(); });
+        runtime.materials.forEach(function (material) { if (typeof material.dispose === "function") material.dispose(); });
+        runtime.geometries.clear();
+        runtime.materials.clear();
+        if (runtime.group.parent) runtime.group.parent.remove(runtime.group);
+        runtime.updates.length = 0;
+        pruneBatches();
+      }
+      function clearEffects() {
+        selectedRuntimes.forEach(disposeEffect);
+        oneShotRuntimes.forEach(disposeEffect);
+        activeRuntimes.slice().forEach(disposeEffect);
+        selectedRuntimes = [];
+        oneShotRuntimes = [];
+        activeRuntimes = [];
+      }
+      function updateRuntime(runtime, delta) {
+        if (runtime.isDisposed) return;
+        runtime.elapsed += delta;
+        if (runtime.loop && runtime.elapsed >= runtime.duration) {
+          runtime.elapsed %= runtime.duration;
+          runtime.cycle += 1;
+          runtime.systems.forEach(function (system) {
+            system.restart();
+            system.pause();
+            system.emitter.userData.wasActive = false;
+          });
+        }
+        var time = runtime.loop ? runtime.elapsed % runtime.duration : Math.min(runtime.elapsed, runtime.duration);
+        runtime.systems.forEach(function (system) { applySystemWindows(system, time); });
+        runtime.updates.forEach(function (update) { update(time); });
+        runtime.phase = time < 0.05 ? "Início" : time < runtime.duration * 0.45 ? "Estrutura" : time < runtime.duration * 0.78 ? "Pico" : "Dissipação";
+        if (!runtime.loop && runtime.elapsed >= runtime.duration) runtime.phase = "Concluída";
+      }
+      function getSelectedMetrics() {
+        var systems = 0;
+        var particles = 0;
+        selectedRuntimes.forEach(function (runtime) {
+          runtime.systems.forEach(function (system) {
+            systems += 1;
+            particles += system.particleNum || 0;
+          });
+        });
+        return { systems: systems, particles: particles };
+      }
+      function updateMetrics() {
+        var metrics = getSelectedMetrics();
+        document.getElementById("metric-systems").textContent = String(metrics.systems);
+        document.getElementById("metric-particles").textContent = String(metrics.particles);
+      }
+      function replaySelection() {
+        clearEffects();
+        if (state.mode === "game-skills") {
+          var skill = getSkill(state.skillId);
+          if (!skill) return false;
+          if (state.compare) {
+            for (var versionIndex = 0; versionIndex < 3; versionIndex += 1) {
+              var pair = rigPairs[versionIndex];
+              selectedRuntimes.push(createSkillEffect(skill, versionIndex, pair.casterPosition, pair.targetPosition, state.loop));
+            }
+          } else {
+            var singlePair = rigPairs[0];
+            selectedRuntimes.push(createSkillEffect(skill, state.versionIndex, singlePair.casterPosition, singlePair.targetPosition, state.loop));
+          }
+        } else {
+          var effect = packById.get(state.packId);
+          if (!effect || !rigPairs.length) return false;
+          selectedRuntimes.push(createPackEffect(effect, rigPairs[0].targetPosition.clone().add(new THREE.Vector3(0, 0.15, 0))));
+        }
+        updateHud();
+        updateMetrics();
+        return true;
+      }
+      function updateHud() {
+        var title = document.getElementById("hud-title");
+        var meta = document.getElementById("hud-meta");
+        var brief = document.getElementById("hud-brief");
+        var strategy = document.getElementById("hud-strategy");
+        var classBadge = document.getElementById("hud-class");
+        var versionSelector = document.getElementById("version-selector");
+        var compareInput = document.getElementById("compare-input");
+        var compareControl = document.getElementById("compare-control");
+        var packLicense = document.getElementById("pack-license");
+        document.getElementById("tab-skills").classList.toggle("active", state.mode === "game-skills");
+        document.getElementById("tab-pack").classList.toggle("active", state.mode === "vfx-pack");
+        document.getElementById("sidebar-title").textContent = state.mode === "game-skills" ? "Game Skills VFX" : "VFX Pack";
+        packLicense.classList.toggle("hidden", state.mode !== "vfx-pack");
+        versionSelector.classList.toggle("hidden", state.mode !== "game-skills");
+        compareInput.disabled = state.mode !== "game-skills";
+        compareControl.classList.toggle("disabled", state.mode !== "game-skills");
+        compareInput.checked = state.compare;
+        if (state.mode === "game-skills") {
+          var skill = getSkill(state.skillId);
+          if (!skill) return;
+          var recipe = buildRecipe(skill, state.versionIndex);
+          title.textContent = skill.name;
+          meta.textContent = skill.className + " | " + translatedTreeLabel(catalog.classes[skill.classId], skill.tree) + " | " + (elementLabels[skill.element] || "Sem elemento") + " | " + (powerLabels[skill.power] || "poder não definido");
+          brief.textContent = recipe.artTitle + " — " + recipe.brief;
+          strategy.textContent = recipe.technique + " | Estado: " + (stateLabels[skill.visual.state] || skill.visual.state);
+          classBadge.textContent = skill.classId;
+          document.querySelectorAll("[data-version]").forEach(function (button) { button.classList.toggle("active", Number(button.getAttribute("data-version")) === state.versionIndex); });
+          document.getElementById("header-count").textContent = "96 skills, 288 versões";
+        } else {
+          var effect = packById.get(state.packId);
+          if (!effect) return;
+          title.textContent = effect.name;
+          meta.textContent = effect.categoryLabel + " | " + effect.emittersCount + (effect.emittersCount === 1 ? " emissor" : " emissores") + " | Fonte: " + packSource;
+          brief.textContent = effect.rebuilt ? "O registro original não possui emissores; a prévia usa uma reconstrução procedural marcada no catálogo." : "Estrutura do pack local reinterpretada pelo adaptador de partículas.";
+          strategy.textContent = effect.rebuilt ? "Reconstrução procedural para comparative local." : "Recurso reutilizável, separado das skills do jogo.";
+          classBadge.textContent = "VFX";
+          document.getElementById("header-count").textContent = packSource + ", " + packEffects.length + " efeitos";
+        }
+      }
+      function layoutBoundsAreValid() {
+        fitStage();
+        var stageRect = stage.getBoundingClientRect();
+        var required = [document.querySelector(".master-header"), document.getElementById("vfx-hud"), document.getElementById("camera-tools")];
+        return required.every(function (element) {
+          var rect = element.getBoundingClientRect();
+          return rect.left >= stageRect.left - 1 && rect.right <= stageRect.right + 1 && rect.top >= stageRect.top - 1 && rect.bottom <= stageRect.bottom + 1;
+        });
+      }
+      function getState() {
+        var skill = state.mode === "game-skills" ? getSkill(state.skillId) : null;
+        var effect = state.mode === "vfx-pack" ? packById.get(state.packId) : null;
+        return {
+          mode: state.mode, classId: state.classId, tree: state.tree, search: state.search,
+          skillId: skill ? skill.id : null, versionIndex: state.versionIndex, packId: state.packId,
+          loop: state.loop, speed: state.speed, compare: state.compare, bloom: state.bloom,
+          sidebarOpen: state.sidebarOpen, camera: state.camera,
+          skillCount: skills.length, versionCount: skills.reduce(function (total, skill) { return total + skill.visual.versions.length; }, 0),
+          packCount: packEffects.length, packSource: packSource,
+          recipe: skill ? buildRecipe(skill, state.versionIndex) : null,
+          packEffect: effect ? { id: effect.id, name: effect.name, category: effect.categoryLabel, rebuilt: effect.rebuilt, emitters: effect.emitters.length } : null
+        };
+      }
+      function getDiagnostics() {
+        var metrics = getSelectedMetrics();
+        var layoutBoundsOk = layoutBoundsAreValid();
+        state.layoutBoundsOk = layoutBoundsOk;
+        return {
+          ready: ready, skillCount: skills.length, versionCount: skills.reduce(function (total, skill) { return total + skill.visual.versions.length; }, 0),
+          selectedSystems: metrics.systems, selectedParticles: metrics.particles, oneShotCount: oneShotRuntimes.length,
+          activeSystemCount: batchRenderer.systemToBatchIndex.size, batchCount: batchRenderer.batches.length,
+          errors: errors.slice(), missingTextureFallbacks: missingTextureNames.size, missingTextureNames: Array.from(missingTextureNames),
+          packSource: packSource, packCount: packEffects.length, packIds: packEffects.map(function (effect) { return effect.id; }), emptyPackRepairs: emptyPackRepairs, shapeFallbacks: shapeFallbacks,
+          viewport: { width: window.innerWidth, height: window.innerHeight }, stageScale: state.stageScale, layoutBoundsOk: layoutBoundsOk,
+          rigPairCount: rigPairs.length, textureCacheSize: textureCache.size, renderer: { calls: renderer.info.render.calls, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures }
+        };
+      }
+      function setMode(mode) {
+        var nextMode = mode === "vfx-pack" || mode === "pack" ? "vfx-pack" : mode === "game-skills" || mode === "skills" || mode === "game" ? "game-skills" : null;
+        if (!nextMode || nextMode === state.mode) return false;
+        state.mode = nextMode;
+        state.search = "";
+        state.tree = "all";
+        if (nextMode === "vfx-pack") {
+          state.compare = false;
+          state.packId = packEffects.length ? packEffects[0].id : "";
+        }
+        rebuildRig();
+        setCameraPreset("iso");
+        renderSidebar();
+        replaySelection();
+        return true;
+      }
+      function setClass(classId) {
+        if (!catalog.classes[classId]) return false;
+        state.classId = classId;
+        state.tree = "all";
+        state.search = "";
+        var firstSkill = skills.find(function (skill) { return skill.classId === classId; });
+        if (!firstSkill) return false;
+        state.skillId = firstSkill.id;
+        if (state.mode !== "game-skills") state.mode = "game-skills";
+        rebuildRig();
+        setCameraPreset(state.camera);
+        renderSidebar();
+        replaySelection();
+        return true;
+      }
+      function setTree(treeId) {
+        if (state.mode === "game-skills") {
+          var allowed = ["all"].concat(catalog.classes[state.classId] ? catalog.classes[state.classId].treeOrder : []);
+          if (allowed.indexOf(treeId) === -1) return false;
+        } else if (treeId !== "all" && !packEffects.some(function (effect) { return effect.category === treeId; })) return false;
+        state.tree = treeId;
+        renderSidebar();
+        return true;
+      }
+      function setSearch(searchText) {
+        state.search = String(searchText || "");
+        var input = document.querySelector(".search-input");
+        if (input) input.value = state.search;
+        renderItems();
+        return true;
+      }
+      function selectSkill(skillId) {
+        var skill = getSkill(skillId);
+        if (!skill) return false;
+        var classChanged = state.classId !== skill.classId;
+        state.mode = "game-skills";
+        state.skillId = skill.id;
+        state.classId = skill.classId;
+        state.tree = "all";
+        state.search = "";
+        if (classChanged) {
+          rebuildRig();
+          setCameraPreset(state.camera);
+        }
+        renderSidebar();
+        replaySelection();
+        return true;
+      }
+      function selectVersion(version) {
+        var index = typeof version === "number" ? version : ({ "v1": 0, "v2": 1, "v3": 2, "0": 0, "1": 1, "2": 2 })[String(version)];
+        if (index === undefined || index < 0 || index > 2) return false;
+        state.versionIndex = index;
+        replaySelection();
+        return true;
+      }
+      function selectPack(packId) {
+        if (!packById.has(packId)) return false;
+        state.mode = "vfx-pack";
+        state.compare = false;
+        state.packId = packId;
+        state.tree = "all";
+        state.search = "";
+        rebuildRig();
+        renderSidebar();
+        replaySelection();
+        return true;
+      }
+      function setLoop(loop) {
+        state.loop = Boolean(loop);
+        document.getElementById("loop-button").classList.toggle("active", state.loop);
+        document.getElementById("loop-label").textContent = state.loop ? "Loop ligado" : "Loop desligado";
+        replaySelection();
+        return true;
+      }
+      function setSpeed(speed) {
+        state.speed = THREE.MathUtils.clamp(Number(speed) || 1, 0.25, 2);
+        document.getElementById("speed-input").value = String(state.speed);
+        document.getElementById("speed-value").textContent = state.speed.toFixed(2) + "x";
+        return state.speed;
+      }
+      function setCompare(compare) {
+        var next = Boolean(compare) && state.mode === "game-skills";
+        if (next === state.compare) return false;
+        state.compare = next;
+        if (state.compare) state.sidebarOpen = false;
+        document.body.classList.toggle("sidebar-collapsed", !state.sidebarOpen);
+        rebuildRig();
+        setCameraPreset("iso");
+        replaySelection();
+        return true;
+      }
+      function setBloom(bloom) {
+        state.bloom = Boolean(bloom);
+        bloomPass.enabled = state.bloom;
+        document.getElementById("bloom-button").classList.toggle("active", state.bloom);
+        return state.bloom;
+      }
+      function setSidebar(sidebar) {
+        state.sidebarOpen = typeof sidebar === "string" && sidebar === "toggle" ? !state.sidebarOpen : sidebar === undefined ? !state.sidebarOpen : Boolean(sidebar);
+        document.body.classList.toggle("sidebar-collapsed", !state.sidebarOpen);
+        return state.sidebarOpen;
+      }
+      function clear() {
+        clearEffects();
+        updateMetrics();
+        return true;
+      }
+      function handleResize() {
+        var compact = window.innerWidth < 1200;
+        if (compact !== compactLayoutActive) {
+          compactLayoutActive = compact;
+          state.sidebarOpen = !compact;
+          document.body.classList.toggle("sidebar-collapsed", !state.sidebarOpen);
+        }
+        fitStage();
+      }
+      function fitStage() {
+        var compact = window.innerWidth < 1200;
+        var width = compact ? window.innerWidth : 1600;
+        var height = compact ? window.innerHeight : 900;
+        var scale = compact ? 1 : Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+        var offsetX = compact ? 0 : (window.innerWidth - 1600 * scale) / 2;
+        var offsetY = compact ? 0 : (window.innerHeight - 900 * scale) / 2;
+        stage.style.width = width + "px";
+        stage.style.height = height + "px";
+        stage.style.transform = compact ? "none" : "translate(" + offsetX + "px," + offsetY + "px) scale(" + scale + ")";
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        renderer.setSize(width, height, false);
+        composer.setSize(width, height);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        setCameraPreset(state.camera);
+        state.stageScale = scale;
+        state.layoutBoundsOk = layoutBoundsAreValidWithoutFit();
+      }
+      function layoutBoundsAreValidWithoutFit() {
+        var stageRect = stage.getBoundingClientRect();
+        return [document.querySelector(".master-header"), document.getElementById("vfx-hud")].every(function (element) {
+          var rect = element.getBoundingClientRect();
+          return rect.left >= stageRect.left - 1 && rect.right <= stageRect.right + 1 && rect.top >= stageRect.top - 1 && rect.bottom <= stageRect.bottom + 1;
+        });
+      }
+      var pointerStart = null;
+      function handlePointerDown(event) { if (event.button === 0) pointerStart = { x: event.clientX, y: event.clientY }; }
+      function handlePointerUp(event) {
+        if (!pointerStart || event.button !== 0) return;
+        var distance = Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y);
+        pointerStart = null;
+        if (distance > 5) return;
+        var rect = canvas.getBoundingClientRect();
+        var pointer = new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+        var raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(pointer, camera);
+        var hit = new THREE.Vector3();
+        if (!raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit)) return;
+        if (Math.abs(hit.x) > 16 || Math.abs(hit.z) > 12) return;
+        if (state.mode === "game-skills") {
+          var skill = getSkill(state.skillId);
+          if (skill) oneShotRuntimes.push(createSkillEffect(skill, state.versionIndex, hit.clone().add(new THREE.Vector3(-3.2, 0, 0)), hit, false));
+        } else {
+          var effect = packById.get(state.packId);
+          if (effect) oneShotRuntimes.push(createPackEffect(effect, hit.clone().add(new THREE.Vector3(0, 0.12, 0)), false));
+        }
+      }
+      function animate(now) {
+        if (disposed) return;
+        animationFrame = requestAnimationFrame(animate);
+        var rawDelta = Math.min((now - lastFrameTime) / 1000, 0.1);
+        lastFrameTime = now;
+        var delta = rawDelta * state.speed;
+        controls.update();
+        activeRuntimes.slice().forEach(function (runtime) { updateRuntime(runtime, delta); });
+        for (var index = oneShotRuntimes.length - 1; index >= 0; index -= 1) {
+          if (oneShotRuntimes[index].elapsed >= oneShotRuntimes[index].duration + 0.2) {
+            var endedOneShot = oneShotRuntimes[index];
+            disposeEffect(endedOneShot);
+            oneShotRuntimes.splice(index, 1);
+            activeRuntimes = activeRuntimes.filter(function (runtime) { return runtime !== endedOneShot; });
+          }
+        }
+        if (!state.loop) {
+          for (var selectedIndex = selectedRuntimes.length - 1; selectedIndex >= 0; selectedIndex -= 1) {
+            if (selectedRuntimes[selectedIndex].elapsed >= selectedRuntimes[selectedIndex].duration + 0.2) {
+              var endedRuntime = selectedRuntimes[selectedIndex];
+              disposeEffect(endedRuntime);
+              selectedRuntimes.splice(selectedIndex, 1);
+              activeRuntimes = activeRuntimes.filter(function (runtime) { return runtime !== endedRuntime; });
+            }
+          }
+        }
+        for (var lightIndex = 0; lightIndex < arenaLights.length; lightIndex += 1) {
+          var entry = arenaLights[lightIndex];
+          entry.light.intensity = 2 + Math.sin(now * 0.007 + entry.phase) * 0.35 + Math.sin(now * 0.017 + entry.phase * 2) * 0.16;
+          entry.sprite.scale.set(1 + Math.sin(now * 0.009 + entry.phase) * 0.1, 1.7 + Math.cos(now * 0.011 + entry.phase) * 0.18, 1);
+        }
+        batchRenderer.update(delta);
+        composer.render();
+        fpsFrames += 1;
+        var elapsed = now - fpsStartedAt;
+        if (elapsed >= 500) {
+          document.getElementById("metric-fps").textContent = String(Math.round(fpsFrames * 1000 / elapsed));
+          fpsFrames = 0;
+          fpsStartedAt = now;
+          updateMetrics();
+        }
+      }
+      function dispose() {
+        if (disposed) return false;
+        disposed = true;
+        ready = false;
+        window.__VFX_STUDIO__.ready = false;
+        cancelAnimationFrame(animationFrame);
+        window.removeEventListener("resize", handleResize);
+        canvas.removeEventListener("pointerdown", handlePointerDown);
+        canvas.removeEventListener("pointerup", handlePointerUp);
+        clearEffects();
+        controls.dispose();
+        disposeObjectResources(arenaRoot);
+        disposeObjectResources(rigRoot);
+        disposeObjectResources(effectsRoot);
+        textureCache.forEach(function (texture) { texture.dispose(); });
+        textureCache.clear();
+        if (composer && typeof composer.dispose === "function") composer.dispose();
+        else if (composer && composer.passes) composer.passes.forEach(function (pass) { if (typeof pass.dispose === "function") pass.dispose(); });
+        renderer.dispose();
+        return true;
+      }
+      var api = {
+        ready: false,
+        getState: getState,
+        getDiagnostics: getDiagnostics,
+        setMode: setMode,
+        setClass: setClass,
+        setTree: setTree,
+        setSearch: setSearch,
+        selectSkill: selectSkill,
+        selectVersion: selectVersion,
+        selectPack: selectPack,
+        replay: replaySelection,
+        setLoop: setLoop,
+        setSpeed: setSpeed,
+        setCompare: setCompare,
+        setBloom: setBloom,
+        setSidebar: setSidebar,
+        setCamera: setCameraPreset,
+        clear: clear,
+        dispose: dispose
+      };
+      window.__VFX_STUDIO__ = api;
+      document.getElementById("tab-skills").addEventListener("click", function () { setMode("game-skills"); });
+      document.getElementById("tab-pack").addEventListener("click", function () { setMode("vfx-pack"); });
+      document.getElementById("sidebar-toggle").addEventListener("click", function () { setSidebar("toggle"); });
+      document.getElementById("bloom-button").addEventListener("click", function () { setBloom(!state.bloom); });
+      document.getElementById("replay-button").addEventListener("click", replaySelection);
+      document.getElementById("loop-button").addEventListener("click", function () { setLoop(!state.loop); });
+      document.getElementById("speed-input").addEventListener("input", function (event) { setSpeed(event.target.value); });
+      document.getElementById("compare-input").addEventListener("change", function (event) { setCompare(event.target.checked); });
+      document.querySelectorAll("[data-version]").forEach(function (button) { button.addEventListener("click", function () { selectVersion(Number(button.getAttribute("data-version"))); }); });
+      document.querySelectorAll("[data-camera]").forEach(function (button) { button.addEventListener("click", function () { setCamera(button.getAttribute("data-camera")); }); });
+      window.addEventListener("resize", handleResize);
+      canvas.addEventListener("pointerdown", handlePointerDown);
+      canvas.addEventListener("pointerup", handlePointerUp);
+      createArena();
+      document.body.classList.toggle("sidebar-collapsed", !state.sidebarOpen);
+      rebuildRig();
+      setCameraPreset("iso");
+      setSpeed(1);
+      setBloom(true);
+      renderSidebar();
+      replaySelection();
+      fitStage();
+      ready = true;
+      api.ready = true;
+      lastFrameTime = performance.now();
+      animationFrame = requestAnimationFrame(animate);
+    }());
+    </script>
+</body>
+</html>

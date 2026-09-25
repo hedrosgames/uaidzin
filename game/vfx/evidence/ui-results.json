@@ -1,0 +1,31 @@
+{
+  "functional": [
+    "96 skills na lista",
+    "24 skills por classe",
+    "8 skills por árvore",
+    "filtro elemental",
+    "filtro por forma",
+    "busca ignora acentos",
+    "conceito por versão",
+    "comparador triplo",
+    "comparador sincronizado",
+    "galeria completa",
+    "prévia animada no hover",
+    "aprovação persistida",
+    "filtro por revisão",
+    "reprovação",
+    "exportação JSON",
+    "sequência avança na mesma árvore",
+    "scrub determinístico"
+  ],
+  "restored": true,
+  "method": "Interação DOM pelo bridge CDP do navegador do desktop",
+  "repeatedSelectionMemoryStable": true,
+  "compareCaptures": 3,
+  "performance": {
+    "frames": 193,
+    "meanFps": 54.99358883050451,
+    "p95FrameMs": 18.300000000000185
+  },
+  "target50Fps": true
+}

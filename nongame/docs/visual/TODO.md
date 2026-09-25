@@ -26,6 +26,13 @@ Lista viva do que foi pedido. Marcar `x` quando fechar. Atualizar sempre que o F
 - [ ] Tela de resultado de dungeon — **cancelada** (grill design): volta à cidade com log; sem tela cheia
 - [x] Grill de design respondido → `DECISOES-DESIGN.md` (regras de jogo travadas 20/09)
 - [ ] Ícones de skill finais (SVG/PNG, legíveis a 32px) — wire usa placeholders por árvore
+- [ ] Fire Burst `three.quarks` — lab e integração técnica prontos; aguarda Felipe validar
+- [x] Fire Burst 2D X8 — arte e animação aprovadas pelo Felipe em 24/09/2026; arquivos em `visual/fire-burst-art/`
+- [ ] Fire Burst X9 — billboard técnico testado, mas reprovado como solução de efeito 3D; fica somente como estudo
+- [ ] Fire Burst X11 — base de elos e pontas reais 3D incorporada à salva X10, testada em várias direções/alturas; aguarda Felipe
+- [ ] Fire Burst X10 — cinco correntes escuras com pontas, curvas giratórias aleatórias e chegada em 0,20 s; fogo Quarks e explosão. `/vfx/fire-burst.html`; 174 verificações quadro a quadro, typecheck/build OK. Controles por eventos DOM; entrada nativa e frames automáticos indisponíveis no navegador integrado. Reprodução automática e arte aguardam Felipe
+- [ ] VFX Studio X6 — 96 skills reais, 288 versões, 67 efeitos do pack, comparação, fallback procedural e QA técnica OK; aguarda Felipe
+- [ ] Atelier X7 — 288 propostas autorais (V1/V2/V3), galeria, comparação, sequência e revisão/exportação testadas; `/vfx/vfx_lab.html`; aprovação artística pelo Felipe pendente
 
 ## Próximos passos (ordem do grill)
 

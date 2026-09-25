@@ -1,0 +1,440 @@
+{
+  "checks": [
+    "Golpe inicia em swing: 0,0,2.6",
+    "Arco é torus parcial 3D: 0,0,2.6",
+    "Posição do arco finita: 0,0,2.6",
+    "Borda quente acompanha o arco: 0,0,2.6",
+    "Arco começa acima do ombro: 0,0,2.6",
+    "Faíscas de corte saem no início: 0,0,2.6",
+    "Sem faíscas de impacto antes do fim do arco: 0,0,2.6",
+    "Arco varre para baixo: 0,0,2.6",
+    "Golpe termina em até 0,15 s: 0,0,2.6",
+    "Duração do arco fixa em 0,09 s: 0,0,2.6",
+    "Faíscas de contato e brasa no fim do arco: 0,0,2.6",
+    "Luz pontual acompanha o golpe: 0,0,2.6",
+    "Cleanup: 0,0,2.6",
+    "Arco removido da cena: 0,0,2.6",
+    "Golpe inicia em swing: 2.6,0,0",
+    "Arco é torus parcial 3D: 2.6,0,0",
+    "Posição do arco finita: 2.6,0,0",
+    "Borda quente acompanha o arco: 2.6,0,0",
+    "Arco começa acima do ombro: 2.6,0,0",
+    "Faíscas de corte saem no início: 2.6,0,0",
+    "Sem faíscas de impacto antes do fim do arco: 2.6,0,0",
+    "Arco varre para baixo: 2.6,0,0",
+    "Golpe termina em até 0,15 s: 2.6,0,0",
+    "Duração do arco fixa em 0,09 s: 2.6,0,0",
+    "Faíscas de contato e brasa no fim do arco: 2.6,0,0",
+    "Luz pontual acompanha o golpe: 2.6,0,0",
+    "Cleanup: 2.6,0,0",
+    "Arco removido da cena: 2.6,0,0",
+    "Golpe inicia em swing: -2.6,0,0",
+    "Arco é torus parcial 3D: -2.6,0,0",
+    "Posição do arco finita: -2.6,0,0",
+    "Borda quente acompanha o arco: -2.6,0,0",
+    "Arco começa acima do ombro: -2.6,0,0",
+    "Faíscas de corte saem no início: -2.6,0,0",
+    "Sem faíscas de impacto antes do fim do arco: -2.6,0,0",
+    "Arco varre para baixo: -2.6,0,0",
+    "Golpe termina em até 0,15 s: -2.6,0,0",
+    "Duração do arco fixa em 0,09 s: -2.6,0,0",
+    "Faíscas de contato e brasa no fim do arco: -2.6,0,0",
+    "Luz pontual acompanha o golpe: -2.6,0,0",
+    "Cleanup: -2.6,0,0",
+    "Arco removido da cena: -2.6,0,0",
+    "Golpe inicia em swing: 0,0,-2.6",
+    "Arco é torus parcial 3D: 0,0,-2.6",
+    "Posição do arco finita: 0,0,-2.6",
+    "Borda quente acompanha o arco: 0,0,-2.6",
+    "Arco começa acima do ombro: 0,0,-2.6",
+    "Faíscas de corte saem no início: 0,0,-2.6",
+    "Sem faíscas de impacto antes do fim do arco: 0,0,-2.6",
+    "Arco varre para baixo: 0,0,-2.6",
+    "Golpe termina em até 0,15 s: 0,0,-2.6",
+    "Duração do arco fixa em 0,09 s: 0,0,-2.6",
+    "Faíscas de contato e brasa no fim do arco: 0,0,-2.6",
+    "Luz pontual acompanha o golpe: 0,0,-2.6",
+    "Cleanup: 0,0,-2.6",
+    "Arco removido da cena: 0,0,-2.6",
+    "Golpe inicia em swing: 1.9,0,1.9",
+    "Arco é torus parcial 3D: 1.9,0,1.9",
+    "Posição do arco finita: 1.9,0,1.9",
+    "Borda quente acompanha o arco: 1.9,0,1.9",
+    "Arco começa acima do ombro: 1.9,0,1.9",
+    "Faíscas de corte saem no início: 1.9,0,1.9",
+    "Sem faíscas de impacto antes do fim do arco: 1.9,0,1.9",
+    "Arco varre para baixo: 1.9,0,1.9",
+    "Golpe termina em até 0,15 s: 1.9,0,1.9",
+    "Duração do arco fixa em 0,09 s: 1.9,0,1.9",
+    "Faíscas de contato e brasa no fim do arco: 1.9,0,1.9",
+    "Luz pontual acompanha o golpe: 1.9,0,1.9",
+    "Cleanup: 1.9,0,1.9",
+    "Arco removido da cena: 1.9,0,1.9",
+    "Golpe inicia em swing: -1.9,0,-1.9",
+    "Arco é torus parcial 3D: -1.9,0,-1.9",
+    "Posição do arco finita: -1.9,0,-1.9",
+    "Borda quente acompanha o arco: -1.9,0,-1.9",
+    "Arco começa acima do ombro: -1.9,0,-1.9",
+    "Faíscas de corte saem no início: -1.9,0,-1.9",
+    "Sem faíscas de impacto antes do fim do arco: -1.9,0,-1.9",
+    "Arco varre para baixo: -1.9,0,-1.9",
+    "Golpe termina em até 0,15 s: -1.9,0,-1.9",
+    "Duração do arco fixa em 0,09 s: -1.9,0,-1.9",
+    "Faíscas de contato e brasa no fim do arco: -1.9,0,-1.9",
+    "Luz pontual acompanha o golpe: -1.9,0,-1.9",
+    "Cleanup: -1.9,0,-1.9",
+    "Arco removido da cena: -1.9,0,-1.9",
+    "Golpe inicia em swing: 2.6,0,2.6",
+    "Arco é torus parcial 3D: 2.6,0,2.6",
+    "Posição do arco finita: 2.6,0,2.6",
+    "Borda quente acompanha o arco: 2.6,0,2.6",
+    "Arco começa acima do ombro: 2.6,0,2.6",
+    "Faíscas de corte saem no início: 2.6,0,2.6",
+    "Sem faíscas de impacto antes do fim do arco: 2.6,0,2.6",
+    "Arco varre para baixo: 2.6,0,2.6",
+    "Golpe termina em até 0,15 s: 2.6,0,2.6",
+    "Duração do arco fixa em 0,09 s: 2.6,0,2.6",
+    "Faíscas de contato e brasa no fim do arco: 2.6,0,2.6",
+    "Luz pontual acompanha o golpe: 2.6,0,2.6",
+    "Cleanup: 2.6,0,2.6",
+    "Arco removido da cena: 2.6,0,2.6",
+    "Golpe inicia em swing: -2.6,0,2.6",
+    "Arco é torus parcial 3D: -2.6,0,2.6",
+    "Posição do arco finita: -2.6,0,2.6",
+    "Borda quente acompanha o arco: -2.6,0,2.6",
+    "Arco começa acima do ombro: -2.6,0,2.6",
+    "Faíscas de corte saem no início: -2.6,0,2.6",
+    "Sem faíscas de impacto antes do fim do arco: -2.6,0,2.6",
+    "Arco varre para baixo: -2.6,0,2.6",
+    "Golpe termina em até 0,15 s: -2.6,0,2.6",
+    "Duração do arco fixa em 0,09 s: -2.6,0,2.6",
+    "Faíscas de contato e brasa no fim do arco: -2.6,0,2.6",
+    "Luz pontual acompanha o golpe: -2.6,0,2.6",
+    "Cleanup: -2.6,0,2.6",
+    "Arco removido da cena: -2.6,0,2.6",
+    "Golpe inicia em swing: 0,0,0.4",
+    "Arco é torus parcial 3D: 0,0,0.4",
+    "Posição do arco finita: 0,0,0.4",
+    "Borda quente acompanha o arco: 0,0,0.4",
+    "Arco começa acima do ombro: 0,0,0.4",
+    "Faíscas de corte saem no início: 0,0,0.4",
+    "Sem faíscas de impacto antes do fim do arco: 0,0,0.4",
+    "Arco varre para baixo: 0,0,0.4",
+    "Golpe termina em até 0,15 s: 0,0,0.4",
+    "Duração do arco fixa em 0,09 s: 0,0,0.4",
+    "Faíscas de contato e brasa no fim do arco: 0,0,0.4",
+    "Luz pontual acompanha o golpe: 0,0,0.4",
+    "Cleanup: 0,0,0.4",
+    "Arco removido da cena: 0,0,0.4",
+    "Golpe inicia em swing: 0,0,6",
+    "Arco é torus parcial 3D: 0,0,6",
+    "Posição do arco finita: 0,0,6",
+    "Borda quente acompanha o arco: 0,0,6",
+    "Arco começa acima do ombro: 0,0,6",
+    "Faíscas de corte saem no início: 0,0,6",
+    "Sem faíscas de impacto antes do fim do arco: 0,0,6",
+    "Arco varre para baixo: 0,0,6",
+    "Golpe termina em até 0,15 s: 0,0,6",
+    "Duração do arco fixa em 0,09 s: 0,0,6",
+    "Faíscas de contato e brasa no fim do arco: 0,0,6",
+    "Luz pontual acompanha o golpe: 0,0,6",
+    "Cleanup: 0,0,6",
+    "Arco removido da cena: 0,0,6",
+    "Golpe inicia em swing: -0.4,0,0.4",
+    "Arco é torus parcial 3D: -0.4,0,0.4",
+    "Posição do arco finita: -0.4,0,0.4",
+    "Borda quente acompanha o arco: -0.4,0,0.4",
+    "Arco começa acima do ombro: -0.4,0,0.4",
+    "Faíscas de corte saem no início: -0.4,0,0.4",
+    "Sem faíscas de impacto antes do fim do arco: -0.4,0,0.4",
+    "Arco varre para baixo: -0.4,0,0.4",
+    "Golpe termina em até 0,15 s: -0.4,0,0.4",
+    "Duração do arco fixa em 0,09 s: -0.4,0,0.4",
+    "Faíscas de contato e brasa no fim do arco: -0.4,0,0.4",
+    "Luz pontual acompanha o golpe: -0.4,0,0.4",
+    "Cleanup: -0.4,0,0.4",
+    "Arco removido da cena: -0.4,0,0.4",
+    "Varredura determinística entre disparos",
+    "Memória estável após ciclos",
+    "Varredura determinística entre disparos",
+    "Memória estável após ciclos",
+    "Varredura determinística entre disparos",
+    "Memória estável após ciclos",
+    "Varredura determinística entre disparos",
+    "Memória estável após ciclos",
+    "Alvo inválido não altera cena",
+    "Origem inválida recusada",
+    "Direção inválida recusada",
+    "Direção nula recusada",
+    "Direção sem componente horizontal recusada",
+    "Limite de golpes simultâneos respeitado",
+    "Três sistemas de partículas por golpe",
+    "Clear imediato",
+    "Golpe começa em swing a 30 fps",
+    "Transição para faíscas a 30 fps",
+    "Duração estável a 30 fps",
+    "Golpe começa em swing a 60 fps",
+    "Transição para faíscas a 60 fps",
+    "Duração estável a 60 fps",
+    "Golpe começa em swing a 144 fps",
+    "Transição para faíscas a 144 fps",
+    "Duração estável a 144 fps",
+    "Dispose idempotente remove todos os recursos da cena"
+  ],
+  "directions": [
+    {
+      "arcPosition": [
+        0,
+        1.18,
+        0
+      ],
+      "sweep": [
+        0.06392013412589537,
+        -0.3906142356348119,
+        -0.78
+      ],
+      "target": [
+        0,
+        0,
+        2.6
+      ]
+    },
+    {
+      "arcPosition": [
+        0,
+        1.18,
+        0
+      ],
+      "sweep": [
+        0.06392013412589537,
+        -0.3906142356348119,
+        -0.78
+      ],
+      "target": [
+        2.6,
+        0,
+        0
+      ]
+    },
+    {
+      "arcPosition": [
+        0,
+        1.18,
+        0
+      ],
+      "sweep": [
+        0.06392013412589537,
+        -0.3906142356348119,
+        -0.78
+      ],
+      "target": [
+        -2.6,
+        0,
+        0
+      ]
+    },
+    {
+      "arcPosition": [
+        0,
+        1.18,
+        0
+      ],
+      "sweep": [
+        0.06392013412589537,
+        -0.3906142356348119,
+        -0.78
+      ],
+      "target": [
+        0,
+        0,
+        -2.6
+      ]
+    },
+    {
+      "arcPosition": [
+        0,
+        1.18,
+        0
+      ],
+      "sweep": [
+        0.06392013412589537,
+        -0.3906142356348119,
+        -0.78
+      ],
+      "target": [
+        1.9,
+        0,
+        1.9
+      ]
+    },
+    {
+      "arcPosition": [
+        0,
+        1.18,
+        0
+      ],
+      "sweep": [
+        0.06392013412589537,
+        -0.3906142356348119,
+        -0.78
+      ],
+      "target": [
+        -1.9,
+        0,
+        -1.9
+      ]
+    },
+    {
+      "arcPosition": [
+        0,
+        1.18,
+        0
+      ],
+      "sweep": [
+        0.06392013412589537,
+        -0.3906142356348119,
+        -0.78
+      ],
+      "target": [
+        2.6,
+        0,
+        2.6
+      ]
+    },
+    {
+      "arcPosition": [
+        0,
+        1.18,
+        0
+      ],
+      "sweep": [
+        0.06392013412589537,
+        -0.3906142356348119,
+        -0.78
+      ],
+      "target": [
+        -2.6,
+        0,
+        2.6
+      ]
+    },
+    {
+      "arcPosition": [
+        0,
+        1.18,
+        0
+      ],
+      "sweep": [
+        0.06392013412589537,
+        -0.3906142356348119,
+        -0.78
+      ],
+      "target": [
+        0,
+        0,
+        0.4
+      ]
+    },
+    {
+      "arcPosition": [
+        0,
+        1.18,
+        0
+      ],
+      "sweep": [
+        0.06392013412589537,
+        -0.3906142356348119,
+        -0.78
+      ],
+      "target": [
+        0,
+        0,
+        6
+      ]
+    },
+    {
+      "arcPosition": [
+        0,
+        1.18,
+        0
+      ],
+      "sweep": [
+        0.06392013412589537,
+        -0.3906142356348119,
+        -0.78
+      ],
+      "target": [
+        -0.4,
+        0,
+        0.4
+      ]
+    }
+  ],
+  "memory": [
+    {
+      "geometries": 13,
+      "textures": 16
+    },
+    {
+      "geometries": 13,
+      "textures": 16
+    },
+    {
+      "geometries": 13,
+      "textures": 16
+    },
+    {
+      "geometries": 13,
+      "textures": 16
+    },
+    {
+      "geometries": 13,
+      "textures": 16
+    },
+    {
+      "geometries": 13,
+      "textures": 16
+    },
+    {
+      "geometries": 13,
+      "textures": 16
+    },
+    {
+      "geometries": 13,
+      "textures": 16
+    },
+    {
+      "geometries": 13,
+      "textures": 16
+    },
+    {
+      "geometries": 13,
+      "textures": 16
+    },
+    {
+      "geometries": 13,
+      "textures": 16
+    },
+    {
+      "geometries": 13,
+      "textures": 16
+    }
+  ],
+  "inputLimitations": [
+    "CDP não entregou clique nativo; botão de pausa validado por evento DOM.",
+    "CDP não entregou arrasto nativo; órbita validada com PointerEvents sintéticos.",
+    "requestAnimationFrame suspenso no navegador integrado; duração e renderização testadas quadro a quadro, reprodução automática não verificada."
+  ],
+  "skillId": "tk_fis_1",
+  "controls": [
+    "pausa",
+    "velocidade",
+    "órbita por PointerEvents sintéticos",
+    "restaurar câmera"
+  ],
+  "webgl": {
+    "error": 0,
+    "shadersValid": true
+  },
+  "frameScheduling": false
+}

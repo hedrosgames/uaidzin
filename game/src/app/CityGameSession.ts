@@ -48,6 +48,8 @@ import { PlayerController } from "../gameplay/PlayerController";
 import { PlayerRuntime } from "../gameplay/PlayerRuntime";
 import { EnemyRuntimeView } from "../presentation/enemies/EnemyRuntimeView";
 import { EffectManager } from "../presentation/effects/EffectManager";
+import { getSkillVfxProfile } from "../presentation/effects/skill/SkillVfxCatalog";
+import type { SkillVfxRequest } from "../presentation/effects/skill/SkillVfxTypes";
 import { GameCamera } from "../presentation/camera/GameCamera";
 import { SceneRenderer } from "../presentation/rendering/SceneRenderer";
 import { SummonView } from "../presentation/combat/SummonView";
@@ -307,6 +309,7 @@ export class CityGameSession {
   }
 
   enterWorld(id: WorldId): void {
+    this.effects.clearSkillVfx();
     const world = this.worlds.switchTo(id);
     this.renderer.setWorldLook(id === "city" ? "city" : "dungeon");
     if (id === "city") this.character.healFull();
@@ -621,6 +624,7 @@ export class CityGameSession {
 
     if (this.worldFadeBusy) {
       this.renderer.updatePlayer(dt);
+      this.updateEffects(dt);
       this.renderer.render(this.camera.camera);
       this.pushHud(inDungeon);
       return;
@@ -636,8 +640,8 @@ export class CityGameSession {
       );
       this.renderer.updatePlayer(dt);
       this.camera.follow(this.player.x, this.player.z, dt);
+      this.updateEffects(dt);
       this.renderer.render(this.camera.camera);
-      this.effects.update(dt, this.camera.camera, 1, 1);
       this.pushHud(inDungeon);
       if (this.deathReturnTimer <= 0) {
         void this.leaveDungeonWithFade("death");
@@ -652,6 +656,7 @@ export class CityGameSession {
         if (this.lootToastTimer <= 0) this.lootToast = null;
       }
       this.renderer.updatePlayer(dt);
+      this.updateEffects(dt);
       this.renderer.render(this.camera.camera);
       this.pushHud(inDungeon);
       if (this.resultHold <= 0) {
@@ -676,6 +681,10 @@ export class CityGameSession {
     this.character.regenMp(4 * dt);
     this.buffs.tick(dt);
     this.form.advance(dt);
+    this.effects.syncPassiveVfx(
+      learnedPassives(this.skillTree),
+      new Vector3(this.player.x, 0, this.player.z),
+    );
     this.frameMods = buildCombatMods(
       this.buffs.active,
       learnedPassives(this.skillTree),
@@ -735,8 +744,8 @@ export class CityGameSession {
       );
       this.renderer.updatePlayer(dt);
       this.camera.follow(this.player.x, this.player.z, dt);
+      this.updateEffects(dt);
       this.renderer.render(this.camera.camera);
-      this.effects.update(dt, this.camera.camera, 1, 1);
       this.pushHud(inDungeon);
       return;
     }
@@ -771,15 +780,25 @@ export class CityGameSession {
 
     this.effects.setRangeIndicator(0, 0, this.weaponReach().attackRange, false);
 
-    this.renderer.render(this.camera.camera);
     const el = this.renderer.renderer.domElement;
     this.effects.update(dt, this.camera.camera, el.clientWidth || 1, el.clientHeight || 1);
+    this.renderer.render(this.camera.camera);
     const playerRatio = hpCap > 0 ? Math.min(1, this.character.hp / hpCap) : 0;
     this.effects.spawnHpBar("player", this.player.x, 2.05, this.player.z, playerRatio);
 
     this.updateNearby(world.interactables);
     this.handleInteractKey();
     this.pushHud(inDungeon);
+  }
+
+  private updateEffects(dt: number): void {
+    const canvas = this.renderer.renderer.domElement;
+    this.effects.update(
+      dt,
+      this.camera.camera,
+      canvas.clientWidth || 1,
+      canvas.clientHeight || 1,
+    );
   }
 
   private pushHud(inDungeon: boolean): void {
@@ -930,6 +949,7 @@ export class CityGameSession {
       swap();
       return;
     }
+    this.effects.clearSkillVfx();
     this.worldFadeBusy = true;
     const fade = this.ensureSceneFade();
     try {
@@ -943,6 +963,7 @@ export class CityGameSession {
 
   private async leaveDungeonWithFade(reason: "timer" | "death" | "exit"): Promise<void> {
     if (this.worldFadeBusy) return;
+    this.effects.clearSkillVfx();
     this.worldFadeBusy = true;
     this.character.isDead = false;
     this.deathReturnTimer = 0;
@@ -1051,17 +1072,44 @@ export class CityGameSession {
     );
     if (cast) {
       const resolved = cast.resolved;
-      const aim = resolved.aim ?? { x: this.player.x, z: this.player.z + 1 };
+      const skill = cast.slot.skill;
+      const origin = new Vector3(this.player.x, 0, this.player.z);
+      const target = resolved.aim ? new Vector3(resolved.aim.x, 0, resolved.aim.z) : null;
+      const center = skill.shape === "aoe" || !target ? origin : target;
+      const profile = getSkillVfxProfile(skill.id);
+      if (profile) {
+        const request: SkillVfxRequest = {
+          profile,
+          origin,
+          target,
+          center,
+          colorHex: resolved.color,
+          facing: this.player.facing,
+          range: skill.range,
+          radius: skill.radius ?? (skill.shape === "aoe" ? skill.range : 0),
+          hits: resolved.hits.map((hit, hitIndex) => ({ ...hit, hitIndex })),
+          hasHeal: resolved.heal > 0,
+          hasBuff: resolved.buffs.length > 0,
+          hasTransform: resolved.transform != null,
+          hasSummon: resolved.summons != null,
+        };
+        this.effects.dispatchSkillVfx(request);
+      } else {
+        const aim = resolved.aim ?? { x: this.player.x, z: this.player.z + 1 };
+        this.effects.playSkillVfx(
+          resolved.vfx,
+          origin,
+          new Vector3(aim.x, 0, aim.z),
+          resolved.color,
+          skill.id,
+        );
+      }
       this.renderer.playerView.playCast();
       this.lockFromAnim("cast", COMBAT_BALANCE.moveLock.skillFallback);
-      this.effects.playSkillVfx(
-        resolved.vfx,
-        new Vector3(this.player.x, 0, this.player.z),
-        new Vector3(aim.x, 0, aim.z),
-        resolved.color,
-      );
       const hpCap = Math.round(this.character.maxHp * (1 + Math.max(0, this.frameMods.maxHpMul)));
       this.character.heal(resolved.heal + resolved.lifesteal, hpCap);
+      const fireBurstDeathDuration =
+        cast.slot.skill.id === "tk_fis_fire_burst" ? 0.5 : undefined;
       const seen = new Set<string>();
       for (const hit of resolved.hits) {
         const enemy = this.enemies.findById(hit.id);
@@ -1076,7 +1124,7 @@ export class CityGameSession {
         this.effects.spawnDamageNumber(enemy.x, 1.6, enemy.z, hit.damage, "skill");
         if (killed) {
           this.grantKillXp(enemy);
-          this.effects.playDeath(mesh);
+          this.effects.playDeath(mesh, fireBurstDeathDuration);
           this.effects.hideHpBar(enemy.id);
           this.effects.spawnDamageNumber(enemy.x, 1.8, enemy.z, 0, "kill");
           this.effects.cameraPunch(0.08);

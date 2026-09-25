@@ -63,11 +63,20 @@ async function waitForServer(timeoutMs = 30000) {
 }
 
 function startServer() {
-  server = spawn(`npx vite preview --port ${PORT} --strictPort`, {
-    cwd: ROOT,
-    stdio: "ignore",
-    shell: true,
-  });
+  server = spawn(
+    process.execPath,
+    [
+      path.join(ROOT, "node_modules", "vite", "bin", "vite.js"),
+      "preview",
+      "--port",
+      String(PORT),
+      "--strictPort",
+    ],
+    {
+      cwd: ROOT,
+      stdio: "ignore",
+    },
+  );
   server.on("error", (err) => {
     console.error("SMOKE_FAIL preview não iniciou:", err.message);
   });

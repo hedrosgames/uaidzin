@@ -14,7 +14,18 @@
     "cycle-balance": "node scripts/cycle-balance.mjs",
     "cycle-demo": "node scripts/cycle-demo.mjs",
     "devtools:mcp": "DEV_PORT=5173 BROWSER=none npx -y threejs-devtools-mcp@0.4.1",
-    "devtools:verify": "node scripts/threejs-devtools-verify.mjs"
+    "devtools:verify": "node scripts/threejs-devtools-verify.mjs",
+    "vfx:catalog": "node scripts/generate-vfx-catalog.mjs",
+    "vfx:build": "node scripts/build-vfx-dist.mjs",
+    "vfx:build:local-pack": "node scripts/build-vfx-dist.mjs --local-pack",
+    "vfx:manifest": "node scripts/vfx/extract-skills-manifest.mjs",
+    "vfx:manifest:validate": "node scripts/vfx/validate-skills-manifest.mjs",
+    "vfx:qa": "node scripts/check-vfx-master.mjs",
+    "vfx:runtime:qa": "node scripts/check-skill-vfx.mjs",
+    "vfx:atelier:validate": "node scripts/vfx/extract-skills-manifest.mjs --check && node scripts/vfx/validate-skills-manifest.mjs && node scripts/vfx/validate-atelier.mjs --complete && node scripts/vfx/write-atelier-brief.mjs --check",
+    "vfx:atelier:brief": "node scripts/vfx/write-atelier-brief.mjs",
+    "vfx:atelier:qa": "node scripts/vfx/check-atelier.mjs && node scripts/vfx/check-atelier-ui.mjs",
+    "vfx:check": "node scripts/check-vfx-master.mjs"
   },
   "dependencies": {
     "three": "^0.170.0",

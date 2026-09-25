@@ -91,6 +91,9 @@ export class EnemyRuntimeView {
 
       const dying = this.effects?.isDying(mesh) ?? false;
       mesh.visible = enemy.alive || dying;
+      if (enemy.alive && !dying && mesh.userData.baseScale) {
+        mesh.scale.copy(mesh.userData.baseScale);
+      }
       if (!mesh.visible) continue;
 
       const scale = enemy.modelScale > 0 ? enemy.modelScale : 1.0;
@@ -136,6 +139,7 @@ export class EnemyRuntimeView {
     );
     placeholderMesh.position.y = 0.55 * scale;
     placeholderMesh.userData.occlusionIgnore = true;
+    placeholderMesh.userData.baseScale = placeholderMesh.scale.clone();
 
     if (enemy.modelUrl && enemy.modelUrl.trim().length > 0) {
       loadModelPrototype(enemy.modelUrl)

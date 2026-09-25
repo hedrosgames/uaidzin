@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UAIDZIN — Catálogo de VFX</title>
+  <style>
+    :root {
+      --bg0: #100c08;
+      --bg1: #241c14;
+      --bg2: #2e241a;
+      --iron: #3d3228;
+      --iron-hi: #5a4a38;
+      --gold: #d4a017;
+      --gold-hi: #e8c547;
+      --ink: #f0e6d0;
+      --ink-dim: #b8a88c;
+      --ink-mute: #7a6b58;
+      --fire: #ff7a1a;
+      --frost: #5b9fd4;
+      --font-display: Georgia, "Palatino Linotype", serif;
+      --font-ui: "Segoe UI", Tahoma, system-ui, sans-serif;
+      --font-num: ui-monospace, Consolas, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      color: var(--ink);
+      font-family: var(--font-ui);
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    input { user-select: text; -webkit-user-select: text; }
+
+    .viewport {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    .stage {
+      position: relative;
+      width: 1600px;
+      height: 900px;
+      overflow: hidden;
+      transform-origin: center center;
+      background:
+        radial-gradient(circle at 18% 25%, rgba(88, 42, 16, 0.28), transparent 31%),
+        radial-gradient(circle at 80% 30%, rgba(58, 48, 92, 0.2), transparent 33%),
+        linear-gradient(180deg, #1c1510 0%, #100c08 72%);
+    }
+
+    canvas { display: block; width: 100%; height: 100%; }
+
+    .hud {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .header {
+      position: absolute;
+      top: 30px;
+      left: 34px;
+      width: 440px;
+      padding: 16px 20px 18px;
+      border: 1px solid var(--iron-hi);
+      border-radius: 2px;
+      background: linear-gradient(180deg, rgba(46, 36, 26, 0.96), rgba(16, 12, 8, 0.96));
+      box-shadow: inset 0 0 0 1px rgba(212, 160, 23, 0.14), 0 14px 36px rgba(0, 0, 0, 0.4);
+    }
+
+    .header h1 {
+      margin: 0;
+      color: var(--gold-hi);
+      font-family: var(--font-display);
+      font-size: 25px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .header p {
+      margin: 6px 0 0;
+      color: var(--ink-mute);
+      font-size: 11px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .panel {
+      pointer-events: auto;
+      border: 1px solid var(--iron-hi);
+      border-radius: 2px;
+      background: linear-gradient(180deg, rgba(46, 36, 26, 0.97), rgba(16, 12, 8, 0.97));
+      box-shadow: inset 0 0 0 1px rgba(212, 160, 23, 0.1), 0 14px 36px rgba(0, 0, 0, 0.4);
+    }
+
+    .catalog {
+      position: absolute;
+      top: 30px;
+      bottom: 30px;
+      left: 34px;
+      width: 440px;
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+    }
+
+    .catalog-head {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .filter {
+      flex: 1;
+      min-width: 0;
+      height: 38px;
+      padding: 8px 10px;
+      border: 1px solid var(--iron-hi);
+      border-radius: 2px;
+      background: #18110c;
+      color: var(--ink);
+      font-family: var(--font-ui);
+      font-size: 13px;
+    }
+
+    button {
+      border: 1px solid var(--iron-hi);
+      border-radius: 2px;
+      background: linear-gradient(180deg, #3a2e20, #241c14);
+      color: var(--ink-dim);
+      cursor: pointer;
+      font: inherit;
+    }
+
+    button:hover { border-color: var(--gold); color: var(--gold-hi); }
+    button:active { transform: translateY(1px); }
+
+    .small-button {
+      min-width: 82px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .skill-list {
+      min-height: 0;
+      flex: 1;
+      overflow: auto;
+      display: grid;
+      align-content: start;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding-right: 4px;
+    }
+
+    .skill-list::-webkit-scrollbar { width: 6px; }
+    .skill-list::-webkit-scrollbar-track { background: #17100b; }
+    .skill-list::-webkit-scrollbar-thumb { background: #5a4a38; }
+
+    .skill-card {
+      min-height: 58px;
+      padding: 8px 9px;
+      text-align: left;
+    }
+
+    .skill-card.selected {
+      border-color: var(--gold);
+      background: linear-gradient(180deg, #553b18, #2b1c0c);
+      color: var(--ink);
+    }
+
+    .skill-card-name,
+    .skill-card-meta { display: block; }
+
+    .skill-card-name {
+      overflow: hidden;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .skill-card-meta {
+      margin-top: 4px;
+      overflow: hidden;
+      color: var(--ink-mute);
+      font-family: var(--font-num);
+      font-size: 9px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bottom {
+      position: absolute;
+      right: 34px;
+      bottom: 30px;
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .selected-info {
+      min-width: 310px;
+      padding: 13px 16px 15px;
+    }
+
+    .selected-info strong {
+      display: block;
+      color: var(--gold-hi);
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 500;
+    }
+
+    .selected-info span {
+      display: block;
+      margin-top: 4px;
+      color: var(--ink-mute);
+      font-family: var(--font-num);
+      font-size: 10px;
+    }
+
+    .status {
+      display: grid;
+      grid-template-columns: repeat(3, 92px);
+      padding: 12px 14px;
+    }
+
+    .status div { padding: 0 10px; border-left: 1px solid rgba(90, 74, 56, 0.65); }
+    .status div:first-child { padding-left: 0; border-left: 0; }
+    .status span { display: block; color: var(--ink-mute); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .status strong { display: block; margin-top: 3px; color: var(--ink); font-family: var(--font-num); font-size: 15px; font-weight: 500; }
+    #state { color: var(--fire); }
+  </style>
+</head>
+<body>
+  <div class="viewport">
+    <main class="stage" id="stage">
+      <canvas id="gl" aria-label="Catálogo visual das skills"></canvas>
+      <div class="hud">
+        <header class="header">
+          <h1>Catálogo de VFX</h1>
+          <p>96 skills · recipes modulares</p>
+        </header>
+        <section class="panel catalog" aria-label="Skills">
+          <div class="catalog-head">
+            <input class="filter" id="filter" type="search" placeholder="Filtrar skill" aria-label="Filtrar skill">
+            <button type="button" class="small-button" id="clear">Limpar</button>
+          </div>
+          <div class="skill-list" id="skill-list"></div>
+        </section>
+        <div class="bottom">
+          <div class="panel selected-info">
+            <strong id="skill-title">Fire Burst</strong>
+            <span id="skill-meta"></span>
+            <button type="button" class="small-button" id="play" style="margin-top: 10px">Disparar</button>
+          </div>
+          <div class="panel status" aria-live="polite">
+            <div><span>Estado</span><strong id="state">idle</strong></div>
+            <div><span>Partículas</span><strong id="particles">0</strong></div>
+            <div><span>Casts</span><strong id="casts">0</strong></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="/src/presentation/effects/skill/catalogDemo.ts"></script>
+</body>
+</html>

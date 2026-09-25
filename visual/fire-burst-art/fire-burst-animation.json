@@ -1,0 +1,31 @@
+{
+  "canvasSize": [
+    1600,
+    900
+  ],
+  "cleanEnd": true,
+  "columns": 8,
+  "count": 65,
+  "deterministic": true,
+  "duration": 2.7,
+  "fps": 24,
+  "height": 450,
+  "uiElements": 0,
+  "width": 800,
+  "rows": 9,
+  "sheetSize": [
+    6400,
+    4050
+  ],
+  "order": "row-major",
+  "alpha": "straight RGBA",
+  "loop": true,
+  "animationFile": "fire-burst-animation.png",
+  "sheetFile": "fire-burst-spritesheet.png",
+  "visibleFrames": 51,
+  "apngFrames": 53,
+  "playbackDurationMs": 2708.0,
+  "noClipping": true,
+  "firstFrameTransparent": true,
+  "lastFrameTransparent": true
+}
