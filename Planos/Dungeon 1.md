@@ -1,67 +1,71 @@
 # Dungeon 1 — implementação
 
+Executar passos **1 → 28** na ordem. Cada linha = arquivo + entrega. Código em `game/` sem comentários.
+
 ## Comportamento
 
-- World `dungeon-1`: 36×108, três zonas 36×36; spawn `(0, 2)`.
-- Dois portões (`d1-gate-1`, `d1-gate-2`); abertura automática no raio `INTERACT_RANGE` (1,6) com chave certa; consome 1 chave.
-- Sem `portal-exit` em nenhuma zona. Saída só morte ou timeout (600 s).
-- Run única; trocar de zona não reinicia timer.
-- `tryEnterDungeon("dungeon-1")` → world `dungeon-1`, não `dungeon-test`.
+- World id `dungeon-1`: **36×108**, três zonas **36×36**; spawn jogador `(0, 2)`.
+- Dois portões: `d1-gate-1` (z ≈ −18), `d1-gate-2` (z ≈ −54); vão **5×2**; abrem no raio `INTERACT_RANGE` (**1,6**) com chave certa; consomem **1** chave do inventário.
+- **Sem** interactable `portal-exit` em nenhuma zona. Saída da run: morte ou timeout (**600 s**).
+- Timer único por run; mudar de zona **não** reinicia.
+- Entrada: `CityGameSession.tryEnterDungeon("dungeon-1")` carrega world `dungeon-1` (não `dungeon-test`).
 
-### Chaves e bosses
+| Zona | Minion (`monsterId`) | Boss (`monsterId` · spawn id) | Chave ao matar boss | Portão |
+|---:|---|---|---|---|
+| 1 | `cogumelo_minion` · `d1-a1-minion` | `cogumelo_boss` · `d1-a1-boss` | `d1_key_zone_2` | `d1-gate-1` |
+| 2 | `cogumelo_minion_2` · `d1-a2-minion` | `cogumelo_boss_2` · `d1-a2-boss` | `d1_key_zone_3` | `d1-gate-2` |
+| 3 | `cogumelo_minion_3` · `d1-a3-minion` | `cogumelo_boss_3` · `d1-a3-boss` | — | — |
 
-| Zona | Minion | Boss (spawn) | Chave ao matar boss | Portão |
-|---|---|---|---|---|
-| 1 | `cogumelo_minion` · `d1-a1-minion` | `cogumelo_boss` · `d1-a1-boss` | `d1_key_zone_2` | `d1-gate-1` (z=-18) |
-| 2 | `cogumelo_minion_2` · `d1-a2-minion` | `cogumelo_boss_2` · `d1-a2-boss` | `d1_key_zone_3` | `d1-gate-2` (z=-54) |
-| 3 | `cogumelo_minion_3` · `d1-a3-minion` | `cogumelo_boss_3` · `d1-a3-boss` | nenhuma | nenhum |
-
-- Chave só dos bosses Z1/Z2; sem duplicar se já tem a chave ou portão já aberto nesta run.
-- Gates resetam fechados a cada nova run; chaves no inventário persistem.
+- Chave só dos bosses das zonas 1 e 2; não duplicar se jogador já tem a chave ou portão já aberto **nesta run**.
+- Portões fecham de novo no **início de cada run**; chaves no inventário **persistem** entre runs.
 
 ## Passos
 
-### A — Dados
+### A — Constantes e tipos
 
-1. `game/src/world/worldConstants.ts`: `CITY_WORLD_SIZE = 36`.
-2. `dungeon-definitions.ts`: `DungeonZoneDef`, `DungeonGateDef`, `DungeonDef.zones?`, `DungeonDef.gates?`, `ArenaDef.zoneId?`.
-3. `dungeons.json` (só D1): 3 zonas, 2 gates, 6 spawns com `monsterId` e `"isBoss": true` nos três `*-boss`.
-4. `monsters.json`: 6 entradas cogumelo (nomes UI: Cogumelo Minion/Boss, variantes 2 e 3).
-5. `items.json`: `d1_key_zone_2`, `d1_key_zone_3` (material, `items/seal.svg`).
+1. `game/src/world/worldConstants.ts` — `CITY_WORLD_SIZE = 36`.
+2. `game/src/data/dungeons/dungeon-definitions.ts` — tipos `DungeonZoneDef`, `DungeonGateDef`; campos opcionais `zones`, `gates` em `DungeonDef`; `zoneId?` em `ArenaDef`.
+3. `game/src/data/dungeons/dungeons.json` — entrada `dungeon-1`: 3 zonas, 2 gates, 6 spawns com `monsterId`; `"isBoss": true` nos três spawns `*-boss`.
 
-### B — World
+### B — Catálogo
 
-6. `Dungeon1WorldBuilder.ts`: 36×108, 2 gates (vão 5,2), paredes entre zonas, sem portal.
-7. `DungeonGateView.ts`: `open()` / `reset()`, collider on/off.
-8. `WorldManager.ts`: id `dungeon-1`; reset dos 2 gates no início de cada run.
-9. `CityGameSession.tryEnterDungeon`: `dungeon-1` → world `dungeon-1`; estender `WorldId` e `setWorldLook` se necessário.
+4. `game/src/data/monsters/monsters.json` — 6 monstros cogumelo (minion/boss × 3 variantes; nomes UI pt-BR).
+5. `game/src/data/items/items.json` — itens `d1_key_zone_2`, `d1_key_zone_3` (material, ícone `items/seal.svg`).
 
-### C — Portões
+### C — Geometria e world
 
-10. `DungeonRun.ts`: `openedGateIds`, reset em `start()`/`reset()`.
-11. `DungeonGateService.ts`: validar zona, chave, consumir, marcar gate.
-12. `CityGameSession`: zona por posição; proximidade gate; persistir após consumo; feedback log/toast.
+6. `game/src/world/Dungeon1WorldBuilder.ts` (novo) — mesh/colliders 36×108, paredes entre zonas, 2 gates, **sem** portal de saída.
+7. `game/src/world/DungeonGateView.ts` (novo) — `open()`, `reset()`, collider ligado/desligado.
+8. `game/src/world/WorldManager.ts` — registrar world id `dungeon-1`; no início de run D1, `reset()` nos 2 gates.
+9. `game/src/app/CityGameSession.ts` — `tryEnterDungeon("dungeon-1")` → builder D1; estender tipo `WorldId` e `setWorldLook` se necessário.
 
-### D — Combate
+### D — Estado da run e portões
 
-13. `EnemyModel` + spawn: campo `zoneId`.
-14. `grantKillXp`: se D1 e boss e spawn `d1-a1-boss` ou `d1-a2-boss`, dar chave antes de `persistSave(true)`.
-15. `EnemyAI` + seleção de alvo: respeitar zona; sem aggro/ataque através de portão fechado.
+10. `game/src/domain/dungeon/DungeonRun.ts` — `openedGateIds`; limpar em `start()` e `reset()`.
+11. `game/src/domain/dungeon/DungeonGateService.ts` (novo) — validar zona do jogador, chave correta, consumir chave, marcar gate aberto.
+12. `game/src/app/CityGameSession.ts` — detectar zona por posição; proximidade ao gate; chamar serviço; `persistSave` após consumo; feedback log/toast.
 
-### E — HUD
+### E — Combate e loot de chave
 
-16. `currentArenaLabel`: se `world.id === "dungeon-1"`, `Zona N / 3` pelos limites de zona.
-17. Chaves visíveis no inventário wire.
+13. `game/src/domain/enemies/EnemyModel.ts` e pipeline de spawn — persistir `zoneId` no inimigo.
+14. `game/src/app/CityGameSession.ts` — em `grantKillXp`, se dungeon D1 e boss com spawn `d1-a1-boss` ou `d1-a2-boss`, conceder chave antes de `persistSave(true)`.
+15. `game/src/domain/enemies/EnemyAI.ts` e seleção de alvo — combate só dentro da mesma zona; sem aggro/ataque através de portão **fechado**.
 
-### F — QA
+### F — HUD
 
-18. `game/scripts/check-dungeon-1.mjs` (padrão D2): 2 chaves, 2 gates, sem portal, timer, reset gates.
+16. `game/src/app/CityGameSession.ts` (ou helper de HUD) — `currentArenaLabel`: se `world.id === "dungeon-1"`, exibir `Zona N / 3` pelos limites Z das zonas.
+17. `visual/telas/03-wire-paineis-cidade.html` + bridge — chaves `d1_key_zone_*` visíveis no inventário wire.
+
+### G — QA
+
+18. `game/scripts/check-dungeon-1.mjs` (novo, molde `check-dungeon-2.mjs`) — 2 chaves, 2 gates, sem portal, timer, gates resetam por run.
 19. `cd game && npm run typecheck && npm run build && npm run smoke`.
-20. `node scripts/check-dungeon-2.mjs`.
+20. `cd game && node scripts/check-dungeon-2.mjs` — regressão D2.
 
 ## Testar
 
-- [ ] Entrada em `dungeon-1` usa world D1.
-- [ ] Portões fechados no início; abrem só com chave certa.
-- [ ] Boss 3 não dá chave; Z3 sem portal.
-- [ ] Morte/timeout voltam à cidade; timer não reinicia entre zonas.
+- [ ] Portal/cidade leva a `dungeon-1` (world correto).
+- [ ] Portões fechados no spawn; abrem só com chave certa no raio.
+- [ ] Boss zona 3 não dropa chave; zona 3 sem saída por portal.
+- [ ] Morte e timeout voltam à cidade; timer contínuo entre zonas.
+- [ ] Passos 19–20 verdes.
