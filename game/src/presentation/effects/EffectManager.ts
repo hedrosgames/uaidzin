@@ -294,7 +294,6 @@ export class EffectManager {
       return;
     }
     const target = input.target ?? input.center;
-    const areaCenter = input.profile.family === "aoe" ? input.center : target;
     switch (input.profile.dedicatedVfx) {
       case "golpe":
         this.tkGolpe.castGolpe(input.origin, target.clone().sub(input.origin));
@@ -321,13 +320,13 @@ export class EffectManager {
         this.tkBencao.castBencao(input.center);
         return;
       case "selo":
-        this.tkSelo.castSelo(areaCenter);
+        this.tkSelo.castSelo(input.center);
         return;
       case "aura":
-        this.tkAura.castAura(input.center, VFX_BALANCE.skillBuffAuraSeconds);
+        this.tkAura.castAura(input.center);
         return;
       case "escudo-sagrado":
-        this.tkEscudoSagrado.castEscudo(input.origin, this.directionFor(input, target));
+        this.tkEscudoSagrado.castEscudo(input.origin, target.clone().sub(input.origin));
         return;
       case "julgamento":
         this.tkJulgamento.castJulgamento(target);
@@ -339,19 +338,19 @@ export class EffectManager {
         this.tkPurificar.castPurificar(target);
         return;
       case "tribunal":
-        this.tkTribunal.castTribunal(areaCenter);
+        this.tkTribunal.castTribunal(target);
         return;
       case "provocacao":
         this.tkProvocacao.castProvocacao(input.center);
         return;
       case "postura":
-        this.tkPostura.castPostura(input.center, VFX_BALANCE.skillBuffRingSeconds);
+        this.tkPostura.castPostura(input.center);
         return;
       case "rugido":
         this.tkRugido.castRugido(input.origin);
         return;
       case "muralha":
-        this.tkMuralha.castMuralha(input.origin, this.directionFor(input, target));
+        this.tkMuralha.castMuralha(input.origin, target.clone().sub(input.origin));
         return;
       case "ancora":
         this.tkAncora.castAncora(input.origin, target);
@@ -360,7 +359,7 @@ export class EffectManager {
         this.tkDesafio.castDesafio(input.origin, target);
         return;
       case "guarda":
-        this.tkGuarda.castGuarda(input.origin, this.directionFor(input, target));
+        this.tkGuarda.castGuarda(input.origin, target.clone().sub(input.origin));
         return;
       case "bastiao":
         this.tkBastiao.castBastiao(input.origin);
@@ -369,15 +368,6 @@ export class EffectManager {
         break;
     }
     this.skillVfx.play(input);
-  }
-
-  private directionFor(input: SkillVfxRequest, target: Vector3): Vector3 {
-    const direction = target.clone().sub(input.origin);
-    direction.y = 0;
-    if (!input.target || direction.lengthSq() < 1e-6) {
-      direction.set(Math.sin(input.facing), 0, Math.cos(input.facing));
-    }
-    return direction;
   }
 
   getSkillVfxState(): { active: number; particles: number } {

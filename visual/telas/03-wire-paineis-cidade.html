@@ -1824,11 +1824,6 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     tip.style.top = top + "px";
   }
 
-  function skillUseMeta(sk) {
-    if (sk.passive) return "<div>Passiva · <b>não vai para a barra</b></div>";
-    return "<div>MP <b>" + sk.mp + "</b></div>" + "<div>CD <b>" + sk.cd + "s</b></div>";
-  }
-
   function renderTip(sk) {
     const owned = sk.level > 0;
     tip.innerHTML =
@@ -1836,7 +1831,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       '<div><div class="nm">' + sk.name + '</div><div class="tr">' + TREE_LABEL[sk.tree] + " · skill " + sk.idx + "</div></div></div>" +
       '<div class="meta">' +
       "<div>Nível <b>" + (owned ? sk.level + " / 10" : "0 / 10") + "</b></div>" +
-      skillUseMeta(sk) +
+      "<div>MP <b>" + sk.mp + "</b></div>" +
+      "<div>CD <b>" + sk.cd + "s</b></div>" +
       "</div>" +
       '<p class="desc">' + sk.desc + "</p>";
   }
@@ -1935,7 +1931,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     }
     smDetail.innerHTML =
       '<div class="ttl">' + sk.name + "</div>" +
-      '<div class="sub">' + TREE_LABEL[sk.tree] + " · skill " + sk.idx + (sk.passive ? " · passiva" : " · MP " + sk.mp + " · CD " + sk.cd + "s") + "</div>" +
+      '<div class="sub">' + TREE_LABEL[sk.tree] + " · skill " + sk.idx + "</div>" +
       '<p class="desc">' + sk.desc + "</p>" +
       costs;
   }

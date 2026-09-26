@@ -91,7 +91,6 @@ export interface SkillPassiveSpec {
 export interface SkillDef {
   id: string;
   name: string;
-  desc?: string;
   damageMultiplier: number;
   range: number;
   cooldown: number;
@@ -123,7 +122,6 @@ export interface SkillDef {
 export interface SkillInput {
   id: string;
   name: string;
-  desc?: string;
   index: number;
   kind: SkillKind;
   shape?: SkillShape;
@@ -192,7 +190,6 @@ export function defineSkill(input: SkillInput): SkillDef {
   return {
     id: input.id,
     name: input.name,
-    desc: input.desc,
     kind,
     shape,
     auto,

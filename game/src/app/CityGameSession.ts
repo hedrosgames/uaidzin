@@ -38,7 +38,6 @@ import type { EquipSlot } from "../domain/items/EquipmentService";
 import { ECONOMY_BALANCE } from "../data/balance/economy";
 import type { DungeonDef } from "../data/dungeons/dungeon-definitions";
 import type { ClassId, TreeId } from "../data/classes/class-definitions";
-import type { SkillDef } from "../data/classes/skill-types";
 import { SKILL_TRAINING } from "../data/balance/economy";
 import { CONSUMABLE_BALANCE, isConsumableId } from "../data/balance/consumables";
 import { isWeaponSetId } from "../presentation/player/WeaponRig";
@@ -1775,32 +1774,8 @@ export class CityGameSession {
     if (!this.skillTree.learn(tree, index)) return false;
     this.inventory.gold -= goldCost;
     this.skillLoadout.refresh();
-    this.playPassiveLearnVfx(this.skillTree.getTree(tree)[index]);
     void this.persistSave(true);
     return true;
-  }
-
-  private playPassiveLearnVfx(skill: SkillDef | undefined): void {
-    if (!skill || skill.kind !== "passive") return;
-    if (this.skillTree.getSkillLevel(skill.id) !== 1) return;
-    const profile = getSkillVfxProfile(skill.id);
-    if (!profile?.dedicatedVfx) return;
-    const origin = new Vector3(this.player.x, 0, this.player.z);
-    this.effects.dispatchSkillVfx({
-      profile,
-      origin,
-      target: null,
-      center: origin,
-      colorHex: profile.colorHex,
-      facing: this.player.facing,
-      range: skill.range,
-      radius: skill.radius ?? 0,
-      hits: [],
-      hasHeal: false,
-      hasBuff: false,
-      hasTransform: false,
-      hasSummon: false,
-    });
   }
 
   refreshWeaponSetFromGear(): void {

@@ -10,7 +10,6 @@ export type WireSkillRow = {
   skillId: string;
   name: string;
   desc: string;
-  passive: boolean;
   level: number;
   mp: number;
   cd: number;
@@ -55,8 +54,7 @@ export function buildWireSkillCatalog(session: CityGameSession): WireSkillCatalo
         idx: i + 1,
         skillId: sk.id,
         name: sk.name,
-        desc: sk.desc ?? (sk.kind === "passive" ? "Passiva" : sk.name),
-        passive: sk.kind === "passive",
+        desc: sk.kind === "passive" ? "Passiva" : sk.name,
         level: session.skillTree.getSkillLevel(sk.id),
         mp: sk.mp ?? 0,
         cd: sk.cooldown ?? 0,

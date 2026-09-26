@@ -8,8 +8,6 @@ export const VFX_BALANCE = {
   deathSeconds: 0.22,
   levelUpPulseSeconds: 0.55,
   levelUpRingSeconds: 0.7,
-  skillBuffRingSeconds: 3,
-  skillBuffAuraSeconds: 2.5,
   dropLogVisible: 10,
   dropLogCap: 48,
   dropLogLifeSeconds: 10,
