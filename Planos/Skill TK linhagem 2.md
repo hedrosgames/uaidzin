@@ -1,8 +1,10 @@
 # Skill TK — linhagem 2 (Controle · Defensivo)
 
-Plano de implementação. Só arquitetura e regra de organização; **não contém código**. Continuação direta de `Planos/Skill TK linhagem 1.md`: tudo que aquele plano chama de fundação (F1–F7) é **pré-requisito** deste e não é repetido aqui. Onde este documento diz “plano 1”, leia aquele arquivo.
+**Status:** etapa 1 **executada** (mapa VFX, `directionFor`, descrições, QA Node — ver §11). Fundação F1–F4/F6 do plano 1 ainda **pendente** para barra de 10 e “Melhorar”.
 
-Data: 26/09/2026 · Branch: `arena/01a0dd3a-uaidzin` · Base: commit `4148226`.
+**Repositório:** `Planos/Skill TK linhagem 2.md` na `main`.
+
+Plano de implementação. Só arquitetura e regra de organização; **não contém código**. Continuação de `Planos/Skill TK linhagem 1.md`. Onde este documento diz “plano 1”, leia aquele arquivo.
 
 ---
 

@@ -1,6 +1,6 @@
 # Revisão de arquitetura — planos das linhagens 1, 2 e 3 do TK
 
-Revisão sênior dos três planos em `Planos/`, cruzada com o código da branch `arena/01a0dd3a-uaidzin` (base `4148226`). Data: 26/09/2026.
+Revisão sênior dos três planos em `Planos/`, cruzada com o código na **`main`** após merge do PR #8 (26/09/2026).
 
 Método: leitura integral dos três planos; cada afirmação estrutural foi conferida no código (arquivo e linha citados abaixo); os testes existentes foram executados onde o ambiente permite (Node). As correções de documento apontadas aqui **já foram aplicadas** aos planos, com a marca “rev.” no texto; as mudanças de código propostas ficam como tasks, não foram executadas.
 

@@ -1,8 +1,10 @@
 # Skill TK — linhagem 3 (Magia · Mágico)
 
-Plano de implementação. Só arquitetura e regra de organização; **não contém código**. Continuação de `Planos/Skill TK linhagem 1.md` (fundação F1–F7, obrigatória) e de `Planos/Skill TK linhagem 2.md` (FC1 `directionFor`, reutilizado aqui). Onde este documento diz “plano 1” ou “plano 2”, leia aqueles arquivos.
+**Status:** etapa 1 **executada**; etapa 2 (paletas gelo/veneno/fogo, FM5) **não iniciada** (DM3). Fundação F1–F4/F6 do plano 1 **pendente** para barra de 10.
 
-Data: 26/09/2026 · Branch: `arena/01a0dd3a-uaidzin` · Base: commit `4148226`.
+**Repositório:** `Planos/Skill TK linhagem 3.md` na `main`.
+
+Plano de implementação. Só arquitetura e regra de organização; **não contém código**. Continuação dos planos 1 e 2 (`FC1`/`directionFor` já no código).
 
 ---
 

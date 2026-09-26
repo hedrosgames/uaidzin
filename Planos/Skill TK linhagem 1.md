@@ -1,8 +1,10 @@
 # Skill TK — linhagem 1 (Física · Físico ofensivo)
 
-Plano de implementação. Só arquitetura e regra de organização; **não contém código**. Quem executar segue este documento passo a passo, uma etapa por task no painel, e o Felipe valida cada skill antes da próxima.
+**Status:** plano de implementação; fundação F1–F7 **pendente** no runtime (barra ainda 4 slots). Etapas 1 das linhagens 2 e 3 **já executadas** (PR #8, merge em 26/09/2026).
 
-Data: 26/09/2026 · Branch: `arena/01a0dd3a-uaidzin` · Base: commit `4148226`.
+**Repositório:** `Planos/Skill TK linhagem 1.md` na `main`.
+
+Plano de implementação. Só arquitetura e regra de organização; **não contém código**. Quem executar segue este documento passo a passo, uma etapa por task no painel, e o Felipe valida cada skill antes da próxima.
 
 ---
 
