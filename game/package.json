@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "bot": "node scripts/bot-play.mjs",
     "test:save": "node scripts/save-harness.mjs",
     "smoke": "node scripts/smoke.mjs",
@@ -37,6 +38,7 @@
     "@types/three": "^0.170.0",
     "playwright": "^1.63.0",
     "typescript": "^5.6.3",
+    "vitest": "^2.1.9",
     "vite": "^5.4.10"
   }
 }

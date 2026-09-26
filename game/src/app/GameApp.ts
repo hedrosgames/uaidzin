@@ -17,7 +17,7 @@ import type { BootCharacter } from "./BootFlow";
 import { clearBootCharacter, clearBootSession } from "./BootFlow";
 import { saveVault } from "../persistence/SaveVault";
 import { artForClass, bindHud } from "../ui/CharacterUiBinder";
-import type { CharacterViewModel } from "../persistence/SaveTypes";
+import type { CharacterViewModel, LoadSaveResult } from "../persistence/SaveTypes";
 import { emptyAttrs } from "../persistence/SaveTypes";
 
 export interface GameAppDeps {
@@ -45,6 +45,7 @@ export interface GameAppDeps {
   wireUiElement: HTMLElement;
   hudToolsElement: HTMLElement;
   settingsOverlayElement: HTMLElement;
+  saveErrorOverlayElement: HTMLElement;
   toastElement: HTMLElement;
   helpBarElement: HTMLElement;
 }
@@ -90,6 +91,7 @@ export class GameApp {
   private readonly weaponSetStrip: HTMLElement;
   private readonly weaponSetButtons = new Map<WeaponSetId, HTMLButtonElement>();
   private readonly settingsOverlay: HTMLElement;
+  private readonly saveErrorOverlay: HTMLElement;
   private readonly toastEl: HTMLElement;
   private readonly helpBar: HTMLElement;
   private readonly panels: GamePanels;
@@ -205,6 +207,7 @@ export class GameApp {
     this.weaponSetStrip = deps.hudToolsElement.querySelector<HTMLElement>("#weapon-set-strip")!;
     this.buildWeaponSetStrip();
     this.settingsOverlay = deps.settingsOverlayElement;
+    this.saveErrorOverlay = deps.saveErrorOverlayElement;
     this.toastEl = deps.toastElement;
     this.helpBar = deps.helpBarElement;
 
@@ -614,37 +617,61 @@ export class GameApp {
 
   start(character: BootCharacter): void {
     this.session.saveService.setProfileId(character.id);
-    void this.session
-      .loadSave()
-      .catch(() => false)
-      .then(async (loaded) => {
-      if (!loaded) {
-        if (this.session.saveUnreadable) {
-          this.showToast("Save ilegível — progresso não foi sobrescrito", "dungeon");
-        } else {
-          this.session.applyBootCharacter(character);
-        }
-      }
-      try {
-        const view = this.currentViewModel();
-        this.wireUi = await WireUi.mount(this.wireHost, view);
-        this.wireHost.hidden = false;
-        window.dispatchEvent(new Event("resize"));
-      } catch (error) {
-        console.warn("[UAIDZIN] wire UI falhou, usando painéis legados", error);
-        this.wireUi = null;
-      }
-      await this.session.start();
-      this.loop.start();
-      this.enterGame();
-      this.applyArmorAuraSetting();
-      bindHud(
-        { face: this.playerFace, name: this.playerName, level: this.playerLevel },
-        this.currentViewModel(),
-      );
-      this.wireUi?.applyCharacter(this.currentViewModel());
-      console.info("[UAIDZIN] ready", character.name);
-    });
+    void this.beginFromSave(character);
+  }
+
+  private async beginFromSave(character: BootCharacter): Promise<void> {
+    let loaded: LoadSaveResult;
+    try {
+      loaded = await this.session.loadSave();
+    } catch {
+      loaded = { status: "error" };
+    }
+    if (loaded.status === "error") {
+      this.session.saveUnreadable = true;
+      this.showSaveError(character);
+      return;
+    }
+    if (loaded.status === "absent") {
+      this.session.applyBootCharacter(character);
+    }
+    try {
+      const view = this.currentViewModel();
+      this.wireUi = await WireUi.mount(this.wireHost, view);
+      this.wireHost.hidden = false;
+      window.dispatchEvent(new Event("resize"));
+    } catch (error) {
+      console.warn("[UAIDZIN] wire UI falhou, usando painéis legados", error);
+      this.wireUi = null;
+    }
+    await this.session.start();
+    this.loop.start();
+    this.enterGame();
+    this.applyArmorAuraSetting();
+    bindHud(
+      { face: this.playerFace, name: this.playerName, level: this.playerLevel },
+      this.currentViewModel(),
+    );
+    this.wireUi?.applyCharacter(this.currentViewModel());
+    console.info("[UAIDZIN] ready", character.name);
+  }
+
+  private showSaveError(character: BootCharacter): void {
+    const retry = this.saveErrorOverlay.querySelector<HTMLButtonElement>("#btn-save-error-retry");
+    const back = this.saveErrorOverlay.querySelector<HTMLButtonElement>("#btn-save-error-back");
+    this.saveErrorOverlay.classList.add("open");
+    if (retry) {
+      retry.onclick = () => {
+        this.saveErrorOverlay.classList.remove("open");
+        void this.beginFromSave(character);
+      };
+    }
+    if (back) {
+      back.onclick = () => {
+        clearBootCharacter();
+        window.location.reload();
+      };
+    }
   }
 
   dispose(): void {

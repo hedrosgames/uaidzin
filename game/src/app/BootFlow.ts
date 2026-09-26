@@ -1,3 +1,4 @@
+import { normalizeBootCharacter } from "../persistence/migrations";
 import { saveVault } from "../persistence/SaveVault";
 
 export interface BootCharacter {
@@ -167,13 +168,13 @@ function waitFrameLoad(frame: HTMLIFrameElement): Promise<void> {
 export async function runBootFlow(host: HTMLElement = document.body): Promise<BootCharacter> {
   await saveVault.bootstrap();
 
-  const skip = window.__UAIDZIN_SKIP_BOOT__;
-  if (skip?.id && skip.name && skip.classId) {
+  const skip = normalizeBootCharacter(window.__UAIDZIN_SKIP_BOOT__);
+  if (skip) {
     rememberBootCharacter(skip);
     return skip;
   }
 
-  const stored = readStoredCharacter();
+  const stored = normalizeBootCharacter(readStoredCharacter());
   if (stored) {
     if (await storedCharacterStillValid(stored)) return stored;
     clearBootCharacter();
@@ -241,12 +242,14 @@ export async function runBootFlow(host: HTMLElement = document.body): Promise<Bo
         return;
       }
       if (data.type !== "uaidzin-boot-enter" || !data.character?.id) return;
+      const character = normalizeBootCharacter(data.character);
+      if (!character) return;
       window.removeEventListener("message", onMessage);
-      rememberBootCharacter(data.character);
+      rememberBootCharacter(character);
       void enqueue(async () => {
         await sceneFade.fadeIn();
         frame.remove();
-        resolve(data.character!);
+        resolve(character);
       });
     };
     window.addEventListener("message", onMessage);

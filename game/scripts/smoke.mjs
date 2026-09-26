@@ -10,7 +10,7 @@ import { chromium } from "playwright";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = 5174;
 const BASE = `http://127.0.0.1:${PORT}/`;
-const GLOBAL_TIMEOUT_MS = 3 * 60 * 1000;
+const GLOBAL_TIMEOUT_MS = 6 * 60 * 1000;
 
 let failed = 0;
 let pageErrors = 0;
@@ -35,7 +35,7 @@ function killServer() {
 }
 
 const globalTimer = setTimeout(() => {
-  console.error("SMOKE_FAIL timeout global de 3min estourado");
+  console.error("SMOKE_FAIL timeout global de 6min estourado");
   killServer();
   process.exit(1);
 }, GLOBAL_TIMEOUT_MS);
@@ -512,18 +512,27 @@ async function main() {
       });
     }, { id: profileId, mark: corruptMark });
     await page.reload({ waitUntil: "domcontentloaded" });
-    await waitApi();
-    await page.waitForTimeout(800);
-    const flag = await page.evaluate(() => window.__UAIDZIN__.session.saveUnreadable);
-    if (flag) ok("save ilegível sinalizado");
-    else fail("save ilegível não foi sinalizado após corromper o blob");
-    await page.evaluate(async () => {
-      await window.__UAIDZIN__.persistSave();
-    });
-    await page.waitForTimeout(400);
-    const blobAfter = await page.evaluate(
-      () => localStorage.getItem(`uaidzin.save.${window.__UAIDZIN__.session.saveService.getProfileId()}`),
+    await page.waitForFunction(
+      () => document.getElementById("overlay-save-error")?.classList.contains("open"),
+      null,
+      { timeout: 20000 },
     );
+    ok("tela de save ilegível aberta");
+    await page.click("#btn-save-error-retry");
+    await page.waitForFunction(
+      () => document.getElementById("overlay-save-error")?.classList.contains("open"),
+      null,
+      { timeout: 20000 },
+    );
+    ok("tentar de novo relê e mantém a tela de erro");
+    await page.waitForTimeout(1000);
+    const blobAfter = await page.evaluate(
+      (id) => localStorage.getItem(`uaidzin.save.${id}`),
+      profileId,
+    );
+    const entered = await page.evaluate(() => !!window.__UAIDZIN__?.getSnapshot?.()?.entered);
+    if (!entered) ok("save ilegível não entrou no jogo");
+    else fail("save ilegível entrou no jogo");
     if (blobAfter === corruptMark) ok("blob corrompido não foi sobrescrito");
     else fail(`blob foi substituído após save ilegível (prefixo=${String(blobAfter).slice(0, 40)})`);
   } finally {

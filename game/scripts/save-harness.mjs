@@ -66,7 +66,7 @@ async function main() {
 
   await frame.locator(".slot, .char, #slotList button, #slotList .slot-card").first().waitFor({ timeout: 20000 }).catch(() => {});
 
-  const slotCards = frame.locator("#slotList .slot, #slotList button, .slot-card, #slotList > *");
+  const slotCards = frame.locator("#slotList .slot-card");
   const n = await slotCards.count();
   if (n > 0) {
     await slotCards.nth(0).click();
@@ -76,12 +76,21 @@ async function main() {
     fail("nenhum slot na seleção");
   }
 
-  const connect = frame.locator("#btnConnect, button:has-text('Entrar'), button:has-text('Conectar')").first();
-  if (await connect.count()) {
-    await connect.click();
-  } else {
-    fail("botão entrar ausente");
+  const connect = frame.locator("#btnConnect");
+  if (!(await connect.isVisible().catch(() => false))) {
+    const nameInput = frame.locator("#newName");
+    if (!(await nameInput.isVisible().catch(() => false))) {
+      const createFirst = frame.locator("#btnCreateFirst");
+      if (await createFirst.isVisible().catch(() => false)) await createFirst.click();
+    }
+    await nameInput.waitFor({ state: "visible", timeout: 10000 });
+    await nameInput.fill("Harna");
+    await frame.locator("#btnCreateConfirm").click();
+    await page.waitForTimeout(500);
+    ok("criou personagem para entrar");
   }
+  await connect.waitFor({ state: "visible", timeout: 15000 });
+  await connect.click();
 
   await page.waitForFunction(() => !!window.__UAIDZIN__?.getSnapshot?.()?.entered, null, { timeout: 60000 });
   await page.waitForTimeout(500);
@@ -224,6 +233,71 @@ async function main() {
     else fail("buffs A/B/back");
     if (isolation.hpFull) ok("HP/MP cheios ao trocar slot");
     else fail("HP/MP não cheios");
+  }
+
+  const idbFailOnce = (clearLs) => page.evaluate(async (clear) => {
+    const api = window.__UAIDZIN__;
+    const id = api.session.saveService.getProfileId();
+    const lsKeys = ["uaidzin.save." + id, "uaidzin.save." + id + ":prev"];
+    const stash = lsKeys.map((k) => localStorage.getItem(k));
+    if (clear) lsKeys.forEach((k) => localStorage.removeItem(k));
+    const beforeWrites = api.save.writeCount();
+    const orig = IDBObjectStore.prototype.get;
+    let armed = true;
+    IDBObjectStore.prototype.get = function (key) {
+      if (armed && this.name === "save") {
+        armed = false;
+        let onerror = null;
+        return {
+          result: undefined,
+          error: new DOMException("idb_read_failed", "UnknownError"),
+          set onsuccess(_fn) {},
+          get onsuccess() {
+            return null;
+          },
+          set onerror(fn) {
+            onerror = fn;
+            queueMicrotask(() => {
+              if (typeof onerror === "function") onerror(new Event("error"));
+            });
+          },
+          get onerror() {
+            return onerror;
+          },
+        };
+      }
+      return orig.call(this, key);
+    };
+    let status = "throw";
+    try {
+      const result = await api.session.loadSave();
+      status = result && result.status ? result.status : String(result);
+    } catch {
+      status = "throw";
+    } finally {
+      IDBObjectStore.prototype.get = orig;
+    }
+    const writes = api.save.writeCount() - beforeWrites;
+    const lsUntouched = clear ? lsKeys.every((k) => localStorage.getItem(k) === null) : lsKeys.every((k, i) => localStorage.getItem(k) === stash[i]);
+    lsKeys.forEach((k, i) => {
+      if (stash[i] !== null) localStorage.setItem(k, stash[i]);
+    });
+    const after = await api.session.loadSave();
+    return { status, writes, lsUntouched, after: after.status };
+  }, clearLs);
+
+  const withMirror = await idbFailOnce(false);
+  if (withMirror.status === "error" && withMirror.writes === 0 && withMirror.lsUntouched && withMirror.after === "found") {
+    ok("leitura IDB falha 1× com espelho vira erro, não grava e a leitura seguinte carrega");
+  } else {
+    fail("idb fail com espelho: " + JSON.stringify(withMirror));
+  }
+
+  const noMirror = await idbFailOnce(true);
+  if (noMirror.status === "error" && noMirror.writes === 0 && noMirror.lsUntouched && noMirror.after === "found") {
+    ok("leitura IDB falha 1× sem espelho vira erro, não grava e a leitura seguinte carrega");
+  } else {
+    fail("idb fail sem espelho: " + JSON.stringify(noMirror));
   }
 
   await page.evaluate(async () => {

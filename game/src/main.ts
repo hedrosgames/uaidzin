@@ -35,6 +35,7 @@ async function bootstrap(): Promise<GameApp> {
     wireUiElement: requireElement<HTMLElement>("wire-ui"),
     hudToolsElement: requireElement<HTMLElement>("hud-tools"),
     settingsOverlayElement: requireElement<HTMLElement>("overlay-settings"),
+    saveErrorOverlayElement: requireElement<HTMLElement>("overlay-save-error"),
     toastElement: requireElement<HTMLElement>("ui-toast"),
     helpBarElement: document.querySelector(".help-bar") as HTMLElement,
   });

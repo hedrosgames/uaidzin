@@ -111,6 +111,21 @@
           </div>
         </div>
 
+        <div class="overlay" id="overlay-save-error" role="alertdialog" aria-modal="true" aria-labelledby="save-error-title">
+          <div class="settings">
+            <svg class="corner tl" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
+            <svg class="corner tr" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
+            <svg class="corner bl" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
+            <svg class="corner br" viewBox="0 0 18 18"><path d="M1 17 V5 Q1 1 5 1 H17"/></svg>
+            <h2 id="save-error-title">Save indisponível</h2>
+            <p>Não foi possível ler o save. O progresso não foi alterado.</p>
+            <div class="btn-row">
+              <button type="button" class="btn-ghost" id="btn-save-error-back">Voltar</button>
+              <button type="button" class="btn-gold-sm" id="btn-save-error-retry">Tentar de novo</button>
+            </div>
+          </div>
+        </div>
+
         <div id="dungeon-timer" class="dungeon-timer" hidden>10:00</div>
         <div id="farm-stats" class="farm-stats" hidden></div>
         <div id="drop-log" class="drop-log" hidden aria-live="polite"></div>

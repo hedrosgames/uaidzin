@@ -1,3 +1,4 @@
+import { PROGRESSION_BALANCE } from "../data/balance/progression";
 import type { ItemInstance } from "../domain/items/ItemModel";
 import type { EquipSlot } from "../domain/items/EquipmentService";
 import type { ActiveBuff } from "../domain/character/BuffService";
@@ -147,6 +148,11 @@ export type AuthSession = {
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
+export type LoadSaveResult =
+  | { status: "found" }
+  | { status: "absent" }
+  | { status: "error" };
+
 export type CharacterViewModel = {
   profileId: string;
   classId: string;
@@ -171,19 +177,26 @@ export type CharacterViewModel = {
 };
 
 export function emptyAttrs(): AttrBlock {
-  return { FOR: 5, DES: 5, CONS: 5, INT: 5 };
+  const base = PROGRESSION_BALANCE.baseAttributes;
+  return { FOR: base.FOR, DES: base.DES, CONS: base.CONS, INT: base.INT };
 }
 
 export function emptyTreeMap(): TreeMap {
   return { controle: 0, magia: 0, fisica: 0 };
 }
 
+function treeCount(value: unknown): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.floor(n));
+}
+
 export function normalizeTreeMap(src: unknown): TreeMap {
   const t = src && typeof src === "object" ? (src as Record<string, unknown>) : {};
   return {
-    controle: Math.max(0, Math.floor(Number(t.controle) || 0)),
-    magia: Math.max(0, Math.floor(Number(t.magia) || 0)),
-    fisica: Math.max(0, Math.floor(Number(t.fisica) || 0)),
+    controle: treeCount(t.controle),
+    magia: treeCount(t.magia),
+    fisica: treeCount(t.fisica),
   };
 }
 
@@ -218,13 +231,13 @@ export function normalizeSlots(slots: unknown): Array<SlotSummary | null> {
       name: String(s.name),
       level: Number(s.level) || 1,
       evolution: String(s.evolution || "Mortal"),
-      gold: Number(s.gold) || 0,
-      resets: Number(s.resets) || 0,
+      gold: treeCount(s.gold),
+      resets: treeCount(s.resets),
       attrs: {
-        FOR: Number(s.attrs?.FOR) || 5,
-        DES: Number(s.attrs?.DES) || 5,
-        CONS: Number(s.attrs?.CONS) || 5,
-        INT: Number(s.attrs?.INT) || 5,
+        FOR: Math.max(emptyAttrs().FOR, treeCount(s.attrs?.FOR)),
+        DES: Math.max(emptyAttrs().DES, treeCount(s.attrs?.DES)),
+        CONS: Math.max(emptyAttrs().CONS, treeCount(s.attrs?.CONS)),
+        INT: Math.max(emptyAttrs().INT, treeCount(s.attrs?.INT)),
       },
       trees: normalizeTreeMap((s as SlotSummary).trees),
       spec: normalizeTreeMap((s as SlotSummary).spec),

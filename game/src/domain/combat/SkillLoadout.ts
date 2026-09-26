@@ -12,7 +12,8 @@ export interface LoadoutSlot {
   auto: boolean;
 }
 
-function specFactor(spec: number): number {
+function specFactor(raw: number): number {
+  const spec = Number.isFinite(raw) ? raw : 0;
   return 1 - (Math.min(spec, SKILL_BALANCE.specializationPerTreeCap) / SKILL_BALANCE.specializationPerTreeCap) * SKILL_BALANCE.specializationCooldownPenalty;
 }
 
@@ -85,14 +86,15 @@ export class SkillLoadout {
     const prevCd = new Map(this.slots.map((s) => [s.skill.id, s.cd] as const));
     this.slots = picked.map((c) => {
       const cdScale = specFactor(st.specialization[c.tree]);
-      const cooldown = Math.max(0.4, c.skill.cooldown * cdScale);
+      const scaled = c.skill.cooldown * cdScale;
+      const cooldown = Math.max(0.4, Number.isFinite(scaled) ? scaled : c.skill.cooldown);
       const remaining = prevCd.get(c.skill.id);
       return {
         skill: c.skill,
         tree: c.tree,
         level: c.level,
         cooldown,
-        cd: remaining === undefined ? 0 : Math.min(cooldown, remaining),
+        cd: remaining === undefined || !Number.isFinite(remaining) ? 0 : Math.min(cooldown, remaining),
         auto: c.auto,
       };
     });
@@ -104,7 +106,7 @@ export class SkillLoadout {
   }
 
   tick(dt: number): void {
-    for (const s of this.slots) s.cd = Math.max(0, s.cd - dt);
+    for (const s of this.slots) s.cd = Number.isFinite(s.cd) ? Math.max(0, s.cd - dt) : 0;
   }
 
   resetCooldowns(): void {

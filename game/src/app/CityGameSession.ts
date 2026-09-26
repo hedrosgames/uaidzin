@@ -31,13 +31,14 @@ import { EquipmentService } from "../domain/items/EquipmentService";
 import { AccountVaultService } from "../domain/account/AccountVaultService";
 import { BuffService } from "../domain/character/BuffService";
 import { SaveService, type SavePayload } from "../persistence/SaveService";
-import { SAVE_VERSION, emptyProgress, parseProfileId } from "../persistence/SaveTypes";
+import { SAVE_VERSION, emptyProgress, normalizeTreeMap, parseProfileId, type LoadSaveResult } from "../persistence/SaveTypes";
+import { normalizeSavePayload } from "../persistence/migrations";
 import { saveVault } from "../persistence/SaveVault";
 import { adoptItemUidSeq, type ItemInstance } from "../domain/items/ItemModel";
 import type { EquipSlot } from "../domain/items/EquipmentService";
 import { ECONOMY_BALANCE } from "../data/balance/economy";
 import type { DungeonDef } from "../data/dungeons/dungeon-definitions";
-import type { ClassId, TreeId } from "../data/classes/class-definitions";
+import { CLASSES, type ClassId, type TreeId } from "../data/classes/class-definitions";
 import { SKILL_TRAINING } from "../data/balance/economy";
 import { CONSUMABLE_BALANCE, isConsumableId } from "../data/balance/consumables";
 import { isWeaponSetId } from "../presentation/player/WeaponRig";
@@ -303,7 +304,8 @@ export class CityGameSession {
     this.progression.state.resetsInEvolution = 0;
     this.progression.state.bonusAttributePoints = 0;
     this.character.level = 1;
-    this.character.attributes = { FOR: 10, DES: 10, CONS: 10, INT: 10 };
+    const base = PROGRESSION_BALANCE.baseAttributes;
+    this.character.attributes = { FOR: base.FOR, DES: base.DES, CONS: base.CONS, INT: base.INT };
     this.progression.recomputeCombatStats();
     this.character.healFull();
     this.enterWorld("city");
@@ -505,45 +507,63 @@ export class CityGameSession {
     }
   }
 
-  async loadSave(): Promise<boolean> {
-    const result = await this.saveService.load();
-    if (result.status === "unreadable") {
+  async loadSave(): Promise<LoadSaveResult> {
+    try {
+      const result = await this.saveService.load();
+      if (result.status === "unreadable") {
+        this.saveUnreadable = true;
+        this.hadSave = true;
+        return { status: "error" };
+      }
+      this.saveUnreadable = false;
+      if (result.status === "missing") {
+        if (await this.slotSummaryHasProgress()) {
+          this.saveUnreadable = true;
+          this.hadSave = true;
+          console.error("[UAIDZIN] perfil ausente com progresso no resumo do slot", this.saveService.getProfileId());
+          return { status: "error" };
+        }
+        this.hadSave = false;
+        return { status: "absent" };
+      }
+      this.hadSave = true;
+      this.applySavePayload(normalizeSavePayload(result.payload, this.saveService.getProfileId()));
+      return { status: "found" };
+    } catch (error) {
+      console.error("[UAIDZIN] falha ao ler o save", error);
       this.saveUnreadable = true;
       this.hadSave = true;
-      return false;
+      return { status: "error" };
     }
-    this.saveUnreadable = false;
-    if (result.status === "missing") {
-      this.hadSave = false;
-      return false;
-    }
-    this.hadSave = true;
-    this.applySavePayload(result.payload);
-    return true;
+  }
+
+  private async slotSummaryHasProgress(): Promise<boolean> {
+    if (!saveVault.getSession()) return false;
+    const profileId = this.saveService.getProfileId();
+    const summary = (await saveVault.listSlots()).find((s) => s?.profileId === profileId);
+    if (!summary) return false;
+    return summary.level > 1 || summary.gold > 0 || summary.resets > 0;
   }
 
   applyBootCharacter(character: BootCharacter): void {
     this.saveService.setProfileId(character.id);
     this.character.name = character.name;
-    const classId = character.classId as ClassId;
+    const classId = (character.classId in CLASSES ? character.classId : "TK") as ClassId;
     this.skillTree.setClass(classId);
     this.progression.setClassId(classId);
     this.skillTree.resetSkills();
     const p = this.progression.state;
-    p.level = Math.max(1, character.level || 1);
+    const base = PROGRESSION_BALANCE.baseAttributes;
+    p.level = 1;
     p.evolution = (character.evolution as EvolutionId) || "Mortal";
     p.xp = 0;
     p.xpToNext = PROGRESSION_BALANCE.xpToLevel(p.level);
     p.unspentAttributePoints = 0;
-    p.resetsInEvolution = character.resets || 0;
+    p.resetsInEvolution = Number.isFinite(character.resets) ? Math.max(0, Math.floor(character.resets || 0)) : 0;
     p.bonusAttributePoints = 0;
-    this.character.level = p.level;
-    if (character.attrs) {
-      this.character.attributes = { ...character.attrs };
-    } else {
-      this.character.attributes = { FOR: 5, DES: 5, CONS: 5, INT: 5 };
-    }
-    this.inventory.gold = character.gold ?? 0;
+    this.character.level = 1;
+    this.character.attributes = { FOR: base.FOR, DES: base.DES, CONS: base.CONS, INT: base.INT };
+    this.inventory.gold = 0;
     this.inventory.items.length = 0;
     this.equipment.restoreEquipped({});
     this.bags.apply(null);
@@ -553,11 +573,7 @@ export class CityGameSession {
     st.skillPoints = Math.max(0, p.level - 1);
     st.levels = {};
     st.eighthTree = null;
-    st.specialization = {
-      controle: character.spec?.controle || 0,
-      magia: character.spec?.magia || 0,
-      fisica: character.spec?.fisica || 0,
-    };
+    st.specialization = normalizeTreeMap(character.spec);
     this.progression.recomputeCombatStats();
     this.character.healFull();
     this.skillLoadout.refresh();
@@ -588,7 +604,12 @@ export class CityGameSession {
     this.progression.setClassId(classId);
     s.levels = data.skills.levels;
     s.eighthTree = data.skills.eighthTree as typeof s.eighthTree;
-    s.specialization = { ...data.skills.specialization } as typeof s.specialization;
+    const spec = data.skills.specialization;
+    s.specialization = {
+      controle: spec.controle,
+      magia: spec.magia,
+      fisica: spec.fisica,
+    };
     s.skillPoints = data.skills.skillPoints;
     s.specPoints = data.skills.specPoints;
     this.equipment.restoreEquipped(

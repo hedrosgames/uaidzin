@@ -1,3 +1,4 @@
+import type { BootCharacter } from "../app/BootFlow";
 import type { ItemInstance } from "../domain/items/ItemModel";
 import type { EquipSlot } from "../domain/items/EquipmentService";
 import type { ActiveBuff } from "../domain/character/BuffService";
@@ -5,9 +6,11 @@ import { CLASSES } from "../data/classes/class-definitions";
 import { remapSkillId } from "../data/classes/skill-legacy";
 import {
   SAVE_VERSION,
+  emptyAttrs,
   emptyBags,
   emptyProgress,
   emptySkillLoadout,
+  normalizeTreeMap,
   parseProfileId,
   type SavePayload,
   type SavePayloadV1,
@@ -101,10 +104,10 @@ function migrateV1ToV2(data: SavePayloadV1, profileIdHint = "default"): SavePayl
       resetsInEvolution: Number(data.character?.resetsInEvolution) || 0,
       bonusAttributePoints: Number(data.character?.bonusAttributePoints) || 0,
       attributes: {
-        FOR: Number(data.character?.attributes?.FOR) || 5,
-        DES: Number(data.character?.attributes?.DES) || 5,
-        CONS: Number(data.character?.attributes?.CONS) || 5,
-        INT: Number(data.character?.attributes?.INT) || 5,
+        FOR: Number(data.character?.attributes?.FOR) || emptyAttrs().FOR,
+        DES: Number(data.character?.attributes?.DES) || emptyAttrs().DES,
+        CONS: Number(data.character?.attributes?.CONS) || emptyAttrs().CONS,
+        INT: Number(data.character?.attributes?.INT) || emptyAttrs().INT,
       },
       hp: Number(data.character?.hp) || 100,
     },
@@ -112,7 +115,7 @@ function migrateV1ToV2(data: SavePayloadV1, profileIdHint = "default"): SavePayl
       classId,
       levels: data.skills?.levels || {},
       eighthTree: data.skills?.eighthTree ?? null,
-      specialization: { ...(data.skills?.specialization || {}) },
+      specialization: normalizeTreeMap(data.skills?.specialization),
       skillPoints: Number(data.skills?.skillPoints) || 0,
       specPoints: Number(data.skills?.specPoints) || 0,
     },
@@ -161,7 +164,7 @@ function normalizeBase(data: SavePayload, profileIdHint: string): SavePayload {
       profileId: data.meta?.profileId || profileIdHint,
       userId: data.meta?.userId || parsed?.userId || "unknown",
       slotIndex: data.meta?.slotIndex ?? parsed?.slotIndex ?? 0,
-      updatedAt: data.meta?.updatedAt || Date.now(),
+      updatedAt: Number.isFinite(data.meta?.updatedAt) ? Number(data.meta?.updatedAt) : Date.now(),
     },
     character: {
       name: data.character?.name || "Herói",
@@ -173,10 +176,10 @@ function normalizeBase(data: SavePayload, profileIdHint: string): SavePayload {
       resetsInEvolution: Number(data.character?.resetsInEvolution) || 0,
       bonusAttributePoints: Number(data.character?.bonusAttributePoints) || 0,
       attributes: {
-        FOR: Number(data.character?.attributes?.FOR) || 5,
-        DES: Number(data.character?.attributes?.DES) || 5,
-        CONS: Number(data.character?.attributes?.CONS) || 5,
-        INT: Number(data.character?.attributes?.INT) || 5,
+        FOR: Number(data.character?.attributes?.FOR) || emptyAttrs().FOR,
+        DES: Number(data.character?.attributes?.DES) || emptyAttrs().DES,
+        CONS: Number(data.character?.attributes?.CONS) || emptyAttrs().CONS,
+        INT: Number(data.character?.attributes?.INT) || emptyAttrs().INT,
       },
       hp: Number(data.character?.hp) || 100,
       mp: data.character?.mp,
@@ -185,7 +188,7 @@ function normalizeBase(data: SavePayload, profileIdHint: string): SavePayload {
       classId,
       levels: data.skills?.levels || {},
       eighthTree: data.skills?.eighthTree ?? null,
-      specialization: { ...(data.skills?.specialization || {}) },
+      specialization: normalizeTreeMap(data.skills?.specialization),
       skillPoints: Number(data.skills?.skillPoints) || 0,
       specPoints: Number(data.skills?.specPoints) || 0,
     },
@@ -210,6 +213,93 @@ function normalizeBase(data: SavePayload, profileIdHint: string): SavePayload {
   };
 }
 
+function nonNegInt(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.floor(n));
+}
+
+function attrOrBase(value: unknown, fallback: number): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(fallback, Math.floor(n));
+}
+
+function classIdOrTk(value: unknown): string {
+  return typeof value === "string" && value in CLASSES ? value : "TK";
+}
+
+const EVOLUTIONS = new Set(["Mortal", "Arch", "Cele"]);
+
+export function normalizeSavePayload(raw: unknown, profileIdHint = "default"): SavePayload {
+  const data = (raw && typeof raw === "object" ? raw : {}) as SavePayload;
+  const base = normalizeBase(data, profileIdHint);
+  const classId = classIdOrTk(base.character.classId || base.skills.classId);
+  const attrs = emptyAttrs();
+  const payload: SavePayload = {
+    ...base,
+    saveVersion: SAVE_VERSION,
+    character: {
+      ...base.character,
+      classId,
+      evolution: EVOLUTIONS.has(base.character.evolution) ? base.character.evolution : "Mortal",
+      level: Math.max(1, nonNegInt(base.character.level, 1)),
+      xp: nonNegInt(base.character.xp),
+      unspentAttributePoints: nonNegInt(base.character.unspentAttributePoints),
+      resetsInEvolution: nonNegInt(base.character.resetsInEvolution),
+      bonusAttributePoints: nonNegInt(base.character.bonusAttributePoints),
+      attributes: {
+        FOR: attrOrBase(base.character.attributes?.FOR, attrs.FOR),
+        DES: attrOrBase(base.character.attributes?.DES, attrs.DES),
+        CONS: attrOrBase(base.character.attributes?.CONS, attrs.CONS),
+        INT: attrOrBase(base.character.attributes?.INT, attrs.INT),
+      },
+      hp: nonNegInt(base.character.hp, 100),
+      mp: base.character.mp === undefined ? undefined : nonNegInt(base.character.mp),
+    },
+    skills: {
+      ...base.skills,
+      classId,
+      specialization: normalizeTreeMap(base.skills.specialization),
+      skillPoints: nonNegInt(base.skills.skillPoints),
+      specPoints: nonNegInt(base.skills.specPoints),
+    },
+    skillLoadout: {
+      slots: asLoadoutSlots(base.skillLoadout?.slots),
+    },
+    bags: asBags(base.bags),
+    inventory: {
+      gold: nonNegInt(base.inventory.gold),
+      items: base.inventory.items,
+    },
+  };
+  remapLearnedSkills(payload);
+  return payload;
+}
+
+export function normalizeBootCharacter(raw: unknown): BootCharacter | null {
+  if (!raw || typeof raw !== "object") return null;
+  const data = raw as Partial<BootCharacter>;
+  const id = typeof data.id === "string" ? data.id.trim() : "";
+  const name = typeof data.name === "string" ? data.name.trim() : "";
+  const classId = typeof data.classId === "string" ? data.classId : "";
+  if (!id || !name || !(classId in CLASSES)) return null;
+  const base = emptyAttrs();
+  return {
+    id,
+    slotIndex: Number.isFinite(data.slotIndex) ? data.slotIndex : undefined,
+    name,
+    classId,
+    level: 1,
+    evolution: "Mortal",
+    gold: 0,
+    attrs: { FOR: base.FOR, DES: base.DES, CONS: base.CONS, INT: base.INT },
+    trees: normalizeTreeMap(null),
+    spec: normalizeTreeMap(null),
+    resets: 0,
+  };
+}
+
 export function migrateSave(raw: unknown, profileIdHint = "default"): SavePayload | null {
   if (!raw || typeof raw !== "object") return null;
   const data = raw as SavePayload & SavePayloadV1;
@@ -227,9 +317,7 @@ export function migrateSave(raw: unknown, profileIdHint = "default"): SavePayloa
     current = { ...current, saveVersion: current.saveVersion + 1 };
   }
   current.saveVersion = SAVE_VERSION;
-  void CLASSES;
-  remapLearnedSkills(current);
-  return current;
+  return normalizeSavePayload(current, profileIdHint);
 }
 
 function remapLearnedSkills(payload: SavePayload): void {
