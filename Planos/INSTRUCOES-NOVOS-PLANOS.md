@@ -15,7 +15,7 @@ Documento para humanos e agentes. Um plano é **só** o roteiro de implementaç�
 
 Executar passos **1 → N** na ordem. Cada linha = arquivo + entrega. Código em `game/` sem comentários.
 
-## Pré-requisitos          ← omitir se não houver
+## Pré-requisitos          ← fases de Planos/Refatoracao N.md que este plano espera prontas
 
 ## Comportamento
 
@@ -26,6 +26,8 @@ Executar passos **1 → N** na ordem. Cada linha = arquivo + entrega. Código em
 1. `caminho/completo/desde/raiz-do-repo` — entrega em uma frase.
 
 ## Testar
+
+## Pendências               ← “Nenhuma.” ou uma linha do que só o dono fecha
 ```
 
 ### Linha de abertura
@@ -39,19 +41,22 @@ Executar passos **1 → N** na ordem. Cada linha = arquivo + entrega. Código em
 - Regras **já decididas** que o código deve obedecer (ids, números, fluxos, o que **não** existe).
 - Tabelas quando houver várias entidades (skills, zonas, itens, mapas id → VFX).
 - Números de balance: copiar de `tk.ts`, JSON ou inventário; se provisório, marcar **(provisório)** e citar arquivo fonte.
-- **Não** incluir: histórico de PR, “Felipe valida”, dono de camada, YAGNI essay, decisões em aberto, glossário de pastas, arquitetura organizacional.
+- **Não** incluir: histórico de PR, “Felipe valida”, dono de camada, YAGNI essay, glossário de pastas, arquitetura organizacional. O que só o dono fecha vai em **Pendências**, não no passo.
 
 ### Pré-requisitos
 
 - Só links para outros planos + passos concretos (ex.: `Planos/Skill TK linhagem 1.md` passos **1–20**).
+- Declarar quais `Planos/Refatoracao N.md` este plano **vem depois**. Não reimplementar o que a fase já entrega.
 - Indicar o que pode rodar em paralelo vs o que bloqueia QA.
+- Exceção já fixada no índice: `Skill TK linhagem 1.md` passos **23** e **28** rodam **antes** de `Refatoracao 9.md`.
 
 ### Passos
 
 - Numeração **global** 1, 2, 3… até N (sem reiniciar em cada seção).
 - Subtítulos `### A —`, `### B —`… agrupam por tema (Dados, World, UI, QA).
 - Cada passo:
-  - Caminho **completo** desde a raiz do repo (`game/src/...`, `visual/telas/...`, `game/scripts/...`, `nongame/docs/...` só se a task for auditoria de inventário).
+  - Caminho **completo** desde a raiz do repo (`game/src/...`, `game/scripts/...`, `nongame/docs/...` só se a task for auditoria de inventário).
+  - UI de produção: `game/src/ui/wire/` + `game/src/ui/WireApi.ts`. `visual/telas/03-wire-paineis-cidade.html` e `GamePanels.ts` não são fonte depois da refatoração 8.
   - Verbo + artefato (tipo, campo, função, script, remover X, ligar Y).
 - Textos fixos (ex.: `desc` pt-BR) podem ir em lista sob o bloco de passos que altera `tk.ts` ou wire.
 - QA: passos explícitos (`npm run typecheck`, scripts `game/scripts/check-*.mjs`, smoke).
@@ -61,6 +66,11 @@ Executar passos **1 → N** na ordem. Cada linha = arquivo + entrega. Código em
 
 - Checklist `- [ ]` com comportamento observável ou comando verde.
 - Fechar com `cd game && npm run typecheck` (e smoke/build/scripts citados no plano).
+
+### Pendências
+
+- Uma lista curta no fim do plano. “Nenhuma.” se o código e os planos de refatoração fecham o ponto.
+- Cabe aqui o que só o dono decide (número de balance ausente, pasta que a refatoração não nomeia). Não inventar o valor no passo.
 
 ## O que não entra no plano
 
@@ -74,7 +84,18 @@ Executar passos **1 → N** na ordem. Cada linha = arquivo + entrega. Código em
 
 Antes de escrever passos, ler se o escopo tocar:
 
-- `AGENTS.md` — idioma pt-BR, wire em `game/public/boot/` + `game/src/ui/`, save, paleta UI, sem emoji.
+- `AGENTS.md` — idioma pt-BR, paleta UI, sem emoji. Boot continua em `game/public/boot/`. Wire de jogo, depois da refatoração 8: `game/src/ui/wire/`.
+- `Planos/Refatoracao.md` — decisões que o plano novo **não** contradiz:
+  - Skill sem nível (compra única; sem “Melhorar”, `levelScale` ou “Nível x / 10”). Dano/cura base sem compensar o bônus antigo.
+  - Debug só em `import.meta.env.DEV`. Sem `__UAIDZIN_DEBUG__`, sem `?debug=1`, sem F1–F9 em produção. **F5** não é atalho do jogo.
+  - `GamePanels` fora. Aprender skill, vender, Reset/Evolução e refino na `WireApi`.
+  - Atributos base **5/5/5/5**. Loja infinita (sem `qty`). `machado_leve` **0/0**. Venda no NPC e na bolsa com confirmação.
+  - Drop recusado perdido, aviso “Bolsa cheia: <item> perdido.”. Stack **999**.
+  - XP no nível máximo descartado; UI “MAX”.
+  - DoT a cada **3 s** (`DOT_TICK_SEC`), fração na expiração; total = `dotDps × dotSec`.
+  - Uma conta por aba (recusa no login). Jogo só depois do login e da seleção, com tela de carregamento.
+  - Jogo não lançado: sem migração de save. `markDirty(section, kind)` com `critical` | `deferred` (`SaveCoordinator`). Sem `persistSave` solto.
+  - Caminhos: `game/src/domain/inventory/`, `game/src/domain/economy/`, `game/src/data/balance/shops.json`, `game/src/app/session/` (`DungeonFlow`, `RewardService`, `CombatOrchestrator`, `InteractionController`, `VaultTransfer`), `InputService`, `TkVfxRegistry` (só depois do plano 9), `GraphicsQuality` / `SettingsPanel` se o plano mexer em opções de vídeo. Ícones de item/UI: `game/public/assets/icons/` (`items/`, `eq/`, `skills/`), URL `/assets/icons/...`.
 - `nongame/docs/project/README.md` — o que ainda vale.
 - Inventário afetado em `nongame/docs/inventarios/` — **só** listar passo de doc se a task for auditoria/atualização de inventário.
 
@@ -84,9 +105,15 @@ Antes de escrever passos, ler se o escopo tocar:
 - [ ] Passos numerados 1→N sem buracos.
 - [ ] Todo passo de código cita path absoluto a partir da raiz do repo.
 - [ ] Comportamento não repete o passo a passo; passos não repetem parágrafos de comportamento.
-- [ ] Zero seção “decisões em aberto”, “donos”, “fora do escopo” (exceto pré-requisito explícito).
+- [ ] Pré-requisitos citam as fases de `Refatoracao` que o plano espera prontas.
+- [ ] Nenhum passo usa `persistSave`, `GamePanels`, loja com `qty`, nível de skill ou migração de save.
+- [ ] Seção `Pendências` presente (“Nenhuma.” ou o que só o dono fecha).
 - [ ] Testar cobre cada entrega crítica + typecheck.
 
 ## Modelo mínimo
 
 Ver `Planos/Dungeon 2.md` (escopo médio) ou `Planos/Skill TK linhagem 2.md` (dependência + QA).
+
+## Pendências
+
+- Nenhuma neste documento. Rebalanceamento de dano/cura base das skills TK continua nas Pendências de `Skill TK linhagem 1.md`, `2.md` e `3.md`.

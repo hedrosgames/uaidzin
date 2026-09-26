@@ -26,7 +26,7 @@ Executar passos **1 → 11** na ordem. Cada passo = concluir **todos** os passos
 - Item de entrada da dungeon: consumido ao usar e gravado na hora (crítico); **sem devolução** se a entrada falhar.
 - XP no nível máximo: descartado; `xp` não passa de `xpToNext`; UI mostra “MAX”; sem campo de excedente.
 - DoT: tick por tempo a cada **3 s** (provisório, constante em `game/src/data/balance/`); fração restante aplicada na expiração; dano total = `dotDps × dotSec`.
-- Skills **sem nível**: aprender é uma vez; nada de “Melhorar”, `levelCap` ou bônus por nível. Prevalece sobre `Planos/Skill TK linhagem 1.md` (economia “teto nível 10”, passo **19** e checklist “Melhorar 1→10”).
+- Skills **sem nível**: aprender é uma vez; nada de “Melhorar”, `levelCap` ou bônus por nível. Alinhado em `Planos/Skill TK linhagem 1.md` (compra única no passo **19**; checklist sem “Melhorar 1→10”). Sem compensar dano/cura base.
 - Loja: estoque **infinito** (sem `qty` exibido nem decrementado); preço de venda ≤ preço de compra; `machado_leve` custa **0** e vende por **0**.
 - Venda: no NPC (Mercador/Ferreiro) **e** na bolsa, sempre com confirmação.
 - Item que não cabe: recusado com aviso; compra não cobra; drop recusado é **perdido** (não fica no chão); limite **999** por stack.
