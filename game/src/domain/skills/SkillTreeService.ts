@@ -83,6 +83,8 @@ export class SkillTreeService {
   }
 
   spendSpec(tree: TreeId, points = 1): boolean {
+    if (!Number.isFinite(this.state.specPoints) || !Number.isFinite(this.state.specialization[tree])) return false;
+    if (!Number.isFinite(points)) return false;
     if (this.state.specPoints <= 0) return false;
     if (this.state.specialization[tree] >= SKILL_BALANCE.specializationPerTreeCap) return false;
     const n = Math.min(points, this.state.specPoints, SKILL_BALANCE.specializationPerTreeCap - this.state.specialization[tree]);

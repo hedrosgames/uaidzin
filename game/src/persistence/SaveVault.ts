@@ -346,7 +346,12 @@ export class SaveVault {
     const id = profileId || this.profileId;
     this.profileId = id;
     const session = this.getSession();
-    const candidates = await this.store.readProfileCandidates(id);
+    let candidates: Array<{ blob: string; source: string }>;
+    try {
+      candidates = await this.store.readProfileCandidates(id);
+    } catch {
+      return { status: "unreadable" };
+    }
     if (!candidates.length) return { status: "missing" };
     let best: SavePayload | null = null;
     let bestAt = -1;

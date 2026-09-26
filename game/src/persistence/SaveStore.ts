@@ -1,6 +1,7 @@
 const DB_NAME = "uaidzin";
 const STORE = "save";
 const DB_VERSION = 2;
+const OPEN_BLOCKED_TIMEOUT_MS = 5000;
 
 export function lsProfileKey(profileId: string): string {
   return `uaidzin.save.${profileId}`;
@@ -29,12 +30,25 @@ export function openDb(): Promise<IDBDatabase | null> {
       return;
     }
     const req = indexedDB.open(DB_NAME, DB_VERSION);
+    let blockedTimer: ReturnType<typeof setTimeout> | null = null;
+    let timedOut = false;
+    req.onblocked = () => {
+      blockedTimer ??= setTimeout(() => {
+        timedOut = true;
+        resolve(null);
+      }, OPEN_BLOCKED_TIMEOUT_MS);
+    };
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
     };
     req.onsuccess = () => {
+      if (blockedTimer) clearTimeout(blockedTimer);
       const db = req.result;
+      if (timedOut) {
+        db.close();
+        return;
+      }
       if (!db.objectStoreNames.contains(STORE)) {
         db.close();
         resolve(null);
@@ -47,16 +61,18 @@ export function openDb(): Promise<IDBDatabase | null> {
 }
 
 async function idbGet(key: string): Promise<string | null> {
+  if (typeof indexedDB === "undefined") return null;
   const db = await openDb();
-  if (!db || !db.objectStoreNames.contains(STORE)) return null;
-  return new Promise((resolve) => {
+  if (!db || !db.objectStoreNames.contains(STORE)) throw new Error("idb_read_failed");
+  return new Promise((resolve, reject) => {
     try {
       const tx = db.transaction(STORE, "readonly");
       const req = tx.objectStore(STORE).get(key);
       req.onsuccess = () => resolve((req.result as string) ?? null);
-      req.onerror = () => resolve(null);
-    } catch {
-      resolve(null);
+      req.onerror = () => reject(new Error("idb_read_failed"));
+      tx.onerror = () => reject(new Error("idb_read_failed"));
+    } catch (err) {
+      reject(err instanceof Error ? err : new Error("idb_read_failed"));
     }
   });
 }
@@ -133,10 +149,10 @@ export class SaveStore {
   async readProfileCandidates(profileId: string): Promise<Array<{ blob: string; source: string }>> {
     const candidates: Array<{ blob: string; source: string }> = [];
     const idb = await idbGet(idbProfileKey(profileId));
+    const idbPrev = await idbGet(idbProfilePrevKey(profileId));
     if (idb) candidates.push({ blob: idb, source: "idb" });
     const ls = lsGet(lsProfileKey(profileId));
     if (ls && ls !== idb) candidates.push({ blob: ls, source: "ls" });
-    const idbPrev = await idbGet(idbProfilePrevKey(profileId));
     if (idbPrev) candidates.push({ blob: idbPrev, source: "idb-prev" });
     const lsPrev = lsGet(lsProfilePrevKey(profileId));
     if (lsPrev) candidates.push({ blob: lsPrev, source: "ls-prev" });
@@ -144,14 +160,23 @@ export class SaveStore {
   }
 
   async readProfileCurrent(profileId: string): Promise<string | null> {
-    const idb = await idbGet(idbProfileKey(profileId));
-    if (idb) return idb;
+    try {
+      const idb = await idbGet(idbProfileKey(profileId));
+      if (idb) return idb;
+    } catch {
+      return lsGet(lsProfileKey(profileId));
+    }
     return lsGet(lsProfileKey(profileId));
   }
 
   async writeProfileBlob(profileId: string, envelope: string, opts?: { rotateBackup?: boolean }): Promise<void> {
     const rotate = opts?.rotateBackup !== false;
-    const current = await this.readProfileCurrent(profileId);
+    let current: string | null = null;
+    try {
+      current = await this.readProfileCurrent(profileId);
+    } catch {
+      current = lsGet(lsProfileKey(profileId));
+    }
     if (rotate && current && current !== envelope) {
       await idbPut(idbProfilePrevKey(profileId), current);
       lsSet(lsProfilePrevKey(profileId), current);

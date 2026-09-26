@@ -5,7 +5,7 @@ Executar passos **1 → 22** na ordem. Cada linha = arquivo + entrega. Código e
 ## Comportamento
 
 - `SAVE_VERSION` permanece **3** neste plano (formato v4 fica no plano 2).
-- Atributos base **5/5/5/5** em uma constante única (`PROGRESSION_BALANCE.baseAttributes`), usada por criação, `applyBootCharacter`, defaults do save (`emptyAttrs`), `resetToNewGame` e `refundAllAttributes`. Atributo `0` no save continua `0` (sem `|| 5`).
+- Atributos base **5/5/5/5** em uma constante única (`PROGRESSION_BALANCE.baseAttributes`), usada por criação, `applyBootCharacter`, defaults do save (`emptyAttrs`), `resetToNewGame` e `refundAllAttributes`. Atributo abaixo da base no save vira a base.
 - `normalizeSavePayload(raw): SavePayload` é a **única** função de normalização e é idempotente: árvores via `normalizeTreeMap` (chaves `controle`/`magia`/`fisica` sempre numéricas finitas), números finitos (`gold`, `xp`, `hp`, `mp`, pontos), `classId ∈ CLASSES`, loadout, bags. `migrateSave` e `applySavePayload` chamam a mesma função (defesa pedida em #48).
 - `normalizeBootCharacter(raw): BootCharacter | null` valida `id`, `name` e `classId` do personagem vindo do boot; `attrs`, `gold` e `level` da mensagem são **ignorados** (personagem novo nasce do balance).
 - Carga: `found` | `absent` | `error`. `absent` só quando IDB **e** `localStorage` responderam vazio; leitura, decrypt ou `onblocked` que falha é `error` (sem gravar).
@@ -27,12 +27,12 @@ Executar passos **1 → 22** na ordem. Cada linha = arquivo + entrega. Código e
 
 1. `game/package.json` — `devDependencies` vitest; script `"test": "vitest run"`.
 2. `game/vitest.config.ts` (novo) — ambiente node; `include: ["src/**/*.test.ts"]`.
-3. `game/src/persistence/migrations.test.ts` (novo) — casos: árvore de especialização parcial (`{ fisica: 2 }`), ouro `NaN`/`Infinity`/negativo, `classId` inválido, `attrs` ausentes → 5/5/5/5, atributo `0` preservado, boot character com `gold`/`level`/`attrs` absurdos ignorados, `normalizeSavePayload(normalizeSavePayload(x))` igual a `normalizeSavePayload(x)`.
+3. `game/src/persistence/migrations.test.ts` (novo) — casos: árvore de especialização parcial (`{ fisica: 2 }`), ouro `NaN`/`Infinity`/negativo, `classId` inválido, `attrs` ausentes → 5/5/5/5, atributo abaixo da base vira base, boot character com `gold`/`level`/`attrs` absurdos ignorados, `normalizeSavePayload(normalizeSavePayload(x))` igual a `normalizeSavePayload(x)`.
 
 ### B — Normalização única
 
 4. `game/src/persistence/SaveTypes.ts` — exportar `LoadSaveResult` (`found` | `absent` | `error`); `emptyAttrs` lê `PROGRESSION_BALANCE.baseAttributes`.
-5. `game/src/persistence/migrations.ts` — implementar `normalizeSavePayload` e `normalizeBootCharacter`; `migrateSave` termina chamando a normalização; remover `|| 5` dos atributos.
+5. `game/src/persistence/migrations.ts` — implementar `normalizeSavePayload` e `normalizeBootCharacter`; `migrateSave` termina chamando a normalização; atributos com piso na base (sem `|| 5` solto).
 6. `game/src/persistence/migrations.ts` — usar `normalizeTreeMap` de `SaveTypes.ts` no resumo e no payload.
 7. `game/src/data/balance/progression.ts` — `baseAttributes` **5** em cada stat.
 8. `game/src/app/CityGameSession.ts` — `resetToNewGame` (literal `10`) e `applyBootCharacter` (literal `5`) leem `PROGRESSION_BALANCE.baseAttributes`; `applyBootCharacter` ignora `attrs`/`gold`/`level` da mensagem.
@@ -42,16 +42,16 @@ Executar passos **1 → 22** na ordem. Cada linha = arquivo + entrega. Código e
 ### C — Três estados de carga
 
 11. `game/src/persistence/SaveStore.ts` — `openDb`/`idbGet` rejeitam em erro (sem resolver `null`); `onblocked` com timeout (provisório 5 s) rejeita.
-12. `game/src/persistence/SaveVault.ts` — `loadCharacter` devolve `found`/`absent`/`error`; `absent` só com IDB e `localStorage` vazios.
-13. `game/src/app/CityGameSession.ts` — `loadSave()` retorna `LoadSaveResult` a partir do `SaveVault`.
+12. `game/src/persistence/SaveVault.ts` — `loadCharacter` devolve `ok`/`missing`/`unreadable` (qualquer falha do IDB = `unreadable`, mesmo com cópia no `localStorage`); `missing` só com IDB e `localStorage` vazios.
+13. `game/src/app/CityGameSession.ts` — `loadSave()` traduz para `LoadSaveResult`; perfil ausente com progresso no resumo do slot vira `error`.
 14. `game/src/app/GameApp.ts` — startup: `absent` → fluxo novo; `error` → tela pt-BR com Tentar de novo / Voltar, **sem** `persistSave`; remover `.catch(() => false)` de `loadSave()`.
 15. `game/scripts/save-harness.mjs` — cenário: leitura IDB falha 1× → nenhum perfil novo gravado; segunda leitura carrega o perfil.
-16. `game/src/persistence/load-save.test.ts` (novo) — store falso que lança → `error`; IDB vazio e `localStorage` com perfil → `found`; ambos vazios → `absent`.
+16. `game/src/persistence/load-save.test.ts` (novo) — `SaveStore`: IDB que falha lança (com ou sem cópia no `localStorage`); sem IDB lê o `localStorage`. `SaveVault.loadCharacter`: store que lança → `unreadable`; vazio → `missing`; blob válido → `ok`.
 17. `game/src/domain/progression/progression.test.ts` (novo) — `refundAllAttributes` com 0, poucos e muitos pontos devolve para 5/5/5/5.
 
 ### D — Guardas de uso
 
-18. `game/src/domain/combat/SkillController.ts` — gate de cooldown trata `!Number.isFinite(slot.cd)` como pronto (`cd = 0`).
+18. `game/src/domain/combat/SkillLoadout.ts` — `tick` e `refresh` tratam cooldown não finito como pronto (`cd = 0`) e duração não finita como a base da skill.
 19. `game/src/domain/skills/SkillTreeService.ts` — `spendSpec` recusa quando `specPoints` ou nível da árvore não é finito.
 
 ### E — QA

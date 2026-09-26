@@ -136,7 +136,7 @@ export class SkillController {
 
   private manualSlot(index: number, mods: CombatMods): LoadoutSlot | null {
     const slot = this.loadout.slots[index];
-    if (!slot || slot.cd > 0 || slot.skill.kind === "passive") return null;
+    if (!slot || !(slot.cd <= 0) || slot.skill.kind === "passive") return null;
     if (!this.affordable(slot, mods)) return null;
     return slot;
   }
@@ -155,7 +155,7 @@ export class SkillController {
     let best: LoadoutSlot | null = null;
     let bestScore = -1;
     for (const slot of this.loadout.slots) {
-      if (!slot.auto || slot.cd > 0) continue;
+      if (!slot.auto || !(slot.cd <= 0)) continue;
       if (!this.affordable(slot, mods)) continue;
       if (!this.autoUseful(slot, hpRatio, buffs, form, summons, targets, px, pz, facing)) continue;
       const score = this.autoScore(slot, hpRatio);

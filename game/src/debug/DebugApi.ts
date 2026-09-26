@@ -357,7 +357,7 @@ export function installDebugApi(app: DebugHost): void {
         const previous = app.session.saveService.getProfileId();
         app.session.saveService.setProfileId(summary.profileId);
         const loaded = await app.session.loadSave();
-        if (!loaded) {
+        if (loaded.status !== "found") {
           app.session.saveService.setProfileId(previous);
           return false;
         }

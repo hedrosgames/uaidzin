@@ -2,7 +2,7 @@
 export const PROGRESSION_BALANCE = {
   attributesPerLevel: 5,
   resetAttributePoints: 1000,
-  baseAttributes: { FOR: 10, DES: 10, CONS: 10, INT: 10 },
+  baseAttributes: { FOR: 5, DES: 5, CONS: 5, INT: 5 },
   evolutions: {
     Mortal: { minLevel: 1, maxLevel: 400 },
     Arch: { minLevel: 1, maxLevel: 400 },
