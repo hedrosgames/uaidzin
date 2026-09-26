@@ -18,17 +18,29 @@ import { FountainWater } from "../presentation/effects/FountainWater";
 import { BRAZIER_RADIUS, createBrazier } from "../presentation/effects/Brazier";
 import { createAmbientEmbers } from "../presentation/effects/AmbientEmbers";
 import { cityPropFootprint, cityPropScale, spawnCityProp, type CityPropId } from "./CityProps";
-import { makeCityFloorMaterial, makeCityPlazaMaterial } from "./CityGround";
+import { makeCityFloorMaterial, makeCityPlazaMaterial, makeDungeon2FloorMaterial } from "./CityGround";
 import { buildCityScenery } from "./CityScenery";
+import { buildCityVegetation } from "./CityLandscape";
 
 const FOUNTAIN_HEIGHT = 2.8;
 const STALL_HEIGHT = 2.6;
 const WALL_HEIGHT = 2.2;
 const BULLETIN_HEIGHT = 2.3;
 const BULLETIN_POS = { x: 3.6, z: -13.2, quarterTurns: 0 };
-const PLAZA_RADIUS = 5.8;
+export const CITY_PLAZA_RADIUS = 5.8;
 const PLAZA_CURB = 0.62;
 const FOUNTAIN_RING_R = 2.15;
+export const CITY_PLAZA_DECK_Y = 0.16;
+export const CITY_PLAZA_CURB_Y = 0.13;
+export const CITY_PLAZA_OUTER_R = CITY_PLAZA_RADIUS + PLAZA_CURB;
+
+export function sampleCityGroundY(x: number, z: number): number {
+  const r = Math.hypot(x, z);
+  if (r <= CITY_PLAZA_RADIUS) return CITY_PLAZA_DECK_Y;
+  if (r >= CITY_PLAZA_OUTER_R) return 0;
+  const t = (r - CITY_PLAZA_RADIUS) / PLAZA_CURB;
+  return CITY_PLAZA_CURB_Y * (1 - t);
+}
 const BRAZIER_SPOTS: Array<[number, number]> = [
   [-6.8, -6.8],
   [6.8, -6.8],
@@ -60,6 +72,7 @@ export interface BuiltWorld {
   interactables: InteractableDef[];
   spawn: { x: number; z: number };
   tickables: WorldTickable[];
+  groundY: (x: number, z: number) => number;
 }
 
 function makeNpcMarker(def: InteractableDef): Group {
@@ -148,8 +161,8 @@ export function buildCityWorld(): BuiltWorld {
   const size = 36;
   const group = new Group();
   group.name = "world-city";
-  const floorMat = makeCityFloorMaterial(size / 2, PLAZA_RADIUS);
-  const plazaMat = makeCityPlazaMaterial(PLAZA_RADIUS);
+  const floorMat = makeCityFloorMaterial(size / 2, CITY_PLAZA_RADIUS);
+  const plazaMat = makeCityPlazaMaterial(CITY_PLAZA_RADIUS);
   const ground = new Mesh(new PlaneGeometry(size, size), floorMat);
   ground.rotation.x = -Math.PI / 2;
   ground.name = "ground";
@@ -160,8 +173,8 @@ export function buildCityWorld(): BuiltWorld {
   const collision = emptyCollision();
 
   const curb = new Mesh(
-    new CylinderGeometry(PLAZA_RADIUS + PLAZA_CURB, PLAZA_RADIUS + PLAZA_CURB, 0.14, 48),
-    new MeshStandardMaterial({ color: 0x4a4036, roughness: 0.94, metalness: 0.08 }),
+    new CylinderGeometry(CITY_PLAZA_OUTER_R, CITY_PLAZA_OUTER_R, 0.14, 48),
+    makeCityPlazaMaterial(CITY_PLAZA_OUTER_R),
   );
   curb.position.y = 0.06;
   curb.receiveShadow = true;
@@ -169,17 +182,7 @@ export function buildCityWorld(): BuiltWorld {
   curb.userData.occlusionIgnore = true;
   group.add(curb);
 
-  const curbCap = new Mesh(
-    new TorusGeometry(PLAZA_RADIUS + PLAZA_CURB * 0.42, 0.08, 8, 48),
-    new MeshStandardMaterial({ color: 0x8a7340, roughness: 0.55, metalness: 0.45 }),
-  );
-  curbCap.rotation.x = Math.PI / 2;
-  curbCap.position.y = 0.14;
-  curbCap.castShadow = true;
-  curbCap.userData.occlusionIgnore = true;
-  group.add(curbCap);
-
-  const plaza = new Mesh(new CylinderGeometry(PLAZA_RADIUS, PLAZA_RADIUS, 0.08, 48), plazaMat);
+  const plaza = new Mesh(new CylinderGeometry(CITY_PLAZA_RADIUS, CITY_PLAZA_RADIUS, 0.08, 48), plazaMat);
   plaza.position.y = 0.12;
   plaza.receiveShadow = true;
   plaza.userData.occlusionIgnore = true;
@@ -187,23 +190,13 @@ export function buildCityWorld(): BuiltWorld {
 
   const fountainPlinth = new Mesh(
     new CylinderGeometry(FOUNTAIN_RING_R, FOUNTAIN_RING_R + 0.15, 0.18, 36),
-    new MeshStandardMaterial({ color: 0x5c5348, roughness: 0.9, metalness: 0.05 }),
+    new MeshStandardMaterial({ color: 0x65665d, roughness: 0.96 }),
   );
   fountainPlinth.position.y = 0.18;
   fountainPlinth.receiveShadow = true;
   fountainPlinth.castShadow = true;
   fountainPlinth.userData.occlusionIgnore = true;
   group.add(fountainPlinth);
-
-  const fountainRing = new Mesh(
-    new TorusGeometry(FOUNTAIN_RING_R * 0.92, 0.06, 8, 40),
-    new MeshStandardMaterial({ color: 0xd4a017, roughness: 0.48, metalness: 0.55 }),
-  );
-  fountainRing.rotation.x = Math.PI / 2;
-  fountainRing.position.y = 0.28;
-  fountainRing.castShadow = true;
-  fountainRing.userData.occlusionIgnore = true;
-  group.add(fountainRing);
 
   const fountainWater = new FountainWater();
   const fountainScale = cityPropScale("fountain", FOUNTAIN_HEIGHT);
@@ -270,6 +263,7 @@ export function buildCityWorld(): BuiltWorld {
     collision.circles.push({ x: def.x, z: def.z, r: def.kind === "chest" ? 0.55 : 0.4 });
   }
   const tickables: WorldTickable[] = [fountainWater];
+  group.add(buildCityVegetation(collision, CITY_INTERACTABLES));
   BRAZIER_SPOTS.forEach(([bx, bz], i) => {
     const brazier = createBrazier(`brazier-${i}`, bx, bz);
     group.add(brazier.group);
@@ -292,9 +286,10 @@ export function buildCityWorld(): BuiltWorld {
     group,
     boundary: boxBoundary(size - 2),
     collision,
-    interactables: CITY_INTERACTABLES,
+    interactables: [...CITY_INTERACTABLES, CITY_PORTAL_PROP],
     spawn: { x: 0, z: 4 },
     tickables,
+    groundY: sampleCityGroundY,
   };
 }
 
@@ -516,5 +511,103 @@ export function buildTestDungeonWorld(): BuiltWorld {
     ],
     spawn: { x: 0, z: 2 },
     tickables,
+    groundY: () => 0,
+  };
+}
+
+export function buildDungeon2World(): BuiltWorld {
+  const size = 36;
+  const group = new Group();
+  group.name = "world-dungeon-2";
+  const floorMat = makeDungeon2FloorMaterial(size / 2);
+  const ground = new Mesh(new PlaneGeometry(size, size), floorMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.name = "ground";
+  ground.receiveShadow = true;
+  ground.userData.occlusionIgnore = true;
+  group.add(ground);
+  group.add(buildCityScenery(size / 2));
+  const collision = emptyCollision();
+
+  const wallScale = cityPropScale("wall", WALL_HEIGHT);
+  const wallSegment = cityPropFootprint("wall", wallScale, 0);
+  const wallT = wallSegment.depth;
+  const half = size / 2;
+  const segments = Math.max(1, Math.round(size / wallSegment.width));
+  const segmentLength = size / segments;
+  const wallScaleX = wallScale * (segmentLength / wallSegment.width);
+  const sides: Array<[number, number, number]> = [
+    [0, half - wallT / 2, 0],
+    [0, -half + wallT / 2, 2],
+    [half - wallT / 2, 0, 1],
+    [-half + wallT / 2, 0, 3],
+  ];
+  for (const [cx, cz, quarterTurns] of sides) {
+    const alongX = quarterTurns % 2 === 0;
+    for (let i = 0; i < segments; i++) {
+      const offset = -half + segmentLength * (i + 0.5);
+      spawnCityProp(group, {
+        id: "wall",
+        x: alongX ? offset : cx,
+        z: alongX ? cz : offset,
+        scale: wallScale,
+        scaleX: wallScaleX,
+        quarterTurns,
+      });
+    }
+    collision.boxes.push(
+      alongX ? boxFromCenter(cx, cz, size, wallT) : boxFromCenter(cx, cz, wallT, size),
+    );
+  }
+
+  const tickables: WorldTickable[] = [];
+  group.add(buildCityVegetation(collision, []));
+  BRAZIER_SPOTS.forEach(([bx, bz], i) => {
+    const brazier = createBrazier(`d2-brazier-${i}`, bx, bz);
+    group.add(brazier.group);
+    tickables.push(brazier);
+    collision.circles.push({ x: bx, z: bz, r: BRAZIER_RADIUS });
+  });
+  const embers = createAmbientEmbers(EMBER_COUNT, size / 2 - 2);
+  group.add(embers.points);
+  tickables.push(embers);
+
+  const exitPortal = makePortal(
+    {
+      id: "portal-exit",
+      label: "Portal de saída",
+      kind: "portal-exit",
+      x: CITY_PORTAL_PROP.x,
+      z: CITY_PORTAL_PROP.z,
+      color: 0x44c0ff,
+      body: "",
+    },
+    true,
+  );
+  group.add(exitPortal.group);
+  tickables.push(exitPortal);
+  collision.boxes.push(
+    boxFromCenter(CITY_PORTAL_PROP.x, CITY_PORTAL_PROP.z, PORTAL_GATE_W * 0.9, PORTAL_COLLISION_DEPTH),
+  );
+
+  return {
+    id: "dungeon-2",
+    group,
+    boundary: boxBoundary(size - 2),
+    collision,
+    interactables: [
+      {
+        id: "portal-exit",
+        label: "Portal de saída",
+        kind: "portal-exit",
+        x: CITY_PORTAL_PROP.x,
+        z: CITY_PORTAL_PROP.z,
+        color: 0x44c0ff,
+        body: "",
+      },
+    ],
+    spawn: { x: 0, z: -10.5 },
+    tickables,
+    groundY: () => 0,
   };
 }

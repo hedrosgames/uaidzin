@@ -67,6 +67,7 @@ _(vazio — X10/X11 em Aguardando validação do Felipe)_
 
 | ID | Tarefa | Nota |
 |---|---|---|
+| D13c | Dungeon 2 (Cemitério) com esqueletos 3D e animações | Arena 36×36, chão de cemitério seamless, 12 esqueletos (8 normais com animação procedural + 4 especiais com animações Mixamo/cast/hit/death), chefe Guardião Esqueleto, materiais independentes por instância, auto-seleção de nível 35+ no portal e retorno com fade; 19 asserções Playwright `check-dungeon-2.mjs` aprovadas; aguarda validação do Felipe |
 | X10 | Fire Burst: cinco correntes 3D curvas e giratórias, em 0,20 s | **FireBurstUAID** validado pelo Felipe em 24/09/2026. Lab `/vfx/fire-burst.html`: cinco caminhos aleatórios, elos escuros, pontas metálicas e fogo Quarks em atlas animado; explosão compartilhada. 174 verificações, 11 direções, passos de 30/60/144 fps, integração TK, limpeza e memória estável; typecheck/build OK. Evidências em `game/vfx/evidence/fire-chain-*` |
 | X11 | Fire Burst: base de corrente com elos 3D e explosão no inimigo | Validado com X10; malhas de elos e pontas em várias direções/alturas, sem billboard. Não altera dano, mana ou cooldown |
 | X12 | VFX no padrão FireBurstUAID para as outras 7 skills físicas do TK | Controllers dedicados, sete labs standalone e sete scripts de QA criados. Vite e `EffectManager` integrados; typecheck global passa. QAs CDP aguardam execução central e validação visual do Felipe. Direção "Muralha de Terra" para a Avalanche aprovada (pedras/terra ótimas; refino do desenho vetorial pendente); backup v1 em `game/scripts/_tk-work/avalanche-v1` |

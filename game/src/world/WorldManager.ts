@@ -1,7 +1,7 @@
 import type { Group } from "three";
-import { buildCityWorld, buildTestDungeonWorld, type BuiltWorld } from "./CityWorld";
+import { buildCityWorld, buildDungeon2World, buildTestDungeonWorld, type BuiltWorld } from "./CityWorld";
 
-export type WorldId = "city" | "dungeon-test";
+export type WorldId = "city" | "dungeon-test" | "dungeon-2";
 
 export class WorldManager {
   private cache = new Map<WorldId, BuiltWorld>();
@@ -20,7 +20,14 @@ export class WorldManager {
   private ensure(id: WorldId): BuiltWorld {
     const hit = this.cache.get(id);
     if (hit) return hit;
-    const built = id === "city" ? buildCityWorld() : buildTestDungeonWorld();
+    let built: BuiltWorld;
+    if (id === "city") {
+      built = buildCityWorld();
+    } else if (id === "dungeon-2") {
+      built = buildDungeon2World();
+    } else {
+      built = buildTestDungeonWorld();
+    }
     this.cache.set(id, built);
     return built;
   }

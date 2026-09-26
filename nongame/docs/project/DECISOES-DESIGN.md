@@ -254,6 +254,26 @@ World bar verde/vermelho 40% **permanece** para **inimigos** e, quando houver ba
 
 Relação F5: consequência prática = sair da dungeon e voltar à cidade com o **último save válido** (que pode incluir XP/ouro/item da run se já tinham sido gravados).
 
+## DUNGEONS — Cenários e Inimigos
+
+### Dungeon 2 (Cemitério) — Decisão de 25/09/2026
+
+- **Dimensões e Muralha**: Arena fechada de **36 × 36 metros** (mesmo tamanho da cidade), com o mesmo sistema perimetral de muralhas (`wall`, altura 2.2, 4 faces sólidas) e cenário periférico (`buildCityScenery`).
+- **O que sai da cidade**:
+  - Sem NPCs ou baús.
+  - Sem praça central elevada (sem calçada, sem lajes circulares, sem plinto, sem fonte e sem água — chão contínuo e plano em Y = 0).
+  - Sem barracas de feira e mobiliário (sem `CITY_STALLS`, sem weapon rack, sem carroça e sem bulletin board).
+- **O que fica da cidade**:
+  - **Piso temático**: Chão com textura seamless de cemitério (`dungeon-cemetery-albedo.png`).
+  - **Vegetação**: Preservada com tufos de grama estilizada no chão (`buildCityVegetation`).
+  - **Braseiros e fagulhas**: Braseiros nos cantos (`BRAZIER_SPOTS`) e partículas de brasa no ar (`createAmbientEmbers`).
+  - **Iluminação idêntica à cidade**: Céu visível (`skyDome`), névoa suave `0x8a7a68`, exposição `1.15` (perfil `setWorldLook("city")`).
+  - **Portal de saída interativo**: No mesmo local do portal da cidade ($X = 0, Z = -13.5$) para retorno voluntário.
+- **Inimigos (12 no total)**:
+  - **4 blocos de 3 inimigos** espalhados pelos 4 quadrantes da arena (Noroeste, Nordeste, Sudoeste, Sudeste).
+  - Composição de cada bloco: **2 caveiras normais** (`Guerreiro Esqueleto`, `skeleton-normal.glb`) + **1 caveira especial** (`Guardião Esqueleto`, `skeleton-special.fbx`). No 4º bloco, o Guardião Esqueleto atua como Boss.
+  - **Animações**: Caveiras possuem animações completas de locomoção (`run`), ataque/disparo (`cast` / `attack_swipe`), impacto (`hit`) e morte (`death`).
+
 ## FORA / NÃO
 
 | Tópico | Regra |

@@ -208,6 +208,7 @@ Legenda de status da cena: `Em spec` · `Em implementação` · `Validando` · `
 | 4.20 | **Cinco correntes de fogo** (X10) | Um disparo lança cinco correntes escuras com pontas metálicas; giram em curvas diferentes no espaço e chegam juntas em 0,20 s; fogo entre elos, explosão no contato e limpeza | `[x]` FireBurstUAID validado pelo Felipe, 24/09/2026. 174 verificações, 11 direções, 30/60/144 fps, atlas Quarks e cleanup |
 | 4.21 | **Corrente real 3D** (X11) | Elos e pontas volumétricos funcionam em várias direções/alturas, explodem no contato e desaparecem sem resíduos | `[x]` validado com X10, 24/09/2026. Base incorporada à salva; sem mudar dano, mana ou cooldown |
 | 4.22 | **VFX do TK no padrão FireBurstUAID** (X12) | Cada skill física do TK (Golpe, Investida, Corte, Machado, Quebra, Fúria, Avalanche) com VFX de malha real + Quarks na qualidade do FireBurstUAID, lab próprio e gate de qualidade cheio, sem alterar dano/mana/CD | `[~]` sete controllers, labs e scripts de QA criados; Vite/EffectManager integrados; typecheck passa. QAs CDP e validação visual do Felipe pendentes |
+| 4.23 | **Dungeon 2 (Cemitério) e Esqueletos 3D** | Arena 36×36, chão de cemitério, 12 esqueletos (8 normais procedurais + 4 especiais com animações Mixamo/cast/hit/death), chefe Guardião Esqueleto, auto-seleção no nível 35+ e retorno com fade | `[x]` técnico Playwright — aguarda Felipe |
 
 ### Comportamento detalhado esperado
 

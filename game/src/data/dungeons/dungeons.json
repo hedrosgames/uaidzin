@@ -79,86 +79,118 @@
     "durationSeconds": 600,
     "arenas": [
       {
-        "id": "d2-a1",
-        "centerX": 0,
-        "centerZ": 0,
-        "halfSize": 8,
+        "id": "d2-b1",
+        "centerX": -8,
+        "centerZ": -4,
+        "halfSize": 7,
         "spawns": [
           {
-            "id": "d2-a1-r1",
-            "archetype": "ranged",
-            "x": 6,
-            "z": -6
-          },
-          {
-            "id": "d2-a1-r2",
-            "archetype": "ranged",
-            "x": -6,
-            "z": -6
-          },
-          {
-            "id": "d2-a1-f1",
-            "archetype": "fixed",
-            "x": 0,
-            "z": 3
-          }
-        ]
-      },
-      {
-        "id": "d2-a2",
-        "centerX": 2,
-        "centerZ": -24,
-        "halfSize": 10,
-        "spawns": [
-          {
-            "id": "d2-a2-r1",
-            "archetype": "ranged",
-            "x": 7,
-            "z": -30
-          },
-          {
-            "id": "d2-a2-c1",
+            "id": "d2-b1-s1",
             "archetype": "chaser",
-            "x": -4,
-            "z": -24
+            "monsterId": "caveira_normal",
+            "x": -9.5,
+            "z": -3.0
           },
           {
-            "id": "d2-a2-f1",
-            "archetype": "fixed",
-            "x": 0,
-            "z": -28
+            "id": "d2-b1-s2",
+            "archetype": "chaser",
+            "monsterId": "caveira_normal",
+            "x": -6.5,
+            "z": -3.5
           },
           {
-            "id": "d2-a2-r2",
+            "id": "d2-b1-elite",
             "archetype": "ranged",
-            "x": -7,
-            "z": -31
+            "monsterId": "caveira_especial",
+            "x": -8.0,
+            "z": -5.0
           }
         ]
       },
       {
-        "id": "d2-a3",
-        "centerX": 0,
-        "centerZ": -48,
-        "halfSize": 11,
+        "id": "d2-b2",
+        "centerX": 8,
+        "centerZ": -4,
+        "halfSize": 7,
         "spawns": [
           {
-            "id": "d2-a3-r1",
-            "archetype": "ranged",
-            "x": 6,
-            "z": -54
+            "id": "d2-b2-s1",
+            "archetype": "chaser",
+            "monsterId": "caveira_normal",
+            "x": 6.5,
+            "z": -3.5
           },
           {
-            "id": "d2-a3-r2",
-            "archetype": "ranged",
-            "x": -6,
-            "z": -54
+            "id": "d2-b2-s2",
+            "archetype": "chaser",
+            "monsterId": "caveira_normal",
+            "x": 9.5,
+            "z": -3.0
           },
           {
-            "id": "d2-a3-boss",
-            "archetype": "fixed",
-            "x": 0,
-            "z": -50,
+            "id": "d2-b2-elite",
+            "archetype": "ranged",
+            "monsterId": "caveira_especial",
+            "x": 8.0,
+            "z": -5.0
+          }
+        ]
+      },
+      {
+        "id": "d2-b3",
+        "centerX": -7,
+        "centerZ": 6,
+        "halfSize": 7,
+        "spawns": [
+          {
+            "id": "d2-b3-s1",
+            "archetype": "chaser",
+            "monsterId": "caveira_normal",
+            "x": -8.5,
+            "z": 7.0
+          },
+          {
+            "id": "d2-b3-s2",
+            "archetype": "chaser",
+            "monsterId": "caveira_normal",
+            "x": -5.5,
+            "z": 6.5
+          },
+          {
+            "id": "d2-b3-elite",
+            "archetype": "ranged",
+            "monsterId": "caveira_especial",
+            "x": -7.0,
+            "z": 5.0
+          }
+        ]
+      },
+      {
+        "id": "d2-b4",
+        "centerX": 7,
+        "centerZ": 6,
+        "halfSize": 7,
+        "spawns": [
+          {
+            "id": "d2-b4-s1",
+            "archetype": "chaser",
+            "monsterId": "caveira_normal",
+            "x": 5.5,
+            "z": 6.5
+          },
+          {
+            "id": "d2-b4-s2",
+            "archetype": "chaser",
+            "monsterId": "caveira_normal",
+            "x": 8.5,
+            "z": 7.0
+          },
+          {
+            "id": "d2-b4-boss",
+            "archetype": "ranged",
+            "monsterId": "caveira_especial",
+            "x": 7.0,
+            "z": 5.0,
             "isBoss": true
           }
         ]

@@ -56,6 +56,7 @@ import { SummonView } from "../presentation/combat/SummonView";
 import { InteractionPanel } from "../ui/InteractionPanel";
 import { WorldManager, type WorldId } from "../world/WorldManager";
 import type { InteractableDef } from "../world/definitions";
+import { projectWalkTarget } from "../world/collision";
 
 const INTERACT_RANGE = 1.6;
 const DEATH_HOLD_PAD_SEC = 0.2;
@@ -311,7 +312,7 @@ export class CityGameSession {
   enterWorld(id: WorldId): void {
     this.effects.clearSkillVfx();
     const world = this.worlds.switchTo(id);
-    this.renderer.setWorldLook(id === "city" ? "city" : "dungeon");
+    this.renderer.setWorldLook(id === "city" || id === "dungeon-2" ? "city" : "dungeon");
     if (id === "city") this.character.healFull();
     this.player.setPosition(world.spawn.x, world.spawn.z);
     this.player.clearMoveTarget();
@@ -320,7 +321,8 @@ export class CityGameSession {
     this.skill.reset();
     this.camera.snapTo(world.spawn.x, world.spawn.z);
     this.renderer.playerView.clearDeath();
-    this.renderer.setPlayerTransform(world.spawn.x, world.spawn.z, 0, false);
+    const gy = world.groundY(world.spawn.x, world.spawn.z);
+    this.renderer.setPlayerTransform(world.spawn.x, world.spawn.z, 0, false, undefined, gy);
     this.nearby = null;
     this.panel.close();
     this.deathReturnTimer = 0;
@@ -376,7 +378,7 @@ export class CityGameSession {
 
   pickDungeonForLevel(): DungeonDef {
     const list = dungeonsAllowedForLevel(this.progression.state.level);
-    return list[0] ?? DUNGEON_TEST;
+    return list[list.length - 1] ?? DUNGEON_TEST;
   }
 
   dungeonEntryGate(dungeonId: string): { ok: true; def: DungeonDef } | { ok: false; reason: DungeonEnterReason; def?: DungeonDef } {
@@ -418,7 +420,7 @@ export class CityGameSession {
     this.activeDungeonId = gate.def.id;
     this.economy.setDungeonIndexFromId(gate.def.id);
     void this.withWorldFade(() => {
-      this.enterWorld("dungeon-test");
+      this.enterWorld(gate.def.id === "dungeon-2" ? "dungeon-2" : "dungeon-test");
     });
     return { ok: true };
   }
@@ -620,10 +622,11 @@ export class CityGameSession {
     const world = this.worlds.getCurrent();
     if (!world) return;
     for (const tick of world.tickables) tick.update(dt);
-    const inDungeon = world.id === "dungeon-test";
+    const inDungeon = world.id !== "city";
 
     if (this.worldFadeBusy) {
       this.renderer.updatePlayer(dt);
+      this.enemyView.sync(this.enemies, dt);
       this.updateEffects(dt);
       this.renderer.render(this.camera.camera);
       this.pushHud(inDungeon);
@@ -632,13 +635,17 @@ export class CityGameSession {
 
     if (this.character.isDead) {
       this.deathReturnTimer -= dt;
+      const gy = world.groundY(this.player.x, this.player.z);
       this.renderer.setPlayerTransform(
         this.player.x,
         this.player.z,
         this.player.facing,
         false,
+        undefined,
+        gy,
       );
       this.renderer.updatePlayer(dt);
+      this.enemyView.sync(this.enemies, dt);
       this.camera.follow(this.player.x, this.player.z, dt);
       this.updateEffects(dt);
       this.renderer.render(this.camera.camera);
@@ -714,7 +721,15 @@ export class CityGameSession {
             }
           } else if (!locked) {
             this.clearPendingInteract();
-            this.player.setMoveTarget(point.x, point.z);
+            const safe = projectWalkTarget(
+              point.x,
+              point.z,
+              this.player.radius,
+              world.collision,
+              this.player.x,
+              this.player.z,
+            );
+            this.player.setMoveTarget(safe.x, safe.z);
           }
         }
       }
@@ -735,12 +750,15 @@ export class CityGameSession {
 
     if (this.hitStop > 0) {
       this.hitStop -= dt;
-      this.enemyView.sync(this.enemies);
+      this.enemyView.sync(this.enemies, dt);
+      const gyHit = world.groundY(this.player.x, this.player.z);
       this.renderer.setPlayerTransform(
         this.player.x,
         this.player.z,
         this.player.facing,
         false,
+        undefined,
+        gyHit,
       );
       this.renderer.updatePlayer(dt);
       this.camera.follow(this.player.x, this.player.z, dt);
@@ -761,15 +779,18 @@ export class CityGameSession {
       this.updateCombat(dt);
     }
 
+    const groundY = world.groundY(this.player.x, this.player.z);
     this.renderer.setPlayerTransform(
       this.player.x,
       this.player.z,
       this.player.facing,
       this.player.isMoving,
+      this.player.isMoving ? this.player.speed * this.player.speedScale : undefined,
+      groundY,
     );
     this.renderer.playerView.root.scale.setScalar(this.form.active ? this.form.scale : 1);
     this.renderer.updatePlayer(dt);
-    this.enemyView.sync(this.enemies);
+    this.enemyView.sync(this.enemies, dt);
     this.camera.follow(this.player.x, this.player.z, dt);
     const shake = this.effects.consumeShake(dt);
     if (shake.x || shake.y) {
@@ -784,7 +805,7 @@ export class CityGameSession {
     this.effects.update(dt, this.camera.camera, el.clientWidth || 1, el.clientHeight || 1);
     this.renderer.render(this.camera.camera);
     const playerRatio = hpCap > 0 ? Math.min(1, this.character.hp / hpCap) : 0;
-    this.effects.spawnHpBar("player", this.player.x, 2.05, this.player.z, playerRatio);
+    this.effects.spawnHpBar("player", this.player.x, groundY + 2.05, this.player.z, playerRatio);
 
     this.updateNearby(world.interactables);
     this.handleInteractKey();
@@ -836,6 +857,15 @@ export class CityGameSession {
   }
 
   private currentArenaLabel(): string | null {
+    const world = this.worlds.getCurrent();
+    if (world?.id === "dungeon-2") {
+      const px = this.player.x;
+      const pz = this.player.z;
+      if (pz < 0) {
+        return px < 0 ? "Bloco 1 / 4 (Noroeste)" : "Bloco 2 / 4 (Nordeste)";
+      }
+      return px < 0 ? "Bloco 3 / 4 (Sudoeste)" : "Bloco 4 / 4 (Sudeste)";
+    }
     const z = this.player.z;
     if (z > -12) return "Arena 1 / 3";
     if (z > -36) return "Arena 2 / 3";
@@ -1035,10 +1065,12 @@ export class CityGameSession {
           const killed = enemy.applyDamage(dmg);
           const mesh = this.enemyView.getMesh(enemy.id);
           this.effects.playHitFlash(mesh);
+          this.enemyView.playHit(enemy.id);
           this.effects.spawnDamageNumber(enemy.x, 1.4, enemy.z, dmg, "enemy");
           if (killed) {
             this.grantKillXp(enemy);
-            this.effects.playDeath(mesh);
+            this.enemyView.playDeath(enemy.id);
+            this.effects.playDeath(mesh, 1.4);
             this.effects.hideHpBar(enemy.id);
             this.effects.spawnDamageNumber(enemy.x, 1.7, enemy.z, 0, "kill");
           }
@@ -1119,12 +1151,14 @@ export class CityGameSession {
         if (!seen.has(enemy.id)) {
           seen.add(enemy.id);
           this.effects.playHitFlash(mesh);
+          this.enemyView.playHit(enemy.id);
           if (resolved.vfx === "burst") this.effects.playAttackPulse(mesh);
         }
         this.effects.spawnDamageNumber(enemy.x, 1.6, enemy.z, hit.damage, "skill");
         if (killed) {
           this.grantKillXp(enemy);
-          this.effects.playDeath(mesh, fireBurstDeathDuration);
+          this.enemyView.playDeath(enemy.id);
+          this.effects.playDeath(mesh, fireBurstDeathDuration ?? 1.4);
           this.effects.hideHpBar(enemy.id);
           this.effects.spawnDamageNumber(enemy.x, 1.8, enemy.z, 0, "kill");
           this.effects.cameraPunch(0.08);
@@ -1151,7 +1185,8 @@ export class CityGameSession {
         this.effects.spawnDamageNumber(enemy.x, 1.5, enemy.z, Math.max(1, Math.round(dot)), "skill");
         if (killed) {
           this.grantKillXp(enemy);
-          this.effects.playDeath(this.enemyView.getMesh(enemy.id));
+          this.enemyView.playDeath(enemy.id);
+          this.effects.playDeath(this.enemyView.getMesh(enemy.id), 1.4);
           this.effects.hideHpBar(enemy.id);
         }
       }
@@ -1174,7 +1209,8 @@ export class CityGameSession {
       this.effects.spawnDamageNumber(enemy.x, 1.5, enemy.z, strike.damage, "skill");
       if (killed) {
         this.grantKillXp(enemy);
-        this.effects.playDeath(this.enemyView.getMesh(enemy.id));
+        this.enemyView.playDeath(enemy.id);
+        this.effects.playDeath(this.enemyView.getMesh(enemy.id), 1.4);
         this.effects.hideHpBar(enemy.id);
       }
       if (strike.splash > 0) {
@@ -1185,7 +1221,8 @@ export class CityGameSession {
           const splashKill = other.applyDamage(splashDmg);
           if (splashKill) {
             this.grantKillXp(other);
-            this.effects.playDeath(this.enemyView.getMesh(other.id));
+            this.enemyView.playDeath(other.id);
+            this.effects.playDeath(this.enemyView.getMesh(other.id), 1.4);
             this.effects.hideHpBar(other.id);
           }
         }
@@ -1195,10 +1232,12 @@ export class CityGameSession {
 
     for (const enemy of this.enemies.enemies) {
       if (!enemy.alive) continue;
+      const enemyScale = enemy.modelScale > 0 ? enemy.modelScale : 1.0;
+      const enemyHpY = (enemy.isBoss ? 2.4 : 1.85) * enemyScale;
       this.effects.spawnHpBar(
         enemy.id,
         enemy.x,
-        1.35,
+        enemyHpY,
         enemy.z,
         enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 0,
       );
@@ -1209,6 +1248,7 @@ export class CityGameSession {
         dt,
       });
       if (!wantsAttack) continue;
+      this.enemyView.playAttack(enemy.id);
       const summon = this.summons.nearest(enemy.x, enemy.z, enemy.range);
       const summonDist = summon ? Math.hypot(summon.x - enemy.x, summon.z - enemy.z) : Number.POSITIVE_INFINITY;
       const playerDist = Math.hypot(this.player.x - enemy.x, this.player.z - enemy.z);
@@ -1238,7 +1278,8 @@ export class CityGameSession {
         const killed = enemy.applyDamage(reflected);
         if (killed) {
           this.grantKillXp(enemy);
-          this.effects.playDeath(this.enemyView.getMesh(enemy.id));
+          this.enemyView.playDeath(enemy.id);
+          this.effects.playDeath(this.enemyView.getMesh(enemy.id), 1.4);
           this.effects.hideHpBar(enemy.id);
         }
       }
@@ -1398,7 +1439,20 @@ export class CityGameSession {
     this.pendingInteract = def;
     const stopAt = Math.max(0.85, INTERACT_RANGE * 0.72);
     const point = this.approachPoint(def.x, def.z, stopAt);
-    this.player.setMoveTarget(point.x, point.z);
+    const world = this.worlds.getCurrent();
+    if (world) {
+      const safe = projectWalkTarget(
+        point.x,
+        point.z,
+        this.player.radius,
+        world.collision,
+        this.player.x,
+        this.player.z,
+      );
+      this.player.setMoveTarget(safe.x, safe.z);
+    } else {
+      this.player.setMoveTarget(point.x, point.z);
+    }
   }
 
   private resolvePendingInteract(): void {
@@ -1510,7 +1564,10 @@ export class CityGameSession {
     if (def.kind === "portal") {
       const pick = this.pickDungeonForLevel();
       const gate = this.dungeonEntryGate(pick.id);
-      body = `${pick.name}\nNível ${pick.minLevel}–${pick.maxLevel} (${gate.ok ? "ok" : "fora"})\nDuração: 10:00 · 3 arenas\nDisponíveis p/ seu nível: ${this.eligibleDungeons().map((d) => d.name).join(", ") || "—"}`;
+      const mm = String(Math.floor(pick.durationSeconds / 60)).padStart(2, "0");
+      const ss = String(pick.durationSeconds % 60).padStart(2, "0");
+      const arenaCount = pick.arenas.length;
+      body = `${pick.name}\nNível ${pick.minLevel}–${pick.maxLevel} (${gate.ok ? "ok" : "fora"})\nDuração: ${mm}:${ss} · ${arenaCount} ${arenaCount === 1 ? "arena" : "arenas"}\nDisponíveis p/ seu nível: ${this.eligibleDungeons().map((d) => d.name).join(", ") || "—"}`;
     }
     this.panel.open({ id: def.id, label: def.label, body, kind: def.kind });
     this.bus.emit("interaction:opened", { id: def.id, label: def.label, body });
@@ -1594,7 +1651,7 @@ export class CityGameSession {
 
   debugForceDeath(): boolean {
     const world = this.worlds.getCurrent();
-    if (!world || world.id !== "dungeon-test") return false;
+    if (!world || world.id === "city") return false;
     if (this.character.isDead || this.worldFadeBusy) return false;
     if (this.dungeonRun.getPhase() !== "active") return false;
     this.character.applyDamage(this.character.maxHp + 999);
