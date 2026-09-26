@@ -1,55 +1,64 @@
 # Refatoração 8 — wire módulos e legado fora — implementação
 
-Executar passos **1 → 18** na ordem. Cada linha = arquivo + entrega. Código em `game/` sem comentários.
+Executar passos **1 → 19** na ordem. Cada linha = arquivo + entrega. Código em `game/` sem comentários.
 
 ## Pré-requisitos
 
-- `Planos/Refatoracao 7.md` passos **1 → 12**.
+- `Planos/Refatoracao 7.md` passos **1 → 18** (aprender skill, vender, Reset/Evolução e refino +1 já na `WireApi`).
 
 ## Comportamento
 
-- UI de hub migra para TS em `game/src/ui/wire/` (ou `game/src/ui/panels/`), bundlada pelo Vite com o jogo.
+- UI de hub migra para TS em `game/src/ui/wire/`, bundlada pelo Vite com o jogo.
 - `visual/telas/03-wire-paineis-cidade.html` deixa de ser fonte de produção.
-- Remover `GamePanels.ts` e globais `__UAIDZIN_WIRE__`, `__UAIDZIN_ECONOMY__` do caminho de produção.
-- `vite.config.ts`: build não exige `../visual/telas` para produção; assets estáticos copiados para `game/public/wire/` se necessário.
+- `GamePanels.ts` sai por completo: código, estilos, `#game-panels`, atalhos e pontos de entrada.
+- Globais `__UAIDZIN_WIRE__`, `__UAIDZIN_ECONOMY__`, `__UAIDZIN_DEBUG__` fora do build de produção; `__UAIDZIN__` só em DEV.
+- `vite.config.ts`: build não exige `../visual/telas`.
+
+## Issues
+
+| Issue | Cobertura | Fecha com |
+|---|---|---|
+| #43 | total (com `Refatoracao 4.md`) | passos 9–12, 18; critérios do Complemento de #43 |
+| #31 | reforço (sem globais) | passo 11 |
 
 ## Passos
 
 ### A — Estrutura
 
-1. `game/src/ui/wire/` (pasta nova) — módulos: shell, person, skills, inventory, vault, shop, composer, quest, portal, sage.
-2. Migrar markup/CSS crítico de `visual/telas/03-wire-paineis-cidade.html` para componentes TS + CSS importado (paleta C intacta).
+1. `game/src/ui/wire/` (pasta nova) — módulos: shell, person, skills, inventory, vault, shop, composer, quest, portal, sage, dialog.
+2. `game/src/ui/wire/` — migrar markup/CSS crítico de `visual/telas/03-wire-paineis-cidade.html` para componentes TS + CSS importado (paleta C intacta).
 
-### B — Painéis (ordem sugerida)
+### B — Painéis
 
-3. Personagem + seleção de slot.
-4. Skills (K) + Mestre.
-5. Inventário (I) + equip.
-6. Cofre, loja, compositor, quest, portal, sábio — um grupo por passo de task se preferir fatiar.
+3. `game/src/ui/wire/person.ts` — personagem, slot, Reset/Evolução.
+4. `game/src/ui/wire/skills.ts` — Skills (K) + Mestre (sem nível).
+5. `game/src/ui/wire/inventory.ts` — Inventário (I) + equip + vender + descartar com confirmação.
+6. `game/src/ui/wire/` — cofre, loja (venda com confirmação), Ferreiro (refino +1), compositor, quest, portal, sábio.
 
 ### C — Boot do wire
 
-7. `game/index.html` ou entry do hub — montar wire TS em `#wire-root`.
+7. `game/index.html` — montar wire TS em `#wire-root`.
 8. `game/vite.config.ts` — remover `wireUiPlugin` que aponta para `visual/telas`; servir bundle TS.
 
 ### D — Remover legado
 
-9. Apagar `game/src/ui/GamePanels.ts` e referências.
-10. Remover instalação de `window.__UAIDZIN_WIRE__` / `__UAIDZIN_ECONOMY__` em produção.
-11. Manter `visual/telas/` apenas como espelho opcional ou apagar HTML monolítico após migração (decisão: apagar script inline de produção).
+9. `game/src/ui/GamePanels.ts` — apagar; remover `new GamePanels`/`this.panels` de `game/src/app/GameApp.ts`, `#game-panels` de `game/index.html`, `gamePanelsElement` de `game/src/main.ts` e CSS `.game-panels`/`.panel-card`.
+10. `game/src/ui/WireGameBridge.ts` — remover instalação de `window.__UAIDZIN_WIRE__` / `__UAIDZIN_ECONOMY__`.
+11. `game/src/debug/DebugApi.ts` — `window.__UAIDZIN__` só em DEV.
+12. `visual/telas/03-wire-paineis-cidade.html` — apagar script inline de produção.
 
 ### E — QA
 
-12. `cd game && npm run build` — verde sem pasta `visual/telas`.
-13. `cd game && npm run typecheck && npm run smoke`.
-14. Playwright existentes que abrem `/wire/...` — atualizar URL/entry.
-15. Manual: fluxo login → cidade → dungeon → voltar.
-16. Manual: paleta, escudo só nos CTAs travados, sem emoji.
-17. `AGENTS.md` — uma linha: fonte wire = `game/src/ui/wire` (task doc se pedida).
-18. Confirmar `grep __UAIDZIN_WIRE__` só em dev/test adapters.
+13. `cd game && npm run build` — verde sem pasta `visual/telas`.
+14. `cd game && npm run typecheck && npm run test && npm run smoke`.
+15. `game/scripts/` — Playwright que abrem `/wire/...` apontam para o entry novo; `node scripts/check-wire-economy.mjs` verde.
+16. Manual: login → cidade → dungeon → voltar; C/K/I nas duas.
+17. Manual: paleta, escudo só nos CTAs travados, sem emoji, pt-BR com acento.
+18. `rg "__UAIDZIN_WIRE__|__UAIDZIN_DEBUG__|GamePanels" game/src game/dist` — só adapters dev/test; zero no `dist`.
+19. `AGENTS.md` — linha “Fonte wire = `game/src/ui/wire`”.
 
 ## Testar
 
-- [ ] Passos 12–13 verdes.
+- [ ] Passos 13–15 verdes.
 - [ ] Hub completo jogável sem `visual/telas` no build.
-- [ ] Aprender skill cobra ouro (sem `GamePanels`).
+- [ ] Aprender skill cobra ouro; vender pede confirmação; refino e Reset funcionam — sem `GamePanels`.
