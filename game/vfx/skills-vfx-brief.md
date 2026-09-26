@@ -165,14 +165,14 @@ Regenerar após editar as fontes: `node scripts/vfx/write-atelier-brief.mjs`.
 - Técnica escolhida: Three.js · geometria animada · shader GLSL · partículas instanciadas · CanvasTexture.
 - Sequência: slash em 0.16s (origem) → rift em 0.4s (alvo) → embers em 0.45s (alvo).
 
-#### `tk_mag_death_stab` · Death Stab · Lança do veredito
+#### `tk_mag_death_stab` · Estocada do Veredito · Lança do veredito
 
 - Origem: Mágico, posição 7/8, tipo `damage`, forma `single`, elemento `holy`.
 - Descrição/prompt visual: Um gume sagrado atravessa uma única marca; a luz se fecha de dentro para fora num corte vertical.
 - Técnica escolhida: Three.js · geometria animada.
 - Sequência: mark em 0s (alvo) → lance em 0.22s (percurso) → beam em 0.58s (alvo).
 
-#### `tk_mag_circulo_morte` · Circulo da Morte · Tribunal de lâminas
+#### `tk_mag_circulo_morte` · Círculo da Morte · Tribunal de lâminas
 
 - Origem: Mágico, posição 8/8, tipo `damage`, forma `aoe`, elemento `holy`.
 - Descrição/prompt visual: Um círculo consagrado ergue oito lâminas ao redor da área; elas convergem e apagam num único anel quente.
@@ -847,14 +847,14 @@ Regenerar após editar as fontes: `node scripts/vfx/write-atelier-brief.mjs`.
 - Técnica escolhida: Three.js · geometria animada · shader GLSL · partículas instanciadas · CanvasTexture.
 - Sequência: moon em 0.05s (alvo) → claw em 0.35s (alvo) → embers em 0.7s (alvo).
 
-#### `tk_mag_death_stab` · Death Stab · Agulhas do julgamento
+#### `tk_mag_death_stab` · Estocada do Veredito · Agulhas do julgamento
 
 - Origem: Mágico, posição 7/8, tipo `damage`, forma `single`, elemento `holy`.
 - Descrição/prompt visual: Pequenas hastes de luz cercam uma estocada central, concentrando a sentença num único alvo.
 - Técnica escolhida: Three.js · geometria animada.
 - Sequência: mark em 0s (alvo) → arrow em 0.25s (percurso) → lance em 0.55s (percurso).
 
-#### `tk_mag_circulo_morte` · Circulo da Morte · Relógio do fim
+#### `tk_mag_circulo_morte` · Círculo da Morte · Relógio do fim
 
 - Origem: Mágico, posição 8/8, tipo `damage`, forma `aoe`, elemento `holy`.
 - Descrição/prompt visual: Marcas douradas acendem como horas; um gume rotativo varre o círculo e o selo fecha num feixe central.
@@ -1529,14 +1529,14 @@ Regenerar após editar as fontes: `node scripts/vfx/write-atelier-brief.mjs`.
 - Técnica escolhida: Three.js · geometria animada · partículas instanciadas.
 - Sequência: wave em 0s (alvo) → rift em 0.28s (alvo) → shards em 0.65s (alvo).
 
-#### `tk_mag_death_stab` · Death Stab · Sentença partida
+#### `tk_mag_death_stab` · Estocada do Veredito · Sentença partida
 
 - Origem: Mágico, posição 7/8, tipo `damage`, forma `single`, elemento `holy`.
 - Descrição/prompt visual: Uma marca de luz se divide em duas metades; a estocada central junta ambas num clarão de corte, não numa explosão.
 - Técnica escolhida: Three.js · geometria animada · shader GLSL.
 - Sequência: moon em 0s (alvo) → lance em 0.35s (percurso) → slash em 0.7s (alvo).
 
-#### `tk_mag_circulo_morte` · Circulo da Morte · Cúpula do veredito
+#### `tk_mag_circulo_morte` · Círculo da Morte · Cúpula do veredito
 
 - Origem: Mágico, posição 8/8, tipo `damage`, forma `aoe`, elemento `holy`.
 - Descrição/prompt visual: Arcos de julgamento fecham uma cúpula sobre a área e se recolhem num selo final, coroado por lâminas menores.

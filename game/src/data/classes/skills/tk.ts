@@ -86,6 +86,7 @@ export const TK_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "tk_ctrl_shield",
     name: "Shield",
+    desc: "Ergue a guarda: defesa +32 % por 12 s.",
     index: 0,
     kind: "buff",
     buff: { id: "tk_shield", sec: 12, stat: "defense", magnitude: 0.32 },
@@ -93,6 +94,7 @@ export const TK_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "tk_ctrl_resistance",
     name: "Resistance",
+    desc: "Raízes de aço: HP máximo +25 % por 14 s e cura 12 % do HP máximo ao usar. Nível aumenta a cura.",
     index: 1,
     kind: "buff",
     buff: { id: "tk_resistance", sec: 14, stat: "maxHp", magnitude: 0.25 },
@@ -101,6 +103,7 @@ export const TK_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "tk_ctrl_taunt",
     name: "Taunt",
+    desc: "Batida no escudo: dano leve em área e todos os inimigos num raio de 5 m vêm atrás de você por 5 s.",
     index: 2,
     kind: "damage",
     shape: "aoe",
@@ -114,6 +117,7 @@ export const TK_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "tk_ctrl_imunity",
     name: "Imunity",
+    desc: "Vidro consagrado: reduz em 35 % o dano de ataques à distância por 12 s.",
     index: 3,
     kind: "buff",
     buff: { id: "tk_imunity", sec: 12, stat: "magicResist", magnitude: 0.35 },
@@ -121,6 +125,7 @@ export const TK_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "tk_ctrl_parry",
     name: "Parry",
+    desc: "Ricochete: 18 % de chance de aparar qualquer ataque por 10 s.",
     index: 4,
     kind: "buff",
     buff: { id: "tk_parry", sec: 10, stat: "evasion", magnitude: 0.18 },
@@ -128,6 +133,7 @@ export const TK_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "tk_ctrl_sustain",
     name: "Sustain",
+    desc: "Brasa vital: recupera 10 % do HP máximo. Nível aumenta a cura.",
     index: 5,
     kind: "heal",
     healRatio: 0.1,
@@ -137,6 +143,7 @@ export const TK_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "tk_ctrl_fear",
     name: "Fear",
+    desc: "Sombra do elmo: dano em área e todos num raio de 3,8 m ficam atordoados por 1,6 s. Nível aumenta o dano.",
     index: 6,
     kind: "damage",
     shape: "aoe",
@@ -150,6 +157,7 @@ export const TK_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "tk_ctrl_divine_armor",
     name: "Divine Armor",
+    desc: "Couraça solar. Passiva: todo dano recebido cai 12 %. Só uma 8ª skill por personagem. Não entra na barra.",
     index: 7,
     kind: "passive",
     passive: { id: "damageReduction", magnitude: 0.12 },
@@ -160,6 +168,7 @@ export const TK_MAGIA: SkillDef[] = [
   defineSkill({
     id: "tk_mag_lamina_energia",
     name: "Lâmina de Energia",
+    desc: "Fio de alvorada: um feixe de luz corta um inimigo a até 8 m. Dano mágico. Nível aumenta o dano.",
     index: 0,
     kind: "damage",
     shape: "single",
@@ -169,6 +178,7 @@ export const TK_MAGIA: SkillDef[] = [
   defineSkill({
     id: "tk_mag_campo_gelo",
     name: "Campo de Gelo",
+    desc: "Geada radial: dano de gelo num raio de 3,4 m e os atingidos andam a 55 % da velocidade por 3,5 s. Nível aumenta o dano.",
     index: 1,
     kind: "damage",
     shape: "aoe",
@@ -180,6 +190,7 @@ export const TK_MAGIA: SkillDef[] = [
   defineSkill({
     id: "tk_mag_mana_burn",
     name: "Mana Burn",
+    desc: "Mana em combustão: dano mágico +28 % por 12 s, mas toda skill custa 40 % mais mana enquanto durar.",
     index: 2,
     kind: "buff",
     buff: { id: "tk_mana_burn", sec: 12, stat: "magicPower", magnitude: 0.28 },
@@ -188,6 +199,7 @@ export const TK_MAGIA: SkillDef[] = [
   defineSkill({
     id: "tk_mag_moon_ray",
     name: "Moon Ray",
+    desc: "Fenda lunar: um raio vertical cai sobre um inimigo a até 8 m. Dano mágico alto. Nível aumenta o dano.",
     index: 3,
     kind: "damage",
     shape: "single",
@@ -198,6 +210,7 @@ export const TK_MAGIA: SkillDef[] = [
   defineSkill({
     id: "tk_mag_poison_stab",
     name: "Poison Stab",
+    desc: "Agulha verde: estocada curta que envenena o alvo por 4 s (35 % do dano do golpe por segundo). Nível aumenta o dano e o veneno.",
     index: 4,
     kind: "damage",
     shape: "single",
@@ -209,6 +222,7 @@ export const TK_MAGIA: SkillDef[] = [
   defineSkill({
     id: "tk_mag_fire_slash",
     name: "Fire Slash",
+    desc: "Varredura de brasa: corte largo de fogo que atinge todos num raio de 3,5 m. Nível aumenta o dano.",
     index: 5,
     kind: "damage",
     shape: "aoe",
@@ -218,7 +232,8 @@ export const TK_MAGIA: SkillDef[] = [
   }),
   defineSkill({
     id: "tk_mag_death_stab",
-    name: "Death Stab",
+    name: "Estocada do Veredito",
+    desc: "Lança do veredito: estocada sagrada que ignora 20 % da defesa. Dano mágico muito alto em um alvo. Nível aumenta o dano.",
     index: 6,
     kind: "damage",
     shape: "single",
@@ -229,7 +244,8 @@ export const TK_MAGIA: SkillDef[] = [
   }),
   defineSkill({
     id: "tk_mag_circulo_morte",
-    name: "Circulo da Morte",
+    name: "Círculo da Morte",
+    desc: "Tribunal de lâminas: pilares de luz caem ao redor de você num raio de 4,2 m. Só uma 8ª skill por personagem: comprar esta bloqueia Fire Burst e Divine Armor.",
     index: 7,
     kind: "damage",
     shape: "aoe",
