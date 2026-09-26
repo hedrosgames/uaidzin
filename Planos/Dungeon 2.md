@@ -1,6 +1,8 @@
 # Plano — Dungeon 2
 
-Data: 2026-09-26 · Branch: `arena/01a0dd23-uaidzin` · Escopo: runtime `game/` + wire `visual/telas/` + docs `nongame/docs/inventarios/`.
+**Status:** plano de implementação; o runtime ainda não foi alterado por este documento.
+
+**Repositório:** `Planos/Dungeon 2.md` na `main` · Escopo: runtime `game/` + wire `visual/telas/` (servido em `/wire` pelo `vite.config.ts`) + inventários `nongame/docs/inventarios/` na task de fechamento.
 
 Documento de arquitetura. **Não contém código** — dita organização, contratos e restrições. Execução segue o painel de tarefas (task por fase) e as regras duras do `AGENTS.md`.
 
@@ -55,6 +57,7 @@ Consequência importante: `pickDungeonForLevel()` escolhe a **última** dungeon 
 | G5 — Campo `drops` nos monstros + rolagem no loot | R3/R4 | dados + contrato TS + lógica mínima |
 | G6 — Ajuste de `respawnSeconds` das caveiras (“de tempos em tempos”) | R2 | dados (balance provisório) |
 | G7 — UI: Vela no card do portal (nome/ícone/contagem) e mensagem de entrada citando o item | R5 | wire + texto |
+| G8 — `dungeonEnterMessage("entry")` genérico hoje (“Entrada insuficiente”) | R5 | texto + catálogo |
 
 Nada de mundo novo, LD novo, sistema de spawn novo ou save novo.
 
@@ -84,7 +87,7 @@ CityGameSession.dungeonEntryGate()/tryEnterDungeon()
 monsters.json (caveira_normal / caveira_especial + drops[]) ──► getMonsterDef()
         │
         ▼ (kill)
-CityGameSession.grantKillXp(enemy) ──► EconomyService.grantKillLoot(archetype, isBoss, monsterId)
+CityGameSession.grantKillXp(enemy) ──► EconomyService.grantKillLoot(archetype, isBoss, enemy.monsterId)
                                               └─ rolagens existentes (ouro/equip/material) — intactas
                                               └─ rolagem nova: drops do monstro  [R3/R4]
                                                      └─ createFromCatalog("caixa_sabedoria", qty)
@@ -96,19 +99,20 @@ EnemyService.spawnFromDungeon() → EnemyModel(homeX/homeZ, respawnSeconds)
 
 | Arquivo | Mudança | Requisito |
 |---|---|---|
-| `game/src/data/items/items.json` | +2 defs: `entry_vela` (slot `entry`) e `caixa_sabedoria` (slot `material`) | R3–R5 |
-| `visual/telas/assets/items/vela.svg` | novo ícone (paleta C) | R5 |
+| `game/src/data/items/items.json` | +2 defs: `entry_vela` (slot `entry`) e `caixa_sabedoria` (slot `material`); campo `"icon": "items/vela.svg"` / `"items/caixa_sabedoria.svg"` (mesmo padrão dos selos) | R3–R5 |
+| `visual/telas/assets/items/vela.svg` | novo ícone (paleta C) — caminho físico do `"icon"` acima | R5 |
 | `visual/telas/assets/items/caixa_sabedoria.svg` | novo ícone (paleta C) | R3/R4 |
 | `game/src/data/dungeons/dungeons.json` | `dungeon-2.entryItemId`: `null` → `"entry_vela"` | R5 |
 | `game/src/data/balance/shops.json` | loja `merchant`: +slot `{ itemId: "entry_vela", qty: 10, price: 1000 }` | R5 |
 | `game/src/data/monsters/monsters.json` | `caveira_normal`: `drops` 20% + `respawnSeconds` ajustado · `caveira_especial`: `drops` 100% + `respawnSeconds` ajustado | R2–R4 |
 | `game/src/data/monsters/monster-definitions.ts` | +tipo `MonsterDropDef { itemId; chance; qty }` · +campo opcional `drops?: MonsterDropDef[]` em `MonsterDef` | R3/R4 |
-| `game/src/domain/economy/EconomyService.ts` | `grantKillLoot(archetype, isBoss, monsterId?)`: lê `getMonsterDef(monsterId).drops`, rola cada entrada, adiciona via `createFromCatalog`; falha de espaço vira `lostItem` | R3/R4 |
-| `game/src/app/CityGameSession.ts` | `grantKillXp()`: repassa `enemy.monsterId` ao loot · corpo do painel do portal cita a Vela (contagem) · `dungeonEnterMessage("entry")` cita o item faltante | R3–R5 |
+| `game/src/domain/economy/EconomyService.ts` | `grantKillLoot(archetype, isBoss, monsterId?)`: se `monsterId` presente, lê `getMonsterDef(monsterId).drops`, rola cada entrada, adiciona via `createFromCatalog`; falha de espaço vira `lostItem`; chamadas sem `monsterId` (legado) ignoram `drops` | R3/R4 |
+| `game/src/app/CityGameSession.ts` | `grantKillXp()`: ampliar parâmetro `enemy` para incluir `monsterId` (já existe em `EnemyModel`) e repassar ao loot · corpo do painel do portal cita a Vela (contagem) | R3–R5 |
+| `game/src/app/CityGameSession.ts` (`dungeonEnterMessage`) | Para `reason === "entry"`, aceitar `entryItemId` opcional ou resolver nome via `ITEM_CATALOG` / `getItemDef` — ex.: “Vela necessária — compre com o Mercador” em vez de “Entrada insuficiente” | R5/G8 |
 | `visual/telas/03-wire-paineis-cidade.html` | `PORTAL_FALLBACK.items`: +`entry_vela: { id, name: "Vela", icon: "vela" }` · `PORTAL_FALLBACK.dungeons[dungeon-2].entryItemId`: `"entry_vela"` (fallback espelha o runtime; a API já sobrescreve) | R5 |
 | `nongame/docs/inventarios/itens.md` · `lojas.md` · `dungeons.md` · `inimigos.md` | atualização na task de fechamento (ids novos, drop, preço, respawn) | doc |
 
-Fora da lista: **nenhum**. `ItemFactory`, `InventoryService`, `ShopService`, `EnemyService`, `EnemyModel`, `DungeonRun`, `WorldManager`, `CityWorld` e o save **não mudam** — os mecanismos existentes cobrem o comportamento (ver §2).
+Fora da lista: **nenhum módulo novo**. `ItemFactory`, `InventoryService`, `ShopService`, `EnemyService`, `EnemyModel`, `DungeonRun`, `WorldManager`, `CityWorld` e o save **não mudam de contrato** — só assinatura de `grantKillLoot` + texto de entrada. `grantKillLoot` hoje só é chamado de `grantKillXp()`; um único ponto de repasse de `monsterId` cobre R3/R4.
 
 ### 4.4. Contratos novos (decisões fechadas)
 
@@ -130,7 +134,7 @@ Fora da lista: **nenhum**. `ItemFactory`, `InventoryService`, `ShopService`, `En
 ### 4.5. UI (mínimo necessário)
 
 - **Painel do portal** (wire `p-portal`): o card da Dungeon 2 já desenha “Entrada” com ícone + contagem via `getPortalContext().entryCounts` (que vem de `entryItemCounts()` e **já inclui qualquer `entryItemId` das defs** — zero código novo). Só o mapa de fallback do wire precisa conhecer `entry_vela` (nome + ícone).
-- **Mensagem de entrada insuficiente**: trocar “Entrada insuficiente” por texto que nomeia o item (“Vela necessária — compre com o Mercador”). Um `case` em `dungeonEnterMessage()`.
+- **Mensagem de entrada insuficiente**: trocar o retorno fixo de `dungeonEnterMessage("entry")` por texto que nomeia o item da dungeon tentada (`ITEM_CATALOG[entryItemId].name`). Call sites (`tryEnterDungeon`, `DebugApi`) precisam passar o id ou a def quando `reason === "entry"`.
 - **Guarda do Portal** (`openInteraction`, corpo do painel): acrescentar linha “Vela: N” ao texto já montado — opcional de polimento, mesma task.
 - **Drop log**: caixa aparece pelo caminho atual (`pushDropLog`, canto inferior esquerdo). Se o mesmo kill gerar ouro + caixa, uma linha só concatenando (“+X Ouro · Caixa de Sabedoria”) — sem novo componente.
 - Sem tela nova, sem modal novo, sem emoji, acentuação pt-BR correta.
@@ -144,7 +148,7 @@ Cada fase = 1 task (registrar antes, `start` na execução, `done` só testado).
 | Fase | Conteúdo | Depende de | Teste de saída |
 |---|---|---|---|
 | **F1 — Itens** | `items.json` (+`entry_vela`, +`caixa_sabedoria`) e os 2 SVGs em `visual/telas/assets/items/` | — | `npm run typecheck`; item aparece no inventário via debug com ícone |
-| **F2 — Entrada (Vela)** | `dungeons.json` (`entryItemId`) + `shops.json` (slot 1000) + mensagem de entrada | F1 | comprar Vela por 1000; entrar em D2 consome 1; sem Vela bloqueia com a mensagem nova; save/reload mantém contagem |
+| **F2 — Entrada (Vela)** | `dungeons.json` (`entryItemId`) + `shops.json` (slot 1000) + `dungeonEnterMessage` (G8) | F1 | comprar Vela por 1000; entrar em D2 consome 1; sem Vela bloqueia com a mensagem nova; save/reload mantém contagem |
 | **F3 — Drops** | `MonsterDropDef` + `drops` nos 2 monstros + `grantKillLoot(…, monsterId)` + repasse em `grantKillXp` | F1 | Caveira 2 sempre dropa caixa; Caveira 1 ~20% (validar com random fixo/DebugApi); inventário cheio → “item perdido”; Dungeon 1 inalterada |
 | **F4 — Respawn** | `respawnSeconds` das caveiras (valores do §6) | — | matar um grupo e cronometrar o retorno **no mesmo ponto** |
 | **F5 — UI wire** | fallback `entry_vela` no portal + texto da Vela no Guarda do Portal | F1, F2 | card D2 mostra Vela + contagem; fluxo de confirmação funciona |
@@ -230,3 +234,5 @@ Manual (lab admin/admin):
 8. Dungeon 1 (sem item de entrada) e selos D4–D8 seguem intactos.
 9. UI: card D2 mostra ícone/nome/contagem da Vela; C/K/I funcionam dentro da dungeon.
 10. Checklist final do `AGENTS.md` (zero comentário, sem temporário, pt-BR, sem emoji) + validação visual do Felipe.
+
+**Regressão cruzada:** enquanto a Dungeon 1 evoluir em paralelo, manter `node scripts/check-dungeon-2.mjs` verde após cada fase; quando existir `check-dungeon-1.mjs`, rodar os dois antes de fechar F6.

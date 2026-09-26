@@ -2,6 +2,8 @@
 
 **Status:** plano de implementação; o runtime ainda não foi alterado por este documento.
 
+**Repositório:** `Planos/Dungeon 1.md` na `main` · Revalidar assinaturas e paths no código antes de cada fase.
+
 **Escopo revisado:** fluxo de Dungeon no jogo — dados, construção do mundo, colisão, combate e inimigos, inventário, save, HUD/interações e QA.
 
 ## 1. Objetivo
@@ -23,7 +25,7 @@ Este plano fixa as regras abaixo para não deixar decisões em aberto durante a 
 
 1. A D1 tem **três zonas lineares**, cada uma com área de 36 × 36.
 2. Existem **três portões**: dois portões de progressão, um entre a Zona 1 e 2 e outro entre a Zona 2 e 3; e um portão de saída na Zona 3, entre o Boss 3 e o portal atual. O portal só pode ser alcançado depois que o terceiro portão abrir.
-3. Existe **um boss residente em cada zona**. Bosses 1 e 2 concedem, respectivamente, as chaves dos dois portões de progressão. O Boss 3 é o encontro final, concede loot normal de boss e a chave do portão de saída.
+3. Existe **um boss residente em cada zona**. Cada boss concede a chave do **próximo** obstáculo: Boss 1 → passagem Zona 2; Boss 2 → passagem Zona 3; Boss 3 → loot de boss + chave do portão de saída (antes do portal).
 4. “Sempre disponível” significa que cada boss está configurado desde o início da run e reaparece na própria zona após o cooldown atual de **180 segundos**, sem quest ou gatilho adicional de spawn. A progressão linear continua exigindo abrir o portão anterior para chegar fisicamente às Zonas 2 e 3. O valor vem de `DUNGEON_BALANCE.boss.respawnSeconds` e não será alterado neste plano.
 5. Chaves são itens stackáveis do inventário normal e persistem como os demais itens. Chave não usada permanece após saída, morte ou reload; chave usada é removida. Se o jogador já possui a chave correta, o boss correspondente não gera cópias extras.
 6. Todos os portões abrem automaticamente quando o jogador chega perto do portão correto com sua chave. Não há confirmação por E, janela modal nem consumo de chave errada. O portal final mantém a interação atual depois que o portão de saída abre.
@@ -48,6 +50,18 @@ Cidade
 ```
 
 A D1 tem três portões e três chaves correspondentes, uma por boss. Não há progresso de quest nem recompensa de conclusão nesta arquitetura.
+
+### 2.1 Tabela boss → chave → portão
+
+Os IDs de chave nomeiam o **destino** após o portão, não a zona do boss.
+
+| Zona | Boss (spawn id) | Chave concedida | Portão que consome | Gate id |
+|---|---|---|---|---|
+| 1 | `d1-a1-f1` | `d1_key_zone_2` | progressão 1→2 | `d1-gate-1` |
+| 2 | `d1-a2-f1` | `d1_key_zone_3` | progressão 2→3 | `d1-gate-2` |
+| 3 | `d1-a3-boss` | `d1_key_exit` | saída (portal) | `d1-gate-exit` |
+
+Chave **não consumida** de uma run anterior permanece no inventário e pode abrir o portão correspondente numa run nova, sem exigir novo kill — desde que o jogador ainda não tenha consumido essa unidade.
 
 ## 3. Arquitetura escolhida
 
@@ -105,6 +119,7 @@ Implementar o menor caminho que atende exatamente o pedido:
 | Dados da dungeon | `game/src/data/dungeons/dungeons.json` define D1 como 3 arenas pequenas (`halfSize` 9, 9 e 10), 6 spawns, um único boss na terceira arena, nível 1–40, sem item de entrada e 600 s. | Os dados não descrevem zonas de 36 × 36, gates ou bosses por zona. |
 | Escala da cidade | `buildCityWorld()` em `game/src/world/CityWorld.ts` usa `size = 36`. | Reutilizar essa dimensão como fonte única para as zonas; evitar duplicar números independentes. |
 | Mundo que a D1 usa | `CityGameSession.tryEnterDungeon()` envia a D2 a `dungeon-2`, mas todas as outras dungeons à world `dungeon-test`. `buildTestDungeonWorld()` é um corredor greybox de **28 × 78**, não o mundo da D1 em `dungeons.json`. | A D1 será construída por `Dungeon1WorldBuilder` e roteada para o world próprio `dungeon-1`. |
+| Roteamento explícito | Hoje `tryEnterDungeon()` só trata `dungeon-2`; demais ids caem em `dungeon-test`. `enterWorld()` usa `WorldId` sem `"dungeon-1"`. `setWorldLook()` trata `dungeon-2` como visual “cidade”; o resto usa look “dungeon”. | Estender `WorldId`, `WorldManager`, o ternário de `tryEnterDungeon()` (`dungeon-1` \| `dungeon-2` \| `dungeon-test`) e incluir `dungeon-1` no look de cemitério/greybox alinhado à D2, se o builder reutilizar o mesmo kit. |
 | Worlds e cache | `WorldManager` reconhece somente `city`, `dungeon-test` e `dungeon-2`, e mantém worlds em cache. | Adicionar o world da D1 e resetar os gates ao iniciar cada run; não deixar portões abertos após uma run anterior. |
 | Run e timer | `DungeonRun` já controla fase, kills, XP e timer. `enterWorld()` inicia uma run quando entra em qualquer world não-cidade. | Fazer as três zonas no mesmo world e nunca chamar `enterWorld()` na troca de zona; isso preserva timer, XP e duração da run. |
 | Bosses e respawn | `EnemyService` aplica multiplicadores a `isBoss` e usa o respawn de 180 s. A D1 atual marca como boss um spawn de arquétipo `fixed`, sem associar uma chave. | Definir explicitamente o boss de cada zona e sua recompensa. Reutilizar os multiplicadores e o cooldown existentes sem qualquer ajuste de balanceamento nesta entrega. |
@@ -136,7 +151,8 @@ Construir a D1 como **um único world conectado** de 36 × 108, dividido em trê
 | `d1-zone-2` | `(0, -36)` | `-54` a `-18` | Boss 2 — `d1-a2-f1` em `(5, -41)` | `d1-a2-r1` em `(-4, -43)` | `d1-gate-2` em `(0, -54)`, destino Zona 3 |
 | `d1-zone-3` | `(0, -72)` | `-90` a `-54` | Boss final — `d1-a3-boss` em `(0, -74)` | `d1-a3-c1` em `(5, -70)` | `d1-gate-exit` em `(0, -82)`, destino portal |
 
-- Preservar os seis spawns existentes da D1: marcar `d1-a1-f1` e `d1-a2-f1` como bosses, manter `d1-a3-boss` como boss e manter os outros três como inimigos comuns. Todos os bosses usam o arquétipo `fixed` já existente; não adicionar inimigos, modelos ou balanceamento novo.
+- Preservar os seis spawns existentes da D1: marcar `d1-a1-f1` e `d1-a2-f1` com `"isBoss": true`, manter `d1-a3-boss` como boss e manter os outros três como inimigos comuns. Todos os bosses usam o arquétipo `fixed` já existente; não adicionar inimigos, modelos ou balanceamento novo.
+- As coordenadas atuais em `dungeons.json` (arenas `halfSize` 9/9/10) **serão realinhadas** aos centros de zona da tabela acima; `halfSize` deixa de definir o layout jogável quando `zones`/`gates` existirem — o builder usa `DungeonZoneDef`, não o retângulo legado de arena.
 - O player nasce em `(0, 2)`. Reaproveitar o portal de saída atual e posicioná-lo em `(0, -86)`, atrás do `d1-gate-exit`; sua interação atual continua sendo usada depois que o gate abre.
 - Os três gates têm aberturas com 5,2 unidades de largura. `d1-gate-1` e `d1-gate-2` ficam nos limites entre zonas; `d1-gate-exit` fica dentro da Zona 3. Esses são os únicos vãos nas paredes internas.
 - Cada fronteira entre zonas é uma parede contínua, exceto pela abertura do respectivo gate. Na Zona 3, uma parede em `z = -82` bloqueia o acesso ao portal de saída, exceto pelo `d1-gate-exit`. Não deixar passagem pelas laterais.
@@ -173,7 +189,7 @@ Cada portão tem somente dois estados: `fechado` e `aberto`. A abertura é sínc
 4. **Chave errada:** nunca abre o portão e não consome outra chave.
 5. **Nova run:** os portões voltam a fechados, mesmo que `WorldManager` reutilize a instância em cache. Chaves ainda não usadas permanecem no inventário.
 
-A checagem de proximidade acontece durante a atualização do jogo, não apenas quando se aperta E ou clica no mesh. A apresentação de portão aberto/fechado é suficiente; não adicionar cutscene, tween, animação temporizada ou nova dependência de VFX.
+A checagem de proximidade acontece durante a atualização do jogo, não apenas quando se aperta E ou clica no mesh. Reutilizar o mesmo raio de interação do runtime (`INTERACT_RANGE = 1.6` em `CityGameSession.ts`) medido até o eixo do gate, salvo teste de UX que peça raio dedicado. A apresentação de portão aberto/fechado é suficiente; não adicionar cutscene, tween, animação temporizada ou nova dependência de VFX.
 
 ### Limites de zona e combate
 
@@ -206,18 +222,18 @@ A checagem de proximidade acontece durante a atualização do jogo, não apenas 
 - Atualizar `game/src/domain/dungeons/DungeonRun.ts` para manter apenas `openedGateIds` como estado novo, sempre resetado em `start()` e `reset()`.
 - Criar `game/src/domain/dungeons/DungeonGateService.ts`, limitado aos contratos de gates da D1. Ele valida a zona de origem e a chave obtida por `keyRewardItemId`, confirma o gate fechado, consome exatamente uma unidade e registra o ID aberto. Não importa Three.js e não faz persistência.
 - Em `game/src/app/CityGameSession.ts`, calcular a zona do jogador a partir dos limites de `DungeonZoneDef`; testar proximidade a cada atualização; chamar o serviço; aplicar `DungeonGateView.open()`; persistir o consumo com `persistSave(true)` e emitir feedback uma vez.
-- No caminho de entrada, mapear `dungeon-1` para o world `dungeon-1`. Nenhuma passagem interna chama `enterWorld()`.
+- No caminho de entrada, mapear `dungeon-1` para o world `dungeon-1` no mesmo ponto de `tryEnterDungeon()` que hoje escolhe `dungeon-2` vs `dungeon-test`. Ajustar `enterWorld()` / `WorldId` e `setWorldLook()` conforme a linha de revisão §4. Nenhuma passagem interna chama `enterWorld()` ao trocar de zona.
 
 ### Fase D — Bosses e limites de combate
 
-- `EnemyService` propaga `ArenaDef.zoneId` para `EnemyModel` ao instanciar os três grupos de inimigos.
-- `CityGameSession.grantKillXp()` associa `bossSpawnId` à chave de sua zona e concede a chave garantida antes do `persistSave(true)`. A lógica cobre todos os tipos de morte porque esse método já é comum às rotas de ataque.
+- `EnemyService` propaga `ArenaDef.zoneId` para `EnemyInit` / `EnemyModel` (campo novo `zoneId: string`) ao instanciar os seis inimigos.
+- `CityGameSession.grantKillXp()`: se `activeDungeonId === "dungeon-1"` e `enemy.isBoss`, resolver a zona cujo `bossSpawnId === enemy.id` (spawn id, não `monsterId`) e conceder `keyRewardItemId` antes do `persistSave(true)`, respeitando a regra de não duplicar (§5.3). A lógica cobre todos os tipos de morte porque esse método já é comum às rotas de ataque.
 - `EnemyAI` restringe movimento ao retângulo da zona do inimigo. As consultas do ataque básico, skills, DOT e summons filtram alvos pela zona atual quando o gate correspondente está fechado.
 - Manter o boss ativo/reaparecendo após 180 s; não mudar multiplicadores, XP, Ouro ou loot.
 
 ### Fase E — HUD, inventário e save
 
-- Atualizar `currentArenaLabel()` para apresentar a zona baseada na posição do jogador.
+- Atualizar `currentArenaLabel()`: quando `world.id === "dungeon-1"`, usar limites de `DungeonZoneDef` e rótulos `Zona 1 / 3` … `Zona 3 / 3` (substituir os limiares `-12`/`-36` atuais, que só servem ao corredor `dungeon-test`).
 - Usar `GameApp` e o log/toast existente para mensagens de chave obtida, chave usada, falta de chave e inventário cheio.
 - `WireUi` mostra as chaves com nome, stack e ícone existente; `GamePanels` fallback mantém as mesmas chaves visíveis.
 - Save imediato após a recompensa do boss (no `grantKillXp()` já existente) e após consumir chave no portão. Sem alteração em `SaveTypes`, versão ou migrations.
@@ -293,4 +309,4 @@ Não há decisão de produto ou arquitetura pendente neste plano.
 - `game/vite.config.ts`, `game/scripts/check-dungeon-2.mjs` e `game/scripts/smoke.mjs`
 - Referências: `nongame/docs/inventarios/dungeons.md`, `inimigos.md`, `itens.md`, `modelos-mundo.md`, `save-load.md`; `nongame/docs/project/DECISOES-DESIGN.md` e GDD `10-dungeons-e-level-design.md`.
 
-**Nota de validação desta revisão:** `npm run typecheck` não pôde ser executado neste checkout porque o executável `tsc` não está instalado (`tsc: not found`). Nenhum código de runtime foi modificado nesta entrega.
+**Validação deste documento:** conferido contra o código em 2026-09-26 (`dungeons.json`, `CityGameSession`, `WorldManager`, `grantKillXp`). Antes de fechar cada fase de implementação: `cd game && npm run typecheck`, smoke e `node scripts/check-dungeon-2.mjs` como regressão.
