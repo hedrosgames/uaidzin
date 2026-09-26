@@ -14,6 +14,7 @@ const itemsJsonPath = path.resolve(__dirname, "src/data/items/items.json");
 const npcsJsonPath = path.resolve(__dirname, "src/data/world/npcs.json");
 const shopsJsonPath = path.resolve(__dirname, "src/data/balance/shops.json");
 const composerJsonPath = path.resolve(__dirname, "src/data/composer/compose-recipes.json");
+const weaponMountsJsonPath = path.resolve(__dirname, "src/data/weapons/weapon-mounts.json");
 
 const modelsPublicRoot = path.resolve(__dirname, "public/models");
 const visualAssetsRoot = path.resolve(__dirname, "../visual/telas/assets");
@@ -76,6 +77,7 @@ function handleJsonEndpoint(
   req: { method?: string; on: (event: string, cb: (data?: unknown) => void) => void },
   res: { statusCode: number; setHeader: (k: string, v: string) => void; end: (payload: string) => void },
   filePath: string,
+  missingFallback?: unknown,
 ): boolean {
   if (req.method === "GET") {
     try {
@@ -84,6 +86,12 @@ function handleJsonEndpoint(
       res.setHeader("Content-Type", "application/json; charset=utf-8");
       res.end(data);
     } catch {
+      if (missingFallback !== undefined) {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.end(JSON.stringify(missingFallback));
+        return true;
+      }
       res.statusCode = 500;
       res.end(JSON.stringify({ error: `Falha ao ler ${path.basename(filePath)}` }));
     }
@@ -98,6 +106,7 @@ function handleJsonEndpoint(
     req.on("end", () => {
       try {
         const parsed = JSON.parse(body);
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
         fs.writeFileSync(filePath, JSON.stringify(parsed, null, 2), "utf-8");
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -142,6 +151,10 @@ function devToolsPlugin(): Plugin {
 
         if (url === "/api/dev/composer") {
           if (handleJsonEndpoint(req, res, composerJsonPath)) return;
+        }
+
+        if (url === "/api/dev/weapon-mounts") {
+          if (handleJsonEndpoint(req, res, weaponMountsJsonPath, { mounts: [] })) return;
         }
 
         if (url === "/api/dev/models" && req.method === "GET") {
