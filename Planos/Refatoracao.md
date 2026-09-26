@@ -15,7 +15,7 @@ Documento de arquitetura. **Não contém código** — dita organização, contr
 | Fase | Nome | O que muda | Issues que fecha | Tamanho |
 |---|---|---|---|---|
 | F0 | Rede de testes no domínio | Vitest em `game/`, testes de caracterização de `domain/` e `persistence/`, portões no painel | destrava todas; fecha nenhuma sozinha | M |
-| F1 | Persistência com um dono | `SaveCoordinator` (dirty flag + checkpoints), `normalizeSavePayload` único, carga em três estados, storage único boot↔jogo | #16 #22 #23 #24 #28 #29 #30 #39 #48 (+#49 carona) | G |
+| F1 | Persistência com um dono | `SaveCoordinator` com dirty **por seção** e flush em transação única (só o que mudou), conta dividida em `slots`/`vault`, `normalizeSavePayload` único, carga em três estados, storage único boot↔jogo | #16 #22 #23 #24 #28 #29 #30 #39 #48 (+#49 carona) | G |
 | F2 | Eventos, erros e HUD | Um canal (bus tipado), isolamento de handlers, política de erro do tick, `HudModel` com diff, `GameApp` só composição | #13 #17 #45 | M |
 | F3 | Input com contexto | `InputService` com ações nomeadas, contexto (`typing`, modificador, modo, UI aberta), gate de debug | #43 (parte input) #46 #47 | P |
 | F4 | Fatiar `CityGameSession` | `DungeonFlow`, `InteractionController`, `CombatOrchestrator`, `VaultTransfer`, `RewardService`; sessão vira raiz de composição | #14 #19 #27 #44 (+#34 carona) | G |
@@ -26,7 +26,7 @@ Documento de arquitetura. **Não contém código** — dita organização, contr
 
 Caronas (correções pontuais que entram na task da fase por tocarem os mesmos arquivos): #17, #34, #42 (metade), #44, #47, #49. Fora do plano por serem pontuais ou decisão de produto (seção 10 detalha): #11, #18, #20, #37.
 
-Tamanho: **P** ≈ 1 task, **M** ≈ 2–4 tasks, **G** ≈ 5–8 tasks, cada task fechável com `typecheck` + testes verdes e jogo jogável.
+Tamanho: **P** ≈ 1 task, **M** ≈ 2–4 tasks, **G** ≈ 5–9 tasks, cada task fechável com `typecheck` + testes verdes e jogo jogável.
 
 ---
 
@@ -45,6 +45,7 @@ Cada foco abaixo lista a evidência e as issues que nascem dele. Foi isso que de
 - `persistSave` é chamado **12 vezes dentro da sessão** (por abate, skill, equip, quest, entrada na cidade…) e `persistSave`/`saveVault.*` aparecem em mais **6 arquivos** fora dela (`GameApp` 9 ocorrências, `DebugApi` 23, `WireGameBridge` 6, `BootFlow` 5, `SaveService` 5, `GamePanels` 2). A política de "quando salvar" é emergente.
 - Validação do save triplicada e divergente: `migrations.ts` (`normalizeBase`, L144–213), `applySavePayload` (`CityGameSession.ts:569–614`) e `applyBootCharacter` (`:526–566`) normalizam campos diferentes de formas diferentes. `normalizeTreeMap` (`SaveTypes.ts:181–188`) existe e só o resumo de slot usa (#48). Atributos base: 5 no boot/migração, 10 em `PROGRESSION_BALANCE`/`resetToNewGame` (#39).
 - Carga em dois estados (`loadSave(): Promise<boolean>`, `:509`) — "erro ao ler" e "não existe" são a mesma coisa, e o chamador em `GameApp.start` (`.catch(() => false)`, L619) recria e grava por cima (#30).
+- Cada `flush()` criptografa e grava o **perfil inteiro** (IDB + espelho `localStorage` + cópias `prev`) e depois lê, decripta e regrava o **blob da conta** só para atualizar o resumo do slot (`SaveVault.ts:379–425`, `syncSlotSummary` `:329–345`); `slots[]` e `vault` vivem no mesmo blob (`AccountSave`, `SaveTypes.ts:38–44`). Nada é gravado por seção, embora o storage seja chave→valor (#16, #22).
 - Dois módulos de storage para o mesmo IndexedDB: boot `save-store.js` (v1) e runtime `SaveStore` (v2) (#28). `SaveVault` mantém `flushChain`, retry e debounce que sobrevivem a logout/wipe (#23); `beforeunload → dispose()` remove os listeners de save antes de dispararem (#24).
 - Issues: #16, #22, #23, #24, #28, #29, #30, #39, #48.
 
@@ -133,29 +134,35 @@ Cada fase traz: objetivo, escopo, desenho (contratos, sem código), tasks do pai
 
 ### F1 — Persistência com um dono
 
-**Objetivo.** Um único lugar decide **quando** salvar, **o que** é um save válido e **como** boot e jogo compartilham o storage.
+**Objetivo.** Um único lugar decide **quando** salvar, **o que** é um save válido e **como** boot e jogo compartilham o storage — e cada gravação escreve **só as seções que mudaram**, numa transação só.
 
 **Escopo.** `game/src/persistence/` (`SaveVault`, `SaveStore`, `SaveService`, `SaveTypes`, `migrations`), `game/src/app/` (`CityGameSession.persistSave`/`loadSave`/`applySavePayload`/`applyBootCharacter`, `GameApp` timers e listeners de saída, `BootFlow`), `game/public/boot/assets/save-store.js`, `nongame/docs/inventarios/save-load.md` (contrato).
 
+**Ponto de partida (o que muda de verdade).** Hoje todo `flush()` (`SaveVault.ts:379–425`) criptografa o **perfil inteiro**, grava no IDB, espelha em `localStorage` (com cópia `prev` de cada um) e em seguida **lê, decripta, altera e regrava o blob da conta** para atualizar o resumo do slot (`syncSlotSummary`, `:329–345`) — resumo que quase nunca muda. O blob da conta guarda `slots[]` e `vault` juntos (`AccountSave`, `SaveTypes.ts:38–44`), então salvar o perfil e salvar o cofre competem pelo mesmo registro (#22). O storage é um único object store chave→valor (`SaveStore.ts`, `DB_VERSION = 2`), o que permite gravar vários registros numa transação sem mudar de esquema.
+
 **Desenho.**
-- **`SaveCoordinator`** (novo, em `persistence/`): recebe `markDirty(reason)` dos casos de uso e é o único que chama `saveVault.saveCharacter`/`saveAccountVault`. Política explícita e única: debounce curto para eventos frequentes (abate, drop, XP), **checkpoint imediato** em fronteiras (entrar/sair de dungeon, morte, compra/venda, cofre, aprender skill, logout) e em `visibilitychange`→hidden/`pagehide`. Serializa perfil **e** cofre na mesma fila (fim do `vaultPersistChain` separado). As 12 chamadas da sessão e as espalhadas por `GameApp`, `WireGameBridge`, `DebugApi` e `GamePanels` viram `markDirty`/`checkpoint`.
-- **Snapshot síncrono de saída**: o coordenador mantém o último payload já serializado; em `pagehide` grava esse snapshot de forma síncrona no `localStorage` e reconcilia com IDB no próximo boot. `dispose()` não remove listeners de save (#24).
-- **`normalizeSavePayload(raw): SavePayload`** (em `SaveTypes`/`migrations`): única função de normalização, usada por `migrateSave`, `importProfile`, `applySavePayload` e pelo payload de boot. Cobre árvores de especialização (`normalizeTreeMap`), níveis de skill, atributos com o valor base único (decisão **DR3**), `classId ∈ CLASSES`, ouro finito com cap. `applySavePayload` e `applyBootCharacter` passam a **só copiar** um payload já normalizado — a normalização deixa de existir neles.
-- **Carga em três estados**: `loadSave(): { kind: "found", payload } | { kind: "absent" } | { kind: "error", error }`. Só `absent` cria personagem; `error` mostra a mensagem, não grava nada e oferece tentar de novo (#30). `saveUnreadable` deixa de ser flag solta da sessão.
-- **Blob da conta com um escritor**: toda escrita no blob (slots × cofre) passa por uma operação `updateAccount(fn)` serializada dentro do `SaveVault`, com leitura e escrita na mesma transação IDB; `saveAccountVault` e `syncSlotSummary` viram chamadas dessa operação (#22).
-- **Ciclo de vida do `SaveVault`**: `logout()`/`wipe()` cancelam timers, esvaziam `flushChain` e invalidam a chave de sessão antes de qualquer retry; retry com limite e backoff, nunca loop (#23).
-- **Storage único boot↔jogo**: `save-store.js` do boot passa a ser gerado a partir do módulo do runtime (ou o boot importa o bundle do runtime), com **uma** versão de IDB, um esquema e as mesmas operações de excluir slot (#28). Contrato registrado em `save-load.md`.
+- **Seções como registros.** O `SavePayload` já é seccionado; cada seção vira um registro próprio no IDB, criptografado separadamente: `meta`, `character` (inclui atributos e progressão), `skills`, `equipment`, `inventory` (com `bags`), `buffs`, `progress` (dungeons e quests), `options`. `meta` (`saveVersion`, `updatedAt`, `profileId`) é escrito em **toda** transação e funciona como cabeçalho do perfil; não há manifesto além dele.
+- **Dirty por seção.** `SaveCoordinator` (novo, em `persistence/`) expõe `markDirty(section, reason)` e `checkpoint(reason)`; é o único que fala com o `SaveVault`. Cada caso de uso marca **apenas as seções que tocou**: abate → `character` + `inventory` (+ `progress` se a quest andou); equipar → `equipment` + `inventory`; aprender skill → `skills` + `character` + `inventory`; opções → `options`. Política de frequência explícita e única: debounce curto para eventos frequentes (abate, drop, XP), **checkpoint imediato** em fronteiras (entrar/sair de dungeon, morte, compra/venda, cofre, aprender skill, logout) e em `visibilitychange`→hidden/`pagehide`. As 12 chamadas de `persistSave` da sessão e as espalhadas por `GameApp`, `WireGameBridge`, `DebugApi` e `GamePanels` viram `markDirty`/`checkpoint`.
+- **Flush = uma transação.** No flush, o coordenador serializa e criptografa **só o conjunto sujo** e grava tudo (mais `meta`) em **uma** transação `readwrite` do IDB (`SaveStore.writeMany`). Regra dura da fase: **uma operação lógica marca todas as suas seções antes de devolver, e o flush nunca divide um conjunto sujo em duas transações** — é isso que impede estado inconsistente entre seções (item de entrada consumido sem a dungeon registrada, nível subido sem os pontos). A atomicidade vem do IDB, não de lógica própria.
+- **O que isso não faz.** Dividir não substitui a política de frequência: o custo por gravação é dominado pelo custo fixo (chamada de `crypto.subtle`, transação, `setItem` síncrono), não pelos ~10 KB do payload. Frequência resolve o grosso do #16; seções tiram bytes, tiram o `prev` e a conta do caminho quente e eliminam a corrida da conta. **Não** é journal de deltas (seção 8).
+- **Conta dividida.** `AccountSave` deixa de ser um blob: `account:<user>:slots` (resumos) e `account:<user>:vault` (estado do cofre) são registros separados. O cofre é escrito **só por operação de cofre** (na mesma transação que a `inventory` do personagem, quando a operação move ouro/item entre os dois); o resumo do slot só é escrito quando algum campo dele mudou (nome, nível, classe, evolução, atributos, árvores — comparado com o último resumo gravado). A corrida do #22 deixa de existir em vez de ser serializada; sobra um `updateSlots(fn)` serializado só para criação/exclusão de slot (boot × jogo).
+- **Espelho e cópia de segurança fora do caminho quente.** O espelho em `localStorage` deixa de ser por gravação: vira só o **snapshot síncrono de saída** (payload completo, uma chave) escrito em `pagehide`, reconciliado no próximo boot pelo `meta.updatedAt` (snapshot mais novo que o IDB → aplica e regrava). A cópia `prev` (fallback contra corrupção) passa a ser escrita só em checkpoint. `dispose()` não remove listeners de save (#24).
+- **Carga.** `loadSave()` lê todas as seções do perfil numa transação `readonly`, monta o payload e devolve três estados: `{ kind: "found", payload } | { kind: "absent" } | { kind: "error", error }`. Só `absent` (sem `meta`) cria personagem; seção ausente com `meta` presente recebe o padrão de `normalizeSavePayload`; falha de decript em qualquer seção é `error` — mostra a mensagem, não grava nada e oferece tentar de novo (#30). `saveUnreadable` deixa de ser flag solta da sessão.
+- **`normalizeSavePayload(raw): SavePayload`** (em `SaveTypes`/`migrations`): única função de normalização, usada por `migrateSave`, `importProfile`, `loadSave`, `applySavePayload` e pelo payload de boot. Cobre árvores de especialização (`normalizeTreeMap`), níveis de skill, atributos com o valor base único (decisão **DR3**), `classId ∈ CLASSES`, ouro finito com cap. `applySavePayload` e `applyBootCharacter` passam a **só copiar** um payload já normalizado — a normalização deixa de existir neles.
+- **Migração de mão única.** `SAVE_VERSION` 3 → 4 (blob do perfil → seções) e `ACCOUNT_SAVE_VERSION` 2 → 3 (blob da conta → `slots` + `vault`), feitas no primeiro load; o blob antigo é mantido até o primeiro checkpoint bem-sucedido no formato novo e só então apagado. `exportProfile` monta o payload completo (mesmo JSON de hoje); `importProfile` normaliza e grava todas as seções numa transação.
+- **Ciclo de vida do `SaveVault`**: `logout()`/`wipe()` cancelam timers, esvaziam a fila e invalidam a chave de sessão antes de qualquer retry; retry com limite e backoff, nunca loop (#23).
+- **Storage único boot↔jogo**: `save-store.js` do boot passa a ser gerado a partir do módulo do runtime (ou o boot importa o bundle do runtime), com **uma** versão de IDB, um esquema e as mesmas operações de excluir slot; o boot lê só `account:<user>:slots` (#28). Contrato registrado em `save-load.md`.
 - **Aba dupla**: `navigator.locks` (com fallback `BroadcastChannel`) por `profileId`; segunda aba do mesmo personagem entra em modo somente leitura com aviso (#29; comportamento por **DR5**).
 - `SaveStore` reutiliza a conexão IDB (uma por origem, reaberta só em `versionchange`/erro) — parte de #16.
 - Carona: validação do payload de boot (`character` com `classId`, `level`, `attrs`, `spec` normalizados pela mesma função) — cobre a metade "sem validar" de #49; a checagem de `origin`/`source` do `postMessage` são duas linhas que entram na mesma task, sem virar objetivo.
 
-**Tasks.** T1.1 `normalizeSavePayload` + `loadSave` em três estados (testes F0 viram verdes: #30, #39, #48) · T1.2 `SaveCoordinator` e migração dos chamadores (sessão, `GameApp`, bridge, debug) · T1.3 snapshot de saída + listeners fora do `dispose` (#24) · T1.4 `updateAccount` serializado + ciclo de vida do `SaveVault` (#22, #23) · T1.5 storage único boot↔jogo (#28) · T1.6 lock de aba (#29) · T1.7 conexão IDB reutilizada + inventário `save-load.md` atualizado (#16).
+**Tasks.** T1.1 `normalizeSavePayload` + `loadSave` em três estados (testes F0 viram verdes: #30, #39, #48) · T1.2 `SaveCoordinator` com dirty por seção e migração dos chamadores (sessão, `GameApp`, bridge, debug) · T1.3 storage em seções: `SaveStore.writeMany`/`readAll`, flush em transação única, `prev` só em checkpoint, migração 3 → 4, export/import (#16) · T1.4 conta dividida `slots`/`vault`, resumo só quando muda, migração 2 → 3 (#22) · T1.5 snapshot de saída + listeners fora do `dispose` + reconciliação no boot (#24) · T1.6 ciclo de vida do `SaveVault` (#23) · T1.7 storage único boot↔jogo (#28) · T1.8 lock de aba (#29) · T1.9 conexão IDB reutilizada + inventário `save-load.md` atualizado (#16).
 
 **Issues fechadas.** #16, #22, #23, #24, #28, #29, #30, #39, #48. **Carona:** #49.
 
-**Pronto quando.** `npm run test:save` e `npm test` verdes; grep de `persistSave(`/`saveVault.` fora de `persistence/` e do coordenador retorna zero; fechar a aba durante uma dungeon preserva o último abate (verificação manual, lab admin/admin); excluir slot no boot apaga perfil no IDB; segunda aba do mesmo personagem recebe o aviso.
+**Pronto quando.** `npm run test:save` e `npm test` verdes (com um `SaveStore` falso em Node que registra cada transação: abate grava exatamente `meta` + `character` + `inventory`; depósito no cofre grava `inventory` + `account:vault` na **mesma** transação; nenhuma operação produz duas transações); grep de `persistSave(`/`saveVault.` fora de `persistence/` e do coordenador retorna zero; contador de registros por flush exposto no HUD de debug; fechar a aba durante uma dungeon preserva o último abate (verificação manual, lab admin/admin); save v3 e conta v2 existentes carregam e são migrados sem perda; excluir slot no boot apaga perfil no IDB; segunda aba do mesmo personagem recebe o aviso.
 
-**Riscos.** Médio-alto: é a fase que toca dados do jogador. Mitigação: T1.1 antes de tudo, `SAVE_VERSION` só sobe se o esquema mudar (T1.5), backup do storage no wipe tool antes de rodar `test:save`.
+**Riscos.** Médio-alto: é a fase que toca dados do jogador e sobe as duas versões de formato. Mitigação: T1.1 antes de tudo; migração de mão única mantendo o blob antigo até o primeiro checkpoint; `test:save` cobrindo v3 → 4 e v2 → 3 com saves reais do lab; backup do storage no wipe tool antes de rodar `test:save`.
 
 ### F2 — Eventos, erros e HUD
 
@@ -372,7 +379,8 @@ F0 ──► F1 ──► F2 ──► F3 ──► F4 ──► F5
 | Rebalancear render (MSAA, bloom, shadow map) e conteúdo de mundo (PointLights, `frustumCulled`) | Issues #11 e #18: ajustes de configuração/conteúdo com validação visual do Felipe; não dependem de refatoração |
 | Efeito dos níveis 2–10 de passivas/buffs/invocações | Issue #37: decisão de design de skills (plano TK), não refatoração |
 | i18n, acessibilidade além do que o `InputService` já dá | Sem pedido |
-| Mudar `SAVE_VERSION` "por precaução" | Só se o esquema mudar de fato (T1.5) |
+| Journal de deltas / event sourcing do save (append de eventos com replay e compactação) | O payload tem ~10 KB; dirty por seção com flush em transação única (F1) dá o mesmo ganho sem replay, sem compactação e sem reaplicar invariantes |
+| Mudar `SAVE_VERSION` "por precaução" | Só quando o esquema muda de fato — na F1 muda (seções), então sobe uma vez, com migração de mão única |
 
 ---
 
@@ -404,13 +412,13 @@ F0 ──► F1 ──► F2 ──► F3 ──► F4 ──► F5
 | #13 | HUD/DOM reescrito todo frame | F2 (+F5) | estrutural | `HudModel` com diff; wire com diff |
 | #14 | DoT: número de dano por frame e dano dependente de dt | F4 | estrutural | cadência fixa no `CombatOrchestrator` |
 | #15 | `EnemyRuntimeView.sync`: traversals, emissive, mixers ocultos | F8 | estrutural | sync por diff |
-| #16 | Save completo a cada abate; `openDb` por operação | F1 | estrutural | debounce/checkpoint; conexão reutilizada |
+| #16 | Save completo a cada abate; `openDb` por operação | F1 | estrutural | debounce/checkpoint; dirty por seção com flush em transação única; conexão reutilizada |
 | #17 | Sliders de volume → `setShadowsEnabled` | F2 | carona | `SettingsPanel` extraído |
 | #18 | Mundo: `frustumCulled=false`, shaders procedurais, 14 PointLights, textura 2× | — | pontual | conteúdo/cena |
 | #19 | Alocações e recomputações por frame no combate | F4 | estrutural | `frameMods` único, índice por id |
 | #20 | Assets: GLB extra, loads sequenciais, PNGs pesados, three não minificado | — | pontual | pipeline de assets/build |
 | #21 | Tela de seleção: um `WebGLRenderer` por card | F8 | estrutural | renderer único |
-| #22 | Read-modify-write concorrente do blob da conta | F1 | estrutural | `updateAccount` serializado |
+| #22 | Read-modify-write concorrente do blob da conta | F1 | estrutural | conta dividida em `slots`/`vault`: a corrida deixa de existir |
 | #23 | `flush()` em loop; timers sobrevivem a logout/wipe | F1 | estrutural | ciclo de vida do `SaveVault` |
 | #24 | Save de saída nunca roda (`beforeunload → dispose`) | F1 | estrutural | snapshot síncrono; listeners fora do `dispose` |
 | #25 | `setWeaponSet` concorrente | F8 | estrutural | token de geração |
@@ -450,7 +458,7 @@ Automático (portão 1, Node, em toda task):
 - `cd game && npm run typecheck` limpo.
 - `npm test` verde; cada issue estrutural da seção 10 tem um caso nomeado que falhava antes da fase e passa depois.
 - `node scripts/check-tk-controllers.mjs` e `check-tk-dispatch.mjs <árvore>` verdes após F7.
-- Greps de fechamento por fase: `persistSave(` fora do coordenador = 0 (F1); `addEventListener("keydown"` fora do `InputService` e dos diálogos do wire = 0 (F3); `__UAIDZIN` em `game/src` só em `debug/` (F5); `tk[A-Z]\w+\.` em `EffectManager.ts` = 0 (F7); `wc -l CityGameSession.ts` < 400 (F4).
+- Greps de fechamento por fase: `persistSave(` fora do coordenador = 0 e teste em Node provando que cada operação gera **uma** transação só com as seções tocadas (F1); `addEventListener("keydown"` fora do `InputService` e dos diálogos do wire = 0 (F3); `__UAIDZIN` em `game/src` só em `debug/` (F5); `tk[A-Z]\w+\.` em `EffectManager.ts` = 0 (F7); `wc -l CityGameSession.ts` < 400 (F4).
 
 Navegador (portão 2, máquina do Felipe):
 - `npm run smoke`, `npm run test:save`, `npm run bot` sem regressão ao fim de cada fase.
