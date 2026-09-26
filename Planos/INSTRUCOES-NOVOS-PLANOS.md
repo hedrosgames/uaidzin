@@ -95,7 +95,7 @@ Antes de escrever passos, ler se o escopo tocar:
   - DoT a cada **3 s** (`DOT_TICK_SEC`), fração na expiração; total = `dotDps × dotSec`.
   - Uma conta por aba (recusa no login). Jogo só depois do login e da seleção, com tela de carregamento.
   - Jogo não lançado: sem migração de save. `markDirty(section, kind)` com `critical` | `deferred` (`SaveCoordinator`). Sem `persistSave` solto.
-  - Caminhos: `game/src/domain/inventory/`, `game/src/domain/economy/`, `game/src/data/balance/shops.json`, `game/src/app/session/` (`DungeonFlow`, `RewardService`, `CombatOrchestrator`, `InteractionController`, `VaultTransfer`), `InputService`, `TkVfxRegistry` (só depois do plano 9), `GraphicsQuality` / `SettingsPanel` se o plano mexer em opções de vídeo.
+  - Caminhos: `game/src/domain/inventory/`, `game/src/domain/economy/`, `game/src/data/balance/shops.json`, `game/src/app/session/` (`DungeonFlow`, `RewardService`, `CombatOrchestrator`, `InteractionController`, `VaultTransfer`), `InputService`, `TkVfxRegistry` (só depois do plano 9), `GraphicsQuality` / `SettingsPanel` se o plano mexer em opções de vídeo. Ícones de item/UI: `game/public/assets/icons/` (`items/`, `eq/`, `skills/`), URL `/assets/icons/...`.
 - `nongame/docs/project/README.md` — o que ainda vale.
 - Inventário afetado em `nongame/docs/inventarios/` — **só** listar passo de doc se a task for auditoria/atualização de inventário.
 
@@ -116,4 +116,4 @@ Ver `Planos/Dungeon 2.md` (escopo médio) ou `Planos/Skill TK linhagem 2.md` (de
 
 ## Pendências
 
-- Nenhuma neste documento. Pasta de ícones pós-plano 8 e efeito da caixa de sabedoria estão nas Pendências de `Dungeon 1.md` e `Dungeon 2.md`.
+- Nenhuma neste documento. Rebalanceamento de dano/cura base das skills TK continua nas Pendências de `Skill TK linhagem 1.md`, `2.md` e `3.md`.

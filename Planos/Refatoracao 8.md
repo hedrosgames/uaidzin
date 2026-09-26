@@ -13,6 +13,7 @@ Executar passos **1 → 19** na ordem. Cada linha = arquivo + entrega. Código e
 - `GamePanels.ts` sai por completo: código, estilos, `#game-panels`, atalhos e pontos de entrada.
 - Globais `__UAIDZIN_WIRE__`, `__UAIDZIN_ECONOMY__`, `__UAIDZIN_DEBUG__` fora do build de produção; `__UAIDZIN__` só em DEV.
 - `vite.config.ts`: build não exige `../visual/telas`.
+- SVG de `visual/telas/assets/` (`items/`, `eq/`, `skills/`) vão para `game/public/assets/icons/` (mesmas subpastas). URL `/assets/icons/...`. `game/public/` não tinha pasta de ícones; texturas de mundo seguem `game/public/textures/` (plano 11).
 
 ## Issues
 
@@ -38,7 +39,7 @@ Executar passos **1 → 19** na ordem. Cada linha = arquivo + entrega. Código e
 ### C — Boot do wire
 
 7. `game/index.html` — montar wire TS em `#wire-root`.
-8. `game/vite.config.ts` — remover `wireUiPlugin` que aponta para `visual/telas`; servir bundle TS.
+8. `game/vite.config.ts` — remover `wireUiPlugin` que aponta para `visual/telas`; servir bundle TS. Copiar `visual/telas/assets/{items,eq,skills}/` para `game/public/assets/icons/{items,eq,skills}/`. Catálogo (`items.json`, `item-catalog.ts`) aponta `assets/icons/items/<arquivo>.svg`.
 
 ### D — Remover legado
 
@@ -60,5 +61,5 @@ Executar passos **1 → 19** na ordem. Cada linha = arquivo + entrega. Código e
 ## Testar
 
 - [ ] Passos 13–15 verdes.
-- [ ] Hub completo jogável sem `visual/telas` no build.
+- [ ] Hub completo jogável sem `visual/telas` no build. Ícone de item abre em `/assets/icons/items/`.
 - [ ] Aprender skill cobra ouro; vender pede confirmação; refino e Reset funcionam — sem `GamePanels`.

@@ -11,7 +11,7 @@ Executar passos **1 → 19** na ordem. Cada linha = arquivo + entrega. Código e
 - Entrada dungeon `dungeon-2`: consome **1×** item `entry_vela` (compra Mercador **1000** ouro). Estoque infinito: catálogo **sem** `qty`.
 - Consumo da vela e falha de `enterWorld`: `checkpoint` crítico **antes** do fade; **sem devolução** (`DungeonFlow`, plano 6).
 - Drop `caixa_sabedoria`: caveira especial **100%**; caveira normal **20%**.
-- `caixa_sabedoria`: consumível; uso só nível **35–90**; `noSell`, `noVault`; lixeira permitida, com confirmação, save crítico. Efeito numérico: ver Pendências.
+- `caixa_sabedoria`: consumível; uso só nível **35–90**; `noSell`, `noVault`; lixeira permitida, com confirmação. Uso concede **100** XP e é evento **crítico** (`checkpoint`). No nível máximo o XP é descartado (issue #44: `addXp` não passa de `xpToNext`; UI “MAX”); a caixa é consumida mesmo assim.
 - Respawn: `caveira_normal` **60 s**, `caveira_especial` **90 s**, mesmo ponto.
 - World D2: **sem** interactable `portal-exit`; saída por morte ou timeout.
 - Jogador nível **≥ 35** sem vela: bloquear entrada; mensagem menciona **“Vela”**. D1 continua pelo painel do portal (sem vela).
@@ -23,10 +23,10 @@ Executar passos **1 → 19** na ordem. Cada linha = arquivo + entrega. Código e
 
 ### A — Itens
 
-1. `game/src/data/items/items.json` — `entry_vela` (slot `entry`, ícone `items/vela.svg`, `sellValue` 100); `caixa_sabedoria` (consumível, `minLevel` 35, `maxLevel` 90, `noSell`, `noVault`).
-2. `visual/telas/assets/items/vela.svg` e `caixa_sabedoria.svg` — paleta C (Salão/Brasa). Se essa pasta já saiu do build, parar na Pendência — não inventar outro diretório.
+1. `game/src/data/items/items.json` — `entry_vela` (slot `entry`, ícone `assets/icons/items/vela.svg`, `sellValue` 100); `caixa_sabedoria` (consumível, `minLevel` 35, `maxLevel` 90, `noSell`, `noVault`, ícone `assets/icons/items/caixa_sabedoria.svg`).
+2. `game/public/assets/icons/items/vela.svg` e `caixa_sabedoria.svg` — paleta C (Salão/Brasa).
 3. `game/src/data/items/item-catalog.ts` — campos `minLevel`, `maxLevel`, `noSell`, `noVault` se ainda não existirem.
-4. `game/src/data/balance/consumables.ts` — efeito de `caixa_sabedoria` em `CONSUMABLE_BALANCE`. Número: Pendências.
+4. `game/src/data/balance/consumables.ts` — `caixa_sabedoria: { xp: 100 }` em `CONSUMABLE_BALANCE`.
 
 ### B — Entrada com vela
 
@@ -55,7 +55,7 @@ Executar passos **1 → 19** na ordem. Cada linha = arquivo + entrega. Código e
 
 16. `game/src/ui/wire/inventory.ts` — caixa: ocultar “Guardar no baú” e a venda. Descarte pede confirmação.
 17. `game/src/domain/economy/ShopService.ts` — `sellItem` recusa `noSell`. `game/src/app/session/VaultTransfer.ts` recusa `noVault`.
-18. `game/src/app/CityGameSession.ts` — `tryUseConsumable` valida nível 35–90 para `caixa_sabedoria`; uso chama `markDirty` crítico (sem `persistSave`).
+18. `game/src/app/CityGameSession.ts` — `tryUseConsumable` valida nível 35–90 para `caixa_sabedoria`; consome o item e chama `addXp(100)` (`ProgressionService` descarta no nível máximo). Um `checkpoint` crítico no uso (sem `persistSave`).
 
 ### G — Fechamento
 
@@ -68,10 +68,10 @@ Executar passos **1 → 19** na ordem. Cada linha = arquivo + entrega. Código e
 - [ ] Drop da caixa; inventário cheio → “Bolsa cheia: <item> perdido.”.
 - [ ] Mapa D2 sem `portal-exit`.
 - [ ] Caixa: não vende, não vai ao baú; uso bloqueado fora 35–90; descarte pede confirmação.
+- [ ] Uso dentro de 35–90: +100 XP e save crítico. No nível máximo a caixa some e o XP não passa de `xpToNext` (UI “MAX”).
 - [ ] Venda da vela no NPC e na bolsa pede confirmação.
 - [ ] Passo 19 verde.
 
 ## Pendências
 
-- Efeito numérico de `caixa_sabedoria`: não está neste plano nem em `CONSUMABLE_BALANCE` (hoje só `pocao_menor`). Não inventar o número.
-- Pasta dos SVG: `Refatoracao 8.md` tira `visual/telas` do build e não diz onde ficam `vela.svg` e `caixa_sabedoria.svg`.
+- Nenhuma.

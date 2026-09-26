@@ -38,7 +38,7 @@ Executar passos **1 → 20** na ordem. Cada linha = arquivo + entrega. Código e
 ### B — Catálogo
 
 4. `game/src/data/monsters/monsters.json` — 6 monstros cogumelo (minion/boss × 3 variantes; nomes UI pt-BR).
-5. `game/src/data/items/items.json` — itens `d1_key_zone_2`, `d1_key_zone_3` (material, ícone `items/seal.svg`).
+5. `game/src/data/items/items.json` — itens `d1_key_zone_2`, `d1_key_zone_3` (material, ícone `assets/icons/items/seal.svg`). Arquivo em `game/public/assets/icons/items/seal.svg` (plano 8).
 
 ### C — Geometria e world
 
@@ -81,4 +81,4 @@ Executar passos **1 → 20** na ordem. Cada linha = arquivo + entrega. Código e
 
 ## Pendências
 
-- Ícone `items/seal.svg`: o arquivo está em `visual/telas/assets/items/`. `Refatoracao 8.md` tira `visual/telas` do build e não nomeia a pasta nova. Não criar outro diretório até o dono definir.
+- Nenhuma.
