@@ -31,7 +31,7 @@ Boa parte do esqueleto da Dungeon 2 **já existe**. O plano aproveita o que est�
 | Caveira 2 = `caveira_especial` (ranged, 150 HP, modelo `skeleton-special.fbx`, respawn 25 s, 40 XP) | **existe** | `game/src/data/monsters/monsters.json` |
 | Mundo 3D próprio (cemitério 36×36, muros, braseiros, portal de saída) | **existe** | `buildDungeon2World()` em `game/src/world/CityWorld.ts` + `WorldManager` (`WorldId` inclui `"dungeon-2"`) |
 | Escala de combate por bloco (0,62× / 0,82× / 1,05×) | **existe** | `dungeonArenaScale()` em `game/src/data/balance/dungeon.ts` |
-| Roteamento de mundo ao entrar (`dungeon-2` → mundo próprio; demais → `dungeon-test`) | **existe** | `tryEnterDungeon()` em `game/src/app/CityGameSession.ts` |
+| Roteamento de mundo ao entrar (`dungeon-2` → mundo próprio; demais → `dungeon-test`) | **existe** | `tryEnterDungeon()` em `CityGameSession.ts` |
 | Consumo de item de entrada (`entryItemId` → `countMaterial`/`consumeMaterial` + `persistSave`) | **mecanismo existe**, mas `dungeon-2` tem `entryItemId: null` | `dungeonEntryGate()` / `tryEnterDungeon()` em `CityGameSession.ts` |
 | Respawn no ponto de origem (home X/Z, timer por inimigo) | **mecanismo existe** | `EnemyModel.respawn()` + `EnemyService.updateRespawns()` |
 | NPC Mercador + loja + fluxo de compra | **existe** | `npc-merchant` em `game/src/data/world/npcs.json` · `shops.json` (`merchant`) · `ShopService.buyFromShop()` |
@@ -55,7 +55,7 @@ Consequência importante: `pickDungeonForLevel()` escolhe a **última** dungeon 
 | G3 — Slot `entry_vela` na loja `merchant` (preço 1000) | R5 | dados |
 | G4 — Item `caixa_sabedoria` no catálogo + ícone SVG | R3/R4 | dados + asset |
 | G5 — Campo `drops` nos monstros + rolagem no loot | R3/R4 | dados + contrato TS + lógica mínima |
-| G6 — Ajuste de `respawnSeconds` das caveiras (“de tempos em tempos”) | R2 | dados (balance provisório) |
+| G6 — Ajuste de `respawnSeconds` das caveiras (“de tempos em tempos”) | R2 | dados (valores fechados §9) |
 | G7 — UI: Vela no card do portal (nome/ícone/contagem) e mensagem de entrada citando o item | R5 | wire + texto |
 | G8 — `dungeonEnterMessage("entry")` genérico hoje (“Entrada insuficiente”) | R5 | texto + catálogo |
 
@@ -104,7 +104,7 @@ EnemyService.spawnFromDungeon() → EnemyModel(homeX/homeZ, respawnSeconds)
 | `visual/telas/assets/items/caixa_sabedoria.svg` | novo ícone (paleta C) | R3/R4 |
 | `game/src/data/dungeons/dungeons.json` | `dungeon-2.entryItemId`: `null` → `"entry_vela"` | R5 |
 | `game/src/data/balance/shops.json` | loja `merchant`: +slot `{ itemId: "entry_vela", qty: 10, price: 1000 }` | R5 |
-| `game/src/data/monsters/monsters.json` | `caveira_normal`: `drops` 20% + `respawnSeconds` ajustado · `caveira_especial`: `drops` 100% + `respawnSeconds` ajustado | R2–R4 |
+| `game/src/data/monsters/monsters.json` | `caveira_normal`: `drops` 20% + `respawnSeconds` 60 · `caveira_especial`: `drops` 100% + `respawnSeconds` 90 | R2–R4 |
 | `game/src/data/monsters/monster-definitions.ts` | +tipo `MonsterDropDef { itemId; chance; qty }` · +campo opcional `drops?: MonsterDropDef[]` em `MonsterDef` | R3/R4 |
 | `game/src/domain/economy/EconomyService.ts` | `grantKillLoot(archetype, isBoss, monsterId?)`: se `monsterId` presente, lê `getMonsterDef(monsterId).drops`, rola cada entrada, adiciona via `createFromCatalog`; falha de espaço vira `lostItem`; chamadas sem `monsterId` (legado) ignoram `drops` | R3/R4 |
 | `game/src/app/CityGameSession.ts` | `grantKillXp()`: ampliar parâmetro `enemy` para incluir `monsterId` (já existe em `EnemyModel`) e repassar ao loot · corpo do painel do portal cita a Vela (contagem) | R3–R5 |
@@ -122,10 +122,11 @@ Fora da lista: **nenhum módulo novo**. `ItemFactory`, `InventoryService`, `Shop
 | Nome / slot da instância | “Vela” / `entry` no catálogo → `material` na instância | igual aos selos D4–D8; `countMaterial`/`consumeMaterial` já funcionam por `defId` |
 | Id da caixa | `caixa_sabedoria` | convenção snake_case do catálogo; slot `material` → stack 999 via `InventoryService.add()` |
 | Nome da caixa | “Caixa de Sabedoria” | literal do pedido |
-| Drop da Caveira 2 | 1 entrada `{ itemId: "caixa_sabedoria", chance: 1, qty: 1 }` | “inimigo 2 dropa” lido como garantido; **provisório** — ver §9 |
+| Drop da Caveira 2 | 1 entrada `{ itemId: "caixa_sabedoria", chance: 1, qty: 1 }` | **fechado (Felipe):** drop garantido |
 | Drop da Caveira 1 | 1 entrada `{ itemId: "caixa_sabedoria", chance: 0.2, qty: 1 }` | 20% do pedido |
 | Shape de `drops` | `[{ itemId, chance, qty }]` no `monsters.json` | mínimo data-driven; D3–D8 reutilizam sem código novo |
 | Caixa vs. loot antigo | **aditivo** — rolagens de ouro/equip/material continuam; a caixa é uma rolagem extra | não mexe em balance existente |
+| Uso da Caixa de Sabedoria | **material vendável apenas** — sem consumir/abrir neste escopo | **fechado (Felipe):** efeito de uso vira task futura |
 | Boss do bloco 4 | mantém `isBoss` em `caveira_especial` (stats de boss, respawn 180 s) e **também dropa a caixa** (drop é por monstro, não por boss) | preserva design atual |
 | Preço / venda da Vela | compra 1000 (pedido) · `sellValue` 100 | padrão 10% do preço (`entry_d8`: 1000/100) |
 | Ícones | obrigatórios — item sem ícone não entra em lista (trava C11 do AGENTS.md; `shopItemFromCatalog` **lança erro** sem ícone) | 2 SVGs novos na paleta C |
@@ -150,28 +151,28 @@ Cada fase = 1 task (registrar antes, `start` na execução, `done` só testado).
 | **F1 — Itens** | `items.json` (+`entry_vela`, +`caixa_sabedoria`) e os 2 SVGs em `visual/telas/assets/items/` | — | `npm run typecheck`; item aparece no inventário via debug com ícone |
 | **F2 — Entrada (Vela)** | `dungeons.json` (`entryItemId`) + `shops.json` (slot 1000) + `dungeonEnterMessage` (G8) | F1 | comprar Vela por 1000; entrar em D2 consome 1; sem Vela bloqueia com a mensagem nova; save/reload mantém contagem |
 | **F3 — Drops** | `MonsterDropDef` + `drops` nos 2 monstros + `grantKillLoot(…, monsterId)` + repasse em `grantKillXp` | F1 | Caveira 2 sempre dropa caixa; Caveira 1 ~20% (validar com random fixo/DebugApi); inventário cheio → “item perdido”; Dungeon 1 inalterada |
-| **F4 — Respawn** | `respawnSeconds` das caveiras (valores do §6) | — | matar um grupo e cronometrar o retorno **no mesmo ponto** |
+| **F4 — Respawn** | `respawnSeconds`: Caveira 1 **60 s**, Caveira 2 **90 s** (§9) | — | matar um grupo e cronometrar o retorno **no mesmo ponto** |
 | **F5 — UI wire** | fallback `entry_vela` no portal + texto da Vela no Guarda do Portal | F1, F2 | card D2 mostra Vela + contagem; fluxo de confirmação funciona |
 | **F6 — Fechamento** | inventários (`itens.md`, `lojas.md`, `dungeons.md`, `inimigos.md`) + polimento (zero comentário, sem `console.log`, sem temporário) | todas | `npm run typecheck` limpo + checklist do AGENTS.md + validação do Felipe |
 
 ---
 
-## 6. Balance — valores **provisórios** (Felipe valida)
+## 6. Balance — valores fechados para implementação
 
-Fonte do que já existe: `monsters.json` / `dungeons.json` / `shops.json`. O que é proposto aqui está marcado; nada vira definitivo sem validação.
+Fonte do que já existe: `monsters.json` / `dungeons.json` / `shops.json`. Valores abaixo **fechados pelo Felipe** em 2026-09-26; alterar só com novo pedido de balance.
 
-| Valor | Atual | Proposto | Status |
-|---|---|---|---|
-| Preço da Vela | — | **1000** | fechado (pedido) |
-| `sellValue` Vela | — | 100 | provisório (padrão 10%) |
-| `qty` Vela na loja | — | 10 | provisório (faixa dos selos: 8–20; qty não decrementa no código atual — comportamento herdado) |
-| `sellValue` Caixa de Sabedoria | — | 25 | provisório |
-| Chance Caveira 1 | — | **0,2** | fechado (pedido) |
-| Chance Caveira 2 | — | **1,0** | provisório (leitura literal do pedido) |
-| Respawn Caveira 1 | 15 s | **60 s** | provisório — “de tempos em tempos” pede cadência mais lenta que 15 s |
-| Respawn Caveira 2 | 25 s | **90 s** | provisório |
-| Respawn boss (bloco 4) | 180 s (`DUNGEON_BALANCE.boss`) | sem mudança | — |
-| Stats / XP / escala por bloco | ver `monsters.json` e `dungeonArenaScale()` | sem mudança | — |
+| Valor | Atual | Implementar |
+|---|---|---|
+| Preço da Vela | — | **1000** |
+| `sellValue` Vela | — | **100** |
+| `qty` Vela na loja | — | **10** (qty não decrementa no código atual — comportamento herdado) |
+| `sellValue` Caixa de Sabedoria | — | **25** |
+| Chance Caveira 1 | — | **0,2** |
+| Chance Caveira 2 | — | **1,0** (garantido) |
+| Respawn Caveira 1 | 15 s | **60 s** |
+| Respawn Caveira 2 | 25 s | **90 s** |
+| Respawn boss (bloco 4) | 180 s (`DUNGEON_BALANCE.boss`) | sem mudança |
+| Stats / XP / escala por bloco | ver `monsters.json` e `dungeonArenaScale()` | sem mudança |
 
 ---
 
@@ -186,8 +187,7 @@ Fonte do que já existe: `monsters.json` / `dungeons.json` / `shops.json`. O que
 7. pt-BR com acentos corretos em todo texto (`“Vela necessária”`, “Caixa de Sabedoria”).
 8. Painéis C/K/I com os mesmos atalhos na cidade e na dungeon — não criar painel que quebre isso.
 9. Drop na dungeon: só o **log no canto inferior esquerdo** — proibida tela de resultado cheia.
-10. Dados de balance novos entram **marcados como provisórios** na doc, com fonte citada (este plano conta como fonte até o Felipe fechar).
-11. Task registrada no painel **antes** de tocar código; `done` só com resultado testado.
+10. Task registrada no painel **antes** de tocar código; `done` só com resultado testado.
 
 ---
 
@@ -196,7 +196,7 @@ Fonte do que já existe: `monsters.json` / `dungeons.json` / `shops.json`. O que
 | Não fazer | Por quê |
 |---|---|
 | Sistema genérico de loot table (pesos, pools, raridade por monstro) | 2 monstros e 1 drop não justificam; `drops: [{itemId, chance, qty}]` cobre D3–D8 quando vierem |
-| Uso/abertura da Caixa de Sabedoria (consumir → XP ou outro efeito) | o pedido é **dropar**; efeito de uso é decisão de design aberta (§9) — vira task própria depois |
+| Uso/abertura da Caixa de Sabedoria (consumir → XP ou outro efeito) | **fechado:** só drop + venda neste plano |
 | UI de seleção de dungeon no atalho do Guarda do Portal | o painel do portal (`p-portal`) já lista todas com entrada/contagem |
 | Novo mundo, LD ou props para D2 | `buildDungeon2World()` já entrega o cemitério jogável |
 | HUD/contador de respawn dos grupos | o jogo já não mostra isso em D1; não introduzir agora |
@@ -208,12 +208,16 @@ Fonte do que já existe: `monsters.json` / `dungeons.json` / `shops.json`. O que
 
 ---
 
-## 9. Decisões em aberto (para o Felipe)
+## 9. Decisões fechadas (Felipe — 2026-09-26)
 
-1. **Caveira 2 dropa 100%?** O pedido diz “dropa uma caixa” — assumi garantido. Se for percentual (ex.: 50%), muda só o `chance` no `monsters.json`.
-2. **Para que serve a Caixa de Sabedoria?** (XP ao abrir? material de composição? venda?) — fora deste plano por YAGNI; precisa de decisão antes de qualquer task de “usar caixa”.
-3. **Valores de respawn** (60 s / 90 s propostos) e `sellValue` da caixa (25) — provisórios, aguardando validação.
-4. **Sem Vela no nível 35–40**: o atalho do portal mira a D2 (última elegível) e bloqueia com “Vela necessária”. Manter assim (incentivo de compra) ou permitir fallback para D1? Proposta: manter — o painel do portal já permite ver a situação; decidir antes da F5.
+| # | Pergunta | Decisão |
+|---|---|---|
+| 1 | Caveira 2 dropa 100%? | **Sim.** `chance: 1` em `caveira_especial`. |
+| 2 | Para que serve a Caixa de Sabedoria? | **Material empilhável** com `sellValue: 25`. **Sem ação de uso/consumo** neste plano — task futura se houver design de abertura. |
+| 3 | Respawn 60 s / 90 s e sell da caixa? | **Adotar** 60 s (Caveira 1), 90 s (Caveira 2), sell **25**. |
+| 4 | Sem Vela no nível 35–40 com atalho mirando D2? | **Manter bloqueio** com mensagem nomeando a Vela. Jogador escolhe **Dungeon 1** no painel do portal (`p-portal`); não implementar fallback automático para D1 no atalho do Guarda. |
+
+Não há decisão de produto pendente neste plano.
 
 ---
 
@@ -228,11 +232,12 @@ Manual (lab admin/admin):
 2. Nível 35+: entrar na D2 pelo portal **consome 1 Vela** e persiste no save (recarregar página mantém contagem).
 3. Sem Vela → toast/mensagem nomeando a Vela; **não** entra, **não** consome.
 4. D2 carrega o mundo do cemitério com 4 blocos; cada bloco tem 2 Caveiras 1 + 1 Caveira 2 (bloco 4: boss).
-5. Matar um grupo → os 3 voltam **no mesmo ponto** após o tempo de respawn ajustado.
+5. Matar um grupo → os 3 voltam **no mesmo ponto** após 60 s / 90 s conforme o monstro.
 6. Caveira 2 → caixa sempre no drop log; Caveira 1 → ~20%; caixa empilha (1 slot, cap 999).
 7. Inventário cheio ao dropar → “Inventário cheio — item perdido”.
 8. Dungeon 1 (sem item de entrada) e selos D4–D8 seguem intactos.
 9. UI: card D2 mostra ícone/nome/contagem da Vela; C/K/I funcionam dentro da dungeon.
-10. Checklist final do `AGENTS.md` (zero comentário, sem temporário, pt-BR, sem emoji) + validação visual do Felipe.
+10. Nível 35+ sem Vela: atalho do Guarda bloqueia; painel do portal permite entrar em D1.
+11. Checklist final do `AGENTS.md` (zero comentário, sem temporário, pt-BR, sem emoji) + validação visual do Felipe.
 
 **Regressão cruzada:** enquanto a Dungeon 1 evoluir em paralelo, manter `node scripts/check-dungeon-2.mjs` verde após cada fase; quando existir `check-dungeon-1.mjs`, rodar os dois antes de fechar F6.
