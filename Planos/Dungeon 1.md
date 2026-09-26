@@ -15,7 +15,8 @@ Manter as regras existentes da D1:
 - Dungeon `dungeon-1`, Mortal, níveis **1–40**.
 - Sem item para entrar.
 - Run de **600 segundos**, iniciada uma vez por entrada; passar de zona não reinicia o contador.
-- Dungeon repetível; **morte** ou **fim do tempo** retornam o jogador à cidade (não há saída voluntária por portal na D1).
+- Dungeon repetível; **morte** ou **fim do tempo** retornam o jogador à cidade.
+- **Regra global (Felipe):** dungeon **não tem saída** — sem portal de saída, sem interactable `portal-exit`, sem retorno voluntário durante a run.
 - XP, Ouro e itens obtidos continuam sendo salvos durante a run.
 - Primeiro delivery pode usar geometria greybox/procedural. Arte final não é pré-requisito para testar o funcionamento.
 
@@ -25,12 +26,12 @@ Este plano fixa as regras abaixo para não deixar decisões em aberto durante a 
 
 1. A D1 tem **três zonas lineares**, cada uma com área de 36 × 36.
 2. Existem **dois portões de progressão** (Zona 1→2 e Zona 2→3). **Não** existe portão de saída, **não** existe terceira chave e **não** existe interactable `portal-exit` no world `dungeon-1`.
-3. Existe **um boss residente em cada zona**. Boss 1 concede chave do portão 1→2; Boss 2 concede chave do portão 2→3; Boss 3 concede **somente** loot/XP de boss — **nunca** chave.
+3. Existe **um minion e um boss** por zona (cogumelos §5.4). Boss das Zonas 1 e 2 concede chave do portão seguinte; Cogumelo Boss 3 concede **somente** loot/XP de boss — **nunca** chave.
 4. “Sempre disponível” significa que cada boss está configurado desde o início da run e reaparece na própria zona após o cooldown atual de **180 segundos**, sem quest ou gatilho adicional de spawn. A progressão linear continua exigindo abrir o portão anterior para chegar fisicamente às Zonas 2 e 3. O valor vem de `DUNGEON_BALANCE.boss.respawnSeconds` e não será alterado neste plano.
 5. Chaves são itens stackáveis do inventário normal e persistem como os demais itens. Chave não usada permanece após saída, morte ou reload; chave usada é removida. Se o jogador já possui a chave correta, o boss correspondente não gera cópias extras.
 6. Os **dois** portões de progressão abrem automaticamente quando o jogador chega perto com a chave correta. Não há confirmação por E, janela modal nem consumo de chave errada.
 7. Cada chave de progressão é concedida deterministicamente ao derrotar o boss da Zona 1 ou 2, antes do save feito no fluxo da morte. Se o inventário não aceitar a chave, o jogador recebe aviso e poderá derrotar novamente o boss após seu respawn.
-8. Chegar à Zona 3 ou derrotar o Boss 3 não encerra nem renova a sessão de farm de 600 segundos. O retorno à cidade ocorre **apenas** por morte ou timeout.
+8. Chegar à Zona 3 ou derrotar o Cogumelo Boss 3 não encerra nem renova a sessão de farm de 600 segundos. O retorno à cidade ocorre **apenas** por morte ou timeout.
 
 Fluxo fechado:
 
@@ -55,9 +56,9 @@ Os IDs de chave nomeiam o **destino** após o portão, não a zona do boss.
 
 | Zona | Boss (spawn id) | Chave concedida | Portão que consome | Gate id |
 |---|---|---|---|---|
-| 1 | `d1-a1-f1` | `d1_key_zone_2` | progressão 1→2 | `d1-gate-1` |
-| 2 | `d1-a2-f1` | `d1_key_zone_3` | progressão 2→3 | `d1-gate-2` |
-| 3 | `d1-a3-boss` | — | — | — |
+| 1 | `d1-a1-boss` (`cogumelo_boss`) | `d1_key_zone_2` | progressão 1→2 | `d1-gate-1` |
+| 2 | `d1-a2-boss` (`cogumelo_boss_2`) | `d1_key_zone_3` | progressão 2→3 | `d1-gate-2` |
+| 3 | `d1-a3-boss` (`cogumelo_boss_3`) | — | — | — |
 
 Chave **não consumida** de uma run anterior permanece no inventário e pode abrir o portão correspondente numa run nova, sem exigir novo kill — desde que o jogador ainda não tenha consumido essa unidade.
 
@@ -120,7 +121,8 @@ Implementar o menor caminho que atende exatamente o pedido:
 | Roteamento explícito | Hoje `tryEnterDungeon()` só trata `dungeon-2`; demais ids caem em `dungeon-test`. `enterWorld()` usa `WorldId` sem `"dungeon-1"`. `setWorldLook()` trata `dungeon-2` como visual “cidade”; o resto usa look “dungeon”. | Estender `WorldId`, `WorldManager`, o ternário de `tryEnterDungeon()` (`dungeon-1` \| `dungeon-2` \| `dungeon-test`) e incluir `dungeon-1` no look de cemitério/greybox alinhado à D2, se o builder reutilizar o mesmo kit. |
 | Worlds e cache | `WorldManager` reconhece somente `city`, `dungeon-test` e `dungeon-2`, e mantém worlds em cache. | Adicionar o world da D1 e resetar os gates ao iniciar cada run; não deixar portões abertos após uma run anterior. |
 | Run e timer | `DungeonRun` já controla fase, kills, XP e timer. `enterWorld()` inicia uma run quando entra em qualquer world não-cidade. | Fazer as três zonas no mesmo world e nunca chamar `enterWorld()` na troca de zona; isso preserva timer, XP e duração da run. |
-| Saída voluntária | `portal-exit` em `buildTestDungeonWorld()` e D2 chama `finishDungeon("exit")`. | World D1 **não** registra `portal-exit`; saída só por morte/timeout (comportamento já existente). |
+| Saída voluntária | `portal-exit` em `buildTestDungeonWorld()` e D2 chama `finishDungeon("exit")`. | World D1 **não** registra `portal-exit`. Alinhar D2 (remover portal) no plano D2 — regra: **dungeon não tem saída**. |
+| Inimigos D1 | Spawns usam arquétipos genéricos (`fixed`/`chaser`/`ranged`) sem `monsterId` de cogumelo. | **Seis** defs novas em `monsters.json` (minion + boss por zona); cada spawn D1 aponta `monsterId` explícito (§5.4). |
 | Bosses e respawn | `EnemyService` aplica multiplicadores a `isBoss` e usa o respawn de 180 s. A D1 atual marca como boss um spawn de arquétipo `fixed`, sem associar uma chave. | Definir explicitamente o boss de cada zona e sua recompensa (chave só Z1/Z2). Reutilizar multiplicadores e cooldown sem ajuste de balance nesta entrega. |
 | Recompensa de kill | As rotas de ataque básico, skill, dano contínuo, summon e reflect chamam `CityGameSession.grantKillXp()`. Esse método já salva a cada kill. | Entregar chave de progressão nesse ponto comum, antes do `persistSave(true)`, **somente** para bosses das Zonas 1 e 2. |
 | IA inimiga | `EnemyAI` move perseguidores diretamente em direção ao jogador; não recebe colisores do mundo nem limite de zona. `EnemyService.spawnFromDungeon()` cria todos os spawns das arenas. | Restringir inimigos à zona de origem e impedir detecção/ataques através de um portão fechado. |
@@ -144,13 +146,14 @@ Implementar o menor caminho que atende exatamente o pedido:
 
 Construir a D1 como **um único world conectado** de 36 × 108, dividido em três módulos iguais de 36 × 36. A disposição abaixo é a decisão final do greybox deste delivery:
 
-| Zona | Centro | Limites Z | Boss (spawn e posição) | Inimigo comum (spawn e posição) | Gate |
+| Zona | Centro | Limites Z | Boss (spawn · monstro) | Minion (spawn · monstro) | Gate |
 |---|---:|---:|---|---|---|
-| `d1-zone-1` | `(0, 0)` | `-18` a `18` | Boss 1 — `d1-a1-f1` em `(5, -5)` | `d1-a1-f2` em `(-5, -5)` | `d1-gate-1` em `(0, -18)` → Zona 2 |
-| `d1-zone-2` | `(0, -36)` | `-54` a `-18` | Boss 2 — `d1-a2-f1` em `(5, -41)` | `d1-a2-r1` em `(-4, -43)` | `d1-gate-2` em `(0, -54)` → Zona 3 |
-| `d1-zone-3` | `(0, -72)` | `-90` a `-54` | Boss final — `d1-a3-boss` em `(0, -74)` | `d1-a3-c1` em `(5, -70)` | **nenhum** |
+| `d1-zone-1` | `(0, 0)` | `-18` a `18` | `d1-a1-boss` · **Cogumelo Boss** (`cogumelo_boss`) | `d1-a1-minion` · **Cogumelo Minion** (`cogumelo_minion`) | `d1-gate-1` → Zona 2 |
+| `d1-zone-2` | `(0, -36)` | `-54` a `-18` | `d1-a2-boss` · **Cogumelo Boss 2** (`cogumelo_boss_2`) | `d1-a2-minion` · **Cogumelo Minion 2** (`cogumelo_minion_2`) | `d1-gate-2` → Zona 3 |
+| `d1-zone-3` | `(0, -72)` | `-90` a `-54` | `d1-a3-boss` · **Cogumelo Boss 3** (`cogumelo_boss_3`) | `d1-a3-minion` · **Cogumelo Minion 3** (`cogumelo_minion_3`) | **nenhum** |
 
-- Preservar os seis spawns existentes da D1: marcar `d1-a1-f1` e `d1-a2-f1` com `"isBoss": true`, manter `d1-a3-boss` como boss e manter os outros três como inimigos comuns.
+- **Dois spawns por zona** (minion + boss), seis no total. Posições iniciais sugeridas: minion em `(-5, z)` e boss em `(5, z)` por zona (ajustar no JSON ao greybox).
+- `"isBoss": true` somente nos três spawns `*-boss`. Minions nunca concedem chave.
 - As coordenadas atuais em `dungeons.json` (arenas `halfSize` 9/9/10) **serão realinhadas** aos centros de zona da tabela acima.
 - O player nasce em `(0, 2)`.
 - Os **dois** gates têm aberturas com 5,2 unidades de largura nos limites entre zonas. Esses são os únicos vãos nas paredes internas.
@@ -170,6 +173,22 @@ Construir a D1 como **um único world conectado** de 36 × 108, dividido em trê
 - A recompensa de chave é determinística. Inimigo comum nunca concede chave.
 - Para evitar duplicatas: conceder chave somente se o jogador ainda não possui aquele ID e o portão correspondente ainda não foi aberto nesta run.
 - Cadastrar as duas chaves em `items.json` como materiais stackáveis com `items/seal.svg`.
+
+### 5.4 Inimigos (cogumelos) — fechado
+
+Cadastrar em `game/src/data/monsters/monsters.json` e referenciar por `monsterId` em **todos** os spawns da D1 em `dungeons.json`. Nomes de exibição:
+
+| `monsterId` | Nome (UI) | Zona | Papel |
+|---|---|---|---|
+| `cogumelo_minion` | Cogumelo Minion | 1 | minion |
+| `cogumelo_boss` | Cogumelo Boss | 1 | boss (+ chave Z2) |
+| `cogumelo_minion_2` | Cogumelo Minion 2 | 2 | minion |
+| `cogumelo_boss_2` | Cogumelo Boss 2 | 2 | boss (+ chave Z3) |
+| `cogumelo_minion_3` | Cogumelo Minion 3 | 3 | minion |
+| `cogumelo_boss_3` | Cogumelo Boss 3 | 3 | boss final (sem chave) |
+
+- Stats, arquétipo (`chaser`/`fixed`/etc.), XP, respawn e `modelUrl` seguem o pipeline atual de monstro — **provisório** até modelos 3D de cogumelo existirem (greybox/cor permitido no primeiro delivery).
+- Não reutilizar `fixed`/`chaser`/`ranged` como identidade visual da D1; o jogador deve ver cogumelos por nome no HUD/log.
 
 ## 6. Regras do portão e do fluxo
 
@@ -195,7 +214,8 @@ Proximidade: `INTERACT_RANGE = 1.6` em `CityGameSession.ts`, medido até o eixo 
 
 - Criar `game/src/world/worldConstants.ts` com `CITY_WORLD_SIZE = 36`.
 - Estender `dungeon-definitions.ts` com `DungeonZoneDef`, `DungeonGateDef`, campos opcionais em `DungeonDef` e `ArenaDef.zoneId?`.
-- Atualizar definição D1 em `dungeons.json`: três zonas, **dois** gates, bosses por zona, **duas** chaves.
+- Atualizar definição D1 em `dungeons.json`: três zonas, **dois** gates, **seis** spawns com `monsterId` cogumelo (§5.4), **duas** chaves.
+- Cadastrar **seis** monstros cogumelo em `monsters.json`.
 - Cadastrar só `d1_key_zone_2` e `d1_key_zone_3` em `items.json`.
 
 ### Fase B — World conectado e apresentação dos gates
@@ -210,7 +230,7 @@ Proximidade: `INTERACT_RANGE = 1.6` em `CityGameSession.ts`, medido até o eixo 
 
 ### Fase D — Bosses e limites de combate
 
-- `zoneId` em `EnemyModel`; chave em `grantKillXp()` **apenas** bosses Z1/Z2; `EnemyAI` + filtros de alvo.
+- `zoneId` em `EnemyModel`; chave em `grantKillXp()` **apenas** spawns `d1-a1-boss` e `d1-a2-boss` (cogumelo boss / boss 2); `EnemyAI` + filtros de alvo.
 
 ### Fase E — HUD, inventário e save
 
@@ -240,8 +260,9 @@ Proximidade: `INTERACT_RANGE = 1.6` em `CityGameSession.ts`, medido até o eixo 
 ### Run e repetição
 
 - [ ] Timer 600 s contínuo entre zonas.
-- [ ] Retorno à cidade **somente** morte ou timeout na D1.
-- [ ] Próxima run reseta os dois gates; D2 inalterada (mantém portal de saída).
+- [ ] Retorno à cidade **somente** morte ou timeout (dungeon sem saída).
+- [ ] Inimigos visíveis como cogumelo minion/boss (1/2/3) por zona; bosses Z1/Z2 concedem chaves.
+- [ ] Próxima run reseta os dois gates.
 
 ### Validação técnica
 
@@ -252,7 +273,9 @@ Proximidade: `INTERACT_RANGE = 1.6` em `CityGameSession.ts`, medido até o eixo 
 ## 9. Decisões fechadas para o delivery
 
 - Três zonas 36 × 36 em world 36 × 108; **dois** gates de progressão.
-- **Zona 3 (última etapa): sem portão, sem chave, sem portal de saída** — farm até morte ou fim dos 600 s.
+- **Dungeon não tem saída** (nenhuma zona, nenhum portal `portal-exit`).
+- **Zona 3:** sem portão, sem chave — farm até morte ou fim dos 600 s.
+- **Inimigos:** cogumelo minion/boss por zona; variantes 2 e 3 nas zonas 2 e 3 (§5.4).
 - Boss 1 e 2 concedem chaves de progressão; Boss 3 só loot/XP de boss.
 - Chaves persistentes; gates efêmeros por run.
 - Sem `dungeonClears`, quests ou framework genérico de dungeons.
