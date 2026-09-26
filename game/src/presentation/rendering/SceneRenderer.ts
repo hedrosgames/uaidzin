@@ -295,8 +295,16 @@ export class SceneRenderer {
     this.skyDome.visible = true;
   }
 
-  setPlayerTransform(x: number, z: number, facing: number, moving: boolean): void {
-    this.playerView.setPose(x, z, facing, moving);
+  setPlayerTransform(
+    x: number,
+    z: number,
+    facing: number,
+    moving: boolean,
+    moveSpeed?: number,
+    y = 0,
+  ): void {
+    if (moveSpeed !== undefined) this.playerView.setMoveSpeed(moveSpeed);
+    this.playerView.setPose(x, z, facing, moving, y);
   }
 
   updatePlayer(dt: number): void {

@@ -58,7 +58,7 @@ const IRON = new Color(0.14, 0.11, 0.078);
 const GOLD = new Color(0.83, 0.63, 0.09);
 const GOLD_BRIGHT = new Color(0.93, 0.78, 0.32);
 
-const GROUND_RING_VERTEX = /* glsl */ `
+const GROUND_RING_VERTEX =  `
   varying vec2 vLocal;
   void main() {
     vLocal = position.xy;
@@ -66,7 +66,7 @@ const GROUND_RING_VERTEX = /* glsl */ `
   }
 `;
 
-const GROUND_RING_FRAGMENT = /* glsl */ `
+const GROUND_RING_FRAGMENT =  `
   uniform float uTime;
   uniform float uIntensity;
   uniform float uRadius;

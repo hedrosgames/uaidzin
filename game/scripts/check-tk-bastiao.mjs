@@ -32,9 +32,13 @@ await evaluate(`window.__TK_BASTIAO_QA__ = async (targets, repetitions, integrat
     ok(cast.stakes.length === 4, 'Quatro estacas no quadrado: ' + target.join(','));
     ok(cast.stakes.every(stake => !stake.risen), 'Estacas ainda enterradas no início: ' + target.join(','));
     ok(cast.stakes.every(stake => Array.from(stake.top).every(Number.isFinite)), 'Topos de estaca finitos: ' + target.join(','));
-    ok(cast.stakes.every((stake, index, all) => index === 0 ||
-      Math.abs(Math.hypot(stake.top[0] - all[index - 1].top[0], stake.top[2] - all[index - 1].top[2]) -
-        Math.hypot(stake.top[0] - all[0].top[0], stake.top[2] - all[0].top[2])) < 0.2),
+    ok(cast.stakes.every((stake, index, all) => {
+      const next = all[(index + 1) % all.length];
+      const opposite = all[(index + 2) % all.length];
+      const side = Math.hypot(stake.top[0] - next.top[0], stake.top[2] - next.top[2]);
+      const diagonal = Math.hypot(stake.top[0] - opposite.top[0], stake.top[2] - opposite.top[2]);
+      return Math.abs(side - 2.2 * Math.SQRT2) < 1e-6 && Math.abs(diagonal - 4.4) < 1e-6;
+    }),
       'Estacas equidistantes em quadrado: ' + target.join(','));
     const groups = api.scene.children.flatMap(object => object.name === 'tk-bastiao-vfx-root' ?
       object.children.filter(child => child.name === 'tk-bastiao-stake') : []);
@@ -55,7 +59,10 @@ await evaluate(`window.__TK_BASTIAO_QA__ = async (targets, repetitions, integrat
     ok(chainStates.some(chain => chain.visibleLinks > 0), 'Elos visíveis na primeira corrente: ' + target.join(','));
     ok(chainStates[0].progress >= chainStates[3].progress || chainStates[0].connected === chainStates[3].connected,
       'Correntes progridem em sequência: ' + target.join(','));
-    api.advance(0.45);
+    api.advance(8/60);
+    ok(api.getState().bastioes[0].chains[0].particles > 0,
+      'Faíscas renderizadas na conexão da primeira corrente: ' + target.join(','));
+    api.advance(0.45 - 8/60);
     const closed = api.getState();
     ok(closed.phase === 'hold', 'Cofre fechado em 0,94 s: ' + target.join(','));
     ok(closed.bastioes[0].chains.every(chain => chain.connected), 'Quatro correntes conectadas: ' + target.join(','));
@@ -119,9 +126,11 @@ await evaluate(`window.__TK_BASTIAO_QA__ = async (targets, repetitions, integrat
         controller.update(1/fps);
         elapsed += 1/fps;
       }
-      controller.update(0.94 - elapsed);
+      controller.update(0.94 - elapsed + 1/60);
       ok(controller.getPhase() === 'hold', 'Cofre fechado em 0,94 s a ' + fps + ' fps');
-      elapsed = 0.94;
+      ok(Math.abs(controller.getCastStates()[0].elapsed - 0.94) <= 1/60 + 1e-6,
+        'Fechamento dentro de um passo fixo a ' + fps + ' fps');
+      elapsed = 0.94 + 1/60;
       while (elapsed + 1/fps < 2.49 - 1e-9) {
         controller.update(1/fps);
         elapsed += 1/fps;

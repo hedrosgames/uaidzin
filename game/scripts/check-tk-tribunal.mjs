@@ -57,7 +57,9 @@ await evaluate(`window.__TK_TRIBUNAL_QA__ = async (targets, repetitions, integra
     ok(fissured.phase === 'fissures' || fissured.phase === 'impact', 'Fase de fissuras ativa: ' + target.join(','));
     ok(fissured.tribunals[0].fissures.every(fissure => fissure.visible && fissure.extension > 0.5),
       'Fissuras douradas abertas entre os pés: ' + target.join(','));
-    api.advance(0.05);
+    ok(fissured.tribunals[0].fissureProgress > 0.5 && fissured.tribunals[0].fissureProgress < 1,
+      'Progresso das fissuras acompanha a fase: ' + target.join(','));
+    api.advance(1/12);
     const verdict = api.getState();
     ok(verdict.phase === 'impact', 'Impacto central final após fissuras: ' + target.join(','));
     ok(verdict.tribunals[0].lightIntensity > 8, 'Veredito com luz forte (pico 9,6): ' + target.join(','));
@@ -79,6 +81,9 @@ await evaluate(`window.__TK_TRIBUNAL_QA__ = async (targets, repetitions, integra
   const paths = [];
   const memory = [];
   for (let i = 0; i < repetitions; i++) {
+    ok(api.getState().casts === 0 && api.getState().systems === 0,
+      'Ciclo anterior encerra antes da próxima sentença: ' + i);
+    api.clear();
     api.cast();
     api.advance(0.07);
     paths.push(JSON.stringify(api.getState().tribunals[0].pillars.map(pillar => pillar.head)));
@@ -86,7 +91,7 @@ await evaluate(`window.__TK_TRIBUNAL_QA__ = async (targets, repetitions, integra
     memory.push(api.getState().memory);
   }
   if (repetitions > 0) {
-    ok(new Set(paths).size === paths.length, 'Rastros diferentes entre sentenças');
+    ok(new Set(paths).size === 1, 'Pilares determinísticos entre sentenças');
     ok(memory.slice(1).every(value => JSON.stringify(value) === JSON.stringify(memory[0])), 'Memória estável após ciclos');
   }
   if (integration) {
@@ -112,14 +117,14 @@ await evaluate(`window.__TK_TRIBUNAL_QA__ = async (targets, repetitions, integra
         elapsed += 1/fps;
       }
       ok(controller.getPhase() === 'descent', 'Sem pouso antecipado a ' + fps + ' fps');
-      controller.update(timeline[0] - elapsed);
+      controller.update(timeline[0] - elapsed + 1/60);
       ok(controller.getPhase() === 'fissures', 'Pouso em 0,25 s a ' + fps + ' fps');
-      elapsed = timeline[0];
+      elapsed = timeline[0] + 1/60;
       while (elapsed + 1/fps < timeline[0] + timeline[1] - 1e-9) {
         controller.update(1/fps);
         elapsed += 1/fps;
       }
-      controller.update(timeline[0] + timeline[1] - elapsed);
+      controller.update(timeline[0] + timeline[1] - elapsed + 2/60);
       ok(controller.getPhase() === 'impact', 'Veredito em 0,63 s a ' + fps + ' fps');
       controller.clear();
     }

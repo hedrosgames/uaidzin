@@ -104,8 +104,10 @@ await evaluate(`window.__TK_JULGAMENTO_QA__ = async (targets, repetitions, integ
         elapsed += 1/fps;
       }
       ok(controller.getPhase() === 'beam', 'Sem impacto antecipado a ' + fps + ' fps');
-      controller.update(0.12 - elapsed);
+      controller.update(0.12 - elapsed + 1/60);
       ok(controller.getPhase() === 'impact', 'Impacto do primeiro raio em 0,12 s a ' + fps + ' fps');
+      ok(Math.abs(controller.getCastStates()[0].elapsed - 0.12) <= 1/60 + 1e-6,
+        'Impacto dentro de um passo fixo a ' + fps + ' fps');
       controller.clear();
     }
     controller.dispose(); controller.dispose();

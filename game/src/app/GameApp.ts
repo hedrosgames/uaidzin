@@ -5,7 +5,8 @@ import { GameClock } from "../core/time/GameClock";
 import { formatMMSS } from "../core/time/FormatTime";
 import { DebugHud } from "../debug/DebugHud";
 import { SceneRenderer } from "../presentation/rendering/SceneRenderer";
-import { WEAPON_SET_IDS, WEAPON_SET_LABEL } from "../presentation/player/WeaponRig";
+import { WEAPON_SET_IDS, WEAPON_SET_LABEL, type WeaponSetId } from "../presentation/player/WeaponRig";
+import { weaponSetIconMarkup } from "../ui/WeaponSetHudIcons";
 import { InteractionPanel } from "../ui/InteractionPanel";
 import { GamePanels } from "../ui/GamePanels";
 import { WireUi, isWirePanelName } from "../ui/WireUi";
@@ -86,7 +87,8 @@ export class GameApp {
   private readonly dropLogEl: HTMLElement;
   private readonly resultOverlay: HTMLElement;
   private readonly speedToggle: HTMLElement;
-  private readonly weaponToggle: HTMLButtonElement;
+  private readonly weaponSetStrip: HTMLElement;
+  private readonly weaponSetButtons = new Map<WeaponSetId, HTMLButtonElement>();
   private readonly settingsOverlay: HTMLElement;
   private readonly toastEl: HTMLElement;
   private readonly helpBar: HTMLElement;
@@ -200,7 +202,8 @@ export class GameApp {
     this.dropLogEl = deps.dropLogElement;
     this.resultOverlay = deps.resultOverlayElement;
     this.speedToggle = deps.hudToolsElement;
-    this.weaponToggle = deps.hudToolsElement.querySelector<HTMLButtonElement>("#btn-weapon-set")!;
+    this.weaponSetStrip = deps.hudToolsElement.querySelector<HTMLElement>("#weapon-set-strip")!;
+    this.buildWeaponSetStrip();
     this.settingsOverlay = deps.settingsOverlayElement;
     this.toastEl = deps.toastElement;
     this.helpBar = deps.helpBarElement;
@@ -276,7 +279,6 @@ export class GameApp {
     this.bindDebugTimer();
     this.bindDebugProgression();
     this.bindPanels();
-    this.bindWeaponToggle();
     this.bindSettings();
     this.bindJuiceToasts();
     this.bindSkillBarClicks();
@@ -313,20 +315,32 @@ export class GameApp {
     });
   }
 
-  private bindWeaponToggle(): void {
-    this.weaponToggle.addEventListener("click", () => {
-      const current = this.renderer.playerView.getWeaponSet();
-      const index = current ? WEAPON_SET_IDS.indexOf(current) : -1;
-      const next = WEAPON_SET_IDS[(index + 1) % WEAPON_SET_IDS.length]!;
-      void this.renderer.playerView.setWeaponSet(next);
-      this.refreshWeaponToggle();
-    });
+  private buildWeaponSetStrip(): void {
+    this.weaponSetStrip.replaceChildren();
+    this.weaponSetButtons.clear();
+    for (const set of WEAPON_SET_IDS) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-weapon-set btn-opt-hud";
+      btn.dataset.weaponSet = set;
+      btn.setAttribute("aria-label", WEAPON_SET_LABEL[set]);
+      btn.innerHTML = weaponSetIconMarkup(set);
+      btn.addEventListener("click", () => {
+        void this.renderer.playerView.setWeaponSet(set);
+        this.refreshWeaponSetStrip();
+      });
+      this.weaponSetStrip.appendChild(btn);
+      this.weaponSetButtons.set(set, btn);
+    }
   }
 
-  private refreshWeaponToggle(): void {
-    const set = this.renderer.playerView.getWeaponSet();
-    const label = set ? WEAPON_SET_LABEL[set] : "";
-    if (this.weaponToggle.textContent !== label) this.weaponToggle.textContent = label;
+  private refreshWeaponSetStrip(): void {
+    const active = this.renderer.playerView.getWeaponSet();
+    for (const [set, btn] of this.weaponSetButtons) {
+      const on = set === active;
+      btn.classList.toggle("is-active", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    }
   }
 
   private bindSettings(): void {
@@ -745,7 +759,7 @@ export class GameApp {
   private tick(deltaSeconds: number): void {
     try {
       this.clock.advance(deltaSeconds);
-      this.refreshWeaponToggle();
+      this.refreshWeaponSetStrip();
       if (this.toastTimer > 0) {
         this.toastTimer -= deltaSeconds;
         if (this.toastTimer <= 0) {

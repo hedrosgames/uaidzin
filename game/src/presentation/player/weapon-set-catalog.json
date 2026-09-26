@@ -1,0 +1,90 @@
+{
+  "ids": [
+    "dual-axe",
+    "axe-shield",
+    "sword-shield",
+    "dual-sword",
+    "greatsword",
+    "dual-gloves",
+    "staff-shield",
+    "greatstaff",
+    "bow"
+  ],
+  "classDefault": {
+    "TK": "axe-shield",
+    "FM": "greatstaff",
+    "BM": "dual-gloves",
+    "HT": "dual-sword"
+  },
+  "sets": {
+    "dual-axe": {
+      "label": "Machados duplos",
+      "right": "axe",
+      "left": "axe",
+      "idle": "class",
+      "attackClip": "attack_1h",
+      "basicAnim": "attack"
+    },
+    "axe-shield": {
+      "label": "Machado e escudo",
+      "right": "axe",
+      "left": "shield",
+      "idle": "class",
+      "attackClip": "attack",
+      "basicAnim": "attack"
+    },
+    "sword-shield": {
+      "label": "Espada e escudo",
+      "right": "sword",
+      "left": "shield",
+      "idle": "class",
+      "attackClip": "attack",
+      "basicAnim": "attack"
+    },
+    "dual-sword": {
+      "label": "Espadas duplas",
+      "right": "sword",
+      "left": "sword",
+      "idle": "class",
+      "attackClip": "attack_1h",
+      "basicAnim": "attack"
+    },
+    "greatsword": {
+      "label": "Espadão",
+      "right": "greatsword",
+      "idle": "idle_greatsword",
+      "attackClip": "attack_greatsword",
+      "basicAnim": "attack"
+    },
+    "dual-gloves": {
+      "label": "Garras",
+      "right": "glove",
+      "left": "glove",
+      "idle": "class",
+      "attackClip": "attack_swipe",
+      "basicAnim": "attack"
+    },
+    "staff-shield": {
+      "label": "Cajado e escudo",
+      "right": "staff",
+      "left": "shield",
+      "idle": "class",
+      "attackClip": "attack_2h",
+      "basicAnim": "cast"
+    },
+    "greatstaff": {
+      "label": "Cajadão",
+      "right": "greatstaff",
+      "idle": "idle_2h",
+      "attackClip": "attack_2h",
+      "basicAnim": "cast"
+    },
+    "bow": {
+      "label": "Arco",
+      "left": "bow",
+      "idle": "class",
+      "attackClip": "attack_bow",
+      "basicAnim": "attack"
+    }
+  }
+}

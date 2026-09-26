@@ -46,11 +46,7 @@ export class EquipmentService {
     return ["weapon", "head", "armor", "ring1", "ring2", "neck", "ear"].includes(slot);
   }
 
-  /**
-   * Recalcula o bônus total a partir do que está equipado agora.
-   * Declarar o total (em vez de somar/subtrair incrementos) impede que um
-   * remove sem o apply correspondente deixe o personagem abaixo do base.
-   */
+  
   private recalcEquipBonus(): void {
     let attack = 0;
     let defense = 0;

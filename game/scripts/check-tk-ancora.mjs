@@ -65,7 +65,8 @@ await evaluate(`window.__TK_ANCORA_QA__ = async (targets, repetitions, integrati
     ok(planted.anchorVisible, 'Âncora permanece cravada ~0,5 s: ' + target.join(','));
     api.advance(0.1);
     const dissolved = api.getState();
-    ok(dissolved.ancoras[0].dissolveProgress > 0 || dissolved.casts === 0, 'Âncora dissolve após cravada: ' + target.join(','));
+    ok(dissolved.casts === 1 && dissolved.ancoras[0].dissolveProgress > 0 &&
+      dissolved.ancoras[0].dissolveProgress < 1, 'Âncora dissolve após cravada: ' + target.join(','));
     api.advance(0.6);
     const finished = api.getState();
     ok(finished.casts === 0 && finished.particles === 0 && finished.systems === 0, 'Cleanup: ' + target.join(','));
@@ -75,16 +76,22 @@ await evaluate(`window.__TK_ANCORA_QA__ = async (targets, repetitions, integrati
   }
   api.setTarget(0,0.05,0);
   const paths = [];
+  const rotations = [];
   const memory = [];
   for (let i = 0; i < repetitions; i++) {
+    ok(api.getState().casts === 0 && api.getState().systems === 0,
+      'Âncora anterior encerra antes do próximo disparo: ' + i);
+    api.clear();
     api.cast();
     api.advance(0.08);
     paths.push(JSON.stringify(api.getState().ancoras[0].chain.head));
+    rotations.push(JSON.stringify(api.getState().ancoras[0].chain.tipRotation));
     api.advance(1.5);
     memory.push(api.getState().memory);
   }
   if (repetitions > 0) {
-    ok(new Set(paths).size === paths.length, 'Rastros diferentes entre disparos');
+    ok(new Set(paths).size === 1, 'Trajetória determinística entre disparos');
+    ok(new Set(rotations).size === rotations.length, 'Giro da ponta varia entre disparos');
     ok(memory.slice(1).every(value => JSON.stringify(value) === JSON.stringify(memory[0])), 'Memória estável após ciclos');
   }
   if (integration) {

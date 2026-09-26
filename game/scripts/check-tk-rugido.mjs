@@ -86,14 +86,15 @@ await evaluate(`window.__TK_RUGIDO_QA__ = async (targets, repetitions, integrati
       let elapsed = 0;
       let ringMoved = false;
       let previous = null;
-      while (elapsed + 1/fps < 0.5 - 1e-9) {
+      while (elapsed + 1/fps < 0.95 - 1e-9) {
         controller.update(1/fps);
         elapsed += 1/fps;
         const snapshot = JSON.stringify(controller.getCastStates()[0]?.ringScale ?? 0);
         if (previous !== null && snapshot !== previous) ringMoved = true;
         previous = snapshot;
       }
-      controller.update(0.5 - elapsed);
+      ok(controller.getPhase() !== 'idle', 'Rugido não encerra antes de 0,95 s a ' + fps + ' fps');
+      controller.update(0.95 - elapsed + 1/60);
       ok(controller.getPhase() === 'idle', 'Dissipação completa em 0,95 s a ' + fps + ' fps');
       ok(ringMoved, 'Onda animada em passos fixos a ' + fps + ' fps');
       controller.clear();

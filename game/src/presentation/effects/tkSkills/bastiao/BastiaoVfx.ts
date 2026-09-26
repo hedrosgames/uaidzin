@@ -235,7 +235,7 @@ class BastiaoCast {
       this.stakes.push(this.createStake(scene, batchedRenderer, shared, config, index));
     }
     for (let index = 0; index < BASTIAO_STAKE_COUNT; index += 1) {
-      this.chains.push(this.createChain(scene, shared, index));
+      this.chains.push(this.createChain(scene, batchedRenderer, shared, index));
     }
     this.closeSystems = createBastiaoCloseSystems(shared.particleMaterials, config);
     for (const system of this.closeSystems.all) {
@@ -307,7 +307,12 @@ class BastiaoCast {
     return { angle, position, top, group, joint, descent, descentTriggered: false };
   }
 
-  private createChain(scene: Scene, shared: BastiaoSharedResources, index: number): BastiaoChain {
+  private createChain(
+    scene: Scene,
+    batchedRenderer: BatchedRenderer,
+    shared: BastiaoSharedResources,
+    index: number,
+  ): BastiaoChain {
     const from = this.stakes[index].top;
     const to = this.stakes[(index + 1) % BASTIAO_STAKE_COUNT].top;
     const mid = from.clone().lerp(to, 0.5);
@@ -343,6 +348,7 @@ class BastiaoCast {
     for (const system of sparks.all) {
       system.emitter.position.copy(to);
       scene.add(system.emitter);
+      batchedRenderer.addSystem(system);
       this.systems.push(system);
     }
     return {
@@ -406,10 +412,11 @@ class BastiaoCast {
         position: stake.position.toArray(),
         top: stake.top.toArray(),
         baseY: stake.group.position.y,
-        risen: stake.group.position.y >= -1e-6,
+        risen: stake.group.position.y >= stake.position.y - 1e-6,
       })),
       chains: this.chains.map((chain) => ({
         connected: chain.connected,
+        particles: chain.sparks.burst.particleNum,
         ...chain.projectile.getState(),
       })),
       rings: this.rings.map((ring, index) => ({

@@ -1,5 +1,6 @@
 import {
   AnimationAction,
+  AnimationClip,
   AnimationMixer,
   Bone,
   Box3,
@@ -7,22 +8,57 @@ import {
   Group,
   LoopOnce,
   LoopRepeat,
+  MathUtils,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
   SkinnedMesh,
   Vector3,
+  VectorKeyframeTrack,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { COMBAT_BALANCE } from "../../data/balance/combat";
 import {
-  attackClipForWeapon,
   humanAnimUrl,
   humanCombatUrl,
+  idleAnimUrl,
   type HumanAttackClip,
 } from "./PlayerAnimCatalog";
 import { ArmorAura } from "./ArmorAura";
-import { WeaponRig, type WeaponSetId } from "./WeaponRig";
+import {
+  CLASS_WEAPON_SET,
+  attackClipForWeapon,
+  basicAnimForWeapon,
+  idleClipForWeapon,
+  isPlayerClassId,
+  type PlayerClassId,
+  type WeaponIdleId,
+  type WeaponSetId,
+} from "./WeaponSetCatalog";
+import { WeaponRig } from "./WeaponRig";
+
+const HIPS_POSITION_TRACK = /Hips\.position$/;
+const RUN_REF_SPEED = 3.4;
+
+function hipsRestFromClip(clip: AnimationClip): Vector3 | null {
+  const track = clip.tracks.find((t) => HIPS_POSITION_TRACK.test(t.name));
+  if (!track || track.values.length < 3) return null;
+  return new Vector3(track.values[0], track.values[1], track.values[2]);
+}
+
+function pinHipsToRest(clip: AnimationClip, rest: Vector3): AnimationClip {
+  const tracks = clip.tracks.map((track) => {
+    if (!HIPS_POSITION_TRACK.test(track.name)) return track;
+    const duration = Math.max(clip.duration, 1 / 30);
+    return new VectorKeyframeTrack(
+      track.name,
+      [0, duration],
+      [rest.x, rest.y, rest.z, rest.x, rest.y, rest.z],
+    );
+  });
+  return new AnimationClip(clip.name, clip.duration, tracks);
+}
 
 const GHOST_NAME = "PlayerOcclusionGhost";
 
@@ -35,32 +71,14 @@ export type PlayerAnim =
   | "hit_right"
   | "death";
 
-export type PlayerClassId = "TK" | "FM" | "BM" | "HT";
+export type { PlayerClassId } from "./WeaponSetCatalog";
+export { isPlayerClassId } from "./WeaponSetCatalog";
 
 const CLASS_MODEL: Record<PlayerClassId, string> = {
   TK: "/models/player/TK/TK.glb",
   FM: "/models/player/FM/FM.glb",
   BM: "/models/player/BM/BM.glb",
   HT: "/models/player/HT/HT.glb",
-};
-
-const CLASS_WEAPON_SET: Record<PlayerClassId, WeaponSetId> = {
-  TK: "axe-shield",
-  FM: "greatstaff",
-  BM: "dual-gloves",
-  HT: "dual-sword",
-};
-
-const WEAPON_ATTACK_ANIM: Record<WeaponSetId, Extract<PlayerAnim, "attack" | "cast">> = {
-  "dual-axe": "attack",
-  "axe-shield": "attack",
-  "sword-shield": "attack",
-  "dual-sword": "attack",
-  greatsword: "attack",
-  "dual-gloves": "attack",
-  "staff-shield": "cast",
-  greatstaff: "cast",
-  bow: "cast",
 };
 
 const FIXED_ANIM_URLS: Record<Exclude<PlayerAnim, "idle" | "attack">, string> = {
@@ -81,10 +99,6 @@ const ONE_SHOT: ReadonlySet<PlayerAnim> = new Set([
 
 const TARGET_HEIGHT = 1.72 * 1.1;
 
-export function isPlayerClassId(id: string): id is PlayerClassId {
-  return id === "TK" || id === "FM" || id === "BM" || id === "HT";
-}
-
 export class PlayerView {
   readonly root = new Group();
   private readonly loader = new GLTFLoader();
@@ -102,7 +116,12 @@ export class PlayerView {
   private readonly weaponRig = new WeaponRig();
   private weaponSet: WeaponSetId | null = null;
   private attackClip: HumanAttackClip = "attack";
+  private idleClip: WeaponIdleId = "class";
+  private classIdleClip: AnimationClip | null = null;
   private attackBindGen = 0;
+  private idleBindGen = 0;
+  private moveSpeed = COMBAT_BALANCE.player.speed;
+  private hipsRest: Vector3 | null = null;
   ready = false;
 
   constructor() {
@@ -118,6 +137,9 @@ export class PlayerView {
     this.busyUntil = 0;
     this.actions.clear();
     this.mixer = null;
+    this.hipsRest = null;
+    this.classIdleClip = null;
+    this.idleClip = "class";
     this.clearGhosts();
 
     const base = await this.loader.loadAsync(CLASS_MODEL[id]);
@@ -134,13 +156,29 @@ export class PlayerView {
 
     this.mixer = new AnimationMixer(model);
 
-    const idleClip = base.animations[0];
-    if (idleClip) {
-      idleClip.name = "idle";
-      this.actions.set("idle", this.mixer.clipAction(idleClip));
+    const embeddedIdle = base.animations[0] ?? null;
+    if (embeddedIdle) {
+      embeddedIdle.name = "idle";
+      this.classIdleClip = embeddedIdle;
+      this.hipsRest = hipsRestFromClip(embeddedIdle);
     }
 
-    this.attackClip = attackClipForWeapon(this.weaponSet ?? CLASS_WEAPON_SET[id]);
+    if (id === "TK") {
+      try {
+        const donor = await this.loader.loadAsync(CLASS_MODEL.BM);
+        const donorIdle = donor.animations[0] ?? null;
+        this.disposeObject(donor.scene);
+        if (donorIdle) {
+          this.classIdleClip = this.adaptExternalClip(donorIdle);
+          this.classIdleClip.name = "idle";
+        }
+      } catch {
+      }
+    }
+
+    const defaultSet = this.weaponSet ?? CLASS_WEAPON_SET[id];
+    this.attackClip = attackClipForWeapon(defaultSet);
+    await this.bindIdleForWeapon(defaultSet);
     await this.bindAttackClipSafe(this.attackClip);
 
     const entries = Object.entries(FIXED_ANIM_URLS) as Array<
@@ -149,7 +187,8 @@ export class PlayerView {
     const loaded = await Promise.all(
       entries.map(async ([name, url]) => {
         const gltf = await this.loader.loadAsync(url);
-        const clip = gltf.animations[0] ?? null;
+        const raw = gltf.animations[0] ?? null;
+        const clip = raw ? this.adaptExternalClip(raw) : null;
         this.disposeObject(gltf.scene);
         return [name, clip] as const;
       }),
@@ -178,6 +217,10 @@ export class PlayerView {
     if (nextAttack !== this.attackClip) {
       this.attackClip = nextAttack;
       await this.bindAttackClipSafe(nextAttack);
+    }
+    await this.bindIdleForWeapon(set);
+    if (this.mixer) {
+      for (let i = 0; i < 12; i++) this.mixer.update(1 / 30);
     }
     await this.weaponRig.equip(this.root, set);
     this.armorAura.apply(this.weaponRig.getVisualRoots());
@@ -211,19 +254,25 @@ export class PlayerView {
     return this.mixer;
   }
 
-  setPose(x: number, z: number, facing: number, moving: boolean): void {
-    this.root.position.set(x, 0, z);
+  setMoveSpeed(speed: number): void {
+    this.moveSpeed = Math.max(0.1, speed);
+    this.syncRunTimeScale();
+  }
+
+  setPose(x: number, z: number, facing: number, moving: boolean, y = 0): void {
+    this.root.position.set(x, y, z);
     this.root.rotation.set(0, facing, 0);
     this.moving = moving;
     if (!this.ready || this.dead) return;
     if (performance.now() < this.busyUntil) return;
     const want: PlayerAnim = moving ? "run" : "idle";
     if (this.current !== want) this.play(want, true);
+    else if (want === "run") this.syncRunTimeScale();
   }
 
   playAttack(): void {
     const set = this.weaponRig.getSet() ?? this.weaponSet ?? CLASS_WEAPON_SET[this.classId];
-    this.playOneShot(WEAPON_ATTACK_ANIM[set]);
+    this.playOneShot(basicAnimForWeapon(set));
   }
 
   playCast(): void {
@@ -276,6 +325,8 @@ export class PlayerView {
   getCombatAnimProbe(): {
     weaponSet: WeaponSetId | null;
     attackClipId: HumanAttackClip;
+    idleClipId: WeaponIdleId;
+    basicAnim: ReturnType<typeof basicAnimForWeapon>;
     attackDurationSec: number;
     attackActionReady: boolean;
   } {
@@ -284,6 +335,8 @@ export class PlayerView {
     return {
       weaponSet: set,
       attackClipId: this.attackClip,
+      idleClipId: this.idleClip,
+      basicAnim: basicAnimForWeapon(set),
       attackDurationSec: this.getAnimDurationSec("attack"),
       attackActionReady: !!(this.ready && action && action.getClip()),
     };
@@ -316,10 +369,12 @@ export class PlayerView {
 
     const boneBox = new Box3();
     const tip = new Vector3();
+    const inv = model.matrixWorld.clone().invert();
     let found = false;
     model.traverse((obj) => {
       if (!(obj as Bone).isBone) return;
       obj.getWorldPosition(tip);
+      tip.applyMatrix4(inv);
       if (!found) {
         boneBox.set(tip.clone(), tip.clone());
         found = true;
@@ -329,11 +384,17 @@ export class PlayerView {
     });
     if (!found) boneBox.setFromObject(model);
 
+    const center = boneBox.getCenter(new Vector3());
     const height = Math.max(boneBox.max.y - boneBox.min.y, 0.001);
     const scale = TARGET_HEIGHT / height;
     model.scale.setScalar(scale);
-    model.position.y = -boneBox.min.y * scale;
+    model.position.set(-center.x * scale, -boneBox.min.y * scale, -center.z * scale);
     model.updateMatrixWorld(true);
+  }
+
+  private adaptExternalClip(clip: AnimationClip): AnimationClip {
+    if (!this.hipsRest) return clip;
+    return pinHipsToRest(clip, this.hipsRest);
   }
 
   private clearGhosts(): void {
@@ -446,6 +507,48 @@ export class PlayerView {
     });
   }
 
+  private async bindIdleForWeapon(set: WeaponSetId): Promise<void> {
+    const want = idleClipForWeapon(set);
+    if (want === this.idleClip && this.actions.has("idle")) return;
+    try {
+      await this.bindIdleClip(want);
+    } catch {
+      if (want === "class") return;
+      await this.bindIdleClip("class");
+    }
+  }
+
+  private async bindIdleClip(clipId: WeaponIdleId): Promise<void> {
+    if (!this.mixer) return;
+    const gen = ++this.idleBindGen;
+    let next: AnimationClip | null = null;
+    if (clipId === "class") {
+      next = this.classIdleClip;
+    } else {
+      const gltf = await this.loader.loadAsync(idleAnimUrl(clipId));
+      if (!this.mixer || gen !== this.idleBindGen) {
+        this.disposeObject(gltf.scene);
+        return;
+      }
+      const raw = gltf.animations[0] ?? null;
+      this.disposeObject(gltf.scene);
+      if (!raw) throw new Error("idle clip missing");
+      next = this.adaptExternalClip(raw);
+    }
+    if (!next || !this.mixer || gen !== this.idleBindGen) return;
+    const prev = this.actions.get("idle");
+    const wasIdle = this.current === "idle";
+    if (prev) {
+      const prevClip = prev.getClip();
+      prev.stop();
+      if (prevClip !== this.classIdleClip) this.mixer.uncacheClip(prevClip);
+    }
+    next.name = "idle";
+    this.idleClip = clipId;
+    this.actions.set("idle", this.mixer.clipAction(next));
+    if (wasIdle || this.current === "") this.play("idle", true);
+  }
+
   private async bindAttackClipSafe(clipId: HumanAttackClip): Promise<void> {
     try {
       await this.bindAttackClip(clipId);
@@ -464,9 +567,10 @@ export class PlayerView {
       this.disposeObject(gltf.scene);
       return;
     }
-    const clip = gltf.animations[0] ?? null;
+    const raw = gltf.animations[0] ?? null;
     this.disposeObject(gltf.scene);
-    if (!clip) throw new Error("attack clip missing");
+    if (!raw) throw new Error("attack clip missing");
+    const clip = this.adaptExternalClip(raw);
     const prev = this.actions.get("attack");
     if (prev) {
       prev.stop();
@@ -475,6 +579,14 @@ export class PlayerView {
     clip.name = "attack";
     this.actions.set("attack", this.mixer.clipAction(clip));
     if (this.current === "attack") this.play("attack", false);
+  }
+
+  private syncRunTimeScale(): void {
+    const action = this.actions.get("run");
+    if (!action) return;
+    action.setEffectiveTimeScale(
+      MathUtils.clamp(this.moveSpeed / RUN_REF_SPEED, 0.75, 1.85),
+    );
   }
 
   private playOneShot(name: PlayerAnim): void {
@@ -496,10 +608,11 @@ export class PlayerView {
     next.setLoop(loop && !ONE_SHOT.has(name) ? LoopRepeat : LoopOnce, Infinity);
     next.clampWhenFinished = ONE_SHOT.has(name);
     next.enabled = true;
+    if (name === "run") this.syncRunTimeScale();
     if (prev && prev !== next) {
-      next.crossFadeFrom(prev, 0.15, false);
+      next.crossFadeFrom(prev, 0.18, false);
     } else {
-      next.fadeIn(0.1);
+      next.fadeIn(0.12);
     }
     next.play();
     this.current = name;

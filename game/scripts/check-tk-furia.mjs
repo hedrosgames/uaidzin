@@ -128,7 +128,8 @@ await evaluate(`window.__FURIA_QA__ = async (targets, repetitions, integration) 
 }; true`);
 const results = { checks: [], samples: [], memory: [], inputLimitations: [], skillId: "tk_fis_6" };
 const targets = [[0,0,0],[-5.4,0,0],[0,0,4.5],[0,0,-4.5],
-  [3.4,0,-3.4],[-3.4,0,3.4],[5.4,0,0],[2.5,0,2.5]];
+  [3.4,0,-3.4],[-3.4,0,3.4],[5.4,0,0],[2.5,0,2.5],
+  [-2.5,0,-2.5],[6.2,0,-1.8],[-1.4,0,5.9]];
 for (const target of targets) {
   const result = await evaluate(`window.__FURIA_QA__([${JSON.stringify(target)}], 0, false)`);
   results.checks.push(...result.checks);

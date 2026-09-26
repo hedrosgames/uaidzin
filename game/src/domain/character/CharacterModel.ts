@@ -17,12 +17,7 @@ export class CharacterModel {
   attributes: CharacterAttributes = { ...PROGRESSION_BALANCE.baseAttributes };
   isDead = false;
 
-  /**
-   * attack/defense são derivados: base (atributos) + equipamento.
-   * Os dois donos escrevem campos distintos — ProgressionService só mexe em
-   * base*, EquipmentService só em equip* — então nenhuma ordem de chamada faz
-   * um apagar o outro.
-   */
+  
   baseAttack: number;
   baseDefense: number;
   equipAttack = 0;

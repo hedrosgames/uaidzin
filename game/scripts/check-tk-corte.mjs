@@ -28,6 +28,8 @@ await evaluate(`window.__TK_CORTE_QA__ = async (targets, repetitions, integratio
     const firstStep = api.getState();
     const cast = firstStep.castStates[0];
     ok(firstStep.casts === 1 && cast.slashes.length === 2, 'Duas trilhas por cast: ' + target.join(','));
+    ok(cast.slashes.every(slash => slash.head.every(Number.isFinite)),
+      'Pontas dos dois cortes finitas: ' + target.join(','));
     ok(firstStep.phase === 'slash', 'Fase de corte ativa: ' + target.join(','));
     ok(cast.slashes[0].progress > 0 && cast.slashes[0].progress < 1, 'Primeira trilha cortando: ' + target.join(','));
     ok(cast.slashes[1].progress === 0 && !cast.slashes[1].visible, 'Segunda trilha aguarda a primeira: ' + target.join(','));
@@ -48,7 +50,7 @@ await evaluate(`window.__TK_CORTE_QA__ = async (targets, repetitions, integratio
     api.advance(1);
     const finished = api.getState();
     ok(finished.casts === 0 && finished.particles === 0 && finished.systems === 0, 'Cleanup: ' + target.join(','));
-    ok(api.scene.getObjectByName('tk-corte-blade') === null, 'Malhas removidas da cena: ' + target.join(','));
+    ok(!api.scene.getObjectByName('tk-corte-blade'), 'Malhas removidas da cena: ' + target.join(','));
     directions.push({ target, slashes: secondStep.slashes.map(slash => ({ progress: slash.progress, head: slash.head })) });
   }
   api.setTarget(3.7,1.05,0);

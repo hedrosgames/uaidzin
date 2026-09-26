@@ -1,46 +1,35 @@
-# UAIDZIN
+# UAIDZIN — documentação no repo
 
-RPG de farm/autofarm 3D para navegador (Three.js + Vite + TypeScript).
+Runtime: `game/`. Login e seleção: `game/public/boot/`.
 
-**Comece pelo [`INDEX.md`](INDEX.md)** — documentação ativa, execução e onde cada coisa está.  
-Material antigo/concluído: [`backup/README.md`](backup/README.md).
+**Mapa canônico para agentes:** [`../../../AGENTS.md`](../../../AGENTS.md).
 
-## Resumo
+GDD (capítulos + builder): cópia de referência em `C:\Users\Felipe\Desktop\uaidzin-gdd`. Não tratar `nongame/gdd/` no repo como fonte se a pasta ainda existir por engano.
 
-| O quê | Onde |
+## Project
+
+| Arquivo | Papel |
 |---|---|
-| Regras de design (grill) | [`DECISOES-DESIGN.md`](DECISOES-DESIGN.md) |
-| Plano + grill de execução | [`PLAN-DEV-GRILL.md`](PLAN-DEV-GRILL.md) |
-| Tarefas abertas | [`TAREFAS-ABERTAS.md`](TAREFAS-ABERTAS.md) |
-| Aceite por cena | [`CHECKLIST-CENAS.md`](CHECKLIST-CENAS.md) |
-| GDD (prosa) | `00`–`32` + [`00-GDD-INDEX.md`](00-GDD-INDEX.md) |
-| Código | [`game/`](game/) |
-| UI / protótipos | [`visual/`](visual/) |
-| Backup | [`backup/`](backup/) |
+| [`VFX-KIT-FIREBURST.md`](VFX-KIT-FIREBURST.md) | Pipeline e qualidade FireBurstUAID |
 
-## Rodar o jogo
+## Inventários (`../inventarios/`)
 
-```powershell
-cd game
-npm install
-npm run dev
-```
+`animacoes.md` · `assets.md` · `audios.md` · `classes.md` · `skills.md` · `modelos-mundo.md` · `inimigos.md` · `itens.md` · `equipamentos.md` · `lojas.md` · `vfx.md` · `shaders.md` · `dungeons.md` · `fluxo-mortal-1-400.md` · `save-load.md`
 
-`http://127.0.0.1:5173/`
+Matriz viva de sets/idle: `game/src/presentation/player/weapon-set-catalog.json`.
 
-```powershell
-npm run typecheck
-npm run smoke
-npm run build
-```
+## Ferramentas
 
-## GDD.html
+| Arquivo | Papel |
+|---|---|
+| [`../../game/docs/THREEJS-DEVTOOLS-MCP.md`](../../game/docs/THREEJS-DEVTOOLS-MCP.md) | MCP Three.js (dev) |
+| [`../../game/assets-source/organized/manifest.json`](../../game/assets-source/organized/manifest.json) | Índice Mixamo |
 
-```powershell
-build.bat
-```
+## Visual legado
 
-## Idioma e regras
+| Caminho | Papel |
+|---|---|
+| [`../../../visual/fire-burst-art/`](../../../visual/fire-burst-art/) | Arte 2D Fire Burst |
+| [`../visual/vfx/bola-de-fogo.html`](../visual/vfx/bola-de-fogo.html) | Estudo HTML |
 
-Prosa e respostas em **pt-BR**. Regras de código/UI em [`AGENTS.md`](AGENTS.md).  
-Em conflito GDD × grill de design → **`DECISOES-DESIGN.md` prevalece**.
+`visual/telas/` e pastas antigas em `nongame/backup/` ou docs de project apagados do mapa **não** entram no fluxo de trabalho — só consulta histórica se o Felipe pedir.

@@ -65,7 +65,7 @@ interface OrbitMote {
   phase: number;
 }
 
-const GROUND_RING_VERTEX = /* glsl */ `
+const GROUND_RING_VERTEX =  `
   varying vec2 vLocal;
   void main() {
     vLocal = position.xy;
@@ -73,7 +73,7 @@ const GROUND_RING_VERTEX = /* glsl */ `
   }
 `;
 
-const GROUND_RING_FRAGMENT = /* glsl */ `
+const GROUND_RING_FRAGMENT =  `
   uniform float uTime;
   uniform float uIntensity;
   uniform float uPulseInterval;

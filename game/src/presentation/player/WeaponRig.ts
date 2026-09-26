@@ -14,49 +14,21 @@ import {
   Vector3,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import {
+  WEAPON_SETS,
+  type WeaponModelId,
+  type WeaponSetId,
+} from "./WeaponSetCatalog";
 
-export type WeaponSetId =
-  | "dual-axe"
-  | "axe-shield"
-  | "sword-shield"
-  | "dual-sword"
-  | "greatsword"
-  | "dual-gloves"
-  | "staff-shield"
-  | "greatstaff"
-  | "bow";
+export type { WeaponSetId } from "./WeaponSetCatalog";
+export {
+  WEAPON_SET_IDS,
+  WEAPON_SET_LABEL,
+  isWeaponSetId,
+} from "./WeaponSetCatalog";
 
-export const WEAPON_SET_IDS: readonly WeaponSetId[] = [
-  "dual-axe",
-  "axe-shield",
-  "sword-shield",
-  "dual-sword",
-  "greatsword",
-  "dual-gloves",
-  "staff-shield",
-  "greatstaff",
-  "bow",
-];
-
-export const WEAPON_SET_LABEL: Record<WeaponSetId, string> = {
-  "dual-axe": "Machados duplos",
-  "axe-shield": "Machado e escudo",
-  "sword-shield": "Espada e escudo",
-  "dual-sword": "Espadas duplas",
-  greatsword: "Espadão",
-  "dual-gloves": "Garras",
-  "staff-shield": "Cajado e escudo",
-  greatstaff: "Cajadão",
-  bow: "Arco",
-};
-
-export function isWeaponSetId(id: string): id is WeaponSetId {
-  return (WEAPON_SET_IDS as readonly string[]).includes(id);
-}
-
-type WeaponModelId = "axe" | "sword" | "greatsword" | "staff" | "greatstaff" | "bow" | "shield" | "glove";
 type Side = "left" | "right";
-type Mount = "grip" | "forearm" | "palm";
+type Mount = "grip" | "forearm" | "palm" | "bowRest";
 
 interface WeaponModelSpec {
   url: string | null;
@@ -66,29 +38,18 @@ interface WeaponModelSpec {
   mount: Mount;
   restTiltDeg: number;
   restShift: number;
+  restRollDeg: number;
 }
 
 const MODEL_SPECS: Record<WeaponModelId, WeaponModelSpec> = {
-  axe: { url: "/weapons/axe/axe.glb", sourceHeight: 1, length: 1.575, grip: 0.3, mount: "grip", restTiltDeg: 30, restShift: 0 },
-  sword: { url: "/weapons/sword.glb", sourceHeight: 1, length: 1.575, grip: 0.15, mount: "grip", restTiltDeg: 30, restShift: 0 },
-  greatsword: { url: "/weapons/sword-2.glb", sourceHeight: 1, length: 2.635, grip: 0.14, mount: "grip", restTiltDeg: 15, restShift: 0 },
-  staff: { url: "/weapons/staff.glb", sourceHeight: 1, length: 1.43, grip: 0.3, mount: "grip", restTiltDeg: 30, restShift: 0 },
-  greatstaff: { url: "/weapons/staff.glb", sourceHeight: 1, length: 2.0655, grip: 0.3, mount: "grip", restTiltDeg: 20, restShift: 0 },
-  bow: { url: "/weapons/bow.glb", sourceHeight: 1, length: 1.92, grip: 0.5, mount: "grip", restTiltDeg: 90, restShift: 0 },
-  shield: { url: null, sourceHeight: 1, length: 0.52, grip: 0.5, mount: "forearm", restTiltDeg: 0, restShift: 0 },
-  glove: { url: null, sourceHeight: 1, length: 0.38, grip: 0.5, mount: "palm", restTiltDeg: 0, restShift: 0 },
-};
-
-const SET_LOADOUT: Record<WeaponSetId, { right?: WeaponModelId; left?: WeaponModelId }> = {
-  "dual-axe": { right: "axe", left: "axe" },
-  "axe-shield": { right: "axe", left: "shield" },
-  "sword-shield": { right: "sword", left: "shield" },
-  "dual-sword": { right: "sword", left: "sword" },
-  greatsword: { right: "greatsword" },
-  "dual-gloves": { right: "glove", left: "glove" },
-  "staff-shield": { right: "staff", left: "shield" },
-  greatstaff: { right: "greatstaff" },
-  bow: { left: "bow" },
+  axe: { url: "/weapons/axe/axe.glb", sourceHeight: 1, length: 1.45, grip: 0.32, mount: "grip", restTiltDeg: 22, restShift: 0.03, restRollDeg: 0 },
+  sword: { url: "/weapons/sword.glb", sourceHeight: 1, length: 1.5, grip: 0.28, mount: "grip", restTiltDeg: 22, restShift: 0.03, restRollDeg: 0 },
+  greatsword: { url: "/weapons/sword-2.glb", sourceHeight: 1, length: 2.635, grip: 0.14, mount: "grip", restTiltDeg: 15, restShift: 0, restRollDeg: 0 },
+  staff: { url: "/weapons/staff.glb", sourceHeight: 1, length: 1.55, grip: 0.28, mount: "grip", restTiltDeg: 22, restShift: 0.04, restRollDeg: 0 },
+  greatstaff: { url: "/weapons/staff.glb", sourceHeight: 1, length: 2.0655, grip: 0.3, mount: "grip", restTiltDeg: 20, restShift: 0, restRollDeg: 0 },
+  bow: { url: "/weapons/bow.glb", sourceHeight: 1, length: 1.55, grip: 0.5, mount: "bowRest", restTiltDeg: 0, restShift: 0, restRollDeg: 0 },
+  shield: { url: null, sourceHeight: 1, length: 0.52, grip: 0.5, mount: "forearm", restTiltDeg: 0, restShift: 0, restRollDeg: 0 },
+  glove: { url: null, sourceHeight: 1, length: 0.38, grip: 0.5, mount: "palm", restTiltDeg: 0, restShift: 0, restRollDeg: 0 },
 };
 
 const BONE = {
@@ -104,13 +65,15 @@ const GRIP_INTO_PALM = 0.28;
 const SHIELD_OFF_ARM = 0.16;
 const SHIELD_HAND_BIAS = 0.68;
 const SHIELD_BONE_LIFT = 0.04;
+const WORLD_UP = new Vector3(0, 1, 0);
 
 interface Attachment {
   anchor: Object3D;
   visual: Group;
-  offset: Vector3;
-  rotation: Quaternion;
+  socket: Group | null;
   ownsGeometry: boolean;
+  bowRest: boolean;
+  bowRestReach: number;
 }
 
 interface HandFrame {
@@ -206,11 +169,14 @@ export class WeaponRig {
   private model: Object3D | null = null;
   private generation = 0;
   private readonly rootInverse = new Matrix4();
-  private readonly anchorMatrix = new Matrix4();
   private readonly anchorPos = new Vector3();
-  private readonly anchorQuat = new Quaternion();
   private readonly anchorScale = new Vector3();
   private readonly tmp = new Vector3();
+  private readonly rootQuat = new Quaternion();
+  private readonly bowForward = new Vector3();
+  private readonly bowSpan = new Vector3();
+  private readonly bowRight = new Vector3();
+  private readonly bowBasis = new Matrix4();
 
   getVisualRoots(): Object3D[] {
     return this.attachments.map((a) => a.visual);
@@ -228,7 +194,8 @@ export class WeaponRig {
   clear(): void {
     this.generation += 1;
     for (const a of this.attachments) {
-      a.visual.removeFromParent();
+      const node = a.socket ?? a.visual;
+      node.removeFromParent();
       if (!a.ownsGeometry) continue;
       a.visual.traverse((obj) => {
         const mesh = obj as Mesh;
@@ -247,7 +214,7 @@ export class WeaponRig {
     const model = this.model;
     if (!model) return;
     const gen = this.generation;
-    const loadout = SET_LOADOUT[set];
+    const loadout = WEAPON_SETS[set];
     const jobs: Promise<void>[] = [];
     for (const side of ["right", "left"] as const) {
       const id = loadout[side];
@@ -260,19 +227,58 @@ export class WeaponRig {
 
   sync(root: Group): void {
     if (!this.attachments.length) return;
-    root.updateWorldMatrix(true, false);
-    this.rootInverse.copy(root.matrixWorld).invert();
     for (const a of this.attachments) {
-      a.anchor.updateWorldMatrix(true, false);
-      this.anchorMatrix.multiplyMatrices(this.rootInverse, a.anchor.matrixWorld);
-      this.anchorMatrix.decompose(this.anchorPos, this.anchorQuat, this.anchorScale);
-      this.tmp.copy(a.offset).applyQuaternion(this.anchorQuat);
-      a.visual.position.copy(this.anchorPos).add(this.tmp);
-      a.visual.quaternion.copy(this.anchorQuat).multiply(a.rotation);
+      if (a.bowRest) this.syncBowRest(root, a);
     }
   }
 
-  private async attach(root: Group, model: Object3D, side: Side, id: WeaponModelId, gen: number): Promise<void> {
+  private unitSocket(anchor: Object3D): Group {
+    anchor.updateWorldMatrix(true, false);
+    const socket = new Group();
+    socket.name = "weapon-socket";
+    anchor.add(socket);
+    socket.position.set(0, 0, 0);
+    socket.quaternion.identity();
+    anchor.getWorldScale(this.tmp);
+    socket.scale.set(
+      this.tmp.x !== 0 ? 1 / this.tmp.x : 1,
+      this.tmp.y !== 0 ? 1 / this.tmp.y : 1,
+      this.tmp.z !== 0 ? 1 / this.tmp.z : 1,
+    );
+    return socket;
+  }
+
+  private syncBowRest(root: Group, a: Attachment): void {
+    root.updateWorldMatrix(true, false);
+    this.rootInverse.copy(root.matrixWorld).invert();
+    root.matrixWorld.decompose(this.tmp, this.rootQuat, this.anchorScale);
+    this.bowForward.set(0, 0, -1).applyQuaternion(this.rootQuat).normalize();
+    this.bowSpan.crossVectors(WORLD_UP, this.bowForward);
+    if (this.bowSpan.lengthSq() < 1e-6) this.bowSpan.set(1, 0, 0);
+    else this.bowSpan.normalize();
+    a.anchor.updateWorldMatrix(true, false);
+    a.anchor.getWorldPosition(this.anchorPos);
+    this.tmp
+      .copy(this.anchorPos)
+      .addScaledVector(this.bowSpan, a.bowRestReach * 0.14)
+      .addScaledVector(this.bowForward, a.bowRestReach * 0.05)
+      .addScaledVector(WORLD_UP, -a.bowRestReach * 0.22);
+    this.bowRight.crossVectors(this.bowSpan, this.bowForward).normalize();
+    this.bowForward.crossVectors(this.bowRight, this.bowSpan).normalize();
+    this.bowBasis.makeBasis(this.bowRight, this.bowSpan, this.bowForward);
+    const worldQuat = new Quaternion().setFromRotationMatrix(this.bowBasis);
+    this.tmp.applyMatrix4(this.rootInverse);
+    a.visual.position.copy(this.tmp);
+    a.visual.quaternion.copy(this.rootQuat.clone().invert().multiply(worldQuat));
+  }
+
+  private async attach(
+    root: Group,
+    model: Object3D,
+    side: Side,
+    id: WeaponModelId,
+    gen: number,
+  ): Promise<void> {
     const spec = MODEL_SPECS[id];
     const hand = findBone(model, BONE.hand[side]);
     if (!hand) return;
@@ -281,19 +287,39 @@ export class WeaponRig {
     const built = await this.buildVisual(id, spec);
     if (!built || gen !== this.generation) return;
 
-    const anchor = spec.mount === "forearm" ? findBone(model, BONE.forearm[side]) ?? hand : hand;
     const visual = new Group();
     visual.name = `weapon-${side}-${id}`;
-    const placement = this.placeOn(anchor, frame, spec);
-    if (spec.mount === "grip") built.body.position.y = -spec.grip * spec.length;
+    if (spec.mount === "grip" || spec.mount === "bowRest") {
+      built.body.position.y = -spec.grip * spec.length;
+    }
     visual.add(built.body);
-    root.add(visual);
+
+    if (spec.mount === "bowRest") {
+      root.add(visual);
+      this.attachments.push({
+        anchor: hand,
+        visual,
+        socket: null,
+        ownsGeometry: built.ownsGeometry,
+        bowRest: true,
+        bowRestReach: frame.fingerLength,
+      });
+      return;
+    }
+
+    const anchor = spec.mount === "forearm" ? findBone(model, BONE.forearm[side]) ?? hand : hand;
+    const socket = this.unitSocket(anchor);
+    const placement = this.placeOn(anchor, frame, spec);
+    visual.position.copy(placement.offset);
+    visual.quaternion.copy(placement.rotation);
+    socket.add(visual);
     this.attachments.push({
       anchor,
       visual,
-      offset: placement.offset,
-      rotation: placement.rotation,
+      socket,
       ownsGeometry: built.ownsGeometry,
+      bowRest: false,
+      bowRestReach: 0,
     });
   }
 
@@ -320,12 +346,16 @@ export class WeaponRig {
     return { center, fingers, knuckles, palm, fingerLength };
   }
 
-  private placeOn(anchor: Object3D, frame: HandFrame, spec: WeaponModelSpec): { offset: Vector3; rotation: Quaternion } {
+  private placeOn(
+    anchor: Object3D,
+    frame: HandFrame,
+    spec: WeaponModelSpec,
+  ): { offset: Vector3; rotation: Quaternion } {
     anchor.updateWorldMatrix(true, false);
     const anchorPos = anchor.getWorldPosition(new Vector3());
     const anchorRot = new Matrix4().extractRotation(anchor.matrixWorld);
     const anchorRotInv = anchorRot.clone().invert();
-    const toLocal = (v: Vector3) => v.clone().applyMatrix4(anchorRotInv);
+    const anchorQuat = new Quaternion().setFromRotationMatrix(anchorRot);
 
     let worldCenter: Vector3;
     let up: Vector3;
@@ -359,9 +389,13 @@ export class WeaponRig {
     forward = new Vector3().crossVectors(right, up).normalize();
     const basis = new Matrix4().makeBasis(right, up, forward);
     const worldQuat = new Quaternion().setFromRotationMatrix(basis);
-    const anchorQuat = new Quaternion().setFromRotationMatrix(anchorRot);
     const rotation = anchorQuat.clone().invert().multiply(worldQuat);
-    const offset = toLocal(worldCenter.clone().sub(anchorPos));
+    if (spec.restRollDeg !== 0) {
+      rotation.multiply(
+        new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), MathUtils.degToRad(spec.restRollDeg)),
+      );
+    }
+    const offset = worldCenter.clone().sub(anchorPos).applyMatrix4(anchorRotInv);
     return { offset, rotation };
   }
 

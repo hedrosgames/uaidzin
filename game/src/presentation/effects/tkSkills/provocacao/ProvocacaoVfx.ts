@@ -61,7 +61,7 @@ export const PROVOCACAO_TOTAL_DURATION =
 
 type ProvocacaoPhase = "shock" | "surge" | "fade";
 
-const RING_VERTEX = /* glsl */ `
+const RING_VERTEX =  `
   varying vec2 vLocal;
   void main() {
     vLocal = position.xy;
@@ -69,7 +69,7 @@ const RING_VERTEX = /* glsl */ `
   }
 `;
 
-const RING_FRAGMENT = /* glsl */ `
+const RING_FRAGMENT =  `
   uniform float uTime;
   uniform float uIntensity;
   uniform float uRadius;
@@ -88,7 +88,7 @@ const RING_FRAGMENT = /* glsl */ `
   }
 `;
 
-const LINE_VERTEX = /* glsl */ `
+const LINE_VERTEX =  `
   varying vec2 vUv;
   void main() {
     vUv = uv;
@@ -96,7 +96,7 @@ const LINE_VERTEX = /* glsl */ `
   }
 `;
 
-const LINE_FRAGMENT = /* glsl */ `
+const LINE_FRAGMENT =  `
   uniform float uTime;
   uniform float uIntensity;
   uniform float uHead;

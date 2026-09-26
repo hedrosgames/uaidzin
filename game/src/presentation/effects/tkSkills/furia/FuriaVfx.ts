@@ -50,7 +50,7 @@ export const DEFAULT_FURIA_VFX_CONFIG: FuriaVfxConfig = {
 
 type FuriaPhase = "activation" | "active" | "fade";
 
-const AURA_RING_VERTEX = /* glsl */ `
+const AURA_RING_VERTEX =  `
   varying vec2 vLocal;
   void main() {
     vLocal = position.xy;
@@ -58,7 +58,7 @@ const AURA_RING_VERTEX = /* glsl */ `
   }
 `;
 
-const AURA_RING_FRAGMENT = /* glsl */ `
+const AURA_RING_FRAGMENT =  `
   uniform float uTime;
   uniform float uIntensity;
   uniform vec3 uColor;

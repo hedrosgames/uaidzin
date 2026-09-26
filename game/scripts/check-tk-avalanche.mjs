@@ -34,13 +34,12 @@ await evaluate(`window.__TK_AVALANCHE_QA__ = async (targets, repetitions, integr
     const body = api.scene.getObjectByName('avalanche-wave-body');
     ok(arc?.isMesh && body?.isMesh, 'Malhas volumétricas da onda: ' + target.join(','));
     ok([arc.position.x, arc.position.y, arc.position.z, body.scale.x, body.scale.z].every(Number.isFinite), 'Transformações finitas: ' + target.join(','));
-    api.advance(1/60);
+    api.advance(2/60);
     state = api.getState();
     ok(state.castStates[0].triggeredCount === 1, 'Primeiro impacto no pé do cone: ' + target.join(','));
     if (target[1] > 1) ok(state.castStates[0].front[1] > state.castStates[0].origin[1], 'Onda sobe a rampa: ' + target.join(','));
     if (target[1] < 0) ok(state.castStates[0].front[1] < state.castStates[0].origin[1], 'Onda desce a rampa: ' + target.join(','));
-    const contact = state.castStates[0];
-    ok(contact.particleSystems.some(system => system.particles > 0), 'Detritos no primeiro impacto: ' + target.join(','));
+    ok(state.particleSystems.slice(2, 4).every(system => system.particles > 0), 'Detritos no primeiro impacto: ' + target.join(','));
     let guard = 0;
     while (api.getState().phase === 'wave' && guard < 30) { api.advance(1/60); guard++; }
     state = api.getState();
@@ -104,7 +103,8 @@ await evaluate(`window.__TK_AVALANCHE_QA__ = async (targets, repetitions, integr
 }; true`);
 const results = { checks: [], directions: [], memories: [], inputLimitations: [], skillId: "tk_fis_7" };
 const targets = [[3.7,0.08,0],[-10,0.08,0],[-3.45,0.08,6],[-3.45,0.08,-6],
-  [1.5,0.08,4],[-3.45,2.6,0],[3.7,-1.4,0],[3.7,0.08,0]];
+  [1.5,0.08,4],[1.5,0.08,-4],[-7,0.08,4],[-7,0.08,-4],
+  [-3.45,2.6,0],[3.7,-1.4,0],[-3.45,0.08,0]];
 for (const target of targets) {
   const result = await evaluate(`window.__TK_AVALANCHE_QA__([${JSON.stringify(target)}], 0, false)`);
   results.checks.push(...result.checks);

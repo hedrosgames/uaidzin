@@ -67,6 +67,9 @@ await evaluate(`window.__TK_MACHADO_QA__ = async (targets, repetitions, integrat
   const paths = [];
   const memory = [];
   for (let i = 0; i < repetitions; i++) {
+    ok(api.getState().casts === 0 && api.getState().systems === 0,
+      'Machado anterior encerra antes do próximo disparo: ' + i);
+    api.clear();
     api.cast();
     api.advance(0.07);
     paths.push(JSON.stringify(api.getState().machados[0].axe));

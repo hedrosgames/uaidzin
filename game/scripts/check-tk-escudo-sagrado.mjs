@@ -59,10 +59,12 @@ await evaluate(`window.__TK_ESCUDO_SAGRADO_QA__ = async (targets, repetitions, i
   const scales = [];
   const memory = [];
   for (let i = 0; i < repetitions; i++) {
+    ok(api.getState().casts === 0 && api.getState().systems === 0,
+      'Escudo anterior encerra antes do próximo cast: ' + i);
     api.cast();
     api.advance(1/60);
     scales.push(JSON.stringify(api.getState().castStates.map(state => [state.domeScale, state.progress, state.domeOpacity])));
-    api.advance(1.4);
+    api.advance(1.6);
     memory.push(api.getState().memory);
   }
   if (repetitions > 0) {

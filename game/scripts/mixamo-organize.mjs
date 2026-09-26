@@ -34,10 +34,11 @@ const DROP = [
   /standing melee run jump attack/i,
   /standing melee attack downward/i,
   /standing melee combo attack ver\. 2/i,
+  /^blocking\.fbx$/i,
 ];
 
 const HUMAN_MAP = [
-  ["Breathing Idle.fbx", null],
+  ["Breathing Idle.fbx", "idle_breathing"],
   ["Run With Sword.fbx", "run"],
   ["Sword And Shield Slash.fbx", "attack"],
   ["Magic Spell Casting.fbx", "cast"],
@@ -48,7 +49,6 @@ const HUMAN_MAP = [
   ["Great Sword Slash.fbx", "attack_greatsword"],
   ["Heavy Weapon Swing.fbx", "attack_2h"],
   ["One Hand Sword Combo.fbx", "attack_1h"],
-  ["Blocking.fbx", "block"],
   ["Fireball.fbx", "cast_fire"],
   ["Magic Heal.fbx", "cast_heal"],
   ["Standing Aim Recoil.fbx", "attack_bow"],
@@ -113,22 +113,12 @@ for (const [file, clip] of HUMAN_MAP) {
     console.warn("missing human", file);
     continue;
   }
-  if (clip === null) continue;
   const out = path.join(humanOut, `${clip}.glb`);
   blender("mixamo-export-anim.py", [src, out, clip]);
   const shared = path.join(sharedOut, `${clip}.glb`);
   if (["run", "attack", "cast", "hit_gut", "hit_right", "death"].includes(clip)) {
     fs.copyFileSync(out, shared);
   }
-}
-
-const tkBase = path.join(gameRoot, "public/models/player/TK/TK.glb");
-const idleSrc = path.join(organized, "human", "Breathing Idle.fbx");
-const tkOut = path.join(gameRoot, "public/models/player/TK/TK.glb");
-if (fs.existsSync(tkBase) && fs.existsSync(idleSrc)) {
-  const tmp = path.join(gameRoot, "public/models/player/TK/TK.next.glb");
-  blender("mixamo-retarget-idle.py", [tkBase, idleSrc, tmp]);
-  fs.renameSync(tmp, tkOut);
 }
 
 for (const [file, clip] of MUTANT_MAP) {

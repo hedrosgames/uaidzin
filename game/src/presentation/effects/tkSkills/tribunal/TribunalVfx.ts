@@ -406,7 +406,7 @@ class TribunalCast {
         : 1,
       fissureProgress: this.phase === "descent"
         ? 0
-        : Math.min(1, Math.max(0, (this.elapsed - this.config.descentDuration) / this.config.fissureDuration)),
+        : this.phase === "impact" ? 1 : Math.min(1, this.elapsed / this.config.fissureDuration),
       impactAge: this.impactElapsed,
       target: this.target.toArray(),
       light: this.light.position.toArray(),

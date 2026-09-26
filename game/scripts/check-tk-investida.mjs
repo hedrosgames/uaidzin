@@ -34,7 +34,18 @@ await evaluate(`window.__TK_INVESTIDA_QA__ = async (targets, repetitions, integr
     const tips = [];
     api.scene.traverse(object => { if (object.name === 'investida-tip') tips.push(object); });
     ok(tips.length === 1 && tips[0].geometry.type === 'ConeGeometry', 'Ponta volumétrica no deslocamento: ' + target.join(','));
-    ok(linkState.visibleLinks > 0 && linkState.length > 0, 'Trilha percorre o caminho: ' + target.join(','));
+    const origin = linkState.controlPoints[0];
+    ok(linkState.controlPoints.every(point => point.every(Number.isFinite)),
+      'Pontos de controle finitos: ' + target.join(','));
+    ok(origin.every((value, index) => Math.abs(value - [-3.45, 1, 0][index]) < 1e-6),
+      'Origem da trilha preservada: ' + target.join(','));
+    ok(linkState.controlPoints.at(-1).every((value, index) => Math.abs(value - dash.castStates[0].target[index]) < 1e-6),
+      'Trajetória termina no destino: ' + target.join(','));
+    ok(dash.castStates[0].target.every((value, index) => Math.abs(value - [target[0], Math.max(target[1], 0.35), target[2]][index]) < 1e-6),
+      'Destino preserva coordenadas e altura mínima: ' + target.join(','));
+    const zeroDistance = origin.every((value, index) => Math.abs(value - dash.castStates[0].target[index]) < 1e-6);
+    ok(linkState.visibleLinks > 0 && (zeroDistance ? linkState.length < 1e-6 : linkState.length > 0),
+      'Trilha válida inclusive no destino coincidente: ' + target.join(','));
     ok(dash.particleSystems.some(system => system.particles > 0), 'Vento acompanha a investida: ' + target.join(','));
     ok(dash.particleSystems.slice(-2).every(system => system.particles === 0), 'Sem poeira antes da chegada: ' + target.join(','));
     api.advance(0.1);
@@ -49,6 +60,9 @@ await evaluate(`window.__TK_INVESTIDA_QA__ = async (targets, repetitions, integr
     api.advance(1);
     const finished = api.getState();
     ok(finished.casts === 0 && finished.particles === 0 && finished.systems === 0, 'Cleanup sem resíduo: ' + target.join(','));
+    ok(finished.phase === 'idle' && !api.scene.getObjectByName('investida-link') &&
+      !api.scene.getObjectByName('investida-tip') && !api.scene.getObjectByName('investida-ring'),
+      'Cena sem elos, ponta ou anel após cleanup: ' + target.join(','));
   }
   api.setTarget(3.7, 0.35, 0);
   const paths = [];

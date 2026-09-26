@@ -9,7 +9,7 @@ export interface PlayerRuntimeOptions {
 
 const ARRIVE_EPS = 0.08;
 const PROGRESS_EPS = 0.01;
-const STUCK_MOVING_SEC = 1.2;
+const STUCK_MOVING_SEC = 0.35;
 const MIN_STEP_RATIO = 0.35;
 const DIVERT_BLENDS = [1, 0.7, 0.4] as const;
 
@@ -133,7 +133,7 @@ export class PlayerRuntime {
       if (this.divertSign !== 0 && best) break;
     }
 
-    if (!best) return null;
+    if (!best || bestScore <= PROGRESS_EPS) return null;
     this.divertSign = bestSign;
     return best;
   }
@@ -174,7 +174,7 @@ export class PlayerRuntime {
 
     const nx = dirX / len;
     const nz = dirZ / len;
-    const step = this.speed * dt;
+    const step = this.speed * this.speedScale * dt;
     const minStep = step * MIN_STEP_RATIO;
     let next = this.resolveSlide(nx, nz, step, bounds, collision);
 
@@ -195,15 +195,22 @@ export class PlayerRuntime {
           collision,
           this.moveTarget,
         );
-        if (diverted) {
-          const distDivert = Math.hypot(
-            this.moveTarget.x - diverted.x,
-            this.moveTarget.z - diverted.z,
-          );
-          if (movedDist < minStep || distDivert <= distPrimary + 0.001) {
-            next = diverted;
-            movedDist = this.displacement(next);
-          }
+        if (!diverted) {
+          this.clearMoveTarget();
+          this.isMoving = false;
+          return;
+        }
+        const distDivert = Math.hypot(
+          this.moveTarget.x - diverted.x,
+          this.moveTarget.z - diverted.z,
+        );
+        if (distDivert < distPrimary - PROGRESS_EPS || movedDist < minStep) {
+          next = diverted;
+          movedDist = this.displacement(next);
+        } else {
+          this.clearMoveTarget();
+          this.isMoving = false;
+          return;
         }
       } else {
         this.divertSign = 0;

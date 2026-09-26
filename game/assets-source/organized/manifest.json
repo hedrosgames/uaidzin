@@ -7,9 +7,10 @@
     "attack_greatsword.glb",
     "attack_kick.glb",
     "attack_swipe.glb",
-    "attack_unarmed.glb",
-    "block.glb",
-    "cast.glb",
+    "hit_right.glb",
+    "idle_2h.glb",
+    "idle_greatsword.glb",
+    "run.glb"
     "cast_fire.glb",
     "cast_heal.glb",
     "hit_gut.glb",
