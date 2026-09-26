@@ -48,7 +48,7 @@ Executar passos **1 → N** na ordem. Cada linha = arquivo + entrega. Código em
 - Só links para outros planos + passos concretos (ex.: `Planos/Skill TK linhagem 1.md` passos **1–20**).
 - Declarar quais `Planos/Refatoracao N.md` este plano **vem depois**. Não reimplementar o que a fase já entrega.
 - Indicar o que pode rodar em paralelo vs o que bloqueia QA.
-- Exceção já fixada no índice: `Skill TK linhagem 1.md` passos **23** e **28** rodam **antes** de `Refatoracao 9.md`.
+- Ordem fixada no índice: `Skill TK linhagem 1.md` roda depois de `Refatoracao 8.md` e antes de `Refatoracao 9.md` (o plano 9 depende dos passos **23**, **25** e **28**).
 
 ### Passos
 
