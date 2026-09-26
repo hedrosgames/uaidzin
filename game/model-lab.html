@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UAIDZIN · Lab de modelos</title>
+    <style>
+      :root {
+        --bg-dark: #100c08;
+        --bg-surface: #18130e;
+        --bg-card: #201a14;
+        --bg-input: #120e0a;
+        --bg-stage: #1b1510;
+        --border-subtle: #2d241c;
+        --gold: #d4a017;
+        --gold-soft: rgba(212, 160, 23, 0.16);
+        --blood: #a33b3b;
+        --ink: #f0e6d0;
+        --ink-muted: #9c8e7c;
+        --ink-dim: #6e6254;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        background: var(--bg-dark);
+        color: var(--ink);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        user-select: none;
+      }
+      input,
+      select {
+        user-select: text;
+      }
+      .top {
+        height: 54px;
+        flex: 0 0 auto;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 0 16px;
+      }
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .brand-name {
+        color: var(--gold);
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 2px;
+      }
+      .brand-sub {
+        color: var(--ink-dim);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 1.6px;
+      }
+      .tabs {
+        display: flex;
+        height: 100%;
+        gap: 4px;
+      }
+      .tab {
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--ink-muted);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 0 18px;
+      }
+      .tab:hover {
+        color: var(--ink);
+      }
+      .tab.active {
+        border-bottom-color: var(--gold);
+        color: var(--gold);
+      }
+      .top-right {
+        margin-left: auto;
+        color: var(--ink-dim);
+        font-size: 11px;
+        text-align: right;
+        line-height: 1.5;
+      }
+      #lab-root {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .view {
+        display: none;
+        flex-direction: column;
+        min-height: 0;
+        flex: 1 1 auto;
+      }
+      .view.active {
+        display: flex;
+      }
+      .toolbar {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 16px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-subtle);
+        flex-wrap: wrap;
+      }
+      .field {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--ink-muted);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+      }
+      select {
+        background: var(--bg-input);
+        border: 1px solid var(--border-subtle);
+        border-radius: 2px;
+        color: var(--ink);
+        font-size: 12px;
+        outline: none;
+        padding: 6px 8px;
+      }
+      select:focus {
+        border-color: var(--gold);
+      }
+      .stepper {
+        display: flex;
+        gap: 4px;
+      }
+      .btn {
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 2px;
+        color: var(--ink);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px 10px;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+      }
+      .btn:hover {
+        background: #2a221a;
+        border-color: var(--ink-dim);
+      }
+      .btn[aria-pressed="true"] {
+        background: var(--gold-soft);
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+      .btn-gold {
+        background: var(--gold);
+        border-color: var(--gold);
+        color: #100c08;
+      }
+      .btn-gold:hover {
+        background: #f0be38;
+        border-color: #f0be38;
+        color: #100c08;
+      }
+      .toolbar-note {
+        color: var(--ink-dim);
+        font-size: 11px;
+        margin-left: auto;
+      }
+      .grid {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+        gap: 12px;
+        padding: 14px 16px 32px;
+        align-content: start;
+      }
+      .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 2px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .card[data-adjust="open"] {
+        border-color: var(--gold);
+        grid-column: 1 / -1;
+      }
+      .card-head {
+        align-items: center;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        gap: 10px;
+        padding: 8px 10px;
+      }
+      .card-tag {
+        border: 1px solid var(--border-subtle);
+        border-radius: 2px;
+        color: var(--gold);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        padding: 3px 7px;
+      }
+      .card-id {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .card-name {
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .card-sub {
+        color: var(--ink-dim);
+        font-size: 10px;
+        letter-spacing: 0.5px;
+      }
+      .card-flag {
+        background: var(--gold-soft);
+        border: 1px solid var(--gold);
+        border-radius: 2px;
+        color: var(--gold);
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        margin-left: auto;
+        padding: 3px 6px;
+      }
+      .card-flag.boss {
+        background: rgba(163, 59, 59, 0.18);
+        border-color: var(--blood);
+        color: #e07a7a;
+      }
+      .card-body {
+        display: flex;
+        min-height: 0;
+      }
+      .card[data-adjust="open"] .card-body {
+        align-items: stretch;
+      }
+      .card-stage {
+        aspect-ratio: 3 / 4;
+        background: radial-gradient(circle at 50% 38%, #241c14, var(--bg-stage));
+        flex: 1 1 auto;
+        min-height: 0;
+        position: relative;
+      }
+      .card[data-adjust="open"] .card-stage {
+        aspect-ratio: auto;
+        height: 460px;
+        min-width: 0;
+      }
+      .card-stage canvas {
+        display: block;
+        height: 100%;
+        width: 100%;
+      }
+      .card-stage.empty {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        justify-content: center;
+        padding: 16px;
+        text-align: center;
+      }
+      .stage-empty-title {
+        color: var(--blood);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .stage-empty-hint {
+        color: var(--ink-dim);
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .stage-badge {
+        background: rgba(16, 12, 8, 0.72);
+        border: 1px solid var(--border-subtle);
+        border-radius: 2px;
+        color: var(--ink-muted);
+        font-size: 10px;
+        left: 8px;
+        letter-spacing: 0.6px;
+        padding: 3px 6px;
+        position: absolute;
+        top: 8px;
+      }
+      .card-bar {
+        align-items: center;
+        background: var(--bg-surface);
+        border-top: 1px solid var(--border-subtle);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 8px 10px;
+      }
+      .weapon-switch {
+        align-items: center;
+        display: flex;
+        gap: 6px;
+      }
+      .weapon-label {
+        color: var(--ink);
+        font-size: 11px;
+        font-weight: 600;
+        min-width: 96px;
+        text-align: center;
+      }
+      .card-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-left: auto;
+      }
+      .card-tools .btn,
+      .weapon-switch .btn {
+        font-size: 11px;
+        padding: 5px 8px;
+      }
+      .adjust {
+        background: var(--bg-surface);
+        border-left: 1px solid var(--border-subtle);
+        display: flex;
+        flex: 0 0 306px;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        overflow-y: auto;
+      }
+      .adjust-title {
+        color: var(--gold);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .slider-group {
+        border-top: 1px solid var(--border-subtle);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding-top: 8px;
+      }
+      .slider-group-title {
+        color: var(--ink-dim);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+      }
+      .slider {
+        align-items: center;
+        display: grid;
+        grid-template-columns: 16px 1fr 58px;
+        gap: 8px;
+        font-size: 11px;
+      }
+      .slider-name {
+        color: var(--ink-muted);
+        font-weight: 600;
+      }
+      input[type="range"] {
+        accent-color: var(--gold);
+        background: transparent;
+        width: 100%;
+      }
+      .slider-value {
+        color: var(--ink);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+      .check {
+        align-items: center;
+        color: var(--ink-muted);
+        display: flex;
+        font-size: 11px;
+        gap: 6px;
+      }
+      .adjust-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .adjust-note {
+        color: var(--ink-dim);
+        font-size: 11px;
+        line-height: 1.5;
+        min-height: 16px;
+      }
+      .adjust-note.ok {
+        color: #7fc79a;
+      }
+      .adjust-note.warn {
+        color: #e0a35c;
+      }
+      .clips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 10px;
+      }
+      .clip-chip {
+        background: var(--bg-input);
+        border: 1px solid var(--border-subtle);
+        border-radius: 2px;
+        color: var(--ink-muted);
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+      .clip-chip:hover:not(:disabled) {
+        border-color: var(--ink-dim);
+        color: var(--ink);
+      }
+      .clip-chip.ready {
+        border-style: dashed;
+        color: var(--ink-dim);
+        cursor: default;
+      }
+      .clip-chip[aria-pressed="true"] {
+        background: var(--gold-soft);
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+      .clips-title {
+        color: var(--ink-dim);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        padding: 10px 10px 0;
+      }
+      .card-status {
+        color: var(--ink-dim);
+        font-size: 10px;
+        min-height: 14px;
+        padding: 0 10px 8px;
+      }
+      .clip-set-field {
+        text-transform: none;
+      }
+      ::-webkit-scrollbar {
+        height: 10px;
+        width: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg-dark);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #2d241c;
+        border-radius: 2px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #3d3128;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand"><span class="brand-name">UAIDZIN</span><span class="brand-sub">LAB DE MODELOS</span></div>
+      <nav class="tabs" role="tablist">
+        <button type="button" class="tab active" data-tab="chars" role="tab" aria-selected="true">Personagens</button>
+        <button type="button" class="tab" data-tab="monsters" role="tab" aria-selected="false">Monstros</button>
+      </nav>
+      <div class="top-right"><span id="lab-status"></span></div>
+    </header>
+
+    <main id="lab-root">
+      <section class="view active" id="view-chars" role="tabpanel">
+        <div class="toolbar">
+          <label class="field">Arma de todos<select id="weapon-all"></select></label>
+          <div class="stepper">
+            <button type="button" class="btn" id="weapon-prev" aria-label="Arma anterior">‹</button>
+            <button type="button" class="btn" id="weapon-next" aria-label="Próxima arma">›</button>
+          </div>
+          <label class="field">Animação de todos<select id="anim-all"></select></label>
+          <span class="toolbar-note" id="chars-note"></span>
+        </div>
+        <div class="grid" id="char-grid"></div>
+      </section>
+
+      <section class="view" id="view-monsters" role="tabpanel">
+        <div class="toolbar">
+          <span class="field">Animações por monstro</span>
+          <span class="toolbar-note" id="monsters-note"></span>
+        </div>
+        <div class="grid" id="monster-grid"></div>
+      </section>
+    </main>
+
+    <template id="tpl-character">
+      <article class="card card-character">
+        <header class="card-head">
+          <span class="card-tag"></span>
+          <div class="card-id"><span class="card-name"></span><span class="card-sub"></span></div>
+          <span class="card-flag" hidden></span>
+        </header>
+        <div class="card-body">
+          <div class="card-stage"></div>
+          <section class="adjust" hidden>
+            <h2 class="adjust-title">Ajuste da arma</h2>
+            <label class="field">Peça<select class="piece-select"></select></label>
+            <div class="slider-group">
+              <span class="slider-group-title">Posição (m)</span>
+              <label class="slider"><span class="slider-name">X</span><input type="range" class="pos-x" min="-0.8" max="0.8" step="0.005" value="0" /><output class="slider-value"></output></label>
+              <label class="slider"><span class="slider-name">Y</span><input type="range" class="pos-y" min="-0.8" max="0.8" step="0.005" value="0" /><output class="slider-value"></output></label>
+              <label class="slider"><span class="slider-name">Z</span><input type="range" class="pos-z" min="-0.8" max="0.8" step="0.005" value="0" /><output class="slider-value"></output></label>
+            </div>
+            <div class="slider-group">
+              <span class="slider-group-title">Rotação (graus)</span>
+              <label class="slider"><span class="slider-name">X</span><input type="range" class="rot-x" min="-180" max="180" step="1" value="0" /><output class="slider-value"></output></label>
+              <label class="slider"><span class="slider-name">Y</span><input type="range" class="rot-y" min="-180" max="180" step="1" value="0" /><output class="slider-value"></output></label>
+              <label class="slider"><span class="slider-name">Z</span><input type="range" class="rot-z" min="-180" max="180" step="1" value="0" /><output class="slider-value"></output></label>
+            </div>
+            <div class="slider-group">
+              <span class="slider-group-title">Escala</span>
+              <label class="slider"><span class="slider-name">×</span><input type="range" class="scale" min="0.3" max="3" step="0.01" value="1" /><output class="slider-value"></output></label>
+            </div>
+            <label class="check"><input type="checkbox" class="pause-toggle" checked />Pausar animação</label>
+            <div class="adjust-actions">
+              <button type="button" class="btn btn-gold save-mount">Salvar posição</button>
+              <button type="button" class="btn zero-mount">Zerar</button>
+              <button type="button" class="btn close-adjust">Fechar</button>
+            </div>
+            <p class="adjust-note"></p>
+          </section>
+        </div>
+        <footer class="card-bar">
+          <div class="weapon-switch">
+            <button type="button" class="btn prev-weapon" aria-label="Arma anterior">‹</button>
+            <span class="weapon-label"></span>
+            <button type="button" class="btn next-weapon" aria-label="Próxima arma">›</button>
+          </div>
+          <div class="card-tools">
+            <button type="button" class="btn cam-corpo" aria-pressed="true">Corpo</button>
+            <button type="button" class="btn cam-frente" aria-pressed="false">Frente</button>
+            <button type="button" class="btn cam-arma" aria-pressed="false">Arma</button>
+            <button type="button" class="btn toggle-adjust" aria-pressed="false">Ajustar arma</button>
+          </div>
+        </footer>
+        <p class="card-status"></p>
+      </article>
+    </template>
+
+    <template id="tpl-monster">
+      <article class="card card-monster">
+        <header class="card-head">
+          <span class="card-tag"></span>
+          <div class="card-id"><span class="card-name"></span><span class="card-sub"></span></div>
+          <span class="card-flag boss" hidden>Chefe</span>
+        </header>
+        <div class="card-body">
+          <div class="card-stage"></div>
+        </div>
+        <div class="clips-title" hidden>Animações</div>
+        <div class="clips"></div>
+        <footer class="card-bar">
+          <label class="field clip-set-field" hidden>Clipes<select class="clip-set"></select></label>
+          <div class="card-tools">
+            <button type="button" class="btn cam-corpo" aria-pressed="true">Corpo</button>
+            <button type="button" class="btn cam-frente" aria-pressed="false">Frente</button>
+          </div>
+        </footer>
+        <p class="card-status"></p>
+      </article>
+    </template>
+
+    <script type="module" src="/src/devtools/modelLab.ts"></script>
+  </body>
+</html>

@@ -138,6 +138,9 @@ npm run dev          # http://127.0.0.1:5173
 npm run typecheck
 ```
 
+- Lab de modelos (**dev only, fora da build**): `http://127.0.0.1:5173/model-lab.html` — aba **Personagens** (4 classes, troca de arma entre os 9 conjuntos, troca de animação em conjunto, card que abre em tela cheia para ajustar o encaixe da arma por slider/arraste) e aba **Monstros** (cards por monstro do `monsters.json`, animações quando existir GLB de malha).
+- Ajuste de arma grava em `game/src/data/weapons/weapon-mounts.json` pela rota dev `POST /api/dev/weapon-mounts` (`configureServer` do `vite.config.ts`; sem build). O runtime ainda **não** consome esse arquivo — `WeaponRig` segue com o encaixe calculado.
+
 - Porta fixa em `vite.config.ts`. Se 5173 ocupar, matar node antigo ou usar a porta do Vite — não adivinhar URL.
 - `game/dist/` é gerado; não editar à mão.
 - GDD `nongame/gdd/*.md` = prosa histórica; em conflito com `nongame/docs/project/DECISOES-DESIGN.md`, o grill vence.
