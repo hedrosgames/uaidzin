@@ -498,7 +498,7 @@ Riscos: nenhum; é a skill mais madura da linhagem.
 
 ### 6.2 Custo total da linhagem (nível 1 em tudo)
 
-**8 pontos** de skill e **1 008** de ouro. Com 1 ponto por nível (código), o jogador só completa a linhagem no nível **9**; com 2 por nível (grill), no nível **5**. Isso é o item “pontos por nível” de 2.3 — decisão fora deste plano, mas o Felipe precisa saber ao testar.
+**8 pontos** de skill e **1 008** de ouro. Com **1 ponto por nível** (decisão D5, fechada), o jogador completa a linhagem no nível **9** ou superior.
 
 ### 6.3 VFX físicos do TK após o plano
 
@@ -567,15 +567,20 @@ Regra: uma skill por vez; a próxima só abre quando o Felipe validar a anterior
 
 ---
 
-## 10. Decisões em aberto para o Felipe
+## 10. Decisões — Felipe (26/09/2026)
 
-| ID | Pergunta | Padrão assumido no plano | Custo de mudar |
+| ID | Pergunta | Decisão |
+|---|---|---|
+| D1 | `auto` nasce desligado ao equipar? | **Sim** — manual até o jogador ligar (grill). |
+| D2 | Force Wave ganha impacto no alvo (via `quebra`)? | **Sim** (padrão do plano; validar na S1). |
+| D3 | Earthquake: VFX cone vs mecânica círculo? | **Manter** divergência (cone visual, hit 360°). |
+| D4 | Nomes em inglês na UI? | **Manter** nomes atuais; **descrição** em pt-BR. |
+| D5 | Pontos por nível: 1 ou 2? | **1 ponto por nível** (código atual; linhagem física completa ~nível 9). |
+
+### Ainda em aberto (defaults do plano)
+
+| ID | Pergunta | Padrão assumido | Custo de mudar |
 |---|---|---|---|
-| D1 | `auto` nasce desligado ao equipar? | **Sim** (grill: manual até ligar) | 1 literal |
-| D2 | Force Wave ganha impacto no alvo (via `quebra`)? | **Sim** | remover 1 chamada |
-| D3 | Earthquake: manter VFX em cone (`avalanche`) com mecânica em círculo? | **Manter** (provisório) | trocar 1 valor no mapa para `quebra`/`machado` |
-| D4 | Nomes em inglês na UI (Force Wave, Death Stab…) contra a regra pt-BR? | **Manter** (decisão 2); descrição em pt-BR compensa | renomear `name` em `tk.ts`, ids intactos |
-| D5 | Pontos por nível: 1 (código) ou 2 (grill)? | **Fora do escopo**; documentado em 6.2 | 1 constante (`SKILL_BALANCE.skillPointsPerLevel`) aplicada **dentro** de `SkillTreeService.grantSkillPoints`; os três chamadores em `CityGameSession` (L898, L1640, L1676) não mudam (rev., A5) |
 | D6 | Paleta do Atk Descuidado | bronze/cinza, brasa aberta | valores da paleta |
 | D7 | Aura de buff dura 2 s ou o buff inteiro? | **2 s** | feature nova (seguir jogador) |
 | D8 | Melhorar custa igual à compra? | **Sim** (fórmula única) | reintroduzir `upCost` |

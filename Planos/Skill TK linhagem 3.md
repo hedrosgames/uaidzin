@@ -415,13 +415,13 @@ Uma skill por vez; paletas uma por task, só depois da etapa 1 inteira validada.
 
 ---
 
-## 9. Decisões em aberto para o Felipe
+## 9. Decisões — Felipe
 
-| ID | Pergunta | Padrão assumido | Custo de mudar |
-|---|---|---|---|
-| DM1 | Nome exibido do `tk_mag_death_stab` | **“Estocada do Veredito”** (provisório) | `name` em `tk.ts` |
-| DM2 | Corrigir “Circulo” → “Círculo” agora | **Sim** (regra pt-BR) | `name` em `tk.ts` |
-| DM3 | Fazer a etapa 2 (paletas gelo/veneno/fogo) ou manter o genérico por elemento | **Fazer**, uma por vez, após validar a etapa 1 | nenhum se não fizer |
+| ID | Pergunta | Decisão / padrão |
+|---|---|---|
+| DM1 | Nome exibido do `tk_mag_death_stab` | **“Estocada do Veredito”** (provisório) |
+| DM2 | Corrigir “Circulo” → “Círculo” | **Sim** (regra pt-BR) |
+| DM3 | Etapa 2 paletas gelo/veneno/fogo | **Fechado:** fazer, **uma skill por vez**, após validar etapa 1 |
 | DM4 | Duração da Aura no Mana Burn | **2,5 s** (provisório) | um número |
 | DM5 | Descrição do Mana Burn avisa o custo de mana +40 % | **Sim** | texto |
 | DM6 | Fire Slash etapa 2 como arco frontal (`golpe`) sobre mecânica circular | **Aceitar** (mesmo caso do Earthquake) | manter genérico `aoe` |
