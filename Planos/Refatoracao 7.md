@@ -6,7 +6,7 @@ Executar passos **1 → 18** na ordem. Cada linha = arquivo + entrega. Código e
 
 - `Planos/Refatoracao 6.md` passos **1 → 27** (sessão estável).
 - `Planos/Refatoracao 5.md` passos **1 → 25** (venda, refino, skills sem nível no domínio).
-- `Planos/Skill TK linhagem 1.md` passos **10–14** desejáveis (barra real); se não, `WireApi` expõe stubs compatíveis.
+- `Planos/Skill TK linhagem 1.md` passos **10–13** desejáveis (barra real). Passo **14** removido: `GamePanels` não aprende skill. Se a barra não existir, `WireApi` expõe stubs compatíveis.
 
 ## Comportamento
 
