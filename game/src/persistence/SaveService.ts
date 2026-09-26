@@ -12,10 +12,6 @@ export class SaveService {
     return saveVault.getProfileId();
   }
 
-  async save(payload: SavePayload): Promise<void> {
-    await saveVault.saveCharacter(payload, { immediate: true });
-  }
-
   async load(): Promise<CharacterLoadResult> {
     return saveVault.loadCharacter();
   }

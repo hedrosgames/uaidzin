@@ -87,7 +87,7 @@ export function createWireGameApi(session: CityGameSession, onChanged: () => voi
       const result = buyFromShop(session.inventory, shopId, itemId);
       if (result.ok) {
         session.refreshWeaponSetFromGear();
-        void session.persistSave(true);
+        session.saves.markDirty("inventory", "critical");
         onChanged();
       }
       return result;
@@ -98,7 +98,7 @@ export function createWireGameApi(session: CityGameSession, onChanged: () => voi
       if (k !== "FOR" && k !== "DES" && k !== "CONS" && k !== "INT") return false;
       const ok = session.progression.spendAttribute(k, 1);
       if (ok) {
-        void session.persistSave(true);
+        session.saves.markDirty("character", "deferred");
         onChanged();
       }
       return ok;
@@ -108,7 +108,7 @@ export function createWireGameApi(session: CityGameSession, onChanged: () => voi
       const ok = session.skillTree.spendSpec(tree, 1);
       if (ok) {
         session.progression.recomputeCombatStats();
-        void session.persistSave(true);
+        session.saves.markDirty("skills", "deferred");
         onChanged();
       }
       return ok;
@@ -118,7 +118,7 @@ export function createWireGameApi(session: CityGameSession, onChanged: () => voi
       if (ok) {
         session.refreshWeaponSetFromGear();
         session.progression.recomputeCombatStats();
-        void session.persistSave(true);
+        session.saves.markDirty(["equipment", "inventory"], "deferred");
         onChanged();
       }
       return ok;
@@ -130,7 +130,7 @@ export function createWireGameApi(session: CityGameSession, onChanged: () => voi
       if (ok) {
         session.refreshWeaponSetFromGear();
         session.progression.recomputeCombatStats();
-        void session.persistSave(true);
+        session.saves.markDirty(["equipment", "inventory"], "deferred");
         onChanged();
       }
       return ok;
@@ -159,7 +159,7 @@ export function createWireGameApi(session: CityGameSession, onChanged: () => voi
         spent += 1;
       }
       if (spent > 0) {
-        void session.persistSave(true);
+        session.saves.markDirty("character", "deferred");
         onChanged();
       }
       return spent;

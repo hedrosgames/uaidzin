@@ -138,7 +138,7 @@ export function clearBootSession(): void {
   } catch {
     
   }
-  saveVault.logout();
+  void saveVault.logout();
 }
 
 function hasBootSession(): boolean {

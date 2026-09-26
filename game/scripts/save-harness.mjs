@@ -1,6 +1,7 @@
 import { chromium } from "playwright";
 
 const BASE = process.env.UAIDZIN_BASE || "http://127.0.0.1:5173";
+const SECTIONS = ["meta", "character", "skills", "skillLoadout", "equipment", "inventory", "bags", "buffs", "progress", "options"];
 let failed = 0;
 
 function ok(msg) {
@@ -9,6 +10,63 @@ function ok(msg) {
 function fail(msg) {
   failed += 1;
   console.error("SAVE_FAIL", msg);
+}
+
+async function readSections(page, profileId) {
+  return page.evaluate(
+    ({ id, sections }) =>
+      new Promise((resolve, reject) => {
+        const req = indexedDB.open("uaidzin", 3);
+        req.onerror = () => reject(new Error("idb_open"));
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction(["sections", "save"], "readonly");
+          const out = { sections: {}, legacy: null };
+          for (const section of sections) {
+            const r = tx.objectStore("sections").get("profile:" + id + ":" + section);
+            r.onsuccess = () => {
+              if (typeof r.result === "string") out.sections[section] = r.result;
+            };
+          }
+          const legacy = tx.objectStore("save").get("profile:" + id);
+          legacy.onsuccess = () => {
+            out.legacy = legacy.result ?? null;
+          };
+          tx.oncomplete = () => {
+            db.close();
+            resolve(out);
+          };
+          tx.onerror = () => reject(new Error("idb_read"));
+        };
+      }),
+    { id: profileId, sections: SECTIONS },
+  );
+}
+
+async function selectFirstSlot(page, frame) {
+  await frame.locator(".slot, .char, #slotList button, #slotList .slot-card").first().waitFor({ timeout: 20000 }).catch(() => {});
+  const slotCards = frame.locator("#slotList .slot-card");
+  const n = await slotCards.count();
+  if (n > 0) {
+    await slotCards.nth(0).click();
+    await page.waitForTimeout(400);
+  }
+  return n;
+}
+
+async function waitEntered(page) {
+  await page.waitForFunction(() => !!window.__UAIDZIN__?.getSnapshot?.()?.entered, null, { timeout: 60000 });
+  await page.waitForTimeout(500);
+}
+
+function failPutInPage() {
+  return `
+    window.__harnessPut = window.__harnessPut || IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (...args) {
+      if (this.name === "sections") throw new DOMException("quota", "QuotaExceededError");
+      return window.__harnessPut.apply(this, args);
+    };
+  `;
 }
 
 async function main() {
@@ -65,16 +123,37 @@ async function main() {
   else ok("crypto.subtle disponível no boot (" + String(hasSubtle) + ")");
 
   await frame.locator(".slot, .char, #slotList button, #slotList .slot-card").first().waitFor({ timeout: 20000 }).catch(() => {});
+  await page.addScriptTag({ url: BASE + "/boot/assets/save-store.js" });
+  const seededV3 = await page.evaluate(async () => {
+    const store = window.UaidzinSave;
+    const session = store.getSession();
+    if (!session) return false;
+    const data = (await store.loadSave(session)) || {};
+    const slots = Array.isArray(data.slots) ? data.slots.slice(0, 4) : [];
+    while (slots.length < 4) slots.push(null);
+    slots[3] = {
+      profileId: session.user + ":slot:3",
+      classId: "TK",
+      name: "Veterano",
+      level: 50,
+      gold: 999,
+      resets: 2,
+      evolution: "Mortal",
+      attrs: { FOR: 30, DES: 5, CONS: 20, INT: 5 },
+      trees: { controle: 0, magia: 0, fisica: 4 },
+      spec: { controle: 0, magia: 0, fisica: 0 },
+    };
+    await store.saveData(session, { slots, vault: data.vault || { gold: 0, items: [] } });
+    return true;
+  });
+  if (seededV3) ok("resumo de slot v3 (sem saveVersion) semeado no slot 3");
+  else fail("não semeou resumo v3");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(800);
 
-  const slotCards = frame.locator("#slotList .slot-card");
-  const n = await slotCards.count();
-  if (n > 0) {
-    await slotCards.nth(0).click();
-    await page.waitForTimeout(400);
-    ok("selecionou slot 0");
-  } else {
-    fail("nenhum slot na seleção");
-  }
+  const n = await selectFirstSlot(page, frame);
+  if (n > 0) ok("selecionou slot 0");
+  else fail("nenhum slot na seleção");
 
   const connect = frame.locator("#btnConnect");
   if (!(await connect.isVisible().catch(() => false))) {
@@ -92,8 +171,7 @@ async function main() {
   await connect.waitFor({ state: "visible", timeout: 15000 });
   await connect.click();
 
-  await page.waitForFunction(() => !!window.__UAIDZIN__?.getSnapshot?.()?.entered, null, { timeout: 60000 });
-  await page.waitForTimeout(500);
+  await waitEntered(page);
   ok("jogo carregou __UAIDZIN__");
 
   const before = await page.evaluate(() => window.__UAIDZIN__.save?.writeCount?.() ?? 0);
@@ -117,22 +195,27 @@ async function main() {
   if (gold2 === gold1) ok("gold persistiu após reload (" + gold2 + ")");
   else fail("gold divergiu " + gold1 + " vs " + gold2);
 
-  const cipherCheck = await page.evaluate(() => {
-    const id = window.__UAIDZIN__.session.saveService.getProfileId();
-    const raw = localStorage.getItem("uaidzin.save." + id);
-    if (!raw) return { ok: false, reason: "missing" };
-    const name = window.__UAIDZIN__.session.character.name;
-    if (raw.includes(name)) return { ok: false, reason: "plaintext_name" };
+  const profileId = await page.evaluate(() => window.__UAIDZIN__.session.saveService.getProfileId());
+  const charName = await page.evaluate(() => window.__UAIDZIN__.session.character.name);
+  const stored = await readSections(page, profileId);
+  const missing = SECTIONS.filter((section) => !stored.sections[section]);
+  if (!missing.length) ok("perfil v4 gravado nas 10 seções profile:" + profileId + ":*");
+  else fail("seções ausentes: " + missing.join(","));
+  const modes = new Set();
+  let plaintext = false;
+  for (const blob of Object.values(stored.sections)) {
+    if (blob.includes(charName) || blob.includes("saveVersion")) plaintext = true;
     try {
-      const p = JSON.parse(raw);
-      if (p.mode === "aes" || p.mode === "xor") return { ok: true, mode: p.mode };
+      modes.add(JSON.parse(blob).mode);
     } catch {
-      return { ok: false, reason: "parse" };
+      modes.add("parse");
     }
-    return { ok: false, reason: "not_envelope" };
-  });
-  if (cipherCheck.ok) ok("profile cifrado mode=" + cipherCheck.mode);
-  else fail("ciphertext: " + cipherCheck.reason);
+  }
+  if (!plaintext && [...modes].every((m) => m === "aes" || m === "xor")) ok("seções cifradas mode=" + [...modes].join(","));
+  else fail("seção em texto puro ou fora do envelope: " + [...modes].join(","));
+  const legacyLs = await page.evaluate((id) => localStorage.getItem("uaidzin.save." + id), profileId);
+  if (stored.legacy === null && legacyLs === null) ok("chaves v3 do perfil ausentes depois do checkpoint v4");
+  else fail("chaves v3 ainda presentes");
 
   const face = await page.locator("#player-face-img").getAttribute("src");
   if (face && /face-(tk|fm|bm|ht)\.png/i.test(face)) ok("HUD face=" + face);
@@ -235,17 +318,18 @@ async function main() {
     else fail("HP/MP não cheios");
   }
 
-  const idbFailOnce = (clearLs) => page.evaluate(async (clear) => {
+  const idbFailOnce = (clearMirror) => page.evaluate(async (clear) => {
     const api = window.__UAIDZIN__;
     const id = api.session.saveService.getProfileId();
-    const lsKeys = ["uaidzin.save." + id, "uaidzin.save." + id + ":prev"];
+    api.save.writeMirror();
+    const lsKeys = ["uaidzin.mirror." + id];
     const stash = lsKeys.map((k) => localStorage.getItem(k));
     if (clear) lsKeys.forEach((k) => localStorage.removeItem(k));
     const beforeWrites = api.save.writeCount();
     const orig = IDBObjectStore.prototype.get;
     let armed = true;
     IDBObjectStore.prototype.get = function (key) {
-      if (armed && this.name === "save") {
+      if (armed && this.name === "sections") {
         armed = false;
         let onerror = null;
         return {
@@ -283,11 +367,11 @@ async function main() {
       if (stash[i] !== null) localStorage.setItem(k, stash[i]);
     });
     const after = await api.session.loadSave();
-    return { status, writes, lsUntouched, after: after.status };
-  }, clearLs);
+    return { status, writes, lsUntouched, hadMirror: stash[0] !== null, after: after.status };
+  }, clearMirror);
 
   const withMirror = await idbFailOnce(false);
-  if (withMirror.status === "error" && withMirror.writes === 0 && withMirror.lsUntouched && withMirror.after === "found") {
+  if (withMirror.status === "error" && withMirror.writes === 0 && withMirror.lsUntouched && withMirror.hadMirror && withMirror.after === "found") {
     ok("leitura IDB falha 1× com espelho vira erro, não grava e a leitura seguinte carrega");
   } else {
     fail("idb fail com espelho: " + JSON.stringify(withMirror));
@@ -300,10 +384,187 @@ async function main() {
     fail("idb fail sem espelho: " + JSON.stringify(noMirror));
   }
 
-  await page.evaluate(async () => {
-    await window.__UAIDZIN__.save.wipeProfile();
+  const v3 = await page.evaluate(async () => {
+    const api = window.__UAIDZIN__;
+    const s = api.session;
+    const previous = s.saveService.getProfileId();
+    const target = previous.replace(/:slot:\d+$/, ":slot:3");
+    localStorage.setItem("uaidzin.save." + target, JSON.stringify({ saveVersion: 3, character: { name: "Veterano", level: 50 } }));
+    await new Promise((resolve) => {
+      const req = indexedDB.open("uaidzin", 3);
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction("save", "readwrite");
+        tx.objectStore("save").put(JSON.stringify({ saveVersion: 3 }), "profile:" + target);
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+      };
+    });
+    const summary = (await api.account.listSlots())[3];
+    const beforeWrites = api.save.writeCount();
+    s.saveService.setProfileId(target);
+    const result = await s.loadSave();
+    s.saveService.setProfileId(previous);
+    const writes = api.save.writeCount() - beforeWrites;
+    const back = await s.loadSave();
+    return { summaryLevel: summary?.level, status: result.status, writes, back: back.status };
   });
-  ok("wipeProfile ok");
+  if (v3.summaryLevel === 50 && v3.status === "absent" && v3.writes === 0 && v3.back === "found") {
+    ok("save v3 com progresso no resumo vira absent, sem gravar");
+  } else {
+    fail("save v3: " + JSON.stringify(v3));
+  }
+
+  const lostV4 = await page.evaluate(async () => {
+    const api = window.__UAIDZIN__;
+    const s = api.session;
+    const previous = s.saveService.getProfileId();
+    const target = previous.replace(/:slot:\d+$/, ":slot:2");
+    await new Promise((resolve) => {
+      const req = indexedDB.open("uaidzin", 3);
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction("sections", "readwrite");
+        tx.objectStore("sections").delete(IDBKeyRange.bound("profile:" + target + ":", "profile:" + target + ":￿"));
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+      };
+    });
+    const beforeWrites = api.save.writeCount();
+    s.saveService.setProfileId(target);
+    const result = await s.loadSave();
+    s.saveService.setProfileId(previous);
+    const writes = api.save.writeCount() - beforeWrites;
+    const back = await s.loadSave();
+    return { status: result.status, writes, back: back.status };
+  });
+  if (lostV4.status === "error" && lostV4.writes === 0 && lostV4.back === "found") {
+    ok("perfil v4 sumido com progresso no resumo vira error, sem gravar");
+  } else {
+    fail("perfil v4 sumido: " + JSON.stringify(lostV4));
+  }
+
+  await page.evaluate(failPutInPage());
+  const persistent = await page.evaluate(async () => {
+    const api = window.__UAIDZIN__;
+    const s = api.session;
+    s.inventory.gold += 5;
+    const t0 = performance.now();
+    s.saves.markDirty("inventory", "critical");
+    await s.saves.checkpoint();
+    const ms = Math.round(performance.now() - t0);
+    const result = {
+      ms,
+      status: api.save.status(),
+      pending: api.save.pendingCritical(),
+      hud: document.getElementById("save-status")?.textContent || "",
+    };
+    IDBObjectStore.prototype.put = window.__harnessPut;
+    return result;
+  });
+  if (persistent.status === "error" && persistent.pending && persistent.hud.includes("pendente")) {
+    ok("falha de escrita termina em " + persistent.ms + " ms e deixa o crítico pendente no HUD (" + persistent.hud + ")");
+  } else {
+    fail("falha persistente: " + JSON.stringify(persistent));
+  }
+  try {
+    await page.waitForFunction(() => !window.__UAIDZIN__.save.pendingCritical(), null, { timeout: 30000 });
+    ok("retry com backoff gravou o crítico pendente");
+  } catch {
+    fail("crítico pendente não gravou no retry");
+  }
+
+  await page.evaluate(async () => {
+    const api = window.__UAIDZIN__;
+    api.session.inventory.gold = 100;
+    await api.save.persist();
+  });
+  await page.evaluate(failPutInPage());
+  const mirror = await page.evaluate(async () => {
+    const api = window.__UAIDZIN__;
+    const s = api.session;
+    const id = s.saveService.getProfileId();
+    s.inventory.gold = 250;
+    s.saves.markDirty("inventory", "critical");
+    await s.saves.checkpoint();
+    api.save.writeMirror();
+    s.inventory.gold = 0;
+    const loaded = await s.loadSave();
+    const goldLoaded = s.inventory.gold;
+    IDBObjectStore.prototype.put = window.__harnessPut;
+    await s.saves.checkpoint();
+    localStorage.removeItem("uaidzin.mirror." + id);
+    s.inventory.gold = 0;
+    const again = await s.loadSave();
+    return { loaded: loaded.status, goldLoaded, again: again.status, goldIdb: s.inventory.gold, pending: api.save.pendingCritical() };
+  });
+  if (mirror.loaded === "found" && mirror.goldLoaded === 250 && mirror.again === "found" && mirror.goldIdb === 250 && !mirror.pending) {
+    ok("espelho mais novo vence o IDB e é regravado nas seções");
+  } else {
+    fail("espelho: " + JSON.stringify(mirror));
+  }
+
+  await page.evaluate(() => {
+    window.requestAnimationFrame = () => 0;
+  });
+  await page.waitForTimeout(300);
+  await page.evaluate(failPutInPage());
+  const loadEvent = page.waitForEvent("load", { timeout: 20000 }).catch(() => null);
+  await page.evaluate(() => {
+    const s = window.__UAIDZIN__.session;
+    const start = performance.now();
+    window.addEventListener("pagehide", () => {
+      sessionStorage.setItem(
+        "harness_leave",
+        JSON.stringify({
+          ms: Math.round(performance.now() - start),
+          toast: document.getElementById("ui-toast")?.textContent || "",
+        }),
+      );
+    });
+    s.inventory.gold += 3;
+    s.saves.markDirty("inventory", "critical");
+    document.getElementById("btn-change-character").click();
+  });
+  await loadEvent;
+  await page.waitForTimeout(800);
+  const leave = await page.evaluate(() => JSON.parse(sessionStorage.getItem("harness_leave") || "null"));
+  if (leave && leave.ms <= 3000 && leave.toast.includes("Falha ao salvar")) {
+    ok("leaveToBoot com storage falhando voltou em " + leave.ms + " ms com aviso");
+  } else {
+    fail("leaveToBoot: " + JSON.stringify(leave));
+  }
+
+  await selectFirstSlot(page, frame);
+  await connect.waitFor({ state: "visible", timeout: 15000 });
+  await connect.click();
+  await waitEntered(page);
+
+  await page.evaluate(failPutInPage());
+  const wiped = await page.evaluate(async () => {
+    const api = window.__UAIDZIN__;
+    const s = api.session;
+    const id = s.saveService.getProfileId();
+    s.inventory.gold += 7;
+    s.saves.markDirty("inventory", "critical");
+    s.saves.markDirty("character", "deferred");
+    await s.saves.checkpoint();
+    const armed = api.save.pendingCritical();
+    await api.save.wipeProfile();
+    IDBObjectStore.prototype.put = window.__harnessPut;
+    await new Promise((resolve) => setTimeout(resolve, 3500));
+    return { id, armed, pending: api.save.pendingCritical(), mirror: localStorage.getItem("uaidzin.mirror." + id) };
+  });
+  const afterWipe = await readSections(page, wiped.id);
+  if (wiped.armed && !wiped.pending && !Object.keys(afterWipe.sections).length && wiped.mirror === null) {
+    ok("wipe com flush pendente cancela o retry e não ressuscita o perfil");
+  } else {
+    fail("wipe com flush pendente: " + JSON.stringify({ ...wiped, left: Object.keys(afterWipe.sections) }));
+  }
 
   await browser.close();
   if (failed) {

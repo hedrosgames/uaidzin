@@ -1471,7 +1471,15 @@ window.__mountCharPreview = mountCharPreview;
       resets: 0
     };
     clearClassPickPreviews();
-    if (UaidzinSave.clearProfileStorage) await UaidzinSave.clearProfileStorage(slot.profileId);
+    if (UaidzinSave.clearProfileStorage) {
+      try {
+        await UaidzinSave.clearProfileStorage(slot.profileId);
+      } catch (err) {
+        console.error(err);
+        toast("Não foi possível criar o personagem: " + (err && err.message ? err.message : "falha no armazenamento."), true);
+        return;
+      }
+    }
     slots[emptyIdx] = slot;
     await persist();
     modalCreate.classList.remove("open");
@@ -1492,7 +1500,14 @@ window.__mountCharPreview = mountCharPreview;
     if (selected < 0 || !slots[selected]) return;
     const name = slots[selected].name;
     if (UaidzinSave.deleteSlot) {
-      slots = normalizeSlots(await UaidzinSave.deleteSlot(session, selected));
+      try {
+        slots = normalizeSlots(await UaidzinSave.deleteSlot(session, selected));
+      } catch (err) {
+        console.error(err);
+        modalDelete.classList.remove("open");
+        toast("Não foi possível excluir " + name + ": " + (err && err.message ? err.message : "falha no armazenamento."), true);
+        return;
+      }
     } else {
       const profileId = slots[selected].profileId || (String(session.user) + ":slot:" + selected);
       if (UaidzinSave.clearProfileStorage) UaidzinSave.clearProfileStorage(profileId);

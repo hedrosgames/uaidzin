@@ -4,6 +4,11 @@
   const SAVE_PREFIX = "uaidzin_save_v1_";
   const REMEMBER_KEY = "uaidzin_login";
   const GOOGLE_LOCAL_KEY = "uaidzin_google_local_v1";
+  const DB_NAME = "uaidzin";
+  const DB_VERSION = 3;
+  const LEGACY_STORE = "save";
+  const SECTIONS_STORE = "sections";
+  const PROFILE_SECTIONS = ["meta", "character", "skills", "skillLoadout", "equipment", "inventory", "bags", "buffs", "progress", "options"];
   const ITERATIONS = 100000;
   const FALLBACK_ITERATIONS = 5000;
   const enc = new TextEncoder();
@@ -227,31 +232,63 @@
     }
   }
 
-  function clearProfileStorage(profileId) {
+  function openDb() {
+    return new Promise(function (resolve, reject) {
+      let req;
+      try {
+        req = indexedDB.open(DB_NAME, DB_VERSION);
+      } catch (err) {
+        reject(new Error("Não foi possível abrir o armazenamento do jogo."));
+        return;
+      }
+      req.onupgradeneeded = function () {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(LEGACY_STORE)) db.createObjectStore(LEGACY_STORE);
+        if (!db.objectStoreNames.contains(SECTIONS_STORE)) db.createObjectStore(SECTIONS_STORE);
+      };
+      let blocked = false;
+      req.onblocked = function () {
+        blocked = true;
+        reject(new Error("Armazenamento do jogo bloqueado por outra aba. Feche as outras abas e tente de novo."));
+      };
+      req.onerror = function () {
+        reject(new Error("Não foi possível abrir o armazenamento do jogo."));
+      };
+      req.onsuccess = function () {
+        const db = req.result;
+        if (blocked) {
+          db.close();
+          return;
+        }
+        db.onversionchange = function () { db.close(); };
+        resolve(db);
+      };
+    });
+  }
+
+  async function clearProfileStorage(profileId) {
     try {
       localStorage.removeItem("uaidzin.save." + profileId);
       localStorage.removeItem("uaidzin.save." + profileId + ":prev");
+      localStorage.removeItem("uaidzin.mirror." + profileId);
     } catch (_) {}
-    return new Promise(function (resolve) {
-      try {
-        const req = indexedDB.open("uaidzin", 1);
-        req.onerror = function () { resolve(); };
-        req.onsuccess = function () {
-          const db = req.result;
-          if (!db.objectStoreNames.contains("save")) {
-            resolve();
-            return;
-          }
-          const tx = db.transaction("save", "readwrite");
-          tx.objectStore("save").delete("profile:" + profileId);
-          tx.objectStore("save").delete("profile:" + profileId + ":prev");
-          tx.oncomplete = function () { resolve(); };
-          tx.onerror = function () { resolve(); };
-        };
-      } catch (_) {
-        resolve();
-      }
-    });
+    const db = await openDb();
+    try {
+      await new Promise(function (resolve, reject) {
+        const tx = db.transaction([SECTIONS_STORE, LEGACY_STORE], "readwrite");
+        const sections = tx.objectStore(SECTIONS_STORE);
+        PROFILE_SECTIONS.forEach(function (section) {
+          sections.delete("profile:" + profileId + ":" + section);
+        });
+        tx.objectStore(LEGACY_STORE).delete("profile:" + profileId);
+        tx.objectStore(LEGACY_STORE).delete("profile:" + profileId + ":prev");
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(new Error("Falha ao apagar o personagem do armazenamento.")); };
+        tx.onabort = function () { reject(new Error("Falha ao apagar o personagem do armazenamento.")); };
+      });
+    } finally {
+      db.close();
+    }
   }
 
   async function resetAdminAccount() {
@@ -265,28 +302,6 @@
     sessionStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem("uaidzin_active_char");
     return bootstrap();
-  }
-
-  async function migrateLegacy(password, session) {
-    const raw = localStorage.getItem(SAVE_PREFIX + session.user);
-    if (!raw || session.mode !== "aes" || !hasSubtle) return session;
-    try {
-      await decryptJson(session, JSON.parse(raw));
-      return session;
-    } catch (_) {}
-    const legacy = {
-      user: session.user,
-      at: session.at,
-      key: b64(fallbackKey(password, session.salt, FALLBACK_ITERATIONS)),
-      salt: session.salt,
-      mode: "fallback",
-    };
-    try {
-      const data = await decryptJson(legacy, JSON.parse(raw));
-      const blob = await encryptJson(session, data);
-      localStorage.setItem(SAVE_PREFIX + session.user, blob);
-    } catch (_) {}
-    return session;
   }
 
   async function login(userId, password) {
@@ -311,14 +326,13 @@
         keyB64 = b64(fallbackKey(password, rec.salt, FALLBACK_ITERATIONS));
       }
 
-      let session = {
+      const session = {
         user: userId,
         at: Date.now(),
         key: keyB64,
         salt: rec.salt,
         mode: hasSubtle ? "aes" : "fallback",
       };
-      session = await migrateLegacy(password, session);
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
       return { ok: true, session };
     } catch (err) {
@@ -449,6 +463,7 @@
         },
         trees: normalizeTreeMap(s.trees),
         spec: normalizeTreeMap(s.spec),
+        saveVersion: Math.max(0, numOr(s.saveVersion, 0)),
       });
     }
     return out;

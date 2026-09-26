@@ -58,6 +58,8 @@ const CLASS_FACE: Record<string, string> = {
 };
 
 const SETTINGS_KEY = "uaidzin_settings";
+const LEAVE_SAVE_TIMEOUT_MS = 3000;
+const LEAVE_WARNING_MS = 1200;
 
 type TimeScale = 1 | 2 | 4 | 10;
 
@@ -109,11 +111,13 @@ export class GameApp {
   private leaving = false;
   private autosaveTimer: number | null = null;
   private readonly onPageHide = (): void => {
-    if (this.entered && this.modeAllowsSave()) void this.session.persistSave(true);
+    if (!this.entered) return;
+    saveVault.writeMirror();
+    if (this.modeAllowsSave()) void this.session.saves.checkpoint();
   };
   private readonly onVisibility = (): void => {
     if (document.visibilityState === "hidden" && this.entered && this.modeAllowsSave()) {
-      void this.session.persistSave(true);
+      void this.session.saves.checkpoint();
     }
   };
   private readonly onWindowResize = (): void => {
@@ -250,13 +254,13 @@ export class GameApp {
     });
 
     this.bus.on("game:state-changed", ({ mode }) => {
-      if (mode === "CITY" && this.entered) void this.session.persistSave(true);
+      if (mode === "CITY" && this.entered) void this.session.saves.checkpoint();
     });
 
     this.autosaveTimer = window.setInterval(() => {
       if (!this.entered || !this.modeAllowsSave()) return;
-      if (saveVault.shouldSkipAutosave()) return;
-      void this.session.persistSave();
+      if (!this.session.saves.hasDirty() && !saveVault.hasPendingCritical()) return;
+      void this.session.saves.checkpoint();
     }, 30000);
 
     window.addEventListener("pagehide", this.onPageHide);
@@ -508,16 +512,21 @@ export class GameApp {
     if (this.leaving) return;
     this.leaving = true;
     this.closeSettings();
-    try {
-      await this.session.persistSave(true);
-      await saveVault.flush();
-    } catch {
-      
+    const startedAt = performance.now();
+    const saved = await Promise.race([
+      this.session.saves.checkpoint().then(() => !saveVault.hasPendingCritical()),
+      new Promise<boolean>((resolve) => window.setTimeout(() => resolve(false), LEAVE_SAVE_TIMEOUT_MS)),
+    ]);
+    if (!saved) {
+      saveVault.writeMirror();
+      this.showToast("Falha ao salvar: o progresso mais recente pode se perder.", "dungeon");
+      const left = LEAVE_SAVE_TIMEOUT_MS - (performance.now() - startedAt);
+      await new Promise<void>((resolve) => window.setTimeout(resolve, Math.max(0, Math.min(LEAVE_WARNING_MS, left))));
     }
     clearBootCharacter();
     if (mode === "login") {
       clearBootSession();
-      saveVault.logout();
+      await saveVault.logout();
     }
     window.location.reload();
   }
@@ -558,9 +567,10 @@ export class GameApp {
       el.className = "save-status";
       this.playerFrame.appendChild(el);
     }
+    const pendingCritical = saveVault.hasPendingCritical();
     if (status === "saving") el.textContent = "Salvando…";
     else if (status === "saved") el.textContent = "Salvo";
-    else if (status === "error") el.textContent = "Falha ao salvar";
+    else if (status === "error") el.textContent = pendingCritical ? "Falha ao salvar · progresso pendente" : "Falha ao salvar";
     else el.textContent = "";
     el.hidden = status === "idle" || !status;
     el.dataset.status = status;
@@ -684,8 +694,6 @@ export class GameApp {
       window.clearInterval(this.autosaveTimer);
       this.autosaveTimer = null;
     }
-    window.removeEventListener("pagehide", this.onPageHide);
-    document.removeEventListener("visibilitychange", this.onVisibility);
     window.removeEventListener("resize", this.onWindowResize);
     window.removeEventListener("keydown", this.onKeyPanels);
     window.removeEventListener("keydown", this.onKeyDebugProgression);

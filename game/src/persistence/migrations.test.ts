@@ -4,7 +4,7 @@ import { migrateSave, normalizeBootCharacter, normalizeSavePayload } from "./mig
 
 function rawSave(patch: Record<string, unknown> = {}) {
   return {
-    saveVersion: 3,
+    saveVersion: 4,
     meta: { profileId: "admin:slot:0", userId: "admin", slotIndex: 0, updatedAt: 1 },
     character: {
       name: "Herói",
@@ -112,6 +112,18 @@ describe("normalizeSavePayload", () => {
     expect(out.skills.skillPoints).toBe(0);
     expect(out.skills.specialization.fisica).toBe(0);
     expect(Number.isFinite(out.skills.specialization.controle)).toBe(true);
+  });
+});
+
+describe("migrateSave", () => {
+  it("saveVersion abaixo de 4 vira ausente, sem migração", () => {
+    expect(migrateSave(rawSave({ saveVersion: 3 }), "admin:slot:0")).toBeNull();
+    expect(migrateSave(rawSave({ saveVersion: 1 }), "admin:slot:0")).toBeNull();
+    expect(migrateSave(rawSave({ saveVersion: "4" }), "admin:slot:0")).toBeNull();
+  });
+
+  it("saveVersion 4 normaliza", () => {
+    expect(migrateSave(rawSave(), "admin:slot:0")?.saveVersion).toBe(4);
   });
 });
 

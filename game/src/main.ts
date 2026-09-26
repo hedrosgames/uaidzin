@@ -42,7 +42,6 @@ async function bootstrap(): Promise<GameApp> {
   const character = await runBootFlow(document.body);
   app.start(character);
   await releaseBootSceneFade();
-  window.addEventListener("beforeunload", () => app.dispose());
   return app;
 }
 

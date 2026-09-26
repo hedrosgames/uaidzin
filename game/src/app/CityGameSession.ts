@@ -31,9 +31,10 @@ import { EquipmentService } from "../domain/items/EquipmentService";
 import { AccountVaultService } from "../domain/account/AccountVaultService";
 import { BuffService } from "../domain/character/BuffService";
 import { SaveService, type SavePayload } from "../persistence/SaveService";
-import { SAVE_VERSION, emptyProgress, normalizeTreeMap, parseProfileId, type LoadSaveResult } from "../persistence/SaveTypes";
+import { PROFILE_SECTIONS, SAVE_VERSION, emptyProgress, normalizeTreeMap, parseProfileId, type LoadSaveResult } from "../persistence/SaveTypes";
 import { normalizeSavePayload } from "../persistence/migrations";
 import { saveVault } from "../persistence/SaveVault";
+import { SaveCoordinator } from "../persistence/SaveCoordinator";
 import { adoptItemUidSeq, type ItemInstance } from "../domain/items/ItemModel";
 import type { EquipSlot } from "../domain/items/EquipmentService";
 import { ECONOMY_BALANCE } from "../data/balance/economy";
@@ -141,6 +142,11 @@ export class CityGameSession {
   readonly composition = new CompositionService(this.inventory, this.equipment);
   readonly quests = new QuestService(() => this.progressState.quests);
   readonly saveService = new SaveService();
+  readonly saves = new SaveCoordinator(
+    saveVault,
+    () => this.buildSavePayload(),
+    () => this.accountVault.snapshot(),
+  );
   activeDungeonId = "dungeon-test";
   readonly controller: PlayerController;
   readonly worlds: WorldManager;
@@ -183,7 +189,6 @@ export class CityGameSession {
   deathEmitCount = 0;
   autoAttackSwings = 0;
   progressState = emptyProgress();
-  private vaultPersistChain: Promise<void> = Promise.resolve();
 
   setArmorAuraEnabled(on: boolean): void {
     this.renderer.playerView.setArmorAuraEnabled(on);
@@ -228,20 +233,9 @@ export class CityGameSession {
     adoptItemUidSeq(uids);
   }
 
-  private enqueueVaultPersist(): void {
-    this.vaultPersistChain = this.vaultPersistChain.then(async () => {
-      await this.persistSave(true);
-      await this.persistAccountVault();
-    });
-  }
-
   async reloadAccountVault(): Promise<void> {
     const vault = await saveVault.loadAccountVault();
     this.accountVault.apply(vault);
-  }
-
-  async persistAccountVault(): Promise<void> {
-    await saveVault.saveAccountVault(this.accountVault.snapshot());
   }
 
   depositGoldToVault(amount: number): number {
@@ -251,7 +245,7 @@ export class CityGameSession {
     if (moved <= 0) return 0;
     this.inventory.gold -= moved;
     this.accountVault.gold += moved;
-    this.enqueueVaultPersist();
+    this.saves.markDirty(["vault", "inventory"], "critical");
     return moved;
   }
 
@@ -262,7 +256,7 @@ export class CityGameSession {
     if (moved <= 0) return 0;
     this.accountVault.gold -= moved;
     this.inventory.gold += moved;
-    this.enqueueVaultPersist();
+    this.saves.markDirty(["vault", "inventory"], "critical");
     return moved;
   }
 
@@ -273,7 +267,7 @@ export class CityGameSession {
       this.inventory.add(item);
       return false;
     }
-    this.enqueueVaultPersist();
+    this.saves.markDirty(["vault", "inventory"], "critical");
     return true;
   }
 
@@ -284,7 +278,7 @@ export class CityGameSession {
       this.accountVault.add(item);
       return false;
     }
-    this.enqueueVaultPersist();
+    this.saves.markDirty(["vault", "inventory"], "critical");
     return true;
   }
 
@@ -375,7 +369,7 @@ export class CityGameSession {
       this.bus.emit("dungeon:entered", { dungeonId: def.id });
     }
     this.bus.emit("world:changed", { worldId: world.id });
-    if (id === "city") void this.persistSave();
+    if (id === "city") this.saves.markDirty("character", "deferred");
   }
 
   pickDungeonForLevel(): DungeonDef {
@@ -417,7 +411,7 @@ export class CityGameSession {
       if (!this.inventory.consumeMaterial(gate.def.entryItemId, 1)) {
         return { ok: false, reason: "entry" };
       }
-      void this.persistSave(true);
+      this.saves.markDirty("inventory", "critical");
     }
     this.activeDungeonId = gate.def.id;
     this.economy.setDungeonIndexFromId(gate.def.id);
@@ -445,8 +439,8 @@ export class CityGameSession {
     return dungeonsAllowedForLevel(this.progression.state.level);
   }
 
-  async persistSave(immediate = false): Promise<void> {
-    if (this.saveUnreadable) return;
+  private buildSavePayload(): SavePayload | null {
+    if (this.saveUnreadable) return null;
     const profileId = this.saveService.getProfileId();
     const parsed = parseProfileId(profileId);
     const classId = this.skillTree.state.classId;
@@ -500,11 +494,7 @@ export class CityGameSession {
       },
       options: {},
     };
-    if (immediate) {
-      await saveVault.saveCharacter(payload, { immediate: true });
-    } else {
-      await saveVault.saveCharacter(payload);
-    }
+    return payload;
   }
 
   async loadSave(): Promise<LoadSaveResult> {
@@ -528,6 +518,7 @@ export class CityGameSession {
       }
       this.hadSave = true;
       this.applySavePayload(normalizeSavePayload(result.payload, this.saveService.getProfileId()));
+      if (result.fromMirror) this.saves.markDirty([...PROFILE_SECTIONS], "critical");
       return { status: "found" };
     } catch (error) {
       console.error("[UAIDZIN] falha ao ler o save", error);
@@ -541,7 +532,7 @@ export class CityGameSession {
     if (!saveVault.getSession()) return false;
     const profileId = this.saveService.getProfileId();
     const summary = (await saveVault.listSlots()).find((s) => s?.profileId === profileId);
-    if (!summary) return false;
+    if (!summary || summary.saveVersion < SAVE_VERSION) return false;
     return summary.level > 1 || summary.gold > 0 || summary.resets > 0;
   }
 
@@ -578,7 +569,7 @@ export class CityGameSession {
     this.character.healFull();
     this.skillLoadout.refresh();
     this.hadSave = false;
-    void this.persistSave(true);
+    this.saves.markDirty([...PROFILE_SECTIONS], "critical");
   }
 
   private applySavePayload(data: SavePayload): void {
@@ -692,7 +683,7 @@ export class CityGameSession {
           this.character.healFull();
           this.renderer.playerView.clearDeath();
           this.enterWorld("city");
-          void this.persistSave(true);
+          this.saves.markDirty("character", "deferred");
         });
       }
       return;
@@ -934,7 +925,10 @@ export class CityGameSession {
         levelsGained,
       });
     }
-    void this.persistSave(true);
+    this.saves.markDirty(
+      levelsGained > 0 ? ["character", "inventory", "progress", "skills"] : ["character", "inventory", "progress"],
+      "critical",
+    );
   }
 
   private lockMovement(seconds: number): void {
@@ -1035,7 +1029,7 @@ export class CityGameSession {
       });
       this.character.healFull();
       this.enterWorld("city");
-      void this.persistSave(true);
+      this.saves.markDirty("character", "deferred");
       await fade.fadeOut();
     } finally {
       this.worldFadeBusy = false;
@@ -1638,14 +1632,14 @@ export class CityGameSession {
     if (result.attempted || result.message) {
       this.setUiToast(result.message, result.attempted ? "skill" : "dungeon");
     }
-    if (result.attempted) void this.persistSave(true);
+    if (result.attempted) this.saves.markDirty(["inventory", "equipment"], "critical");
     return result;
   }
 
   acceptQuest(questId: string): { ok: boolean; message: string } {
     const result = this.quests.accept(questId);
     this.setUiToast(result.message, result.ok ? "skill" : "dungeon");
-    if (result.ok) void this.persistSave(true);
+    if (result.ok) this.saves.markDirty("progress", "critical");
     return result;
   }
 
@@ -1664,6 +1658,7 @@ export class CityGameSession {
       if (def.reward.gold > 0) this.inventory.gold += def.reward.gold;
       this.setUiToast(`Missão concluída: ${def.title}.`, "level");
     }
+    if (completedIds.length) this.saves.markDirty(["character", "skills", "skillLoadout", "inventory", "progress"], "critical");
   }
 
   debugSetTimer(seconds: number): void {
@@ -1708,7 +1703,7 @@ export class CityGameSession {
         level: this.progression.state.level,
         levelsGained: gained,
       });
-      void this.persistSave(true);
+      this.saves.markDirty(["character", "skills"], "critical");
     }
   }
 
@@ -1784,7 +1779,7 @@ export class CityGameSession {
     this.character.heal(heal, this.character.maxHp);
     item.stack -= 1;
     if (item.stack <= 0) this.inventory.remove(item.uid);
-    void this.persistSave(true);
+    this.saves.markDirty(["character", "inventory"], "critical");
     return true;
   }
 
@@ -1795,7 +1790,7 @@ export class CityGameSession {
     if (!this.skillTree.learn(tree, index)) return false;
     this.inventory.gold -= goldCost;
     this.skillLoadout.refresh();
-    void this.persistSave(true);
+    this.saves.markDirty(["skills", "skillLoadout", "inventory"], "deferred");
     return true;
   }
 

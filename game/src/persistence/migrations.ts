@@ -7,13 +7,9 @@ import { remapSkillId } from "../data/classes/skill-legacy";
 import {
   SAVE_VERSION,
   emptyAttrs,
-  emptyBags,
-  emptyProgress,
-  emptySkillLoadout,
   normalizeTreeMap,
   parseProfileId,
   type SavePayload,
-  type SavePayloadV1,
   type SkillLoadoutSlotSave,
 } from "./SaveTypes";
 
@@ -76,72 +72,6 @@ function asBags(raw: unknown): SavePayload["bags"] {
     for (let i = 0; i < 4; i++) unlocked[i] = i === 0 ? true : !!src[i];
   }
   return { unlocked };
-}
-
-function migrateV1ToV2(data: SavePayloadV1, profileIdHint = "default"): SavePayload {
-  const parsed = parseProfileId(profileIdHint);
-  const items: ItemInstance[] = [];
-  for (const raw of data.inventory?.items || []) {
-    const item = asItem(raw as Record<string, unknown>);
-    if (item) items.push(item);
-  }
-  const classId = data.skills?.classId || "TK";
-  return {
-    saveVersion: 2,
-    meta: {
-      profileId: profileIdHint,
-      userId: parsed?.userId || "unknown",
-      slotIndex: parsed?.slotIndex ?? 0,
-      updatedAt: Date.now(),
-    },
-    character: {
-      name: data.character?.name || "Herói",
-      classId,
-      level: Number(data.character?.level) || 1,
-      evolution: data.character?.evolution || "Mortal",
-      xp: Number(data.character?.xp) || 0,
-      unspentAttributePoints: Number(data.character?.unspentAttributePoints) || 0,
-      resetsInEvolution: Number(data.character?.resetsInEvolution) || 0,
-      bonusAttributePoints: Number(data.character?.bonusAttributePoints) || 0,
-      attributes: {
-        FOR: Number(data.character?.attributes?.FOR) || emptyAttrs().FOR,
-        DES: Number(data.character?.attributes?.DES) || emptyAttrs().DES,
-        CONS: Number(data.character?.attributes?.CONS) || emptyAttrs().CONS,
-        INT: Number(data.character?.attributes?.INT) || emptyAttrs().INT,
-      },
-      hp: Number(data.character?.hp) || 100,
-    },
-    skills: {
-      classId,
-      levels: data.skills?.levels || {},
-      eighthTree: data.skills?.eighthTree ?? null,
-      specialization: normalizeTreeMap(data.skills?.specialization),
-      skillPoints: Number(data.skills?.skillPoints) || 0,
-      specPoints: Number(data.skills?.specPoints) || 0,
-    },
-    skillLoadout: emptySkillLoadout(),
-    equipment: { equipped: {} },
-    inventory: {
-      gold: Number(data.inventory?.gold) || 0,
-      items,
-    },
-    bags: emptyBags(),
-    buffs: [],
-    progress: emptyProgress(),
-    options: {},
-  };
-}
-
-function migrateV2ToV3(data: SavePayload): SavePayload {
-  return {
-    ...normalizeBase(data, data.meta?.profileId || "default"),
-    saveVersion: 3,
-    skillLoadout: {
-      slots: asLoadoutSlots(data.skillLoadout?.slots),
-    },
-    bags: asBags(data.bags),
-    buffs: asBuffs(data.buffs),
-  };
 }
 
 function normalizeBase(data: SavePayload, profileIdHint: string): SavePayload {
@@ -302,22 +232,9 @@ export function normalizeBootCharacter(raw: unknown): BootCharacter | null {
 
 export function migrateSave(raw: unknown, profileIdHint = "default"): SavePayload | null {
   if (!raw || typeof raw !== "object") return null;
-  const data = raw as SavePayload & SavePayloadV1;
-  if (typeof data.saveVersion !== "number") return null;
-  let current: SavePayload;
-  if (data.saveVersion < 2) {
-    current = migrateV1ToV2(data as SavePayloadV1, profileIdHint);
-  } else {
-    current = normalizeBase(data as SavePayload, profileIdHint);
-  }
-  if (current.saveVersion < 3) {
-    current = migrateV2ToV3(current);
-  }
-  while (current.saveVersion < SAVE_VERSION) {
-    current = { ...current, saveVersion: current.saveVersion + 1 };
-  }
-  current.saveVersion = SAVE_VERSION;
-  return normalizeSavePayload(current, profileIdHint);
+  const version = (raw as { saveVersion?: unknown }).saveVersion;
+  if (typeof version !== "number" || !(version >= SAVE_VERSION)) return null;
+  return normalizeSavePayload(raw, profileIdHint);
 }
 
 function remapLearnedSkills(payload: SavePayload): void {

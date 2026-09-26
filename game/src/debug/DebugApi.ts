@@ -9,7 +9,7 @@ import type { SceneRenderer } from "../presentation/rendering/SceneRenderer";
 import type { WireUi } from "../ui/WireUi";
 import { createWireGameApi } from "../ui/WireGameBridge";
 import type { GamePanels } from "../ui/GamePanels";
-import type { CharacterViewModel } from "../persistence/SaveTypes";
+import { PROFILE_SECTIONS, type CharacterViewModel, type SaveTarget } from "../persistence/SaveTypes";
 
 function assertNever(value: never): never {
   throw new Error(String(value));
@@ -91,6 +91,10 @@ export function installDebugApi(app: DebugHost): void {
       });
     });
   }
+  const saveNow = (targets: SaveTarget[]) => {
+    app.session.saves.markDirty(targets, "critical");
+    return app.session.saves.checkpoint();
+  };
   w.__UAIDZIN__ = {
     session: app.session,
     getState: () => app.state.getMode(),
@@ -167,7 +171,7 @@ export function installDebugApi(app: DebugHost): void {
     setClass: (id: string) => {
       app.session.skillTree.setClass(id as never);
       app.session.progression.setClassId(id as never);
-      void app.session.persistSave();
+      app.session.saves.markDirty(["character", "skills", "skillLoadout"], "deferred");
       if (app.wireUi) app.wireUi.close();
       else app.panels.close();
     },
@@ -224,7 +228,7 @@ export function installDebugApi(app: DebugHost): void {
       app.session.debugAddLevels(1);
       const okLearn = app.session.skillTree.learn("fisica", 0);
       app.session.skillLoadout.refresh();
-      void app.session.persistSave(true);
+      app.session.saves.markDirty(["skills", "skillLoadout"], "deferred");
       return { learned: okLearn, slots: app.session.skillLoadout.slots.length, names: app.session.skill.slotLabels() };
     },
     learnRandomSkill: () => {
@@ -232,7 +236,7 @@ export function installDebugApi(app: DebugHost): void {
       if (result.learned) {
         app.showToast(`Skill ${result.skillId} Lv${result.level}`, "skill");
         app.pulseFrame();
-        void app.session.persistSave(true);
+        app.session.saves.markDirty(["skills", "skillLoadout"], "deferred");
       }
       return result;
     },
@@ -270,23 +274,25 @@ export function installDebugApi(app: DebugHost): void {
     confirmInteraction: (id: string) => app.session.confirmInteraction(id),
     debugSetTimer: (s: number) => app.session.debugSetTimer(s),
     debugAddLevels: (n: number) => app.session.debugAddLevels(n),
-    persistSave: () => app.session.persistSave(true),
+    persistSave: () => saveNow([...PROFILE_SECTIONS]),
     login: (userId: string, password: string) => saveVault.login(userId, password),
     sessionUser: () => saveVault.getSession()?.user || null,
-    persistAccountVault: () => app.session.persistAccountVault(),
+    persistAccountVault: () => saveNow(["vault"]),
     clearSave: () => {
       clearBootCharacter();
       return saveVault.wipeProfile(app.session.saveService.getProfileId());
     },
     save: {
-      persist: () => app.session.persistSave(true),
-      flush: () => saveVault.flush(),
+      persist: () => saveNow([...PROFILE_SECTIONS]),
+      flush: () => app.session.saves.checkpoint(),
       wipeProfile: (id?: string) => saveVault.wipeProfile(id || app.session.saveService.getProfileId()),
       wipeAccount: (user?: string) => saveVault.wipeAccount(user || saveVault.getSession()?.user || "admin"),
       wipeAll: (includeSettings?: boolean) => saveVault.wipeAll(!!includeSettings),
       status: () => saveVault.getStatus(),
       lastError: () => saveVault.getLastError(),
       writeCount: () => saveVault.getWriteCount(),
+      pendingCritical: () => saveVault.hasPendingCritical(),
+      writeMirror: () => saveVault.writeMirror(),
       exportProfile: () => saveVault.exportProfile(),
       importProfile: (json: string) => saveVault.importProfile(json),
     },
@@ -301,7 +307,7 @@ export function installDebugApi(app: DebugHost): void {
       unlocked: () => app.session.bags.snapshot(),
       unlock: (i: number) => {
         app.session.bags.unlock(i);
-        void app.session.persistSave(true);
+        app.session.saves.markDirty("bags", "deferred");
       },
     },
     composer: {
@@ -348,9 +354,9 @@ export function installDebugApi(app: DebugHost): void {
         gold?: number;
       }) => saveVault.createSlot(input),
       deleteSlot: (slotIndex: number) => saveVault.deleteSlot(slotIndex),
+      listSlots: () => saveVault.listSlots(),
       loadSlot: async (slotIndex: number) => {
-        await app.session.persistSave(true);
-        await saveVault.flush();
+        await app.session.saves.checkpoint();
         const slots = await saveVault.listSlots();
         const summary = slots[slotIndex];
         if (!summary) return false;

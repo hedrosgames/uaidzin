@@ -4,7 +4,7 @@ import type { EquipSlot } from "../domain/items/EquipmentService";
 import type { ActiveBuff } from "../domain/character/BuffService";
 import type { AccountVaultState } from "../domain/account/AccountVaultService";
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const SLOT_COUNT = 4;
 export const ACCOUNT_SAVE_VERSION = 2;
 
@@ -17,6 +17,25 @@ export type QuestState = {
 
 export type TreeMap = { controle: number; magia: number; fisica: number };
 
+export const PROFILE_SECTIONS = [
+  "meta",
+  "character",
+  "skills",
+  "skillLoadout",
+  "equipment",
+  "inventory",
+  "bags",
+  "buffs",
+  "progress",
+  "options",
+] as const;
+
+export type ProfileSection = (typeof PROFILE_SECTIONS)[number];
+
+export type SaveTarget = ProfileSection | "vault";
+
+export type SaveEventKind = "critical" | "deferred";
+
 export type SlotSummary = {
   profileId: string;
   classId: string;
@@ -28,6 +47,7 @@ export type SlotSummary = {
   attrs: AttrBlock;
   trees: TreeMap;
   spec: TreeMap;
+  saveVersion: number;
 };
 
 export type SkillLoadoutSlotSave = {
@@ -93,33 +113,6 @@ export type SavePayload = {
     quests: Record<string, QuestState>;
   };
   options: Record<string, unknown>;
-};
-
-export type SavePayloadV1 = {
-  saveVersion: number;
-  character: {
-    name: string;
-    level: number;
-    evolution: string;
-    xp: number;
-    unspentAttributePoints: number;
-    resetsInEvolution: number;
-    bonusAttributePoints: number;
-    attributes: AttrBlock;
-    hp: number;
-  };
-  inventory: {
-    gold: number;
-    items: Array<Record<string, unknown>>;
-  };
-  skills: {
-    classId: string;
-    levels: Record<string, { level: number }>;
-    eighthTree: string | null;
-    specialization: Record<string, number>;
-    skillPoints: number;
-    specPoints: number;
-  };
 };
 
 export type CipherEnvelope = {
@@ -241,6 +234,7 @@ export function normalizeSlots(slots: unknown): Array<SlotSummary | null> {
       },
       trees: normalizeTreeMap((s as SlotSummary).trees),
       spec: normalizeTreeMap((s as SlotSummary).spec),
+      saveVersion: treeCount(s.saveVersion),
     });
   }
   return out;
@@ -293,6 +287,7 @@ export function summaryFromPayload(payload: SavePayload): SlotSummary {
     attrs: { ...payload.character.attributes },
     trees,
     spec,
+    saveVersion: SAVE_VERSION,
   };
 }
 

@@ -92,21 +92,31 @@ export async function hashPassword(password: string, salt: Uint8Array): Promise<
   return b64(await deriveBits(password, salt, PBKDF2_ITERATIONS));
 }
 
-export async function encryptJson(session: AuthSession, obj: unknown): Promise<string> {
+export type CodecKey = {
+  raw: Uint8Array;
+  aes: CryptoKey | null;
+};
+
+export async function importCodecKey(session: AuthSession): Promise<CodecKey> {
+  const raw = unb64(session.key);
+  if (session.mode !== "aes" || !hasSubtleCrypto()) return { raw, aes: null };
+  const aes = await crypto.subtle.importKey(
+    "raw",
+    raw.buffer as ArrayBuffer,
+    "AES-GCM",
+    false,
+    ["encrypt", "decrypt"],
+  );
+  return { raw, aes };
+}
+
+export async function encryptJson(key: CodecKey, obj: unknown): Promise<string> {
   const data = enc.encode(JSON.stringify(obj));
   const iv = randomBytes(12);
-  const useAes = session.mode === "aes" && hasSubtleCrypto();
-  if (useAes) {
-    const key = await crypto.subtle.importKey(
-      "raw",
-      unb64(session.key).buffer as ArrayBuffer,
-      "AES-GCM",
-      false,
-      ["encrypt"],
-    );
+  if (key.aes) {
     const cipher = await crypto.subtle.encrypt(
       { name: "AES-GCM", iv: iv.buffer as ArrayBuffer },
-      key,
+      key.aes,
       data,
     );
     const envelope: CipherEnvelope = {
@@ -118,11 +128,10 @@ export async function encryptJson(session: AuthSession, obj: unknown): Promise<s
     };
     return JSON.stringify(envelope);
   }
-  const key = unb64(session.key);
   const mixed = new Uint8Array(iv.length + data.length);
   mixed.set(iv, 0);
   mixed.set(data, iv.length);
-  const out = xorCrypt(key, mixed);
+  const out = xorCrypt(key.raw, mixed);
   const envelope: CipherEnvelope = {
     v: 1,
     mode: "xor",
@@ -132,27 +141,19 @@ export async function encryptJson(session: AuthSession, obj: unknown): Promise<s
   return JSON.stringify(envelope);
 }
 
-export async function decryptJson(session: AuthSession, raw: string): Promise<unknown> {
+export async function decryptJson(key: CodecKey, raw: string): Promise<unknown> {
   const payload = JSON.parse(raw) as CipherEnvelope;
-  if (payload.mode === "xor" || session.mode === "fallback" || !hasSubtleCrypto()) {
+  if (payload.mode === "xor" || !key.aes) {
     const bytes = unb64(payload.data);
-    const key = unb64(session.key);
-    const plain = xorCrypt(key, bytes);
+    const plain = xorCrypt(key.raw, bytes);
     const body = payload.mode === "aes" ? plain : plain.subarray(12);
     return JSON.parse(dec.decode(body));
   }
   const iv = unb64(payload.iv || "");
   const data = unb64(payload.data);
-  const key = await crypto.subtle.importKey(
-    "raw",
-    unb64(session.key).buffer as ArrayBuffer,
-    "AES-GCM",
-    false,
-    ["decrypt"],
-  );
   const plain = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: iv.buffer as ArrayBuffer },
-    key,
+    key.aes,
     data.buffer as ArrayBuffer,
   );
   return JSON.parse(dec.decode(new Uint8Array(plain)));

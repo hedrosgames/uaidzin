@@ -484,33 +484,29 @@ async function main() {
     await page.waitForTimeout(400);
     const profileId = await page.evaluate(() => window.__UAIDZIN__.session.saveService.getProfileId());
     const corruptMark = "SMOKE_CORRUPT_BLOB";
-    await page.evaluate(async ({ id, mark }) => {
-      const lsKey = `uaidzin.save.${id}`;
-      const lsPrev = `uaidzin.save.${id}:prev`;
-      localStorage.setItem(lsKey, mark);
-      localStorage.setItem(lsPrev, mark);
+    const sections = ["meta", "character", "skills", "skillLoadout", "equipment", "inventory", "bags", "buffs", "progress", "options"];
+    await page.evaluate(async ({ id, mark, sections }) => {
+      localStorage.setItem(`uaidzin.mirror.${id}`, mark);
       await new Promise((resolve) => {
-        const req = indexedDB.open("uaidzin", 2);
+        const req = indexedDB.open("uaidzin", 3);
         req.onerror = () => resolve();
-        req.onupgradeneeded = () => {
-          const db = req.result;
-          if (!db.objectStoreNames.contains("save")) db.createObjectStore("save");
-        };
         req.onsuccess = () => {
           try {
             const db = req.result;
-            const tx = db.transaction("save", "readwrite");
-            const store = tx.objectStore("save");
-            store.put(mark, `profile:${id}`);
-            store.put(mark, `profile:${id}:prev`);
-            tx.oncomplete = () => resolve();
+            const tx = db.transaction("sections", "readwrite");
+            const store = tx.objectStore("sections");
+            for (const section of sections) store.put(mark, `profile:${id}:${section}`);
+            tx.oncomplete = () => {
+              db.close();
+              resolve();
+            };
             tx.onerror = () => resolve();
           } catch {
             resolve();
           }
         };
       });
-    }, { id: profileId, mark: corruptMark });
+    }, { id: profileId, mark: corruptMark, sections });
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForFunction(
       () => document.getElementById("overlay-save-error")?.classList.contains("open"),
@@ -527,7 +523,19 @@ async function main() {
     ok("tentar de novo relê e mantém a tela de erro");
     await page.waitForTimeout(1000);
     const blobAfter = await page.evaluate(
-      (id) => localStorage.getItem(`uaidzin.save.${id}`),
+      (id) =>
+        new Promise((resolve) => {
+          const req = indexedDB.open("uaidzin", 3);
+          req.onerror = () => resolve(null);
+          req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction("sections", "readonly");
+            const get = tx.objectStore("sections").get(`profile:${id}:character`);
+            get.onsuccess = () => resolve(get.result ?? null);
+            get.onerror = () => resolve(null);
+            tx.oncomplete = () => db.close();
+          };
+        }),
       profileId,
     );
     const entered = await page.evaluate(() => !!window.__UAIDZIN__?.getSnapshot?.()?.entered);

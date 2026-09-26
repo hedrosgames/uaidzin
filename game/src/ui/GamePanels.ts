@@ -1,7 +1,24 @@
 import { CLASSES, type ClassId } from "../data/classes/class-definitions";
 import type { CityGameSession } from "../app/CityGameSession";
+import type { SaveEventKind, SaveTarget } from "../persistence/SaveTypes";
 
 export type PanelName = "person" | "skills" | "inv";
+
+const SAVE_BY_ACTION: Record<string, [SaveTarget[], SaveEventKind]> = {
+  spend: [["character"], "deferred"],
+  learn: [["skills", "skillLoadout"], "deferred"],
+  equipSkill: [["skillLoadout"], "deferred"],
+  toggleAuto: [["skillLoadout"], "deferred"],
+  clearSlot: [["skillLoadout"], "deferred"],
+  spec: [["skills"], "deferred"],
+  setClass: [["character", "skills", "skillLoadout"], "deferred"],
+  sell: [["inventory"], "critical"],
+  equip: [["equipment", "inventory"], "deferred"],
+  unequip: [["equipment", "inventory"], "deferred"],
+  refine: [["inventory", "equipment"], "critical"],
+  reset: [["character"], "critical"],
+  evolve: [["character"], "critical"],
+};
 
 export class GamePanels {
   private active: PanelName | null = null;
@@ -71,7 +88,6 @@ export class GamePanels {
       s.skillTree.setClass(a as ClassId);
       s.skillTree.resetSkills();
       s.skillLoadout.refresh();
-      void s.persistSave();
     }
     if (action === "sell") s.inventory.sell(a);
     if (action === "equip") s.equipment.equip(a);
@@ -85,7 +101,8 @@ export class GamePanels {
     }
     if (action === "reset") s.debugTryReset();
     if (action === "evolve") s.debugTryEvolve();
-    void s.persistSave();
+    const save = SAVE_BY_ACTION[action];
+    if (save) s.saves.markDirty(save[0], save[1]);
     this.render();
   }
 
