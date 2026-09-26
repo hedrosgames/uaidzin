@@ -5,8 +5,8 @@ Executar passos **1 → 30** na ordem. Cada linha = arquivo + entrega. Código e
 ## Pré-requisitos
 
 - Depois de `Planos/Refatoracao 2.md` (`markDirty(section, kind)`; `SAVE_VERSION` **4**; save antigo = `absent`), `4.md` (`InputService`, `SkillBarView`, `HudModel`), `5.md` (skill sem nível no domínio, `SkillLoadout` sem autopreencher), `6.md` (`tryLearnSkill` continua na sessão), `7.md` (`WireApi`) e `8.md` (UI em `game/src/ui/wire/`, sem `GamePanels`).
-- Passos **6–7**: o plano 4 já é o único `keydown`. Estes passos só garantem slots **0–9** se o mapa ainda não tiver a tecla `0`.
-- Passos **21–28** (VFX e `check-tk-dispatch`) rodam **antes** de `Planos/Refatoracao 9.md`. O plano 9 depende dos passos **23** e **28**. Não usar `TkVfxRegistry` aqui.
+- Passos **6–7**: `Planos/Refatoracao 4.md` passo **1** já mapeia `skill.0`–`skill.9`. Estes passos só conferem.
+- Passos **21–28** (VFX e `check-tk-dispatch`) rodam **antes** de `Planos/Refatoracao 9.md`. O plano 9 depende dos passos **23**, **25** e **28**. Não usar `TkVfxRegistry` aqui.
 
 ## Comportamento
 
@@ -45,7 +45,7 @@ Executar passos **1 → 30** na ordem. Cada linha = arquivo + entrega. Código e
 
 ### B — Teclado
 
-6. `game/src/gameplay/InputService.ts` — ações de slot 0–9 (Digit1–9, Digit0 e numpad). Sem segundo listener.
+6. `game/src/gameplay/InputService.ts` — conferir ações de slot 0–9 (Digit1–9, Digit0 e numpad) do plano 4. Sem segundo listener.
 7. `game/src/app/CityGameSession.ts` — consome a ação nomeada (índice 0–9). `PlayerController` não registra `keydown` de skill.
 
 ### C — Persistência
@@ -55,8 +55,8 @@ Executar passos **1 → 30** na ordem. Cada linha = arquivo + entrega. Código e
 
 ### D — Wire (barra + painel K)
 
-10. `game/src/ui/WireGameBridge.ts` — implementar na `WireApi`: `barSnapshot()`, `equipSkill`, `unequipBar`, `toggleAuto`; catálogo com `barSize`, `desc`, `passive` e flag aprendida (sem `level` nem `levelCap`); remover `upCost`.
-11. `game/src/ui/SkillBarView.ts` — diff por slot (cooldown, ready, auto) a partir do `HudModel`. Sem `innerHTML` por frame.
+10. `game/src/ui/WireGameBridge.ts` — estender a API da barra (`Planos/Refatoracao 7.md` passo **8**) para 10 posições com `index`; catálogo com `barSize`, `desc`, `passive` e flag aprendida (sem `level` nem `levelCap`).
+11. `game/src/ui/SkillBarView.ts` — estender o diff do plano 4 para 10 slots (cooldown, ready, auto, vazio). Sem `innerHTML` por frame.
 12. `game/src/ui/wire/skills.ts` — barra e painel K pela `WireApi`; árvores TK da mesma origem do Mestre; sem mock HT; sem bloco de livros.
 13. `game/src/app/GameApp.ts` — HUD da barra via `SkillBarView`.
 14. Removido — `game/src/ui/GamePanels.ts` não aprende skill (painel legado sai). Compra única no Mestre pela Wire UI (passo **19**), cobrando ouro.
@@ -82,7 +82,7 @@ Textos para `tk.ts`:
 ### F — Mestre (compra única)
 
 19. `game/src/ui/wire/skills.ts` — `canBuySkill` só se a skill ainda não foi aprendida; rótulos Comprar / Aprendida; sem “Melhorar”, “Máximo” e sem “Nível x / 10”.
-20. `game/src/data/balance/economy.ts` — remover `SKILL_TRAINING.upCost` e referências na bridge/wire (`skillUpCost`). Aprender segue `goldCost` uma vez.
+20. `game/src/data/balance/economy.ts` — conferir que `SKILL_TRAINING.upCost` e `skillUpCost` já saíram (`Planos/Refatoracao 5.md` passo **22**). Aprender segue `goldCost` uma vez.
 
 ### G — VFX mapa e ciclo de vida
 
