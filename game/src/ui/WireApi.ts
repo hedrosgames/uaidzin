@@ -41,6 +41,7 @@ export interface WireSkillRow {
   name: string;
   desc: string;
   learned: boolean;
+  passive?: boolean;
   mp: number;
   cd: number;
   pointsCost: number;
@@ -50,6 +51,7 @@ export interface WireSkillRow {
 
 export interface WireSkillCatalog {
   classId: ClassId;
+  barSize?: number;
   trees: TreeId[];
   treeLabels: Record<string, string>;
   skills: Record<string, WireSkillRow>;

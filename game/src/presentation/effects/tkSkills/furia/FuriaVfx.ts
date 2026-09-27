@@ -1,6 +1,5 @@
 import {
   AdditiveBlending,
-  Color,
   DoubleSide,
   Group,
   MathUtils,
@@ -27,6 +26,13 @@ import {
   disposeFuriaTextures,
   type FuriaTextureSet,
 } from "./FuriaTextures";
+import {
+  DEFAULT_FURIA_PALETTE,
+  DESCUIDADO_PALETTE,
+  type FuriaPalette,
+} from "./FuriaPalette";
+
+export { DEFAULT_FURIA_PALETTE, DESCUIDADO_PALETTE, type FuriaPalette };
 
 export interface FuriaVfxConfig {
   auraDuration: number;
@@ -36,6 +42,7 @@ export interface FuriaVfxConfig {
   emberEmission: number;
   burstCount: number;
   ringRadius: number;
+  palette?: FuriaPalette;
 }
 
 export const DEFAULT_FURIA_VFX_CONFIG: FuriaVfxConfig = {
@@ -75,12 +82,12 @@ const AURA_RING_FRAGMENT =  `
   }
 `;
 
-function createAuraRingMaterial(): ShaderMaterial {
+function createAuraRingMaterial(palette: FuriaPalette = DEFAULT_FURIA_PALETTE): ShaderMaterial {
   return new ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
       uIntensity: { value: 0 },
-      uColor: { value: new Color(0.88, 0.16, 0.1) },
+      uColor: { value: palette.ringColor },
     },
     vertexShader: AURA_RING_VERTEX,
     fragmentShader: AURA_RING_FRAGMENT,
@@ -137,21 +144,22 @@ class FuriaCast {
     private readonly onDispose: (cast: FuriaCast) => void,
   ) {
     scene.add(this.castRoot);
-    this.auraSystems = createFuriaAuraSystems(shared.particleMaterials, config);
-    this.burstSystems = createFuriaBurstSystems(shared.particleMaterials, config);
+    const palette = config.palette ?? DEFAULT_FURIA_PALETTE;
+    this.auraSystems = createFuriaAuraSystems(shared.particleMaterials, config, palette);
+    this.burstSystems = createFuriaBurstSystems(shared.particleMaterials, config, palette);
     this.systems = [...this.auraSystems.all, ...this.burstSystems.all];
     for (const system of this.systems) {
       scene.add(system.emitter);
       batchedRenderer.addSystem(system);
     }
 
-    this.ring = new Mesh(shared.ringGeometry, createAuraRingMaterial());
+    this.ring = new Mesh(shared.ringGeometry, createAuraRingMaterial(palette));
     this.ring.name = "furia-aura-ring";
     this.ring.rotation.x = -Math.PI / 2;
     this.ring.renderOrder = 11;
     this.castRoot.add(this.ring);
 
-    this.light = new PointLight(0xd63a20, 0, 6.5, 2);
+    this.light = new PointLight(palette.lightColor, 0, 6.5, 2);
     this.castRoot.add(this.light);
 
     this.place(center);
@@ -280,8 +288,11 @@ class FuriaCast {
 }
 
 export class FuriaVfxController {
-  private readonly textures = createFuriaTextures();
-  private readonly shared = createSharedResources(this.textures);
+  private readonly textures: FuriaTextureSet;
+  private readonly shared: {
+    particleMaterials: FuriaParticleMaterials;
+    ringGeometry: PlaneGeometry;
+  };
   private readonly castRoot = new Group();
   private readonly batchedRenderer = new BatchedRenderer();
   private readonly batchResolution = new Vector2(1, 1);
@@ -295,6 +306,9 @@ export class FuriaVfxController {
     config: Partial<FuriaVfxConfig> = {},
   ) {
     const merged = { ...DEFAULT_FURIA_VFX_CONFIG, ...config };
+    const palette = config.palette ?? DEFAULT_FURIA_PALETTE;
+    this.textures = createFuriaTextures(palette);
+    this.shared = createSharedResources(this.textures);
     this.config = {
       auraDuration: finiteOr(merged.auraDuration, DEFAULT_FURIA_VFX_CONFIG.auraDuration, 0.1),
       activationDuration: finiteOr(merged.activationDuration, DEFAULT_FURIA_VFX_CONFIG.activationDuration, 0.02),
@@ -303,6 +317,7 @@ export class FuriaVfxController {
       emberEmission: finiteOr(merged.emberEmission, DEFAULT_FURIA_VFX_CONFIG.emberEmission, 0),
       burstCount: Math.floor(finiteOr(merged.burstCount, DEFAULT_FURIA_VFX_CONFIG.burstCount, 1)),
       ringRadius: finiteOr(merged.ringRadius, DEFAULT_FURIA_VFX_CONFIG.ringRadius, 0.4),
+      palette,
     };
     this.castRoot.name = "furia-vfx-root";
     this.batchedRenderer.name = "furia-batched-renderer";

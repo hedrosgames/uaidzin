@@ -42,9 +42,10 @@ function asLoadoutSlots(raw: unknown): SkillLoadoutSlotSave[] {
       skillId: String(s.skillId),
       tree: String(s.tree || "fisica"),
       auto: s.auto !== false,
+      ...(typeof s.index === "number" && Number.isFinite(s.index) ? { index: Math.floor(s.index) } : {}),
     });
   }
-  return out.slice(0, 4);
+  return out;
 }
 
 function asBuffs(raw: unknown): ActiveBuff[] {

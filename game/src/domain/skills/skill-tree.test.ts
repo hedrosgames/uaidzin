@@ -23,17 +23,19 @@ describe("SkillTreeService and SkillLoadout", () => {
     const s1 = tree.getTree("fisica")[1];
 
     const loadout = new SkillLoadout(tree);
+    expect(loadout.slots.length).toBe(10);
     loadout.assign(s0.id);
     loadout.assign(s1.id);
-    expect(loadout.slots.length).toBe(2);
+    expect(loadout.slots[0]?.skill.id).toBe(s0.id);
+    expect(loadout.slots[1]?.skill.id).toBe(s1.id);
 
     loadout.clearSlot(0);
-    expect(loadout.slots.length).toBe(1);
-    expect(loadout.slots[0].skill.id).toBe(s1.id);
+    expect(loadout.slots[0]).toBeNull();
+    expect(loadout.slots[1]?.skill.id).toBe(s1.id);
 
     loadout.refresh();
-    expect(loadout.slots.length).toBe(1);
-    expect(loadout.slots[0].skill.id).toBe(s1.id);
+    expect(loadout.slots[0]).toBeNull();
+    expect(loadout.slots[1]?.skill.id).toBe(s1.id);
   });
 
   it("skill aprendida entra na 1a vaga livre", () => {
@@ -46,12 +48,10 @@ describe("SkillTreeService and SkillLoadout", () => {
 
     const loadout = new SkillLoadout(tree);
     loadout.assign(s0.id);
-    expect(loadout.slots.length).toBe(1);
-    expect(loadout.slots[0].skill.id).toBe(s0.id);
+    expect(loadout.slots[0]?.skill.id).toBe(s0.id);
 
     loadout.assign(s1.id);
-    expect(loadout.slots.length).toBe(2);
-    expect(loadout.slots[1].skill.id).toBe(s1.id);
+    expect(loadout.slots[1]?.skill.id).toBe(s1.id);
   });
 
   it("cooldown muda dinamicamente apos spendSpec", () => {
@@ -62,10 +62,10 @@ describe("SkillTreeService and SkillLoadout", () => {
 
     const loadout = new SkillLoadout(tree);
     loadout.assign(s0.id);
-    const initialCd = loadout.slots[0].cooldown;
+    const initialCd = loadout.slots[0]?.cooldown ?? 0;
 
     tree.spendSpec("fisica", 40);
-    const reducedCd = loadout.slots[0].cooldown;
+    const reducedCd = loadout.slots[0]?.cooldown ?? 0;
 
     expect(reducedCd).toBeLessThan(initialCd);
   });

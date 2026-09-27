@@ -1,4 +1,5 @@
 export const SKILL_BALANCE = {
+  barSize: 10,
   pointsPerLevel: 1,
   specializationTotal: 60,
   specializationPerTreeCap: 40,

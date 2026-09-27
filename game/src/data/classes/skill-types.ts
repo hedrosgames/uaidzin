@@ -117,11 +117,13 @@ export interface SkillDef {
   pack?: SummonSpec[];
   transform?: TransformSpec;
   weaponAny?: string[];
+  desc?: string;
 }
 
 export interface SkillInput {
   id: string;
   name: string;
+  desc?: string;
   index: number;
   kind: SkillKind;
   shape?: SkillShape;
@@ -224,5 +226,6 @@ export function defineSkill(input: SkillInput): SkillDef {
     pack: input.pack,
     transform: input.transform,
     weaponAny: input.weaponAny,
+    desc: input.desc,
   };
 }

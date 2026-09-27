@@ -120,7 +120,7 @@ export function installDebugApi(app: DebugHost): void {
       fxCount: app.session.effects.getCount(),
       skillPoints: app.session.skillTree.state.skillPoints,
       unspentPoints: app.session.progression.state.unspentAttributePoints,
-      skillSlots: app.session.skillLoadout.slots.length,
+      skillSlots: app.session.skillLoadout.slots.filter(Boolean).length,
       timeScale: app.timeScale,
       hasPlayerOutline: !!app.renderer.playerOutlineMesh.parent,
       playerGhostVisible: app.renderer.playerGhostMesh.visible,
@@ -218,13 +218,16 @@ export function installDebugApi(app: DebugHost): void {
       app.session.debug.addLevels(1);
       const okLearn = app.session.skillTree.learn("fisica", 0);
       if (okLearn) {
-        const skill = app.session.skillTree.getTree("fisica")[0];
-        if (skill && skill.kind !== "passive") {
-          app.session.skillLoadout.assign(skill.id);
+        app.session.onSkillLearned("fisica", 0);
+        if (import.meta.env.DEV) {
+          const s0 = app.session.skillTree.getTree("fisica")[0];
+          const slotIdx = app.session.skillLoadout.slots.findIndex((s) => s?.skill.id === s0?.id);
+          if (slotIdx >= 0 && app.session.skillLoadout.slots[slotIdx]) {
+            app.session.skillLoadout.slots[slotIdx]!.auto = true;
+          }
         }
       }
-      app.session.saves.markDirty(["skills", "skillLoadout"], "deferred");
-      return { learned: okLearn, slots: app.session.skillLoadout.slots.length, names: app.session.skill.slotLabels() };
+      return { learned: okLearn, slots: app.session.skillLoadout.slots.filter(Boolean).length, names: app.session.skill.slotLabels() };
     },
     learnRandomSkill: () => {
       const result = app.session.debug.learnRandomSkill();

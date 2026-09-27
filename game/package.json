@@ -27,7 +27,8 @@
     "vfx:atelier:validate": "node scripts/vfx/extract-skills-manifest.mjs --check && node scripts/vfx/validate-skills-manifest.mjs && node scripts/vfx/validate-atelier.mjs --complete && node scripts/vfx/write-atelier-brief.mjs --check",
     "vfx:atelier:brief": "node scripts/vfx/write-atelier-brief.mjs",
     "vfx:atelier:qa": "node scripts/vfx/check-atelier.mjs && node scripts/vfx/check-atelier-ui.mjs",
-    "vfx:check": "node scripts/check-vfx-master.mjs"
+    "vfx:check": "node scripts/check-vfx-master.mjs",
+    "tk:dispatch:qa": "node scripts/check-tk-dispatch.mjs"
   },
   "dependencies": {
     "three": "^0.170.0",

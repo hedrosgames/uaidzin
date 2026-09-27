@@ -55,6 +55,7 @@ export type SkillLoadoutSlotSave = {
   skillId: string;
   tree: string;
   auto: boolean;
+  index?: number;
 };
 
 export type AccountSave = {

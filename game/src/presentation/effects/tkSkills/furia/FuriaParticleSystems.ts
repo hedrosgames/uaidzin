@@ -10,13 +10,13 @@ import {
   RenderMode,
   SphereEmitter,
   Vector3 as QuarksVector3,
-  Vector4 as QuarksVector4,
 } from "three.quarks";
 import {
   createAdditiveMaterial,
   createShrink,
   createTurbulence,
 } from "../../vfxKit/quarkFx";
+import { DEFAULT_FURIA_PALETTE, type FuriaPalette } from "./FuriaPalette";
 
 export interface FuriaParticleMaterials {
   ember: MeshBasicMaterial;
@@ -39,14 +39,9 @@ export interface FuriaParticleConfig {
   ringRadius: number;
 }
 
-function createFuriaGradient(): Gradient {
+function createFuriaGradient(palette: FuriaPalette = DEFAULT_FURIA_PALETTE): Gradient {
   return new Gradient(
-    [
-      [new QuarksVector3(1, 0.62, 0.32), 0],
-      [new QuarksVector3(0.96, 0.28, 0.12), 0.38],
-      [new QuarksVector3(0.64, 0.1, 0.05), 0.74],
-      [new QuarksVector3(0.16, 0.02, 0.01), 1],
-    ],
+    palette.gradientColors,
     [
       [0.95, 0],
       [0.85, 0.42],
@@ -68,6 +63,7 @@ export function createFuriaParticleMaterials(
 export function createFuriaAuraSystems(
   materials: FuriaParticleMaterials,
   config: FuriaParticleConfig,
+  palette: FuriaPalette = DEFAULT_FURIA_PALETTE,
 ): FuriaAuraSystems {
   const embers = new ParticleSystem({
     autoDestroy: false,
@@ -77,7 +73,7 @@ export function createFuriaAuraSystems(
     startSpeed: new IntervalValue(0.25, 0.85),
     startSize: new IntervalValue(0.14, 0.34),
     startRotation: new IntervalValue(-Math.PI, Math.PI),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.42, 0.2, 0.78)),
+    startColor: new ConstantColor(palette.startColor),
     emissionOverTime: new ConstantValue(config.emberEmission),
     emissionOverDistance: new ConstantValue(0),
     shape: new SphereEmitter({
@@ -89,7 +85,7 @@ export function createFuriaAuraSystems(
     worldSpace: true,
     renderOrder: 8,
     behaviors: [
-      new ColorOverLife(createFuriaGradient()),
+      new ColorOverLife(createFuriaGradient(palette)),
       createShrink(1),
       new ApplyForce(new QuarksVector3(0, 1.9, 0), new ConstantValue(1)),
       createTurbulence(0.52),
@@ -105,6 +101,7 @@ export function createFuriaAuraSystems(
 export function createFuriaBurstSystems(
   materials: FuriaParticleMaterials,
   config: FuriaParticleConfig,
+  palette: FuriaPalette = DEFAULT_FURIA_PALETTE,
 ): FuriaBurstSystems {
   const burst = new ParticleSystem({
     autoDestroy: false,
@@ -114,7 +111,7 @@ export function createFuriaBurstSystems(
     startSpeed: new IntervalValue(2.4, 5.6),
     startSize: new IntervalValue(0.28, 0.62),
     startRotation: new IntervalValue(-Math.PI, Math.PI),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.62, 0.34, 0.9)),
+    startColor: new ConstantColor(palette.burstStartColor),
     emissionOverTime: new ConstantValue(0),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [{ time: 0, count: new ConstantValue(config.burstCount), cycle: 1, interval: 0, probability: 1 }],
@@ -140,7 +137,7 @@ export function createFuriaBurstSystems(
     startLife: new IntervalValue(0.18, 0.4),
     startSpeed: new IntervalValue(3.4, 6.8),
     startSize: new IntervalValue(0.1, 0.2),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.5, 0.24, 0.88)),
+    startColor: new ConstantColor(palette.ringSparkStartColor),
     emissionOverTime: new ConstantValue(0),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [{ time: 0, count: new ConstantValue(Math.floor(config.burstCount * 0.6)), cycle: 1, interval: 0, probability: 1 }],

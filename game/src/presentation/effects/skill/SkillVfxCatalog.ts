@@ -15,13 +15,6 @@ const TREE_COLORS: Record<TreeId, number> = {
 };
 
 export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
-  tk_fis_1: "golpe",
-  tk_fis_2: "corte",
-  tk_fis_3: "investida",
-  tk_fis_4: "machado",
-  tk_fis_5: "quebra",
-  tk_fis_6: "furia",
-  tk_fis_7: "avalanche",
   tk_mag_1: "bencao",
   tk_mag_2: "selo",
   tk_mag_3: "aura",
@@ -39,6 +32,8 @@ export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
   tk_ctrl_7: "guarda",
   tk_ctrl_8: "bastiao",
   tk_fis_force_wave: "golpe",
+  tk_fis_atk_descuidado: "descuidado",
+  tk_fis_death_stab: "investida",
   tk_fis_fury: "furia",
   tk_fis_earthquake: "avalanche",
 };

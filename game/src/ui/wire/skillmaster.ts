@@ -52,9 +52,12 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
     const catalog = ctx.api.pullSkillCatalog();
     const goldCost = ctx.api.skillGoldCost(sk.idx);
     const gold = ctx.api.snapshotInventory().gold;
-    const canAfford = gold >= goldCost;
+    const pointsCost = ctx.api.skillPointsCost();
+    const hasPoints = (catalog.skillPoints ?? 0) >= pointsCost;
+    const canAffordGold = gold >= goldCost;
+    const eighthLocked = sk.idx === 7 && Boolean(catalog.eighthTree && catalog.eighthTree !== sk.tree);
     const prereqLearned = sk.idx === 0 || Boolean(catalog.skills[`${sk.tree}-${sk.idx}`]?.learned);
-    const canBuy = !sk.learned && canAfford && prereqLearned;
+    const canBuy = !sk.learned && hasPoints && canAffordGold && prereqLearned && !eighthLocked;
 
     let btnHtml = "";
     if (sk.learned) {
@@ -63,12 +66,27 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
       btnHtml = `<button type="button" class="inv-tool sort" id="btnBuySkill" ${canBuy ? "" : "disabled"} style="width:100%;margin-top:6px">Comprar</button>`;
     }
 
+    let metaHtml = "";
+    if (sk.passive) {
+      metaHtml = `<div class="sub gold" style="color:var(--gold-bright)">Passiva · não vai para a barra</div>`;
+    } else {
+      const parts: string[] = [];
+      if (sk.cd) parts.push(`Recarga: ${sk.cd}s`);
+      if (sk.mp) parts.push(`MP: ${sk.mp}`);
+      if (parts.length) metaHtml = `<div class="sub">${parts.join(" · ")}</div>`;
+    }
+
     detailEl.innerHTML = `
       <div class="ttl">${sk.name}</div>
       <div class="sub">${sk.tree} · Slot ${sk.idx + 1}</div>
+      ${metaHtml}
       <div class="desc">${sk.desc || ""}</div>
       <div class="cost-rows">
-        <div class="cost-row ${!canAfford && !sk.learned ? "is-bad" : ""}">
+        <div class="cost-row ${!hasPoints && !sk.learned ? "is-bad" : ""}">
+          <span class="lab">Pontos de Skill</span>
+          <span class="val">${pointsCost}</span>
+        </div>
+        <div class="cost-row ${!canAffordGold && !sk.learned ? "is-bad" : ""}">
           <span class="lab">Custo em Ouro</span>
           <span class="val">${goldCost.toLocaleString("pt-BR")}</span>
         </div>

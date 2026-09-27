@@ -7,6 +7,7 @@ export const TK_FISICA: SkillDef[] = [
   defineSkill({
     id: "tk_fis_force_wave",
     name: "Force Wave",
+    desc: "Onda de força que atinge um inimigo à frente a média distância. Dano físico da arma.",
     index: 0,
     kind: "damage",
     shape: "single",
@@ -17,6 +18,7 @@ export const TK_FISICA: SkillDef[] = [
   defineSkill({
     id: "tk_fis_atk_descuidado",
     name: "Atk Descuidado",
+    desc: "Abre a guarda: ataque +28 % e defesa −18 % por 12 s. Não acumula com ele mesmo.",
     index: 1,
     kind: "buff",
     buff: { id: "tk_reckless_atk", sec: 12, stat: "attack", magnitude: 0.28 },
@@ -25,6 +27,7 @@ export const TK_FISICA: SkillDef[] = [
   defineSkill({
     id: "tk_fis_mestre_dual",
     name: "Mestre Dual",
+    desc: "Passiva. Com duas armas (machados ou espadas duplos) o ataque sobe 22 %. Não entra na barra.",
     index: 2,
     kind: "passive",
     passive: { id: "dual", magnitude: 0.22 },
@@ -33,6 +36,7 @@ export const TK_FISICA: SkillDef[] = [
   defineSkill({
     id: "tk_fis_death_stab",
     name: "Death Stab",
+    desc: "Estocada que atravessa até 3 inimigos à frente, ignorando parte da defesa.",
     index: 3,
     kind: "damage",
     shape: "line",
@@ -45,6 +49,7 @@ export const TK_FISICA: SkillDef[] = [
   defineSkill({
     id: "tk_fis_fury",
     name: "Fury",
+    desc: "Fúria de combate: velocidade de ataque +32 % por 10 s.",
     index: 4,
     kind: "buff",
     buff: { id: "tk_fury", sec: 10, stat: "attackSpeed", magnitude: 0.32 },
@@ -52,6 +57,7 @@ export const TK_FISICA: SkillDef[] = [
   defineSkill({
     id: "tk_fis_increase_critical",
     name: "Increase Critical",
+    desc: "Passiva. Chance de crítico +12 % em golpes e skills. Não entra na barra.",
     index: 5,
     kind: "passive",
     passive: { id: "crit", magnitude: 0.12 },
@@ -59,6 +65,7 @@ export const TK_FISICA: SkillDef[] = [
   defineSkill({
     id: "tk_fis_earthquake",
     name: "Earthquake",
+    desc: "Terremoto: dano de terra em todos os inimigos num raio de 3,6 m.",
     index: 6,
     kind: "damage",
     shape: "aoe",
@@ -71,6 +78,7 @@ export const TK_FISICA: SkillDef[] = [
   defineSkill({
     id: "tk_fis_fire_burst",
     name: "Fire Burst",
+    desc: "Correntes de fogo explodem num raio de 4,4 m. Só uma 8ª skill por personagem: comprar esta bloqueia as 8ª de Defensivo e Mágico.",
     index: 7,
     kind: "damage",
     shape: "aoe",

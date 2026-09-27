@@ -887,13 +887,25 @@ export class CityGameSession {
     if (!this.skillTree.canLearn(tree, index)) return false;
     if (!this.skillTree.learn(tree, index)) return false;
     this.inventory.gold -= goldCost;
-    const skill = this.skillTree.getTree(tree)[index];
-    if (skill && skill.kind !== "passive") {
-      this.skillLoadout.assign(skill.id);
-    }
-    this.combat.invalidatePassives();
-    this.saves.markDirty(["skills", "skillLoadout", "inventory"], "deferred");
+    this.onSkillLearned(tree, index);
     return true;
+  }
+
+  onSkillLearned(tree: TreeId, index: number): void {
+    const skill = this.skillTree.getTree(tree)[index];
+    this.combat.invalidatePassives();
+    this.skillLoadout.refresh();
+    if (skill) {
+      if (skill.kind !== "passive") {
+        this.skillLoadout.assign(skill.id);
+      } else {
+        this.passiveVfxOrigin.set(this.player.x, 0, this.player.z);
+        this.effects.syncPassiveVfx(this.combat.getLearnedPassives(), this.passiveVfxOrigin);
+      }
+    }
+    this.saves.markDirty("skills", "deferred");
+    this.saves.markDirty("skillLoadout", "deferred");
+    this.saves.markDirty("inventory", "deferred");
   }
 
   refreshWeaponSetFromGear(): void {

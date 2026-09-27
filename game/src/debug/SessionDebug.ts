@@ -66,17 +66,25 @@ export class SessionDebug {
         if (this.session.skillTree.canLearn(tree, i)) options.push({ tree, index: i });
       }
     }
-    if (!options.length) return { learned: false, slots: this.session.skillLoadout.slots.length };
+    if (!options.length) return { learned: false, slots: this.session.skillLoadout.slots.filter(Boolean).length };
     const pick = options[Math.floor(Math.random() * options.length)];
     const skill = this.session.skillTree.getTree(pick.tree)[pick.index];
     const ok = this.session.skillTree.learn(pick.tree, pick.index);
-    if (ok && skill.kind !== "passive") this.session.skillLoadout.assign(skill.id);
+    if (ok) {
+      this.session.onSkillLearned(pick.tree, pick.index);
+      if (import.meta.env.DEV && skill.kind !== "passive") {
+        const slotIdx = this.session.skillLoadout.slots.findIndex((s) => s?.skill.id === skill.id);
+        if (slotIdx >= 0 && this.session.skillLoadout.slots[slotIdx]) {
+          this.session.skillLoadout.slots[slotIdx]!.auto = true;
+        }
+      }
+    }
     return {
       learned: ok,
       tree: pick.tree,
       index: pick.index,
       skillId: skill.id,
-      slots: this.session.skillLoadout.slots.length,
+      slots: this.session.skillLoadout.slots.filter(Boolean).length,
     };
   }
 

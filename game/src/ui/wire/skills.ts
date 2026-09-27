@@ -101,8 +101,12 @@ export function createSkillsPanel(container: HTMLElement, ctx: WireContext): Ski
 
       slotEl.addEventListener("mouseenter", () => {
         const meta: Record<string, string> = {};
-        if (sk.cd) meta["Recarga"] = `${sk.cd}s`;
-        if (sk.mp) meta["Custo Mana"] = String(sk.mp);
+        if (sk.passive) {
+          meta["Tipo"] = "Passiva · não vai para a barra";
+        } else {
+          if (sk.cd) meta["Recarga"] = `${sk.cd}s`;
+          if (sk.mp) meta["Custo Mana"] = String(sk.mp);
+        }
         if (sk.learned) meta["Estado"] = "Aprendida";
         else meta["Estado"] = "Não aprendida";
         const treeLabel = (treeNames as Record<string, string>)[sk.tree] || sk.tree;
@@ -113,7 +117,7 @@ export function createSkillsPanel(container: HTMLElement, ctx: WireContext): Ski
         ctx.hideSkillTip();
       });
 
-      if (sk.learned) {
+      if (sk.learned && !sk.passive) {
         slotEl.setAttribute("draggable", "true");
         slotEl.addEventListener("dragstart", (e) => {
           e.dataTransfer?.setData("text/plain", JSON.stringify({ kind: "skill", skillId: sk.id }));

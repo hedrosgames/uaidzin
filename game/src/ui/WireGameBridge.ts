@@ -1,5 +1,6 @@
 import { CLASSES, type ClassId, type TreeId } from "../data/classes/class-definitions";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
+import { SKILL_BALANCE } from "../data/balance/skills";
 import { resolveItemIcon, shopCatalogForUi, SKILL_TRAINING } from "../data/balance/economy";
 import { dungeonEnterMessage, type CityGameSession } from "../app/CityGameSession";
 import { buyFromShop, sellItem } from "../domain/economy/ShopService";
@@ -82,11 +83,12 @@ export function buildWireSkillCatalog(session: CityGameSession): WireSkillCatalo
       skills[wireId] = {
         id: wireId,
         tree,
-        idx: i + 1,
+        idx: i,
         skillId: sk.id,
         name: sk.name,
-        desc: sk.kind === "passive" ? "Passiva" : sk.name,
+        desc: sk.desc ?? (sk.kind === "passive" ? "Passiva" : sk.name),
         learned: session.skillTree.hasSkill(sk.id),
+        passive: sk.kind === "passive",
         mp: sk.mp ?? 0,
         cd: sk.cooldown ?? 0,
         pointsCost: SKILL_TRAINING.pointsCost,
@@ -98,6 +100,7 @@ export function buildWireSkillCatalog(session: CityGameSession): WireSkillCatalo
   const attr = session.character.attributes;
   return {
     classId: st.classId,
+    barSize: SKILL_BALANCE.barSize,
     trees: [...klass.treeOrder],
     treeLabels: { ...klass.treeLabels },
     skills,
@@ -335,6 +338,13 @@ export function createWireGameApi(
     getSkillBar: (): WireSkillBarSlot[] => {
       const klass = CLASSES[session.skillTree.state.classId];
       return session.skillLoadout.slots.map((s, idx) => {
+        if (!s) {
+          return {
+            slotIndex: idx,
+            skillId: null,
+            auto: false,
+          };
+        }
         let iconIdx = 0;
         const treeDefs = klass?.trees[s.tree] || [];
         const foundIdx = treeDefs.findIndex((def) => def.id === s.skill.id);

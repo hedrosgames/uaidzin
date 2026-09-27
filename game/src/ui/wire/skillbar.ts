@@ -70,16 +70,16 @@ export function createSkillBarHud(container: HTMLElement, ctx: WireContext): Ski
     const slots = ctx.api.getSkillBar();
     let html = "";
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 10; i++) {
       const s = slots[i];
-      const hasSkill = !!s;
+      const hasSkill = !!s?.skillId;
       const cls = hasSkill ? "slot-ring has-skill" : "slot-ring";
-      const keyLabel = String(i + 1);
+      const keyLabel = i === 9 ? "0" : String(i + 1);
 
       html += `
-        <div class="${cls}" data-bar="${i}" title="${s ? s.name : "Vazio (arraste habilidade)"}">
+        <div class="${cls}" data-bar="${i}" title="${hasSkill ? s.name : "Vazio (arraste habilidade)"}">
           <div class="inner">
-            ${s?.icon ? `<img src="${s.icon}" alt="${s.name}">` : ""}
+            ${hasSkill && s?.icon ? `<img src="${s.icon}" alt="${s.name}">` : ""}
             <span class="slot-key">${keyLabel}</span>
             ${hasSkill ? `<label class="slot-auto" data-slot="${i}"><input type="checkbox" ${s.auto ? "checked" : ""}> auto</label>` : ""}
           </div>

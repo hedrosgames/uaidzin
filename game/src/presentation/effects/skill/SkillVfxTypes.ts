@@ -24,6 +24,7 @@ export type DedicatedSkillVfx =
   | "machado"
   | "quebra"
   | "furia"
+  | "descuidado"
   | "avalanche"
   | "bencao"
   | "selo"
