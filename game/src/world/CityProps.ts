@@ -1,6 +1,6 @@
-import { DoubleSide, Group, Mesh, MeshStandardMaterial, Object3D, SRGBColorSpace } from "three";
+import { Group, Mesh, Object3D } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { CITY_SURFACE_GLSL } from "./CitySurface";
+import { applyCityPropMaterials } from "./CityPropMaterials";
 
 export type CityPropId =
   | "wall"
@@ -53,70 +53,13 @@ export function cityPropFootprint(id: CityPropId, scale: number, quarterTurns: n
 const loader = new GLTFLoader();
 const prototypes = new Map<CityPropId, Promise<Object3D>>();
 
-function hardenPropMaterials(root: Object3D, id: CityPropId): void {
-  const stone = id === "wall" || id === "fountain" || id === "fountain-simple";
-  const canopy = id.startsWith("stall") || id === "wagon";
-  const height = CITY_PROP_SPECS[id].height;
-  root.traverse((obj) => {
-    const mesh = obj as Mesh;
-    if (!mesh.isMesh) return;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    const next = mats.map((mat) => {
-      const src = mat as MeshStandardMaterial;
-      const std = src.isMeshStandardMaterial ? src.clone() : new MeshStandardMaterial({ map: src.map ?? null });
-      std.name = `city-${id}-surface`;
-      std.side = DoubleSide;
-      std.roughness = stone ? 0.94 : 0.88;
-      std.metalness = src.metalness ?? 0;
-      if (std.map) {
-        std.map.colorSpace = SRGBColorSpace;
-        std.map.anisotropy = 8;
-        std.map.needsUpdate = true;
-      }
-      std.onBeforeCompile = (shader) => {
-        shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vPropSurface;");
-        shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", `#include <begin_vertex>\nvPropSurface = position / ${height.toFixed(4)};`);
-        shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>
-varying vec3 vPropSurface;
-float propRelief;
-float propRoughness;
-${CITY_SURFACE_GLSL}`);
-        shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", `#include <map_fragment>
-float pores = cityFbm(vPropSurface.xz * 160.0 + vPropSurface.y * 31.0);
-float weather = cityFbm(vPropSurface.xz * 14.0 + vPropSurface.y * 9.0);
-float luminance = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-${stone ? `
-diffuseColor.rgb = mix(diffuseColor.rgb, vec3(luminance) * vec3(0.93, 0.97, 1.0), 0.72);
-diffuseColor.rgb *= mix(0.86, 1.07, weather);
-propRelief = (pores - 0.5) * 0.007;
-propRoughness = mix(0.88, 0.99, pores);` : `
-float cloth = ${canopy ? "smoothstep(0.58, 0.73, vPropSurface.y)" : "0.0"};
-float grain = cityFbm(vec2(vPropSurface.x * 210.0 + vPropSurface.z * 180.0, vPropSurface.y * 8.0));
-float weave = sin(vPropSurface.x * 650.0) * sin((vPropSurface.y + vPropSurface.z) * 650.0);
-diffuseColor.rgb = mix(diffuseColor.rgb, vec3(luminance), 0.12);
-diffuseColor.rgb *= mix(mix(0.84, 1.05, grain), 0.96 + weave * 0.025, cloth);
-propRelief = mix((grain - 0.5) * 0.004, weave * 0.0007, cloth);
-propRoughness = mix(0.82 + pores * 0.13, 0.98, cloth);`}`);
-        shader.fragmentShader = shader.fragmentShader.replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = max(roughnessFactor, propRoughness);");
-        shader.fragmentShader = shader.fragmentShader.replace("#include <normal_fragment_maps>", "#include <normal_fragment_maps>\nnormal = cityRelief(normal, -vViewPosition, propRelief);");
-      };
-      std.customProgramCacheKey = () => `city-prop-natural-1-${id}`;
-      src.dispose();
-      return std;
-    });
-    mesh.material = next.length === 1 ? next[0]! : next;
-  });
-}
-
 export type CityPropReadyFn = (root: Object3D) => void;
 
 function loadPrototype(id: CityPropId): Promise<Object3D> {
   let pending = prototypes.get(id);
   if (!pending) {
-    pending = loader.loadAsync(CITY_PROP_SPECS[id].url).then((gltf) => {
-      hardenPropMaterials(gltf.scene, id);
+    pending = loader.loadAsync(CITY_PROP_SPECS[id].url).then(async (gltf) => {
+      await applyCityPropMaterials(gltf.scene, id);
       return gltf.scene;
     }).catch(() => new Group());
     prototypes.set(id, pending);

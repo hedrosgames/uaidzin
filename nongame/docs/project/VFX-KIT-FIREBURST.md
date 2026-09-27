@@ -10,8 +10,9 @@ Peças genéricas prontas para reuso em `game/src/presentation/effects/vfxKit/`:
 
 | Arquivo | Fornece |
 |---|---|
-| `curveTrajectory.ts` | `createHelixCurve(origin, target, phase, options?)` — helicoidal com envelope e jitter; defaults iguais ao FireBurstUAID |
+| `curveTrajectory.ts` | `createHelixCurve(origin, target, phase, options?)` — helicoidal com envelope e jitter; `createArcCurve(origin, target, phase, options?)` — arco de projétil com aba, swing lateral e rosca opcional; `createJaggedCurve(origin, target, phase, options?)` — raio serrilhado com células alternadas de amplitude aleatória. Defaults iguais ao FireBurstUAID |
 | `linkProjectile.ts` | `LinkProjectile` (elos instanciados + ponta + giro + emissão de partículas na curva via `CurveEmissionPlacement`) |
+| `cometTail.ts` | `CometTail` — cauda de projétil: estilhaços `InstancedMesh` alinhados à tangente da curva com afinamento, mais rastro de partículas emissas na própria curva (`wake`) com janela `tail..head` |
 | `quarkFx.ts` | `createAdditiveMaterial`, `createFireGradient`, `createShrink`, `createTurbulence`, `createFlameAnimation` |
 | `canvasTexture.ts` | `createCanvasTexture` e `drawRadialGlow` para texturas procedurais |
 
@@ -49,6 +50,33 @@ Uma skill nova no padrão FireBurstUAID usa: curva do kit + `LinkProjectile` com
 - Sem billboard do ataque inteiro; sem spritesheet de cena; sem emoji; pt-BR correto.
 - `npm run typecheck` e `npm run build` passando.
 
+## Rampa de qualidade (5 passes, nota por passe)
+
+Toda skill nova entra com nota 3 honesta e sobe 1,5 por passe. A nota é o critério, não a Perception.
+
+| Passe | Nota | O que resolve | Como verificar |
+|---|---|---|---|
+| v1 | 3,0 | Pipeline completo e limpo: catálogo, controller, malha 3D, Quarks, textura, lab, QA verde. Art genérica, sem antecipação, impacto seco | QA + captura de voo/impacto |
+| 1 | 4,5 | Identidade de estúdio: ferro/bronze/ouro reais, paleta travada, silhueta legível, bloom calibrado | Captura: a malha identifica a skill a 1 screenshot |
+| 2 | 6,0 | A chama/a matéria lê: invólucro de partículas forte, rastro contínuo na curva, luz<PointLight> espelhando no chão | Captura: o efeito não pode parecer arame ou poeira |
+| 3 | 7,5 | Hierarquia de valores: cabeça mais brilhante e maior que o rastro, easing de arremesso, pop de lançamento | Captura: o olho vai para a cabeça, não para a cauda |
+| 4 | 9,0 | Impacto legível: flash aditivo com textura (nunca bola opaca), cascas que se abrem, detritos geométricos, queimadura, luz em dois estágios | Captura de impacto: nada some atrás de um branco |
+| 5 | 10,5 | Gate: QA ≥170 checks, 11 direções, memória estável em ≥12 ciclos, integração `EffectManager`, zero comentário, typecheck + build | `npm run typecheck`, `npm run build`, script de QA |
+
+Regras que os passes aprenderam na prática:
+
+- Sistema Quarks só emite na fase dele: `pause()` + `emitter.visible = false` na fábrica, `restart()`/`play()` na troca de fase. Sem isso o impacto e o voo vazam para a carga.
+- `CometTail` recebe a cauda por `wake`; o `startWake()` é explícito na fase de voo, nunca no construtor.
+- Flash de impacto é `MeshBasicMaterial` **aditivo com textura radial**. Cor chapada sem blend vira bola branca opaca e mata o burst.
+- A captura de QA lê o `renderer.info.memory` entre ciclos: se subir, há recurso por cast.
+- **Arma precisa de haste.** Lâmina/bola sozinha lê como faísca; a haste escura dá a silhueta de arma e o contraste ferro-gelo.
+- **Partícula grande demais vira adesivo.** Cristal/flor de neve com muita área lê como decal colado; keep a área baixa e a emissão alta.
+- Timing de fase: para provar independência de framerate, o controller expõe `phaseStartedAt` (tempo simulado exato da virada). Medir `elapsed` depois do `update` erra, porque o resto do frame já cai na fase nova.
+- A cauda nasce vazia no primeiro frame do voo (sem percurso). Teste o meio do voo, não o instante do disparo.
+- **Captura de tela precisa bater com a fase.** Efeito rápido (raio de 0,16 s) captura o frame de impacto se a soma dos `advance` passar do meio; some o tempo por fase e some as fases.
+- O Vite assiste `game/scripts/`, então **editar o próprio script de QA recarrega a página no meio da execução**. Todo script precisa de `ensurePage()` antes de cada bloco de avaliação.
+- Geometria emissiva alta + bloom vira massa branca e come o metal. Em efeito elemental, deixe a **partícula** carregar o brilho e o metal só o contorno.
+
 ## Plano das 7 skills restantes do TK (mesma linha do FireBurstUAID)
 
 Fonte: `docs/inventarios/skills.md` — árvore física do TK. Fire Burst (`tk_fis_fire_burst`) já validado; restam as outras 7. Visual no padrão FireBurstUAID: malha real + Quarks, kit reutilizável, QA CDP completo, sem alterar dano/mana/CD. Tempos e detalhes são **provisórios** até o Felipe ajustar jogando.
@@ -69,6 +97,21 @@ Regras do plano:
 - Uma skill por vez: implementar, validar com o Felipe, só então abrir a próxima. A ordem acima é sugestão; o Felipe reordena se quiser.
 - Texturas novas só quando a paleta do metal/brasa do FireBurstUAID não servir; reutilizar o que der.
 - `tk_fis_8` Colosso (8ª exclusiva) e as 8 de magia do TK ficam fora desta leva; entram depois em tarefa própria.
+
+## Plano da árvore de magia da FM (8 skills, mesma linha do FireBurstUAID)
+
+Fonte: `docs/inventarios/skills.md` — `fm_mag`. Controller novo por skill em `game/src/presentation/effects/fmSkills/<slug>/`, lab em `game/vfx/fm-<slug>.html`, QA em `game/scripts/check-fm-<slug>.mjs`. Dano, mana e CD ficam intocados.
+
+| Ordem | Skill | Arquétipo | Peças do kit |
+|---|---|---|---|
+| 1 | `fm_mag_esfera_ignea` Esfera Ígnea | Bola de fogo em projétil | `createArcCurve` + `CometTail` com wake; núcleo de lava `IcosahedronGeometry` e cascas `TorusGeometry` em arco; atlas de fogo do FireBurst |
+| 2 | `fm_mag_lanca_glacial` Lança Glacial | Lança de gelo perfurante | `createArcCurve` reta + `CometTail`; lâmina `ConeGeometry`, engaste e **haste** `CylinderGeometry` de ferro, colar `TorusGeometry`, 3 cristais `TetrahedronGeometry` orbitando, atlas de gelo próprio `LancaGlacialFrostTexture` (flor de 6 pontas em 4×4) |
+| 3 | `fm_mag_choque_vital` Choque Vital | Raio que salta | `createJaggedCurve` (deslocamento alternado por segmento, envelope senoidal) + trilhos `BoxGeometry` em `InstancedMesh` revelados por contagem, 3 nós rúnicos `OctahedronGeometry`, 2 aros `TorusGeometry`, `CometTail` de detritos; sem ciano — ouro pálido em ferro |
+| 4 | `fm_mag_picada` Picada Peçonhenta | Dardo ácido | `createArcCurve` + `CometTail`; agulha `ConeGeometry`, bolhas `SphereEmitter` verdes, sem fumaça preta |
+| 5 | `fm_mag_tempestade_brasa` Tempestade de Brasa | Chuva de brasas em área | Cone de queda, anel no solo, `GridEmitter` de brasa, luz pulsante |
+| 6 | `fm_mag_sombra_corrosiva` Sombra Corrosiva | Lâmina de sombra perfurante | `createArcCurve` reta; lâminas `PlaneGeometry` em fita, fuligem quente (nunca preta), anel de corrosão |
+| 7 | `fm_mag_nevasca` Nevasca | Domo de gelo em área | Coluna de cristais `ConeGeometry` escalonada, `HemisphereEmitter` de flocos, ground ring |
+| 8 | `fm_mag_colapso` Colapso Elemental | Colapso em área, 4 elementos | Casca `IcosahedronGeometry` que expande, 4 sistemas de cor, anel duplo, PointLight em dois estágios |
 
 ## Regras de ouro extraídas do FireBurstUAID
 

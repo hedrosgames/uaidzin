@@ -21,6 +21,7 @@ import { cityPropFootprint, cityPropScale, spawnCityProp, type CityPropId } from
 import { makeCityFloorMaterial, makeCityPlazaMaterial, makeDungeon2FloorMaterial } from "./CityGround";
 import { buildCityScenery } from "./CityScenery";
 import { buildCityVegetation } from "./CityLandscape";
+import { makeCitySolidMaterial } from "./CityMaterialTextures";
 
 const FOUNTAIN_HEIGHT = 2.8;
 const STALL_HEIGHT = 2.6;
@@ -106,21 +107,9 @@ function makeChest(def: InteractableDef): Group {
   g.name = def.id;
   g.position.set(def.x, 0, def.z);
 
-  const wood = new MeshStandardMaterial({
-    color: def.color,
-    roughness: 0.85,
-    metalness: 0.05,
-  });
-  const darkWood = new MeshStandardMaterial({
-    color: 0x5a3d22,
-    roughness: 0.9,
-    metalness: 0.05,
-  });
-  const iron = new MeshStandardMaterial({
-    color: 0x8a7340,
-    roughness: 0.45,
-    metalness: 0.55,
-  });
+  const wood = makeCitySolidMaterial("wood", 0xd6b38b);
+  const darkWood = makeCitySolidMaterial("wood", 0xb49270);
+  const iron = makeCitySolidMaterial("iron", 0x888478);
 
   const base = new Mesh(new BoxGeometry(1.15, 0.55, 0.75), wood);
   base.position.y = 0.28;
@@ -190,7 +179,7 @@ export function buildCityWorld(): BuiltWorld {
 
   const fountainPlinth = new Mesh(
     new CylinderGeometry(FOUNTAIN_RING_R, FOUNTAIN_RING_R + 0.15, 0.18, 36),
-    new MeshStandardMaterial({ color: 0x65665d, roughness: 0.96 }),
+    makeCityPlazaMaterial(FOUNTAIN_RING_R),
   );
   fountainPlinth.position.y = 0.18;
   fountainPlinth.receiveShadow = true;

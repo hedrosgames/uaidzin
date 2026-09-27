@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 
 const base = process.env.UAIDZIN_BASE || "http://127.0.0.1:5173";
-const output = new URL("../../nongame/docs/visual/evidence/", import.meta.url);
+const output = new URL("../art/evidence/city/", import.meta.url);
 await fs.mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1411, height: 827 } });
@@ -21,7 +21,9 @@ try {
   await page.waitForFunction(() => window.__UAIDZIN__?.getSnapshot().entered, null, { timeout: 90000 });
   await page.waitForFunction(() => {
     const world = window.__UAIDZIN__.session.worlds.getCurrent();
-    return world?.group.getObjectByName("fountain-water") && world.group.getObjectByName("ground")?.material.map.image?.width > 0;
+    const props = world?.group.children.filter((node) => node.name.startsWith("prop-"));
+    return world?.group.getObjectByName("fountain-water") && world.group.getObjectByName("ground")?.material.map.image?.width > 0
+      && props?.length > 8 && props.every((node) => node.children.length > 0);
   }, null, { timeout: 60000 });
   await page.waitForTimeout(1800);
   const scene = await page.evaluate(async () => {
@@ -33,6 +35,13 @@ try {
     const grass = world.group.getObjectByName("city-grass");
     const fountain = world.group.getObjectByName("prop-fountain");
     const fountainStone = [];
+    const surfaceMaterials = new Set();
+    world.group.traverse((node) => {
+      if (!node.isMesh) return;
+      for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+        if (material.normalMap && material.roughnessMap) surfaceMaterials.add(material.name);
+      }
+    });
     fountain.traverse((node) => {
       if (node.userData.removedWaterTriangles != null) fountainStone.push({ removed: node.userData.removedWaterTriangles, roughness: node.material.roughness });
     });
@@ -41,6 +50,9 @@ try {
     const fireTick = world.tickables.find((tick) => tick.group?.name === "brazier-0");
     fireTick.update(0.12);
     const frameChanged = !offset.equals(fire.material.map.offset);
+    const waterTick = world.tickables.find((tick) => tick.root?.name === "fountain-water");
+    const waterTime = waterTick.time.value;
+    waterTick.update(0.5);
     const uniforms = session.renderer.renderer.info.programs.filter((program) => program.diagnostics?.runnable === false).length;
     const info = session.renderer.renderer.info;
     info.autoReset = false;
@@ -53,6 +65,10 @@ try {
       textureSize: [ground.material.map.image.width, ground.material.map.image.height],
       waterSurfaces: water.children.filter((node) => node.name.startsWith("fountain-water-surface")).length,
       waterFalls: water.children.filter((node) => node.name.startsWith("fountain-water-fall")).length,
+      waterImpacts: water.children.filter((node) => node.name.startsWith("fountain-impact")).length,
+      waterAnimated: waterTick.time.value > waterTime + 0.49,
+      charcoalCount: world.group.getObjectByName("brazier-0-charcoal").count,
+      surfaceMaterials: [...surfaceMaterials].sort(),
       fountainStone, grassCount: grass.count, flameIsSprite: fire.isSprite,
       fireFrameChanged: frameChanged, shaderFailures: uniforms,
       renderer: render,
@@ -61,6 +77,12 @@ try {
   assert.match(scene.texture, /city-granite-albedo/);
   assert.equal(scene.waterSurfaces, 2);
   assert.equal(scene.waterFalls, 7);
+  assert.equal(scene.waterImpacts, 7);
+  assert.equal(scene.charcoalCount, 23);
+  assert.ok(scene.waterAnimated);
+  assert.ok(scene.surfaceMaterials.includes("city-wagon-cloth"));
+  assert.ok(scene.surfaceMaterials.includes("city-wall-stone"));
+  assert.ok(scene.surfaceMaterials.includes("city-weapon-rack-iron"));
   assert.ok(scene.fountainStone.some((stone) => stone.removed > 0 && stone.roughness > 0.8));
   assert.ok(scene.grassCount > 500);
   assert.ok(scene.flameIsSprite && scene.fireFrameChanged);
@@ -72,6 +94,7 @@ try {
     session.camera.offset.set(15, 19, 23);
     session.camera.snapTo(0, 0);
   });
+  process.stdout.write("Cena carregada e materiais verificados.\n");
   await page.waitForTimeout(500);
   await page.screenshot({ path: new URL("city-natural-overview.png", output).pathname.replace(/^\/(?:([A-Za-z]:))/, "$1") });
   const navigation = await page.evaluate(() => {
@@ -79,7 +102,7 @@ try {
     const session = api.session;
     const world = session.worlds.getCurrent();
     const results = [];
-    for (const service of world.interactables) {
+    for (const service of world.interactables.filter((entry) => entry.kind === "npc" || entry.kind === "chest")) {
       api.closePanels();
       api.teleportPlayer(0, 4);
       api.queueInteractById(service.id);
@@ -107,6 +130,7 @@ try {
   assert.ok(navigation.services.filter((result) => result.id !== "npc-portal-guard").every((result) => result.distance <= 1.6 && result.panel), JSON.stringify(navigation));
   assert.ok(navigation.guardFromEast.distance <= 1.6 && navigation.guardFromEast.panel);
   assert.ok(navigation.fountainDistance >= 2);
+  process.stdout.write("Circulação: " + JSON.stringify(navigation) + "\n");
   await page.evaluate(() => {
     const session = window.__UAIDZIN__.session;
     session.camera.follow = () => {};
@@ -115,7 +139,17 @@ try {
   });
   await page.waitForTimeout(300);
   await page.screenshot({ path: new URL("city-natural-fountain.png", output).pathname.replace(/^\/(?:([A-Za-z]:))/, "$1") });
-  const dungeon = await page.evaluate(() => window.__UAIDZIN__.enterDungeonById("d1"));
+  for (const [view, position] of [["front", [9, 3.7, 10]], ["side", [4, 3.4, 8]]]) {
+    await page.evaluate((position) => {
+      const camera = window.__UAIDZIN__.session.camera.camera;
+      camera.position.set(...position);
+      camera.lookAt(6.8, 1.45, 6.8);
+    }, position);
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: new URL(`city-fire-${view}.png`, output).pathname.replace(/^\/(?:([A-Za-z]:))/, "$1") });
+  }
+  const dungeon = await page.evaluate(() => window.__UAIDZIN__.enterDungeonById("dungeon-1"));
+  process.stdout.write("Entrada na dungeon: " + JSON.stringify(dungeon) + "\n");
   assert.equal(dungeon.ok, true);
   await page.waitForFunction(() => window.__UAIDZIN__.session.worlds.getCurrentId() === "dungeon-test");
   await page.waitForTimeout(500);
