@@ -1,7 +1,7 @@
 import { Group, Mesh, MeshStandardMaterial, Object3D, SRGBColorSpace } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-export type CemeteryPropId = "wall" | "tomb" | "tree";
+export type CemeteryPropId = "wall" | "tomb" | "tree" | "mausoleum";
 
 interface CemeteryPropSpec {
   url: string;
@@ -14,6 +14,7 @@ const CEMETERY_PROP_SPECS: Record<CemeteryPropId, CemeteryPropSpec> = {
   wall: { url: "/models/props/cemetery/muro-pedra.glb", width: 0.998047, depth: 0.185547, height: 0.541016 },
   tomb: { url: "/models/props/cemetery/lapide-arco.glb", width: 0.919922, depth: 0.326172, height: 0.998047 },
   tree: { url: "/models/props/cemetery/arvore-seca.glb", width: 0.912109, depth: 0.580078, height: 0.998047 },
+  mausoleum: { url: "/models/props/cemetery/mausoleu.glb", width: 1, depth: 1, height: 0.92 },
 };
 
 export interface CemeteryPropFootprint {

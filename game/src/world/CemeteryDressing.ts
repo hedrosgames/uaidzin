@@ -8,6 +8,8 @@ import {
 } from "./CemeteryProps";
 
 const WALL_HEIGHT = 2.2;
+const MAUSOLEUM_WIDTH = 5.5;
+const MAUSOLEUM_YAW = Math.PI;
 
 const TREES: Array<[number, number, number, number]> = [
   [-14.75, -14.55, 3.85, 0.4],
@@ -80,4 +82,9 @@ export function addCemeteryEnclosure(parent: Group, collision: WorldCollision, s
     spawnCemeteryProp(parent, { id: "tomb", x, z, scale: tombScale, quarterTurns });
     collision.circles.push({ x, z, r: cemeteryPropRadius("tomb", tombScale) });
   }
+
+  const mausoleumScale = MAUSOLEUM_WIDTH;
+  spawnCemeteryProp(parent, { id: "mausoleum", x: 0, z: 0, scale: mausoleumScale, yaw: MAUSOLEUM_YAW });
+  const mausoleumFoot = cemeteryPropFootprint("mausoleum", mausoleumScale, 2);
+  collision.boxes.push(boxFromCenter(0, 0, mausoleumFoot.width, mausoleumFoot.depth));
 }
