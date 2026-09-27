@@ -1,35 +1,39 @@
 import { CLASSES, type ClassId, type TreeId } from "../data/classes/class-definitions";
-import { SKILL_TRAINING } from "../data/balance/economy";
-import type { CityGameSession } from "../app/CityGameSession";
-import { buyFromShop } from "../domain/economy/ShopService";
+import { PROGRESSION_BALANCE } from "../data/balance/progression";
+import { resolveItemIcon, shopCatalogForUi, SKILL_TRAINING } from "../data/balance/economy";
+import { dungeonEnterMessage, type CityGameSession } from "../app/CityGameSession";
+import { buyFromShop, sellItem } from "../domain/economy/ShopService";
+import { saveVault } from "../persistence/SaveVault";
+import type { ItemInstance } from "../domain/items/ItemModel";
+import type { EquipSlot } from "../domain/items/EquipmentService";
+import type { CharacterViewModel } from "../persistence/SaveTypes";
+import type {
+  WireApi,
+  WireComposerItem,
+  WireDungeonEntry,
+  WireItem,
+  WirePortalContext,
+  WireQuestEntry,
+  WireSkillBarSlot,
+  WireSkillCatalog,
+  WireSkillRow,
+} from "./WireApi";
 
-export type WireSkillRow = {
-  id: string;
-  tree: string;
-  idx: number;
-  skillId: string;
-  name: string;
-  desc: string;
-  learned: boolean;
-  mp: number;
-  cd: number;
-  pointsCost: number;
-  goldCost: number;
-  icon: string;
-};
+export type { WireSkillRow, WireSkillCatalog };
 
-export type WireSkillCatalog = {
-  classId: ClassId;
-  trees: TreeId[];
-  treeLabels: Record<string, string>;
-  skills: Record<string, WireSkillRow>;
-  skillPoints: number;
-  gold: number;
-  specPoints: number;
-  spec: { controle: number; magia: number; fisica: number };
-  attrPts: number;
-  attrs: { FOR: number; DES: number; CONS: number; INT: number };
-};
+export interface WireGameHost {
+  onChanged?: () => void;
+  closePanels?: () => void;
+  currentViewModel?: () => CharacterViewModel;
+  showToast?: (text: string, kind?: "skill" | "attr" | "level" | "dungeon") => void;
+}
+
+const RARITY_ORDER = ["Comum", "Incomum", "Raro", "Épico", "Lendário"] as const;
+
+function gearScore(it: ItemInstance): number {
+  const rIdx = RARITY_ORDER.indexOf(it.rarity as (typeof RARITY_ORDER)[number]);
+  return (rIdx >= 0 ? rIdx : 0) * 1000 + (it.refine || 0) * 100 + (it.attackBonus || 0) + (it.defenseBonus || 0);
+}
 
 function skillIconPath(_classId: ClassId, tree: TreeId, index: number): string {
   const n = Math.min(12, index + 1);
@@ -37,6 +41,30 @@ function skillIconPath(_classId: ClassId, tree: TreeId, index: number): string {
   if (tree === "controle") return `assets/skills/armadilha-${n}.svg`;
   if (tree === "magia") return `assets/skills/marca-${n}.svg`;
   return `assets/skills/special-${n}.svg`;
+}
+
+function toWireItem(it: ItemInstance): WireItem {
+  const icon = resolveItemIcon(it.defId, it.slot, it.name);
+  const catalog = shopCatalogForUi();
+  const desc = catalog.items[it.defId]?.desc || "";
+  return {
+    uid: it.uid,
+    defId: it.defId,
+    name: it.name,
+    slot: it.slot,
+    rarity: it.rarity,
+    refine: it.refine,
+    attackBonus: it.attackBonus,
+    defenseBonus: it.defenseBonus,
+    stack: it.stack,
+    sellValue: it.sellValue,
+    desc,
+    icon: icon ? `assets/${icon}` : undefined,
+    stats: {
+      atk: it.attackBonus,
+      def: it.defenseBonus,
+    },
+  };
 }
 
 export function buildWireSkillCatalog(session: CityGameSession): WireSkillCatalog {
@@ -78,75 +106,55 @@ export function buildWireSkillCatalog(session: CityGameSession): WireSkillCatalo
   };
 }
 
-export function createWireGameApi(session: CityGameSession, onChanged: () => void) {
+export function createWireGameApi(
+  session: CityGameSession,
+  host?: (() => void) | WireGameHost,
+): WireApi {
+  const hostObj: WireGameHost = typeof host === "function" ? { onChanged: host } : host || {};
+  const notifyChanged = () => {
+    hostObj.onChanged?.();
+  };
+
+  const getViewModel = (): CharacterViewModel => {
+    if (hostObj.currentViewModel) return hostObj.currentViewModel();
+    const p = session.progression.state;
+    const c = session.character;
+    const attr = c.attributes;
+    return {
+      profileId: session.saveService.getProfileId(),
+      name: c.name,
+      classId: session.skillTree.state.classId,
+      evolution: p.evolution,
+      level: p.level,
+      resets: p.resetsInEvolution,
+      gold: session.inventory.gold,
+      vaultGold: session.accountVault.gold,
+      attrs: { FOR: attr.FOR, DES: attr.DES, CONS: attr.CONS, INT: attr.INT },
+      attrPts: p.unspentAttributePoints,
+      xp: p.xp,
+      xpToNext: p.xpToNext,
+      hp: c.hp,
+      maxHp: c.maxHp,
+      mp: c.mp,
+      maxMp: c.maxMp,
+      attack: c.attack,
+      defense: c.defense,
+      specPts: session.skillTree.state.specPoints,
+      spec: { ...session.skillTree.state.specialization },
+    };
+  };
+
   return {
-    pullSkillCatalog: () => buildWireSkillCatalog(session),
-    buyShop: (shopId: string, itemId: string) => {
-      const result = buyFromShop(session.inventory, shopId, itemId);
-      if (result.ok) {
-        session.refreshWeaponSetFromGear();
-        session.saves.markDirty("inventory", "critical");
-        onChanged();
-      }
-      return result;
-    },
-    learnSkill: (tree: string, index: number) => session.tryLearnSkill(tree as TreeId, index),
+    getCharacterViewModel: getViewModel,
     spendAttribute: (key: string) => {
       const k = key.toUpperCase();
       if (k !== "FOR" && k !== "DES" && k !== "CONS" && k !== "INT") return false;
       const ok = session.progression.spendAttribute(k, 1);
       if (ok) {
         session.saves.markDirty("character", "deferred");
-        onChanged();
+        notifyChanged();
       }
       return ok;
-    },
-    spendSpec: (tree: string) => {
-      if (tree !== "controle" && tree !== "magia" && tree !== "fisica") return false;
-      const ok = session.skillTree.spendSpec(tree, 1);
-      if (ok) {
-        session.progression.recomputeCombatStats();
-        session.saves.markDirty("skills", "deferred");
-        onChanged();
-      }
-      return ok;
-    },
-    equipUid: (uid: string) => {
-      const ok = session.equipment.equip(uid);
-      if (ok) {
-        session.refreshWeaponSetFromGear();
-        session.progression.recomputeCombatStats();
-        session.saves.markDirty(["equipment", "inventory"], "deferred");
-        onChanged();
-      }
-      return ok;
-    },
-    unequipSlot: (slot: string) => {
-      const slots = ["weapon", "head", "armor", "ring1", "ring2", "neck", "ear"] as const;
-      if (!(slots as readonly string[]).includes(slot)) return false;
-      const ok = session.equipment.unequip(slot as (typeof slots)[number]);
-      if (ok) {
-        session.refreshWeaponSetFromGear();
-        session.progression.recomputeCombatStats();
-        session.saves.markDirty(["equipment", "inventory"], "deferred");
-        onChanged();
-      }
-      return ok;
-    },
-    equippedSnapshot: () => session.equipment.snapshotEquipped(),
-    useConsumable: (uid: string) => {
-      const ok = session.tryUseConsumable(uid);
-      if (ok) onChanged();
-      return ok;
-    },
-    learnFisicaLine: () => {
-      let learned = 0;
-      for (let i = 0; i < 8; i++) {
-        if (session.tryLearnSkill("fisica", i)) learned += 1;
-        else break;
-      }
-      if (learned > 0) onChanged();
-      return learned;
     },
     spendAllAttributes: (primary: "FOR" | "CONS" = "FOR") => {
       let spent = 0;
@@ -158,9 +166,395 @@ export function createWireGameApi(session: CityGameSession, onChanged: () => voi
       }
       if (spent > 0) {
         session.saves.markDirty("character", "deferred");
-        onChanged();
+        notifyChanged();
       }
       return spent;
     },
+    spendSpec: (tree: string) => {
+      if (tree !== "controle" && tree !== "magia" && tree !== "fisica") return false;
+      const ok = session.skillTree.spendSpec(tree, 1);
+      if (ok) {
+        session.progression.recomputeCombatStats();
+        session.saves.markDirty("skills", "deferred");
+        notifyChanged();
+      }
+      return ok;
+    },
+    isMaxLevel: () => {
+      const max = PROGRESSION_BALANCE.evolutions[session.progression.state.evolution].maxLevel;
+      return session.progression.state.level >= max;
+    },
+    canReset: () => session.progression.canReset(),
+    tryReset: () => {
+      const ok = session.tryReset();
+      if (ok) notifyChanged();
+      return ok;
+    },
+    canEvolve: () => session.progression.canEvolve(),
+    tryEvolve: () => {
+      const res = session.tryEvolve();
+      if (res.ok) notifyChanged();
+      return res;
+    },
+
+    snapshotInventory: () => ({
+      gold: session.inventory.gold,
+      usedSlots: session.inventory.usedSlots(),
+      capacity: session.inventory.capacity,
+      items: session.inventory.items.map(toWireItem),
+    }),
+    useConsumable: (uid: string) => {
+      const ok = session.tryUseConsumable(uid);
+      if (ok) notifyChanged();
+      return ok;
+    },
+    discardItem: (uid: string) => {
+      const item = session.inventory.remove(uid);
+      if (!item) return false;
+      session.saves.markDirty("inventory", "critical");
+      void session.saves.checkpoint();
+      notifyChanged();
+      return true;
+    },
+    reorderBag: (uids: string[]) => {
+      const ok = session.inventory.reorder(uids);
+      if (ok) {
+        session.saves.markDirty("inventory", "deferred");
+        notifyChanged();
+      }
+      return ok;
+    },
+    unlockBag: (index: number) => {
+      session.bags.unlock(index);
+      session.saves.markDirty("bags", "deferred");
+      notifyChanged();
+      return true;
+    },
+    getBagsState: () => ({
+      unlocked: session.bags.snapshot(),
+    }),
+    equipBest: () => {
+      const slots: EquipSlot[] = ["weapon", "head", "armor", "neck", "ear", "ring1", "ring2"];
+      let changed = false;
+      for (const slot of slots) {
+        const kind = slot === "ring1" || slot === "ring2" ? "ring" : slot;
+        const candidates = session.inventory.items.filter((i) => i.slot === kind || i.slot === slot);
+        if (!candidates.length) continue;
+        candidates.sort((a, b) => gearScore(b) - gearScore(a));
+        const best = candidates[0];
+        const current = session.equipment.equipped[slot];
+        if (!current || gearScore(best) > gearScore(current)) {
+          if (session.equipment.equip(best.uid)) {
+            changed = true;
+          }
+        }
+      }
+      if (changed) {
+        session.refreshWeaponSetFromGear();
+        session.progression.recomputeCombatStats();
+        session.saves.markDirty(["equipment", "inventory"], "deferred");
+        notifyChanged();
+      }
+      return changed;
+    },
+
+    equippedSnapshot: () => {
+      const raw = session.equipment.snapshotEquipped();
+      const out: Partial<Record<string, WireItem>> = {};
+      for (const slot of Object.keys(raw)) {
+        const item = raw[slot as EquipSlot];
+        if (item) out[slot] = toWireItem(item);
+      }
+      return out;
+    },
+    equipUid: (uid: string) => {
+      const ok = session.equipment.equip(uid);
+      if (ok) {
+        session.refreshWeaponSetFromGear();
+        session.progression.recomputeCombatStats();
+        session.saves.markDirty(["equipment", "inventory"], "deferred");
+        notifyChanged();
+      }
+      return ok;
+    },
+    unequipSlot: (slot: string) => {
+      const slots = ["weapon", "head", "armor", "ring1", "ring2", "neck", "ear"] as const;
+      if (!(slots as readonly string[]).includes(slot)) return false;
+      const res = session.equipment.unequip(slot as EquipSlot);
+      if (res.ok) {
+        session.refreshWeaponSetFromGear();
+        session.progression.recomputeCombatStats();
+        session.saves.markDirty(["equipment", "inventory"], "deferred");
+        notifyChanged();
+        return true;
+      }
+      return false;
+    },
+    swapSlots: (slotA: string, slotB: string) => {
+      const ok = session.equipment.swapSlots(slotA as EquipSlot, slotB as EquipSlot);
+      if (ok) {
+        session.refreshWeaponSetFromGear();
+        session.progression.recomputeCombatStats();
+        session.saves.markDirty("equipment", "deferred");
+        notifyChanged();
+      }
+      return ok;
+    },
+    discardEquipped: (slot: string) => {
+      const ok = session.equipment.discardEquipped(slot as EquipSlot);
+      if (ok) {
+        session.refreshWeaponSetFromGear();
+        session.progression.recomputeCombatStats();
+        session.saves.markDirty("equipment", "critical");
+        void session.saves.checkpoint();
+        notifyChanged();
+      }
+      return ok;
+    },
+
+    pullSkillCatalog: () => buildWireSkillCatalog(session),
+    learnSkill: (tree: string, index: number) => {
+      const ok = session.tryLearnSkill(tree as TreeId, index);
+      if (ok) notifyChanged();
+      return ok;
+    },
+    learnFisicaLine: () => {
+      let learned = 0;
+      for (let i = 0; i < 8; i++) {
+        if (session.tryLearnSkill("fisica", i)) learned += 1;
+        else break;
+      }
+      if (learned > 0) notifyChanged();
+      return learned;
+    },
+    getSkillBar: (): WireSkillBarSlot[] => {
+      const klass = CLASSES[session.skillTree.state.classId];
+      return session.skillLoadout.slots.map((s, idx) => {
+        let iconIdx = 0;
+        const treeDefs = klass?.trees[s.tree] || [];
+        const foundIdx = treeDefs.findIndex((def) => def.id === s.skill.id);
+        if (foundIdx >= 0) iconIdx = foundIdx;
+        return {
+          slotIndex: idx,
+          skillId: s.skill.id,
+          tree: s.tree,
+          name: s.skill.name,
+          icon: skillIconPath(session.skillTree.state.classId, s.tree, iconIdx),
+          auto: s.auto,
+          cooldown: s.cooldown,
+          cd: s.cd,
+        };
+      });
+    },
+    equipSkill: (slotIndex: number, skillId: string) => {
+      const ok = session.skillLoadout.assignToSlot(slotIndex, skillId);
+      if (ok) {
+        session.saves.markDirty("skillLoadout", "deferred");
+        notifyChanged();
+      }
+      return ok;
+    },
+    clearSkillSlot: (slotIndex: number) => {
+      session.skillLoadout.clearSlot(slotIndex);
+      session.saves.markDirty("skillLoadout", "deferred");
+      notifyChanged();
+      return true;
+    },
+    toggleSkillAuto: (slotIndex: number) => {
+      session.skillLoadout.toggleAuto(slotIndex);
+      session.saves.markDirty("skillLoadout", "deferred");
+      notifyChanged();
+      return true;
+    },
+    swapSkillSlots: (fromIndex: number, toIndex: number) => {
+      const ok = session.skillLoadout.swapSlots(fromIndex, toIndex);
+      if (ok) {
+        session.saves.markDirty("skillLoadout", "deferred");
+        notifyChanged();
+      }
+      return ok;
+    },
+
+    getShopCatalog: () => shopCatalogForUi(),
+    buyShop: (shopId: string, itemId: string) => {
+      const result = buyFromShop(session.inventory, shopId, itemId);
+      if (result.ok) {
+        session.refreshWeaponSetFromGear();
+        session.saves.markDirty("inventory", "critical");
+        void session.saves.checkpoint();
+        notifyChanged();
+      }
+      return result;
+    },
+    sellItem: (uid: string, count?: number) => {
+      const result = sellItem(session.inventory, uid, count);
+      if (result.ok) {
+        session.saves.markDirty("inventory", "critical");
+        void session.saves.checkpoint();
+        notifyChanged();
+      }
+      return result;
+    },
+
+    snapshotVault: () => ({
+      gold: session.accountVault.gold,
+      capacity: session.accountVault.capacity,
+      items: session.accountVault.items.map(toWireItem),
+    }),
+    depositGold: (amount: number) => {
+      const res = session.vaultTransfer.depositGold(amount);
+      if (res > 0) notifyChanged();
+      return res;
+    },
+    withdrawGold: (amount: number) => {
+      const res = session.vaultTransfer.withdrawGold(amount);
+      if (res > 0) notifyChanged();
+      return res;
+    },
+    moveToVault: (uid: string) => {
+      const ok = session.vaultTransfer.moveItemToVault(uid);
+      if (ok) notifyChanged();
+      return ok;
+    },
+    moveFromVault: (uid: string) => {
+      const ok = session.vaultTransfer.moveItemFromVault(uid);
+      if (ok) notifyChanged();
+      return ok;
+    },
+    moveAllToVault: () => {
+      const res = session.vaultTransfer.moveAllToVault();
+      if (res.movedGold > 0 || res.movedItems > 0) notifyChanged();
+      return res;
+    },
+    reorderVault: (uids: string[]) => {
+      const ok = session.accountVault.reorder(uids);
+      if (ok) {
+        session.saves.markDirty("vault", "deferred");
+        notifyChanged();
+      }
+      return ok;
+    },
+    discardVaultItem: (uid: string) => {
+      const item = session.accountVault.remove(uid);
+      if (!item) return false;
+      session.saves.markDirty("vault", "critical");
+      void session.saves.checkpoint();
+      notifyChanged();
+      return true;
+    },
+
+    refineItem: (uid: string) => {
+      const item =
+        session.inventory.items.find((i) => i.uid === uid) ||
+        (Object.values(session.equipment.equipped).find((i) => i?.uid === uid) as ItemInstance | undefined);
+      if (!item) return { ok: false, costGold: 0, mat: "", reason: "not_found" };
+      const r = session.refinement.refine(item);
+      if (r.ok) {
+        session.equipment.onItemRefined(item);
+        session.progression.recomputeCombatStats();
+        session.saves.markDirty(["inventory", "equipment"], "critical");
+        void session.saves.checkpoint();
+        notifyChanged();
+      }
+      return { ...r, newRefine: item.refine };
+    },
+
+    listEligible: (recipeId: string): WireComposerItem[] =>
+      session.composition.listEligible(recipeId).map((it) => ({
+        uid: it.uid,
+        defId: it.defId,
+        name: it.name,
+        refine: it.refine,
+        rarity: it.rarity,
+        slot: it.slot,
+        attackBonus: it.attackBonus,
+        defenseBonus: it.defenseBonus,
+        stack: it.stack,
+      })),
+    canAttempt: (recipeId: string, itemUid: string) => session.composition.canAttempt(recipeId, itemUid),
+    compose: (recipeId: string, itemUid: string) => {
+      const res = session.tryCompose(recipeId, itemUid);
+      notifyChanged();
+      return res;
+    },
+
+    listQuests: (): WireQuestEntry[] => session.quests.listForUi(),
+    acceptQuest: (questId: string) => {
+      const res = session.acceptQuest(questId);
+      notifyChanged();
+      return res;
+    },
+
+    getPortalContext: (): WirePortalContext => ({
+      level: session.character.level,
+      evolution: session.progression.state.evolution,
+      entryCounts: session.entryItemCounts(),
+      dungeons: session.eligibleDungeons().map((d) => ({
+        id: d.id,
+        name: d.name,
+        minLevel: d.minLevel,
+        maxLevel: d.maxLevel,
+        entryItemId: d.entryItemId ?? null,
+        durationSeconds: d.durationSeconds,
+      })),
+    }),
+    listEligibleDungeons: (): WireDungeonEntry[] =>
+      session.eligibleDungeons().map((d) => ({
+        id: d.id,
+        name: d.name,
+        minLevel: d.minLevel,
+        maxLevel: d.maxLevel,
+        entryItemId: d.entryItemId ?? null,
+        durationSeconds: d.durationSeconds,
+      })),
+    enterDungeonById: (id: string) => {
+      const result = session.tryEnterDungeon(id);
+      if (result.ok) {
+        hostObj.closePanels?.();
+        return result;
+      }
+      switch (result.reason) {
+        case "entry":
+        case "level":
+        case "evolution":
+        case "missing":
+        case "busy":
+          hostObj.showToast?.(dungeonEnterMessage(result.reason), "dungeon");
+          break;
+      }
+      return result;
+    },
+
+    getSageContext: () => ({ topics: [] }),
+
+    listSlots: () => saveVault.listSlots(),
+    createSlot: (input: { slotIndex: number; classId: string; name: string; level?: number; gold?: number }) =>
+      saveVault.createSlot(input),
+    deleteSlot: (slotIndex: number) => saveVault.deleteSlot(slotIndex),
+    loadSlot: async (slotIndex: number) => {
+      await session.saves.checkpoint();
+      const slots = await saveVault.listSlots();
+      const summary = slots[slotIndex];
+      if (!summary) return false;
+      const previous = session.saveService.getProfileId();
+      session.saveService.setProfileId(summary.profileId);
+      const loaded = await session.loadSave();
+      if (loaded.status !== "found") {
+        session.saveService.setProfileId(previous);
+        return false;
+      }
+      await session.reloadAccountVault();
+      notifyChanged();
+      return true;
+    },
+
+    resolveItemIcon: (defId: string, slot?: string, name?: string) => resolveItemIcon(defId, slot, name),
+    skillPointsCost: () => SKILL_TRAINING.pointsCost,
+    skillGoldCost: (index: number) => SKILL_TRAINING.goldCost(index),
+    canAffordSkill: (skillPoints: number, gold: number, pointsCost: number, goldCost: number) =>
+      SKILL_TRAINING.canAfford(skillPoints, gold, pointsCost, goldCost),
+
+    onChanged: notifyChanged,
+    closePanels: () => hostObj.closePanels?.(),
   };
 }

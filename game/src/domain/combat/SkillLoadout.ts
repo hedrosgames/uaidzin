@@ -129,6 +129,50 @@ export class SkillLoadout {
     return true;
   }
 
+  assignToSlot(index: number, skillId: string): boolean {
+    if (index < 0 || index >= 4) return false;
+    const st = this.tree.state;
+    let found: { skill: SkillDef; tree: TreeId } | null = null;
+    for (const tree of ["controle", "magia", "fisica"] as const) {
+      const skill = CLASSES[st.classId].trees[tree].find((item) => item.id === skillId);
+      if (!skill || skill.kind === "passive") continue;
+      if (!this.tree.hasSkill(skill.id)) continue;
+      found = { skill, tree };
+      break;
+    }
+    if (!found) return false;
+    const existingIndex = this.slots.findIndex((s) => s.skill.id === skillId);
+    if (existingIndex >= 0) {
+      this.slots.splice(existingIndex, 1);
+    }
+    const slot = this.createSlot(found.skill, found.tree, true);
+    if (index >= this.slots.length) {
+      this.slots.push(slot);
+    } else {
+      this.slots[index] = slot;
+    }
+    this.preferred = this.slots.map((item) => ({
+      skillId: item.skill.id,
+      tree: item.tree,
+      auto: item.auto,
+    }));
+    return true;
+  }
+
+  swapSlots(fromIndex: number, toIndex: number): boolean {
+    if (fromIndex < 0 || fromIndex >= this.slots.length) return false;
+    if (toIndex < 0 || toIndex >= this.slots.length) return false;
+    const temp = this.slots[fromIndex];
+    this.slots[fromIndex] = this.slots[toIndex];
+    this.slots[toIndex] = temp;
+    this.preferred = this.slots.map((item) => ({
+      skillId: item.skill.id,
+      tree: item.tree,
+      auto: item.auto,
+    }));
+    return true;
+  }
+
   clearSlot(index: number): void {
     if (index < 0 || index >= this.slots.length) return;
     this.slots.splice(index, 1);

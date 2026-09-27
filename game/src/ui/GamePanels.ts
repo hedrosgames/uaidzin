@@ -86,7 +86,7 @@ export class GamePanels {
     if (action === "toggleAuto") s.toggleSkillAuto(Number(a));
     if (action === "clearSlot") s.clearSkillSlot(Number(a));
     if (action === "spec") s.skillTree.spendSpec(a as never, 1);
-    if (action === "setClass") {
+    if (action === "setClass" && import.meta.env.DEV) {
       s.skillTree.setClass(a as ClassId);
       s.skillTree.resetSkills();
       s.skillLoadout.refresh();

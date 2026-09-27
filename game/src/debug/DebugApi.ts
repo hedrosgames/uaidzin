@@ -341,9 +341,6 @@ export function installDebugApi(app: DebugHost): void {
       accept: (questId: string) => {
         const result = app.session.acceptQuest(questId);
         app.wireUi?.applyCharacter(app.currentViewModel());
-        const api = (window as unknown as { __UAIDZIN_WIRE__?: { paintQuest?: () => void } })
-          .__UAIDZIN_WIRE__;
-        api?.paintQuest?.();
         return result;
       },
     },

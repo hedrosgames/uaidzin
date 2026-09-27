@@ -53,6 +53,29 @@ export class EquipmentService {
     return { ok: true };
   }
 
+  discardEquipped(slot: EquipSlot): boolean {
+    const item = this.equipped[slot];
+    if (!item) return false;
+    delete this.equipped[slot];
+    this.recalcEquipBonus();
+    return true;
+  }
+
+  swapSlots(slotA: EquipSlot, slotB: EquipSlot): boolean {
+    if (!this.isEquipSlot(slotA) || !this.isEquipSlot(slotB)) return false;
+    const itemA = this.equipped[slotA];
+    const itemB = this.equipped[slotB];
+    if (!itemA && !itemB) return false;
+    if (itemA && itemA.slot !== slotB && !(itemA.slot.startsWith("ring") && slotB.startsWith("ring"))) return false;
+    if (itemB && itemB.slot !== slotA && !(itemB.slot.startsWith("ring") && slotA.startsWith("ring"))) return false;
+    if (itemA) this.equipped[slotB] = itemA;
+    else delete this.equipped[slotB];
+    if (itemB) this.equipped[slotA] = itemB;
+    else delete this.equipped[slotA];
+    this.recalcEquipBonus();
+    return true;
+  }
+
   private isEquipSlot(slot: string): slot is EquipSlot {
     return ["weapon", "head", "armor", "ring1", "ring2", "neck", "ear"].includes(slot);
   }

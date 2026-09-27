@@ -8,6 +8,7 @@ import { SceneRenderer } from "../presentation/rendering/SceneRenderer";
 import { InteractionPanel } from "../ui/InteractionPanel";
 import { GamePanels } from "../ui/GamePanels";
 import { WireUi, isWirePanelName } from "../ui/WireUi";
+import { createWireGameApi } from "../ui/WireGameBridge";
 import { CityGameSession, type SessionHud } from "./CityGameSession";
 import { GameLoop } from "./GameLoop";
 import { installDebugApi } from "../debug/DebugApi";
@@ -501,7 +502,17 @@ export class GameApp {
     }
     try {
       const view = this.currentViewModel();
-      this.wireUi = await WireUi.mount(this.wireHost, view);
+      const wireApi = createWireGameApi(this.session, {
+        onChanged: () => {
+          this.wireUi?.applyCharacter(this.currentViewModel());
+        },
+        closePanels: () => {
+          this.wireUi?.close();
+        },
+        currentViewModel: () => this.currentViewModel(),
+        showToast: (text, kind) => this.showToast(text, kind),
+      });
+      this.wireUi = await WireUi.mount(this.wireHost, wireApi, view);
       this.wireUi.setOnOpenChange(() => this.syncUiOpen());
       this.wireHost.hidden = false;
       window.dispatchEvent(new Event("resize"));

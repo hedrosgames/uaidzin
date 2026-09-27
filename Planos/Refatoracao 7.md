@@ -75,10 +75,10 @@ Executar passos **1 → 25** na ordem. Cada linha = arquivo + entrega. Código e
 
 ## Testar
 
-- [ ] Sem jogo montado: wire mostra empty state (sem crash).
-- [ ] Build de produção: painéis leem e alteram o save.
-- [ ] Ouro, skills, barra e itens batem com o save após cada operação e reload.
-- [ ] Passos 18–21 e 25 verdes.
+- [x] Sem jogo montado: wire mostra empty state (sem crash).
+- [x] Build de produção: painéis leem e alteram o save.
+- [x] Ouro, skills, barra e itens batem com o save após cada operação e reload.
+- [x] Passos 18–21 e 25 verdes.
 
 ## Pendências
 

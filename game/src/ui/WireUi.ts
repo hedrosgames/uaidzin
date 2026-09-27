@@ -1,6 +1,6 @@
 import type { CharacterViewModel } from "../persistence/SaveTypes";
 import { bindWirePanels } from "./CharacterUiBinder";
-import { resolveItemIcon, shopCatalogForUi, SKILL_TRAINING } from "../data/balance/economy";
+import type { WireApi, WireUiHandle } from "./WireApi";
 
 export type WirePanelName =
   | "person"
@@ -114,13 +114,20 @@ function rewriteAssetUrls(text: string): string {
 
 export class WireUi {
   private readonly root: HTMLElement;
+  private readonly api: WireApi | null;
+  private handle: WireUiHandle | null = null;
   private view: CharacterViewModel | null = null;
 
-  private constructor(root: HTMLElement) {
+  private constructor(root: HTMLElement, api: WireApi | null) {
     this.root = root;
+    this.api = api;
   }
 
-  static async mount(host: HTMLElement, view?: CharacterViewModel | null): Promise<WireUi> {
+  static async mount(
+    host: HTMLElement,
+    api: WireApi | null = null,
+    view?: CharacterViewModel | null,
+  ): Promise<WireUi> {
     const res = await fetch("/wire/03-wire-paineis-cidade.html");
     if (!res.ok) throw new Error(`Wire UI indisponível (${res.status})`);
     const html = await res.text();
@@ -148,28 +155,31 @@ export class WireUi {
       win.classList.add("is-closed");
     });
 
-    (window as unknown as { __UAIDZIN_ECONOMY__?: unknown }).__UAIDZIN_ECONOMY__ = {
-      getShopCatalog: () => shopCatalogForUi(),
-      resolveItemIcon: (defId: string, slot?: string, name?: string) =>
-        resolveItemIcon(defId, slot, name),
-      skillPointsCost: () => SKILL_TRAINING.pointsCost,
-      skillGoldCost: (index: number) => SKILL_TRAINING.goldCost(index),
-      canAffordSkill: (skillPoints: number, gold: number, pointsCost: number, goldCost: number) =>
-        SKILL_TRAINING.canAfford(skillPoints, gold, pointsCost, goldCost),
-    };
+    const ui = new WireUi(host, api);
 
     const code = rewriteAssetUrls(scriptEl?.textContent || "");
     const run = document.createElement("script");
     run.textContent = code;
     host.appendChild(run);
 
-    const ui = new WireUi(host);
-    (window as unknown as { __UAIDZIN_WIRE_NOTIFY_DIALOG__?: (open: boolean) => void }).__UAIDZIN_WIRE_NOTIFY_DIALOG__ = (dialogOpen: boolean) => {
-      ui.setDialogOpen(dialogOpen);
-    };
-    (window as unknown as { __UAIDZIN_WIRE_NOTIFY_PANELS__?: (open: boolean) => void }).__UAIDZIN_WIRE_NOTIFY_PANELS__ = (panelsOpen: boolean) => {
-      ui.setPanelsOpen(panelsOpen);
-    };
+    const mountFn = (window as unknown as {
+      __mountWireUi?: (
+        hostEl: HTMLElement,
+        api: WireApi | null,
+        opts: {
+          onDialogOpen: (open: boolean) => void;
+          onPanelsOpen: (open: boolean) => void;
+        },
+      ) => WireUiHandle;
+    }).__mountWireUi;
+
+    if (mountFn) {
+      ui.handle = mountFn(host, api, {
+        onDialogOpen: (open) => ui.setDialogOpen(open),
+        onPanelsOpen: (open) => ui.setPanelsOpen(open),
+      });
+    }
+
     if (typeof MutationObserver !== "undefined") {
       const observer = new MutationObserver(() => {
         const hasOpen = !!host.querySelector(".win:not(.is-closed)");
@@ -177,13 +187,20 @@ export class WireUi {
       });
       observer.observe(host, { subtree: true, attributes: true, attributeFilter: ["class"] });
     }
+
     if (view) ui.applyCharacter(view);
     return ui;
+  }
+
+  getApi(): WireApi | null {
+    return this.api;
   }
 
   applyCharacter(view: CharacterViewModel): void {
     this.view = view;
     bindWirePanels(this.root, view);
+    this.handle?.setCharacter?.(view);
+    this.handle?.syncFromGame?.();
   }
 
   private panelsOpen = false;
@@ -211,9 +228,7 @@ export class WireUi {
 
   open(name: WirePanelName, opts?: { title?: string; shopId?: string }): void {
     if (this.view) bindWirePanels(this.root, this.view);
-    const syncApi = (window as unknown as { __UAIDZIN_WIRE__?: { syncFromGame?: () => void } })
-      .__UAIDZIN_WIRE__;
-    syncApi?.syncFromGame?.();
+    this.handle?.syncFromGame?.();
     const el = this.root.querySelector("#" + PANEL_IDS[name]);
     if (!el) return;
     if (MID_PANELS.includes(name)) {
@@ -247,29 +262,19 @@ export class WireUi {
       }
       const shopId = opts?.shopId || "merchant";
       (el as HTMLElement).dataset.shop = shopId;
-      const api = (window as unknown as { __UAIDZIN_WIRE__?: { paintShop?: (id: string) => void } })
-        .__UAIDZIN_WIRE__;
-      api?.paintShop?.(shopId);
+      this.handle?.paintShop?.(shopId);
     }
     if (name === "portal") {
-      const api = (window as unknown as { __UAIDZIN_WIRE__?: { paintPortal?: () => void } })
-        .__UAIDZIN_WIRE__;
-      api?.paintPortal?.();
+      this.handle?.paintPortal?.();
     }
     if (name === "sage") {
-      const api = (window as unknown as { __UAIDZIN_WIRE__?: { paintSage?: () => void } })
-        .__UAIDZIN_WIRE__;
-      api?.paintSage?.();
+      this.handle?.paintSage?.();
     }
     if (name === "composer") {
-      const api = (window as unknown as { __UAIDZIN_WIRE__?: { paintComposer?: () => void } })
-        .__UAIDZIN_WIRE__;
-      api?.paintComposer?.();
+      this.handle?.paintComposer?.();
     }
     if (name === "quest") {
-      const api = (window as unknown as { __UAIDZIN_WIRE__?: { paintQuest?: () => void } })
-        .__UAIDZIN_WIRE__;
-      api?.paintQuest?.();
+      this.handle?.paintQuest?.();
     }
     el.classList.remove("is-closed");
     this.panelsOpen = true;
@@ -297,10 +302,8 @@ export class WireUi {
   }
 
   handleEscape(): boolean {
-    const api = (window as unknown as { __UAIDZIN_WIRE__?: { handleEscape?: () => boolean } })
-      .__UAIDZIN_WIRE__;
-    if (api?.handleEscape) {
-      const handled = api.handleEscape();
+    if (this.handle?.handleEscape) {
+      const handled = this.handle.handleEscape();
       this.panelsOpen = !!this.root.querySelector(".win:not(.is-closed)");
       this.onOpenChange?.(this.isOpen());
       if (handled) return true;

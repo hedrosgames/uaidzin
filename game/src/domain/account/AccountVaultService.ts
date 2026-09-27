@@ -102,4 +102,22 @@ export class AccountVaultService {
     if (idx < 0) return null;
     return this.items.splice(idx, 1)[0];
   }
+
+  reorder(uids: string[]): boolean {
+    const map = new Map(this.items.map((i) => [i.uid, i]));
+    const reordered: ItemInstance[] = [];
+    for (const uid of uids) {
+      const it = map.get(uid);
+      if (it) {
+        reordered.push(it);
+        map.delete(uid);
+      }
+    }
+    for (const it of map.values()) {
+      reordered.push(it);
+    }
+    this.items.length = 0;
+    this.items.push(...reordered);
+    return true;
+  }
 }
