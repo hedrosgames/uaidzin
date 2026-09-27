@@ -1,4 +1,4 @@
-import { MeshStandardMaterial, MirroredRepeatWrapping, SRGBColorSpace, TextureLoader } from "three";
+import { MeshStandardMaterial, MirroredRepeatWrapping, RepeatWrapping, SRGBColorSpace, TextureLoader } from "three";
 import { CITY_SURFACE_GLSL } from "./CitySurface";
 import { CITY_GARDEN_GLSL } from "./CityLandscape";
 
@@ -86,8 +86,8 @@ normal = cityRelief(normal, -vViewPosition, cityPlazaHeight);`);
 
 export function makeDungeon2FloorMaterial(halfSize: number): MeshStandardMaterial {
   const texture = new TextureLoader().load("/textures/dungeon-cemetery-albedo.png");
-  texture.wrapS = MirroredRepeatWrapping;
-  texture.wrapT = MirroredRepeatWrapping;
+  texture.wrapS = RepeatWrapping;
+  texture.wrapT = RepeatWrapping;
   texture.colorSpace = SRGBColorSpace;
   texture.anisotropy = 8;
   texture.repeat.setScalar(halfSize * 2 / 4.8);

@@ -21,6 +21,7 @@ import { cityPropFootprint, cityPropScale, spawnCityProp, type CityPropId } from
 import { makeCityFloorMaterial, makeCityPlazaMaterial, makeDungeon2FloorMaterial } from "./CityGround";
 import { buildCityScenery } from "./CityScenery";
 import { buildCityVegetation } from "./CityLandscape";
+import { addCemeteryEnclosure } from "./CemeteryDressing";
 
 const FOUNTAIN_HEIGHT = 2.8;
 const STALL_HEIGHT = 2.6;
@@ -528,37 +529,7 @@ export function buildDungeon2World(): BuiltWorld {
   group.add(ground);
   group.add(buildCityScenery(size / 2));
   const collision = emptyCollision();
-
-  const wallScale = cityPropScale("wall", WALL_HEIGHT);
-  const wallSegment = cityPropFootprint("wall", wallScale, 0);
-  const wallT = wallSegment.depth;
-  const half = size / 2;
-  const segments = Math.max(1, Math.round(size / wallSegment.width));
-  const segmentLength = size / segments;
-  const wallScaleX = wallScale * (segmentLength / wallSegment.width);
-  const sides: Array<[number, number, number]> = [
-    [0, half - wallT / 2, 0],
-    [0, -half + wallT / 2, 2],
-    [half - wallT / 2, 0, 1],
-    [-half + wallT / 2, 0, 3],
-  ];
-  for (const [cx, cz, quarterTurns] of sides) {
-    const alongX = quarterTurns % 2 === 0;
-    for (let i = 0; i < segments; i++) {
-      const offset = -half + segmentLength * (i + 0.5);
-      spawnCityProp(group, {
-        id: "wall",
-        x: alongX ? offset : cx,
-        z: alongX ? cz : offset,
-        scale: wallScale,
-        scaleX: wallScaleX,
-        quarterTurns,
-      });
-    }
-    collision.boxes.push(
-      alongX ? boxFromCenter(cx, cz, size, wallT) : boxFromCenter(cx, cz, wallT, size),
-    );
-  }
+  addCemeteryEnclosure(group, collision, size);
 
   const tickables: WorldTickable[] = [];
   group.add(buildCityVegetation(collision, []));
