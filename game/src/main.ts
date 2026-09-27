@@ -25,19 +25,16 @@ async function bootstrap(): Promise<GameApp> {
     mpTextElement: requireElement<HTMLElement>("mp-text"),
     xpFillElement: requireElement<HTMLElement>("xp-fill"),
     xpTextElement: requireElement<HTMLElement>("xp-text"),
-    skillBarElement: requireElement<HTMLElement>("skill-bar"),
     deathOverlayElement: requireElement<HTMLElement>("death-overlay"),
     timerElement: requireElement<HTMLElement>("dungeon-timer"),
     farmStatsElement: requireElement<HTMLElement>("farm-stats"),
     dropLogElement: requireElement<HTMLElement>("drop-log"),
     resultOverlayElement: requireElement<HTMLElement>("result-overlay"),
-    gamePanelsElement: requireElement<HTMLElement>("game-panels"),
     wireUiElement: requireElement<HTMLElement>("wire-ui"),
     hudToolsElement: requireElement<HTMLElement>("hud-tools"),
     settingsOverlayElement: requireElement<HTMLElement>("overlay-settings"),
     saveErrorOverlayElement: requireElement<HTMLElement>("overlay-save-error"),
     toastElement: requireElement<HTMLElement>("ui-toast"),
-    helpBarElement: document.querySelector(".help-bar") as HTMLElement,
   });
   window.addEventListener("error", (event) => {
     app.errors.report(event.error ?? event.message, "window.error");

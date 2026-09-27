@@ -6,7 +6,6 @@ import { formatMMSS } from "../core/time/FormatTime";
 import { DebugHud } from "../debug/DebugHud";
 import { SceneRenderer } from "../presentation/rendering/SceneRenderer";
 import { InteractionPanel } from "../ui/InteractionPanel";
-import { GamePanels } from "../ui/GamePanels";
 import { WireUi, isWirePanelName } from "../ui/WireUi";
 import { createWireGameApi } from "../ui/WireGameBridge";
 import { CityGameSession, type SessionHud } from "./CityGameSession";
@@ -40,19 +39,16 @@ export interface GameAppDeps {
   mpTextElement: HTMLElement;
   xpFillElement: HTMLElement;
   xpTextElement: HTMLElement;
-  skillBarElement: HTMLElement;
   deathOverlayElement: HTMLElement;
   timerElement: HTMLElement;
   farmStatsElement: HTMLElement;
   dropLogElement: HTMLElement;
   resultOverlayElement: HTMLElement;
-  gamePanelsElement: HTMLElement;
   wireUiElement: HTMLElement;
   hudToolsElement: HTMLElement;
   settingsOverlayElement: HTMLElement;
   saveErrorOverlayElement: HTMLElement;
   toastElement: HTMLElement;
-  helpBarElement: HTMLElement;
 }
 
 const LEAVE_SAVE_TIMEOUT_MS = 3000;
@@ -75,14 +71,11 @@ export class GameApp {
   private readonly playerFace: HTMLImageElement;
   private readonly playerName: HTMLElement;
   private readonly playerLevel: HTMLElement;
-  private readonly skillBar: HTMLElement;
   private readonly deathOverlay: HTMLElement;
   private readonly resultOverlay: HTMLElement;
   private readonly speedToggle: HTMLElement;
   private readonly saveErrorOverlay: HTMLElement;
   private readonly toastEl: HTMLElement;
-  private readonly helpBar: HTMLElement;
-  private readonly panels: GamePanels;
   private readonly wireHost: HTMLElement;
   private wireUi: WireUi | null = null;
   private readonly session: CityGameSession;
@@ -144,13 +137,11 @@ export class GameApp {
     this.playerFace = deps.playerFaceElement;
     this.playerName = deps.playerNameElement;
     this.playerLevel = deps.playerLevelElement;
-    this.skillBar = deps.skillBarElement;
     this.deathOverlay = deps.deathOverlayElement;
     this.resultOverlay = deps.resultOverlayElement;
     this.speedToggle = deps.hudToolsElement;
     this.saveErrorOverlay = deps.saveErrorOverlayElement;
     this.toastEl = deps.toastElement;
-    this.helpBar = deps.helpBarElement;
     this.wireHost = deps.wireUiElement;
 
     this.debugHud = new DebugHud(deps.debugHudElement, () => {
@@ -202,9 +193,7 @@ export class GameApp {
 
     this.session.onHud((hud) => this.renderHud(hud));
 
-    this.panels = new GamePanels(deps.gamePanelsElement, this.session);
-
-    this.skillBarView = new SkillBarView(deps.skillBarElement, (index) => {
+    this.skillBarView = new SkillBarView((index) => {
       this.session.forceSkillSlot(index);
     });
 
@@ -240,11 +229,6 @@ export class GameApp {
           });
         }
         this.syncUiOpen();
-        return;
-      }
-      if (panel === "person" || panel === "skills" || panel === "inv") {
-        this.panels.open(panel);
-        this.syncUiOpen();
       }
     });
 
@@ -277,17 +261,10 @@ export class GameApp {
     this.exposeDebugApi();
   }
 
-  private enterGame(): void {
+  enterGame(): void {
     this.entered = true;
     this.playerFrame.hidden = false;
-    if (this.wireUi) {
-      this.skillBar.hidden = true;
-      this.helpBar.hidden = true;
-      this.wireHost.hidden = false;
-    } else {
-      this.skillBar.hidden = false;
-      this.helpBar.hidden = false;
-    }
+    this.wireHost.hidden = false;
     this.speedToggle.hidden = false;
     if (!this.session.worlds.getCurrent()) this.session.start();
     this.bus.emit("game:ready", { at: Date.now() });
@@ -300,28 +277,25 @@ export class GameApp {
   private bindInputActions(): void {
     this.input.registerAction("panel.person", () => {
       if (!this.entered) return;
-      if (this.wireUi) this.wireUi.toggle("person");
-      else this.panels.toggle("person");
+      this.wireUi?.toggle("person");
       this.syncUiOpen();
     });
 
     this.input.registerAction("panel.skills", () => {
       if (!this.entered) return;
-      if (this.wireUi) this.wireUi.toggle("skills");
-      else this.panels.toggle("skills");
+      this.wireUi?.toggle("skills");
       this.syncUiOpen();
     });
 
     this.input.registerAction("panel.inv", () => {
       if (!this.entered) return;
-      if (this.wireUi) this.wireUi.toggle("inv");
-      else this.panels.toggle("inv");
+      this.wireUi?.toggle("inv");
       this.syncUiOpen();
     });
 
     this.input.registerAction("panel.vault", () => {
       if (!this.entered) return;
-      if (this.wireUi) this.wireUi.toggle("vault");
+      this.wireUi?.toggle("vault");
       this.syncUiOpen();
     });
 
@@ -461,7 +435,7 @@ export class GameApp {
 
   private isUiOpen(): boolean {
     return (
-      (this.wireUi ? this.wireUi.isOpen() : this.panels.isOpen()) ||
+      (this.wireUi?.isOpen() ?? false) ||
       this.panel.isOpen() ||
       this.settingsPanel.isOpen()
     );
@@ -517,8 +491,12 @@ export class GameApp {
       this.wireHost.hidden = false;
       window.dispatchEvent(new Event("resize"));
     } catch (error) {
-      console.warn("[UAIDZIN] wire UI falhou, usando painéis legados", error);
-      this.wireUi = null;
+      console.error("[UAIDZIN] falha ao carregar a interface do jogo", error);
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `<div style="position:fixed;inset:0;background:#100c08;color:#f0e6d0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:sans-serif;padding:24px;text-align:center"><h2 style="color:#d4a017;margin-bottom:12px">Erro na Interface</h2><p style="color:#f0e6d0;max-width:480px;line-height:1.5">Não foi possível carregar a interface do jogo. Recarregue a página ou tente novamente mais tarde.</p></div>`,
+      );
+      return;
     }
     await this.session.start();
     this.loop.start();
@@ -664,12 +642,7 @@ export class GameApp {
       return;
     }
     if (this.wireUi) {
-      const handled = this.wireUi.handleEscape();
-      this.syncUiOpen();
-      if (handled) return;
-    }
-    if (this.panels.isOpen()) {
-      this.panels.close();
+      this.wireUi.handleEscape();
       this.syncUiOpen();
     }
   }

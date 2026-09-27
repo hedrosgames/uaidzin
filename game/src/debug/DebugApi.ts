@@ -8,7 +8,6 @@ import type { GameStateStore } from "../core/state/GameStateStore";
 import type { SceneRenderer } from "../presentation/rendering/SceneRenderer";
 import type { WireUi } from "../ui/WireUi";
 import { createWireGameApi } from "../ui/WireGameBridge";
-import type { GamePanels } from "../ui/GamePanels";
 import { PROFILE_SECTIONS, type CharacterViewModel, type SaveTarget } from "../persistence/SaveTypes";
 
 function assertNever(value: never): never {
@@ -65,7 +64,6 @@ export type DebugHost = {
   entered: boolean;
   timeScale: number;
   wireUi: WireUi | null;
-  panels: GamePanels;
   isPanelsOpen(): boolean;
   enterGame(): void;
   showToast(text: string, kind?: "skill" | "attr" | "level" | "dungeon"): void;
@@ -146,33 +144,26 @@ export function installDebugApi(app: DebugHost): void {
     getWeaponSet: () => app.renderer.playerView.getWeaponSet(),
     getCombatAnimProbe: () => app.renderer.playerView.getCombatAnimProbe(),
     openPanel: (name: string, title?: string, shopId?: string) => {
-      if (app.wireUi) {
-        if (isWirePanelName(name)) {
-          app.wireUi.open(name, { title, shopId });
-        }
-        return;
+      if (app.wireUi && isWirePanelName(name)) {
+        app.wireUi.open(name, { title, shopId });
       }
-      if (name === "person" || name === "skills" || name === "inv") app.panels.open(name);
     },
     closePanels: () => {
-      if (app.wireUi) app.wireUi.close();
-      else app.panels.close();
+      app.wireUi?.close();
     },
     skipToGame: () => {
       app.session.skillTree.setClass(app.session.skillTree.state.classId || "TK");
       app.session.skillLoadout.refresh();
       app.session.progression.recomputeCombatStats();
       app.session.character.healFull();
-      if (app.wireUi) app.wireUi.close();
-      else app.panels.close();
+      app.wireUi?.close();
       app.enterGame();
     },
     setClass: (id: string) => {
       app.session.skillTree.setClass(id as never);
       app.session.progression.setClassId(id as never);
       app.session.saves.markDirty(["character", "skills", "skillLoadout"], "deferred");
-      if (app.wireUi) app.wireUi.close();
-      else app.panels.close();
+      app.wireUi?.close();
     },
     enterDungeon: () => {
       const id = app.session.pickDungeonForLevel().id;
@@ -181,8 +172,7 @@ export function installDebugApi(app: DebugHost): void {
     enterDungeonById: (id: string) => {
       const result = app.session.tryEnterDungeon(id);
       if (result.ok) {
-        if (app.wireUi) app.wireUi.close();
-        else app.panels.close();
+        app.wireUi?.close();
         return result;
       }
       switch (result.reason) {
@@ -202,7 +192,7 @@ export function installDebugApi(app: DebugHost): void {
       level: app.session.character.level,
       evolution: app.session.progression.state.evolution,
       entryCounts: app.session.entryItemCounts(),
-      dungeons: app.session.eligibleDungeons().map((d) => ({
+      dungeons: app.session.allDungeons().map((d) => ({
         id: d.id,
         name: d.name,
         minLevel: d.minLevel,

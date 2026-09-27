@@ -52,7 +52,7 @@ Mudança com 2+ passos ou pedido do Felipe vira task no painel.
 
 ## Como fazer UI
 
-**Fonte de runtime:** `game/public/boot/` + `game/src/ui/` (`WireUi.ts`). O que o jogador vê vem do save (`SaveVault` / boot `save-store.js`).
+**Fonte de runtime:** `game/public/boot/` + `game/src/ui/` (`WireUi.ts`). Fonte wire = `game/src/ui/wire`. O que o jogador vê vem do save (`SaveVault` / boot `save-store.js`).
 
 `visual/telas/` é espelho legado, se existir no disco — **não** é fonte de verdade; não portar wire paralelo “de mentira” no runtime.
 

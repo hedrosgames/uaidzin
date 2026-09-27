@@ -196,9 +196,9 @@ async function main() {
     await page.evaluate(() => window.__UAIDZIN__.closePanels());
 
     const shopAudit = await page.evaluate(() => {
-      const eco = window.__UAIDZIN_ECONOMY__;
-      if (!eco?.getShopCatalog) return { ok: false, reason: "no-eco" };
-      const cat = eco.getShopCatalog();
+      const w = window.__UAIDZIN__.wire;
+      if (!w?.pullShopCatalog) return { ok: false, reason: "no-wire" };
+      const cat = w.pullShopCatalog();
       const axe = cat.shops?.blacksmith?.slots?.find((s) => s.itemId === "machado_leve");
       const pot = cat.shops?.merchant?.slots?.find((s) => s.itemId === "pocao_menor");
       return {

@@ -33,7 +33,7 @@ const ICON_BODY: Record<WeaponSetId, string> = {
     <path d="M12 18 L18 8l1.5 1.5L13.5 19.5z" fill="none" stroke="${STROKE}" stroke-width="1.5" stroke-linejoin="round"/>
     <path d="M16 10l1.5-1.5 1.5 1.5-1.5 1.5" fill="${STROKE}"/>`,
   ),
-  greatsword: imgIcon("/wire/assets/items/espada_curta.svg"),
+  greatsword: imgIcon("/assets/icons/items/espada_curta.svg"),
   "dual-gloves": svgIcon(
     `<path d="M6 14v-3c0-1 1-2 2-2h1v7H8c-1 0-2-1-2-2z" fill="none" stroke="${STROKE}" stroke-width="1.4"/>
     <path d="M15 14v-3c0-1 1-2 2-2h1v7h-2c-1 0-2-1-2-2z" fill="none" stroke="${STROKE}" stroke-width="1.4"/>
@@ -44,8 +44,8 @@ const ICON_BODY: Record<WeaponSetId, string> = {
     `<path d="M6 4v16M6 4l3 2M6 10l3 2" fill="none" stroke="${STROKE}" stroke-width="1.5" stroke-linecap="round"/>
     <path d="M14 5v14c0 2 4 2 4 0V5c0-2-4-2-4 0z" fill="none" stroke="${STROKE}" stroke-width="1.5"/>`,
   ),
-  greatstaff: imgIcon("/wire/assets/items/cajado_rustico.svg"),
-  bow: imgIcon("/wire/assets/items/arco_curto.svg"),
+  greatstaff: imgIcon("/assets/icons/items/cajado_rustico.svg"),
+  bow: imgIcon("/assets/icons/items/arco_curto.svg"),
 };
 
 export function weaponSetIconMarkup(id: WeaponSetId): string {

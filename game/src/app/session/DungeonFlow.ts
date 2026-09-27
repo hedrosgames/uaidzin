@@ -79,6 +79,10 @@ export class DungeonFlow {
     return counts;
   }
 
+  allDungeons(): DungeonDef[] {
+    return DUNGEONS_MORTAL;
+  }
+
   eligibleDungeons(): DungeonDef[] {
     return dungeonsAllowedForLevel(this.deps.progression.state.level);
   }

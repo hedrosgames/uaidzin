@@ -37,16 +37,20 @@ function gearScore(it: ItemInstance): number {
 
 function skillIconPath(_classId: ClassId, tree: TreeId, index: number): string {
   const n = Math.min(12, index + 1);
-  if (tree === "fisica") return `assets/skills/caca-${n}.svg`;
-  if (tree === "controle") return `assets/skills/armadilha-${n}.svg`;
-  if (tree === "magia") return `assets/skills/marca-${n}.svg`;
-  return `assets/skills/special-${n}.svg`;
+  if (tree === "fisica") return `/assets/icons/skills/caca-${n}.svg`;
+  if (tree === "controle") return `/assets/icons/skills/armadilha-${n}.svg`;
+  if (tree === "magia") return `/assets/icons/skills/marca-${n}.svg`;
+  return `/assets/icons/skills/special-${n}.svg`;
 }
 
 function toWireItem(it: ItemInstance): WireItem {
   const icon = resolveItemIcon(it.defId, it.slot, it.name);
   const catalog = shopCatalogForUi();
   const desc = catalog.items[it.defId]?.desc || "";
+  let iconPath = icon || undefined;
+  if (iconPath && !iconPath.startsWith("/")) {
+    iconPath = `/assets/icons/${iconPath}`;
+  }
   return {
     uid: it.uid,
     defId: it.defId,
@@ -59,7 +63,7 @@ function toWireItem(it: ItemInstance): WireItem {
     stack: it.stack,
     sellValue: it.sellValue,
     desc,
-    icon: icon ? `assets/${icon}` : undefined,
+    icon: iconPath,
     stats: {
       atk: it.attackBonus,
       def: it.defenseBonus,
@@ -103,6 +107,7 @@ export function buildWireSkillCatalog(session: CityGameSession): WireSkillCatalo
     spec: { ...st.specialization },
     attrPts: session.progression.state.unspentAttributePoints,
     attrs: { FOR: attr.FOR, DES: attr.DES, CONS: attr.CONS, INT: attr.INT },
+    eighthTree: session.skillTree.state.eighthTree,
   };
 }
 
@@ -489,7 +494,7 @@ export function createWireGameApi(
       level: session.character.level,
       evolution: session.progression.state.evolution,
       entryCounts: session.entryItemCounts(),
-      dungeons: session.eligibleDungeons().map((d) => ({
+      dungeons: session.allDungeons().map((d) => ({
         id: d.id,
         name: d.name,
         minLevel: d.minLevel,

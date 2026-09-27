@@ -5,7 +5,7 @@
     "slot": "misc",
     "rarity": "Comum",
     "desc": "Restaura parte do HP.",
-    "icon": "items/potion.svg",
+    "icon": "/assets/icons/items/potion.svg",
     "sellValue": 4,
     "stackable": true
   },
@@ -15,7 +15,7 @@
     "slot": "material",
     "rarity": "Comum",
     "desc": "Material de reforço até +5.",
-    "icon": "items/ori.svg",
+    "icon": "/assets/icons/items/ori.svg",
     "sellValue": 2,
     "stackable": true
   },
@@ -25,7 +25,7 @@
     "slot": "material",
     "rarity": "Comum",
     "desc": "Material de reforço de +6 a +10.",
-    "icon": "items/lac.svg",
+    "icon": "/assets/icons/items/lac.svg",
     "sellValue": 8,
     "stackable": true
   },
@@ -35,7 +35,7 @@
     "slot": "material",
     "rarity": "Comum",
     "desc": "Material de reforço até +5.",
-    "icon": "items/ori.svg",
+    "icon": "/assets/icons/items/ori.svg",
     "sellValue": 2,
     "stackable": true
   },
@@ -45,7 +45,7 @@
     "slot": "material",
     "rarity": "Comum",
     "desc": "Material de reforço de +6 a +10.",
-    "icon": "items/lac.svg",
+    "icon": "/assets/icons/items/lac.svg",
     "sellValue": 8,
     "stackable": true
   },
@@ -55,7 +55,7 @@
     "slot": "entry",
     "rarity": "Comum",
     "desc": "Consome ao entrar na Dungeon 4.",
-    "icon": "items/seal.svg",
+    "icon": "/assets/icons/items/seal.svg",
     "sellValue": 20
   },
   {
@@ -64,7 +64,7 @@
     "slot": "entry",
     "rarity": "Comum",
     "desc": "Consome ao entrar na Dungeon 5.",
-    "icon": "items/seal.svg",
+    "icon": "/assets/icons/items/seal.svg",
     "sellValue": 35
   },
   {
@@ -73,7 +73,7 @@
     "slot": "entry",
     "rarity": "Comum",
     "desc": "Consome ao entrar na Dungeon 6.",
-    "icon": "items/seal.svg",
+    "icon": "/assets/icons/items/seal.svg",
     "sellValue": 50
   },
   {
@@ -82,7 +82,7 @@
     "slot": "entry",
     "rarity": "Comum",
     "desc": "Consome ao entrar na Dungeon 7.",
-    "icon": "items/seal.svg",
+    "icon": "/assets/icons/items/seal.svg",
     "sellValue": 75
   },
   {
@@ -91,7 +91,7 @@
     "slot": "entry",
     "rarity": "Comum",
     "desc": "Consome ao entrar na Dungeon 8.",
-    "icon": "items/seal.svg",
+    "icon": "/assets/icons/items/seal.svg",
     "sellValue": 100
   },
   {
@@ -100,7 +100,7 @@
     "slot": "weapon",
     "rarity": "Comum",
     "desc": "Ataque +4",
-    "icon": "items/espada_curta.svg",
+    "icon": "/assets/icons/items/espada_curta.svg",
     "weaponSet": "sword-shield",
     "attackBonus": 4,
     "defenseBonus": 0,
@@ -112,7 +112,7 @@
     "slot": "weapon",
     "rarity": "Comum",
     "desc": "Ataque +5",
-    "icon": "items/machado_leve.svg",
+    "icon": "/assets/icons/items/machado_leve.svg",
     "weaponSet": "axe-shield",
     "attackBonus": 5,
     "defenseBonus": 0,
@@ -124,7 +124,7 @@
     "slot": "armor",
     "rarity": "Comum",
     "desc": "Defesa +3",
-    "icon": "items/armadura_leve.svg",
+    "icon": "/assets/icons/items/armadura_leve.svg",
     "attackBonus": 0,
     "defenseBonus": 3,
     "sellValue": 18
@@ -135,7 +135,7 @@
     "slot": "head",
     "rarity": "Comum",
     "desc": "Defesa +2",
-    "icon": "items/capacete.svg",
+    "icon": "/assets/icons/items/capacete.svg",
     "attackBonus": 0,
     "defenseBonus": 2,
     "sellValue": 14
@@ -146,7 +146,7 @@
     "slot": "ring1",
     "rarity": "Comum",
     "desc": "Ataque +1 · Defesa +1",
-    "icon": "items/anel_cobre.svg",
+    "icon": "/assets/icons/items/anel_cobre.svg",
     "attackBonus": 1,
     "defenseBonus": 1,
     "sellValue": 10
@@ -157,7 +157,7 @@
     "slot": "ring2",
     "rarity": "Incomum",
     "desc": "Ataque +2 · Defesa +2",
-    "icon": "items/anel_ferro.svg",
+    "icon": "/assets/icons/items/anel_ferro.svg",
     "attackBonus": 2,
     "defenseBonus": 2,
     "sellValue": 40
@@ -168,7 +168,7 @@
     "slot": "neck",
     "rarity": "Comum",
     "desc": "Ataque +1 · Defesa +1",
-    "icon": "items/colar_simples.svg",
+    "icon": "/assets/icons/items/colar_simples.svg",
     "attackBonus": 1,
     "defenseBonus": 1,
     "sellValue": 12
@@ -179,7 +179,7 @@
     "slot": "ear",
     "rarity": "Comum",
     "desc": "Ataque +1",
-    "icon": "items/brinco_osso.svg",
+    "icon": "/assets/icons/items/brinco_osso.svg",
     "attackBonus": 1,
     "defenseBonus": 0,
     "sellValue": 8

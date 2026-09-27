@@ -3,6 +3,10 @@ import type { ClassId, TreeId } from "../data/classes/class-definitions";
 import type { shopCatalogForUi } from "../data/balance/economy";
 import type { QuestUiRow } from "../domain/quests/QuestService";
 
+export type { TreeId, ClassId };
+export type AttributeName = "FOR" | "DES" | "CONS" | "INT";
+export type EquipSlot = "head" | "armor" | "weapon" | "ring1" | "ring2" | "neck" | "ear";
+
 export type ShopCatalogForUi = ReturnType<typeof shopCatalogForUi>;
 
 export interface WireItem {
@@ -55,6 +59,7 @@ export interface WireSkillCatalog {
   spec: { controle: number; magia: number; fisica: number };
   attrPts: number;
   attrs: { FOR: number; DES: number; CONS: number; INT: number };
+  eighthTree?: TreeId | null;
 }
 
 export interface WireSkillBarSlot {
@@ -102,6 +107,12 @@ export interface WireUiHandle {
   setCharacter?(view: CharacterViewModel): void;
   syncFromGame?(): void;
   handleEscape?(): boolean;
+  isOpen?(): boolean;
+  open?(name: string, opts?: { title?: string; shopId?: string }): void;
+  close?(name?: string): void;
+  toggle?(name: string, opts?: { title?: string; shopId?: string }): void;
+  openPortalConfirm?(dungeonId: string, onConfirm?: () => void): void;
+  openInteraction?(kind: string, id: string): void;
   paintShop?(shopId: string): void;
   paintPortal?(): void;
   paintSage?(): void;

@@ -438,6 +438,10 @@ export class CityGameSession {
     return this.dungeonFlow.withWorldFade(swap);
   }
 
+  allDungeons(): DungeonDef[] {
+    return this.dungeonFlow.allDungeons();
+  }
+
   eligibleDungeons(): DungeonDef[] {
     return this.dungeonFlow.eligibleDungeons();
   }
@@ -778,6 +782,10 @@ export class CityGameSession {
 
   acceptQuest(questId: string): { ok: boolean; message: string } {
     return this.rewards.acceptQuest(questId);
+  }
+
+  applyQuestKillProgress(): void {
+    this.rewards.applyQuestKillProgress();
   }
 
   tryReset(): boolean {

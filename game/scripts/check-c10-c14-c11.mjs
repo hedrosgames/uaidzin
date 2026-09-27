@@ -27,7 +27,7 @@ function staticChecks() {
   const merchant = shops.shops?.merchant || shops.merchant;
   const blacksmith = shops.shops?.blacksmith || shops.blacksmith;
   const catalog = read("game/src/data/items/item-catalog.ts");
-  const wire = read("visual/telas/03-wire-paineis-cidade.html");
+  const wire = read("game/src/ui/wire/shop.ts");
 
   const merchantItemIds = (merchant?.slots || []).map((s) => s.itemId);
   if (!merchant || !merchantItemIds.includes("entry_d4") || !merchantItemIds.includes("entry_d8")) {
@@ -48,21 +48,21 @@ function staticChecks() {
   } else ok("C11: item-catalog");
 
   const icons = [
-    "visual/telas/assets/items/espada_curta.svg",
-    "visual/telas/assets/items/machado_leve.svg",
-    "visual/telas/assets/items/armadura_leve.svg",
-    "visual/telas/assets/items/capacete.svg",
-    "visual/telas/assets/items/anel_cobre.svg",
-    "visual/telas/assets/items/anel_ferro.svg",
-    "visual/telas/assets/items/colar_simples.svg",
-    "visual/telas/assets/items/brinco_osso.svg",
-    "visual/telas/assets/items/cajado_rustico.svg",
-    "visual/telas/assets/items/arco_curto.svg",
-    "visual/telas/assets/items/touca_couro.svg",
-    "visual/telas/assets/items/tunica.svg",
-    "visual/telas/assets/items/ori.svg",
-    "visual/telas/assets/items/lac.svg",
-    "visual/telas/assets/items/seal.svg",
+    "game/public/assets/icons/items/espada_curta.svg",
+    "game/public/assets/icons/items/machado_leve.svg",
+    "game/public/assets/icons/items/armadura_leve.svg",
+    "game/public/assets/icons/items/capacete.svg",
+    "game/public/assets/icons/items/anel_cobre.svg",
+    "game/public/assets/icons/items/anel_ferro.svg",
+    "game/public/assets/icons/items/colar_simples.svg",
+    "game/public/assets/icons/items/brinco_osso.svg",
+    "game/public/assets/icons/items/cajado_rustico.svg",
+    "game/public/assets/icons/items/arco_curto.svg",
+    "game/public/assets/icons/items/touca_couro.svg",
+    "game/public/assets/icons/items/tunica.svg",
+    "game/public/assets/icons/items/ori.svg",
+    "game/public/assets/icons/items/lac.svg",
+    "game/public/assets/icons/items/seal.svg",
   ];
   for (const rel of icons) {
     if (!exists(rel)) fail(`C11: falta ${rel}`);
@@ -151,9 +151,9 @@ try {
   else ok("C10/C11 UI: ferreiro ícones ok");
 
   const catalog = await page.evaluate(() => {
-    const eco = window.__UAIDZIN_ECONOMY__;
-    const cat = eco?.getShopCatalog?.();
-    if (!cat) return { ok: false, why: "no catalog" };
+    const wireApi = window.__UAIDZIN__?.wire;
+    const cat = wireApi?.getShopCatalog ? wireApi.getShopCatalog() : wireApi?.pullShopCatalog?.();
+    if (!cat) return { ok: false, why: "no catalog", checks: [] };
     const missing = [];
     for (const item of Object.values(cat.items || {})) {
       if (!item.icon) missing.push(item.id);
@@ -164,7 +164,7 @@ try {
         if (!it?.icon) missing.push(slot.itemId);
       }
     }
-    const resolve = eco.resolveItemIcon;
+    const resolve = wireApi.resolveItemIcon;
     const checks = [
       resolve?.("mat_ori"),
       resolve?.("entry_d4"),

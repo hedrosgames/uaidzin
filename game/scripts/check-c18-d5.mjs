@@ -18,12 +18,12 @@ function read(rel) {
 }
 
 function staticChecks() {
-  const wire = read("visual/telas/03-wire-paineis-cidade.html");
+  const wire = read("game/src/ui/wire/portal.ts");
   if (!wire.includes("portalDurationLabel") || !wire.includes(">Tempo<")) fail("C18 wire sem Tempo");
   else ok("C18 wire Tempo");
   if (!wire.includes("entry-ico") || !wire.includes('icon: "seal"')) fail("C18 wire sem ícone de entrada");
   else ok("C18 wire ícone entrada");
-  if (!fs.existsSync(path.join(ROOT, "visual/telas/assets/items/seal.svg"))) fail("C18 seal.svg ausente");
+  if (!fs.existsSync(path.join(ROOT, "game/public/assets/icons/items/seal.svg"))) fail("C18 seal.svg ausente");
   else ok("C18 seal.svg");
 
   const scene = read("game/src/presentation/rendering/SceneRenderer.ts");

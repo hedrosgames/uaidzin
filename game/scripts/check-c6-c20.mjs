@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import fs from "node:fs";
 
 const BASE = process.env.UAIDZIN_BASE || "http://127.0.0.1:5173";
 let failed = 0;
@@ -116,11 +117,8 @@ else ok("C20: termos comuns com acento");
 if (c20.hasProgressao && c20.titles.length >= 8) ok("C20: abas e índice do Sábio montados");
 else fail("C20: índice incompleto " + JSON.stringify(c20));
 
-const htmlSrc = await page.evaluate(async () => {
-  const res = await fetch("/wire/03-wire-paineis-cidade.html");
-  return await res.text();
-});
-const docsSlice = htmlSrc.slice(htmlSrc.indexOf("SAGE_DOCS"), htmlSrc.indexOf("const sageTabs"));
+const sageSrc = fs.readFileSync(new URL("../src/ui/wire/sage.ts", import.meta.url), "utf8");
+const docsSlice = sageSrc.slice(sageSrc.indexOf("SAGE_DOCS"), sageSrc.indexOf("export function createSagePanel"));
 const visible = visibleSageBlob(docsSlice);
 const srcMock = visible.match(MOCK_RE);
 const srcAccent = visible.match(NEED_ACCENT);

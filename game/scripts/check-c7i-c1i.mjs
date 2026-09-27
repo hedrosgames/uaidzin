@@ -22,7 +22,8 @@ function staticChecks() {
   const service = read("game/src/domain/items/CompositionService.ts");
   const quests = read("game/src/data/quests/quest-definitions.ts");
   const qsvc = read("game/src/domain/quests/QuestService.ts");
-  const wire = read("visual/telas/03-wire-paineis-cidade.html");
+  const wireComposer = read("game/src/ui/wire/composer.ts");
+  const wireQuest = read("game/src/ui/wire/quest.ts");
   const session = read("game/src/app/CityGameSession.ts");
 
   if (!compose.includes("compose_plus7_lac") || (!compose.includes("1_000_000") && !compose.includes("1000000"))) {
@@ -33,7 +34,7 @@ function staticChecks() {
     fail("C7i: CompositionService incompleto");
   } else ok("C7i: CompositionService");
 
-  if (!wire.includes('recipeId: "compose_plus7_lac"') || !wire.includes("Compôr")) {
+  if (!wireComposer.includes('recipeId: "compose_plus7_lac"') || !wireComposer.includes("Compôr")) {
     fail("C7i: wire sem bancada +7");
   } else ok("C7i: wire bancada");
 
@@ -45,7 +46,7 @@ function staticChecks() {
     fail("C1i: QuestService incompleto");
   } else ok("C1i: QuestService");
 
-  if (!wire.includes("quest-list") || !wire.includes("Aceitar") || !wire.includes("paintQuestPanel")) {
+  if (!wireQuest.includes("quest-list") || !wireQuest.includes("createQuestPanel")) {
     fail("C1i: wire painel quests vazio");
   } else ok("C1i: wire UI quests");
 
