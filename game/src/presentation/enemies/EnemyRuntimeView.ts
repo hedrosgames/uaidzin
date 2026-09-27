@@ -31,7 +31,7 @@ const DEFAULT_COLORS: Record<EnemyArchetype, number> = {
 const gltfLoader = new GLTFLoader();
 const fbxLoader = new FBXLoader();
 
-interface ModelPrototype {
+export interface ModelPrototype {
   root: Object3D;
   animations: AnimationClip[];
 }
@@ -58,7 +58,10 @@ function loadModelPrototype(url: string): Promise<ModelPrototype> {
           resolve({ root: fbx, animations: fbx.animations || [] });
         },
         undefined,
-        (err) => reject(err),
+        (err) => {
+          modelPrototypes.delete(url);
+          reject(err);
+        },
       );
     } else {
       gltfLoader.load(
@@ -76,16 +79,22 @@ function loadModelPrototype(url: string): Promise<ModelPrototype> {
           resolve({ root, animations: gltf.animations || [] });
         },
         undefined,
-        (err) => reject(err),
+        (err) => {
+          modelPrototypes.delete(url);
+          reject(err);
+        },
       );
     }
+  }).catch((err) => {
+    modelPrototypes.delete(url);
+    throw err;
   });
 
   modelPrototypes.set(url, promise);
   return promise;
 }
 
-const SHARED_CLIP_URLS = {
+export const SHARED_CLIP_URLS = {
   run: "/models/player/shared/anims/run.glb",
   cast: "/models/player/shared/anims/cast.glb",
   hit_gut: "/models/player/shared/anims/hit_gut.glb",
@@ -102,7 +111,7 @@ function loadSharedClip(key: keyof typeof SHARED_CLIP_URLS): Promise<AnimationCl
   if (existing) return existing;
 
   const url = SHARED_CLIP_URLS[key];
-  const promise = new Promise<AnimationClip | null>((resolve) => {
+  const promise = new Promise<AnimationClip | null>((resolve, reject) => {
     gltfLoader.load(
       url,
       (gltf) => {
@@ -110,12 +119,23 @@ function loadSharedClip(key: keyof typeof SHARED_CLIP_URLS): Promise<AnimationCl
         resolve(raw);
       },
       undefined,
-      () => resolve(null),
+      (err) => {
+        sharedClips.delete(key);
+        reject(err);
+      },
     );
+  }).catch(() => {
+    sharedClips.delete(key);
+    return null;
   });
 
   sharedClips.set(key, promise);
   return promise;
+}
+
+export interface EnemyModelLoader {
+  loadModel(url: string): Promise<ModelPrototype>;
+  loadClip(key: keyof typeof SHARED_CLIP_URLS): Promise<AnimationClip | null>;
 }
 
 function hipsRestFromClip(clip: AnimationClip | null | undefined): Vector3 | null {
@@ -187,6 +207,7 @@ function adaptClipTracks(
 
 interface EnemyInstanceController {
   id: string;
+  token: number;
   mesh: Mesh;
   model?: Object3D;
   mixer?: AnimationMixer;
@@ -198,11 +219,18 @@ interface EnemyInstanceController {
   attackTimer: number;
   hitTimer: number;
   isDying: boolean;
+  deathFinished: boolean;
   proceduralPhase: number;
   isProceduralMesh: boolean;
   baseX: number;
   baseY: number;
   baseZ: number;
+  modelUrl?: string;
+  standardMaterials: MeshStandardMaterial[];
+  lastHpRatio: number;
+  lastColor: string | number;
+  lastFlashing: boolean;
+  lastDying: boolean;
   play(name: "idle" | "run" | "attack" | "hit" | "death", force?: boolean): void;
   update(dt: number): void;
 }
@@ -211,9 +239,11 @@ export class EnemyRuntimeView {
   private readonly group = new Group();
   private readonly meshes = new Map<string, Mesh>();
   private readonly controllers = new Map<string, EnemyInstanceController>();
+  private readonly scratchColor = new Color();
   private effects: EffectManager | null = null;
+  private disposed = false;
 
-  constructor(parent: Group) {
+  constructor(parent: Group, private readonly loader?: EnemyModelLoader) {
     this.group.name = "enemies-view";
     this.group.userData.occlusionIgnore = true;
     parent.add(this.group);
@@ -224,8 +254,9 @@ export class EnemyRuntimeView {
   }
 
   hideAll(): void {
-    for (const mesh of this.meshes.values()) {
-      mesh.visible = false;
+    for (const ctrl of this.controllers.values()) {
+      ctrl.mesh.visible = false;
+      if (ctrl.mixer) ctrl.mixer.stopAllAction();
     }
   }
 
@@ -247,6 +278,7 @@ export class EnemyRuntimeView {
     const ctrl = this.controllers.get(id);
     if (!ctrl) return;
     ctrl.isDying = true;
+    ctrl.deathFinished = false;
     ctrl.play("death");
   }
 
@@ -257,7 +289,10 @@ export class EnemyRuntimeView {
   }
 
   sync(service: EnemyService, dt?: number): void {
-    const aliveIds = new Set(service.enemies.map((e) => e.id));
+    const aliveIds = new Set<string>();
+    for (let i = 0; i < service.enemies.length; i++) {
+      aliveIds.add(service.enemies[i]!.id);
+    }
 
     for (const [id, mesh] of this.meshes) {
       if (!aliveIds.has(id) && !this.effects?.isDying(mesh)) {
@@ -269,7 +304,8 @@ export class EnemyRuntimeView {
       let ctrl = this.controllers.get(enemy.id);
       let mesh = this.meshes.get(enemy.id);
 
-      if (!ctrl || !mesh) {
+      if (!ctrl || !mesh || ctrl.modelUrl !== enemy.modelUrl) {
+        if (ctrl) this.destroyEnemy(enemy.id);
         mesh = this.createEnemyRepresentation(enemy);
         mesh.name = enemy.id;
         this.meshes.set(enemy.id, mesh);
@@ -277,7 +313,28 @@ export class EnemyRuntimeView {
         ctrl = this.controllers.get(enemy.id)!;
       }
 
-      const dying = this.effects?.isDying(mesh) ?? false;
+      if (!enemy.alive) {
+        if (!ctrl.isDying) {
+          ctrl.isDying = true;
+          ctrl.deathFinished = false;
+          ctrl.play("death");
+        }
+      } else {
+        if (ctrl.isDying) {
+          ctrl.isDying = false;
+          ctrl.deathFinished = false;
+          ctrl.currentAnim = "";
+        }
+        if (ctrl.attackTimer <= 0 && ctrl.hitTimer <= 0) {
+          if (ctrl.isMoving) {
+            ctrl.play("run");
+          } else {
+            ctrl.play("idle");
+          }
+        }
+      }
+
+      const dying = ctrl.isDying || (this.effects?.isDying(mesh) ?? false);
       mesh.visible = enemy.alive || dying;
       if (enemy.alive && !dying && mesh.userData.baseScale) {
         mesh.scale.copy(mesh.userData.baseScale);
@@ -295,44 +352,31 @@ export class EnemyRuntimeView {
       ctrl.lastZ = enemy.z;
       ctrl.isMoving = Math.hypot(dx, dz) > 0.002;
 
-      if (!enemy.alive) {
-        if (!ctrl.isDying) {
-          ctrl.isDying = true;
-          ctrl.play("death");
-        }
-      } else {
-        if (ctrl.isDying) {
-          ctrl.isDying = false;
-        }
-        if (ctrl.attackTimer <= 0 && ctrl.hitTimer <= 0) {
-          if (ctrl.isMoving) {
-            ctrl.play("run");
-          } else {
-            ctrl.play("idle");
-          }
-        }
-      }
-
       const flashing = this.effects?.isFlashing(mesh) ?? false;
-      if (!flashing && !dying) {
-        const colorVal = enemy.color ? new Color(enemy.color) : new Color(DEFAULT_COLORS[enemy.archetype]);
-        const ratio = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 0;
-        const emissiveColor = colorVal.clone().multiplyScalar(0.15 * ratio);
+      const colorVal = enemy.color ? enemy.color : DEFAULT_COLORS[enemy.archetype];
+      const ratio = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 0;
 
-        mesh.traverse((obj) => {
-          if (obj === mesh) return;
-          const m = obj as Mesh;
-          if (m.isMesh && m.material) {
-            const mats = Array.isArray(m.material) ? m.material : [m.material];
-            for (const mat of mats) {
-              const std = mat as MeshStandardMaterial;
-              if (std.emissive) {
-                std.emissive.copy(emissiveColor);
-                std.emissiveIntensity = 1;
-              }
+      if (
+        ratio !== ctrl.lastHpRatio ||
+        colorVal !== ctrl.lastColor ||
+        flashing !== ctrl.lastFlashing ||
+        dying !== ctrl.lastDying
+      ) {
+        ctrl.lastHpRatio = ratio;
+        ctrl.lastColor = colorVal;
+        ctrl.lastFlashing = flashing;
+        ctrl.lastDying = dying;
+
+        if (!flashing && !dying) {
+          this.scratchColor.set(colorVal).multiplyScalar(0.15 * ratio);
+          for (let i = 0; i < ctrl.standardMaterials.length; i++) {
+            const std = ctrl.standardMaterials[i]!;
+            if (std.emissive) {
+              std.emissive.copy(this.scratchColor);
+              std.emissiveIntensity = 1;
             }
           }
-        });
+        }
       }
     }
 
@@ -345,17 +389,46 @@ export class EnemyRuntimeView {
     return this.meshes.get(id);
   }
 
+  getController(id: string): EnemyInstanceController | undefined {
+    return this.controllers.get(id);
+  }
+
   listAll(): Array<{ id: string; mesh: Mesh }> {
     return Array.from(this.meshes.entries()).map(([id, mesh]) => ({ id, mesh }));
+  }
+
+  private destroyEnemy(id: string): void {
+    const ctrl = this.controllers.get(id);
+    if (!ctrl) return;
+    if (ctrl.mixer) {
+      ctrl.mixer.stopAllAction();
+      ctrl.mixer.uncacheRoot(ctrl.model ?? ctrl.mesh);
+    }
+    if (ctrl.model) {
+      ctrl.model.traverse((obj) => {
+        const m = obj as Mesh;
+        if (m.isMesh) {
+          m.geometry?.dispose();
+          const mats = Array.isArray(m.material) ? m.material : [m.material];
+          for (const mat of mats) mat?.dispose();
+        }
+      });
+    }
+    ctrl.mesh.geometry.dispose();
+    (ctrl.mesh.material as MeshStandardMaterial).dispose();
+    this.group.remove(ctrl.mesh);
+    this.controllers.delete(id);
+    this.meshes.delete(id);
   }
 
   private createEnemyRepresentation(enemy: EnemyModel): Mesh {
     const scale = enemy.modelScale > 0 ? enemy.modelScale : 1.0;
     const colorHex = enemy.color ? new Color(enemy.color).getHex() : DEFAULT_COLORS[enemy.archetype];
 
+    const placeholderMat = new MeshStandardMaterial({ color: colorHex, roughness: 0.55 });
     const placeholderMesh = new Mesh(
       new CapsuleGeometry(0.32 * scale, 0.55 * scale, 4, 10),
-      new MeshStandardMaterial({ color: colorHex, roughness: 0.55 }),
+      placeholderMat,
     );
     placeholderMesh.position.y = 0.55 * scale;
     placeholderMesh.userData.occlusionIgnore = true;
@@ -363,6 +436,7 @@ export class EnemyRuntimeView {
 
     const ctrl: EnemyInstanceController = {
       id: enemy.id,
+      token: 1,
       mesh: placeholderMesh,
       actions: new Map<string, AnimationAction>(),
       currentAnim: "",
@@ -372,11 +446,18 @@ export class EnemyRuntimeView {
       attackTimer: 0,
       hitTimer: 0,
       isDying: false,
+      deathFinished: false,
       proceduralPhase: Math.random() * 6.28,
       isProceduralMesh: false,
       baseX: 0,
       baseY: -0.55 * scale,
       baseZ: 0,
+      modelUrl: enemy.modelUrl,
+      standardMaterials: [placeholderMat],
+      lastHpRatio: -1,
+      lastColor: -1,
+      lastFlashing: false,
+      lastDying: false,
       play(name: "idle" | "run" | "attack" | "hit" | "death", force = false): void {
         const nextAction = ctrl.actions.get(name);
         if (!force && ctrl.currentAnim === name && (name === "idle" || name === "run") && (ctrl.isProceduralMesh || nextAction?.isRunning())) return;
@@ -400,7 +481,9 @@ export class EnemyRuntimeView {
       },
       update(dt: number): void {
         if (ctrl.mixer) {
-          ctrl.mixer.update(dt);
+          if (ctrl.mesh.visible && (!ctrl.isDying || !ctrl.deathFinished)) {
+            ctrl.mixer.update(dt);
+          }
         }
 
         if (ctrl.attackTimer > 0) {
@@ -422,6 +505,9 @@ export class EnemyRuntimeView {
           if (ctrl.currentAnim === "death") {
             ctrl.model.rotation.x = Math.min(Math.PI / 2, ctrl.model.rotation.x + dt * 4);
             ctrl.model.position.y = Math.max(ctrl.baseY - 0.4, ctrl.model.position.y - dt * 0.6);
+            if (ctrl.model.rotation.x >= Math.PI / 2) {
+              ctrl.deathFinished = true;
+            }
           } else if (ctrl.currentAnim === "attack") {
             const swing = Math.sin(Math.min(1, Math.max(0, (0.55 - ctrl.attackTimer) / 0.55)) * Math.PI);
             ctrl.model.rotation.x = -swing * 0.45;
@@ -450,10 +536,25 @@ export class EnemyRuntimeView {
       const url = enemy.modelUrl;
       const isSkeletonSpecial = url.includes("skeleton-special") || enemy.monsterId === "caveira_especial";
       const isSkeletonNormal = url.includes("skeleton-normal") || enemy.monsterId === "caveira_normal";
+      const token = ctrl.token;
 
-      loadModelPrototype(url)
+      const modelLoader = this.loader?.loadModel ?? loadModelPrototype;
+      const clipLoader = this.loader?.loadClip ?? loadSharedClip;
+
+      modelLoader(url)
         .then(async (proto) => {
           const instance = SkeletonUtils.clone(proto.root);
+          if (this.disposed || this.controllers.get(enemy.id) !== ctrl || ctrl.token !== token) {
+            instance.traverse((obj) => {
+              const m = obj as Mesh;
+              if (m.isMesh) {
+                m.geometry?.dispose();
+                const mats = Array.isArray(m.material) ? m.material : [m.material];
+                for (const mat of mats) mat?.dispose();
+              }
+            });
+            return;
+          }
           const baseHeight = 0.55 * scale;
           const rawBox = new Box3().setFromObject(instance);
           const rawSize = rawBox.getSize(new Vector3());
@@ -467,6 +568,7 @@ export class EnemyRuntimeView {
           instance.position.set(posX, posY, posZ);
 
           let hasSkinned = false;
+          const stdMats: MeshStandardMaterial[] = [];
           instance.traverse((obj) => {
             const m = obj as Mesh;
             if (m.isMesh) {
@@ -476,8 +578,12 @@ export class EnemyRuntimeView {
               if (m.material) {
                 if (Array.isArray(m.material)) {
                   m.material = m.material.map((mat) => mat.clone());
+                  for (const mat of m.material) {
+                    if (mat instanceof MeshStandardMaterial) stdMats.push(mat);
+                  }
                 } else {
                   m.material = m.material.clone();
+                  if (m.material instanceof MeshStandardMaterial) stdMats.push(m.material);
                 }
               }
               if ((m as unknown as { isSkinnedMesh?: boolean }).isSkinnedMesh) {
@@ -491,8 +597,15 @@ export class EnemyRuntimeView {
           ctrl.baseY = posY;
           ctrl.baseZ = posZ;
           ctrl.isProceduralMesh = !hasSkinned;
+          ctrl.standardMaterials = stdMats;
 
           const mixer = new AnimationMixer(instance);
+          mixer.addEventListener("finished", (e: unknown) => {
+            const ev = e as { action?: AnimationAction };
+            if (ev?.action?.getClip()?.name === "death" || ctrl.currentAnim === "death") {
+              ctrl.deathFinished = true;
+            }
+          });
           ctrl.mixer = mixer;
 
           let idleClip: AnimationClip | null = null;
@@ -503,21 +616,44 @@ export class EnemyRuntimeView {
           let hipsRest: Vector3 | null = null;
 
           if (isSkeletonSpecial) {
-            idleClip = proto.animations[0] ? proto.animations[0].clone() : null;
+            const [idleShared, rClip, aClip, hClip, dClip] = await Promise.all([
+              proto.animations[0] ? Promise.resolve(null) : clipLoader("idle_2h"),
+              clipLoader("run"),
+              clipLoader("cast"),
+              clipLoader("hit_gut"),
+              clipLoader("death"),
+            ]);
+            idleClip = proto.animations[0] ? proto.animations[0].clone() : idleShared;
             hipsRest = hipsRestFromClip(proto.animations[0]);
-            if (!idleClip) {
-              idleClip = await loadSharedClip("idle_2h");
-            }
-            runClip = await loadSharedClip("run");
-            attackClip = await loadSharedClip("cast");
-            hitClip = await loadSharedClip("hit_gut");
-            deathClip = await loadSharedClip("death");
+            runClip = rClip;
+            attackClip = aClip;
+            hitClip = hClip;
+            deathClip = dClip;
           } else if (isSkeletonNormal) {
-            idleClip = await loadSharedClip("idle_2h");
-            runClip = await loadSharedClip("run");
-            attackClip = await loadSharedClip("attack_swipe");
-            hitClip = await loadSharedClip("hit_right");
-            deathClip = await loadSharedClip("death");
+            const [iClip, rClip, aClip, hClip, dClip] = await Promise.all([
+              clipLoader("idle_2h"),
+              clipLoader("run"),
+              clipLoader("attack_swipe"),
+              clipLoader("hit_right"),
+              clipLoader("death"),
+            ]);
+            idleClip = iClip;
+            runClip = rClip;
+            attackClip = aClip;
+            hitClip = hClip;
+            deathClip = dClip;
+          }
+
+          if (this.disposed || this.controllers.get(enemy.id) !== ctrl || ctrl.token !== token) {
+            instance.traverse((obj) => {
+              const m = obj as Mesh;
+              if (m.isMesh) {
+                m.geometry?.dispose();
+                const mats = Array.isArray(m.material) ? m.material : [m.material];
+                for (const mat of mats) mat?.dispose();
+              }
+            });
+            return;
           }
 
           if (idleClip) {
@@ -547,14 +683,16 @@ export class EnemyRuntimeView {
           }
 
           placeholderMesh.add(instance);
-          const mat = placeholderMesh.material as MeshStandardMaterial;
-          mat.opacity = 0;
-          mat.transparent = true;
-          mat.depthWrite = false;
-          ctrl.play(ctrl.isMoving ? "run" : "idle", true);
+          placeholderMat.visible = false;
+
+          if (ctrl.isDying || !enemy.alive) {
+            ctrl.play("death", true);
+          } else {
+            ctrl.play(ctrl.isMoving ? "run" : "idle", true);
+          }
         })
         .catch(() => {
-          placeholderMesh.visible = true;
+          placeholderMat.visible = true;
         });
     }
 
@@ -562,7 +700,9 @@ export class EnemyRuntimeView {
   }
 
   dispose(): void {
+    this.disposed = true;
     for (const ctrl of this.controllers.values()) {
+      ctrl.token += 1;
       if (ctrl.mixer) {
         ctrl.mixer.stopAllAction();
         ctrl.mixer.uncacheRoot(ctrl.model ?? ctrl.mesh);
@@ -570,9 +710,10 @@ export class EnemyRuntimeView {
       if (ctrl.model) {
         ctrl.model.traverse((obj) => {
           const m = obj as Mesh;
-          if (m.isMesh && m.material) {
+          if (m.isMesh) {
+            m.geometry?.dispose();
             const mats = Array.isArray(m.material) ? m.material : [m.material];
-            for (const mat of mats) mat.dispose();
+            for (const mat of mats) mat?.dispose();
           }
         });
       }

@@ -347,6 +347,7 @@ export class CityGameSession {
     this.effects.clearSkillVfx();
     const world = this.worlds.switchTo(id);
     this.renderer.setWorldLook(id === "city" || id === "dungeon-2" ? "city" : "dungeon");
+    this.renderer.setOccluders(world.occluders ?? []);
     if (id === "city") this.character.healFull();
     this.player.setPosition(world.spawn.x, world.spawn.z);
     this.player.clearMoveTarget();

@@ -37,6 +37,7 @@ interface FlashEntry {
   t: number;
   restore: Color;
   token: number;
+  root: Object3D;
 }
 
 
@@ -45,12 +46,14 @@ export class EffectManager {
   private readonly overlay: HTMLDivElement;
   private readonly floating: FloatingText[] = [];
   private readonly flashes = new Map<Mesh, FlashEntry>();
+  private readonly flashingRoots = new Map<Object3D, number>();
   private readonly pulses: Array<{ mesh: Object3D; t: number }> = [];
   private readonly slashes: Array<{ line: Line; t: number; max: number }> = [];
   private readonly deaths = new Map<
     Mesh,
     { t: number; max: number; baseScale: Vector3 }
   >();
+  private readonly dyingRoots = new Set<Object3D>();
   private rangeRing: Mesh | null = null;
   private count = 0;
   private readonly hpBars = new Map<string, HTMLDivElement>();
@@ -101,24 +104,18 @@ export class EffectManager {
     return this.frame;
   }
 
+  getTkRegistry(): TkVfxRegistry {
+    return this.tkRegistry;
+  }
+
   isFlashing(mesh: Object3D | null | undefined): boolean {
     if (!mesh) return false;
-    if (this.flashes.has(mesh as Mesh)) return true;
-    let hit = false;
-    mesh.traverse((o) => {
-      if (this.flashes.has(o as Mesh)) hit = true;
-    });
-    return hit;
+    return this.flashingRoots.has(mesh) || this.flashes.has(mesh as Mesh);
   }
 
   isDying(mesh: Object3D | null | undefined): boolean {
     if (!mesh) return false;
-    if (this.deaths.has(mesh as Mesh)) return true;
-    let hit = false;
-    mesh.traverse((o) => {
-      if (this.deaths.has(o as Mesh)) hit = true;
-    });
-    return hit;
+    return this.dyingRoots.has(mesh) || this.deaths.has(mesh as Mesh);
   }
 
   spawnDamageNumber(x: number, y: number, z: number, amount: number, kind: DmgKind): void {
@@ -139,18 +136,24 @@ export class EffectManager {
 
   playHitFlash(mesh: Object3D | null | undefined): void {
     if (!mesh) return;
+    const root = mesh;
+    let flashCount = 0;
     const apply = (obj: Object3D): void => {
       const m = (obj as Mesh).material as unknown as { emissive?: Color; emissiveIntensity?: number } | undefined;
       if (!m?.emissive) return;
       const existing = this.flashes.get(obj as Mesh);
       const restore = existing ? existing.restore : m.emissive.clone();
       const token = this.tokenSeq++;
-      this.flashes.set(obj as Mesh, { mesh: obj as Mesh, t: VFX_BALANCE.hitFlashSeconds, restore, token });
+      this.flashes.set(obj as Mesh, { mesh: obj as Mesh, t: VFX_BALANCE.hitFlashSeconds, restore, token, root });
       m.emissive.setHex(0xff2200);
       m.emissiveIntensity = 0.9;
+      flashCount++;
     };
     if (mesh instanceof Group || mesh.type === "Group") mesh.traverse(apply);
     else apply(mesh);
+    if (flashCount > 0) {
+      this.flashingRoots.set(root, (this.flashingRoots.get(root) ?? 0) + flashCount);
+    }
   }
 
   playAttackPulse(mesh: Object3D | null | undefined): void {
@@ -172,6 +175,7 @@ export class EffectManager {
     duration: number = VFX_BALANCE.deathSeconds,
   ): void {
     if (!mesh) return;
+    this.dyingRoots.add(mesh);
     const previousDeath = this.deaths.get(mesh);
     this.deaths.set(mesh, {
       t: duration,
@@ -565,6 +569,9 @@ export class EffectManager {
           m.emissiveIntensity = 0;
         }
         this.flashes.delete(mesh);
+        const cur = (this.flashingRoots.get(flash.root) ?? 1) - 1;
+        if (cur <= 0) this.flashingRoots.delete(flash.root);
+        else this.flashingRoots.set(flash.root, cur);
       }
     }
 
@@ -613,6 +620,7 @@ export class EffectManager {
       if (death.t <= 0) {
         mesh.scale.set(0, 0, 0);
         this.deaths.delete(mesh);
+        this.dyingRoots.delete(mesh);
       }
     }
   }
@@ -626,6 +634,7 @@ export class EffectManager {
       }
     }
     this.flashes.clear();
+    this.flashingRoots.clear();
     for (const p of this.pulses) p.mesh.scale.set(1, 1, 1);
     this.pulses.length = 0;
     for (const s of this.slashes) {
@@ -645,6 +654,7 @@ export class EffectManager {
       mesh.scale.copy(death.baseScale);
     }
     this.deaths.clear();
+    this.dyingRoots.clear();
   }
 
   dispose(): void {

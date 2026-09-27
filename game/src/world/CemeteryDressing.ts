@@ -39,7 +39,7 @@ const TOMBS: Array<[number, number, number, number]> = [
   [10.7, 12.2, 1.22, 3],
 ];
 
-export function addCemeteryEnclosure(parent: Group, collision: WorldCollision, size: number): void {
+export function addCemeteryEnclosure(parent: Group, collision: WorldCollision, size: number, occluders?: import("three").Object3D[]): void {
   const scale = cemeteryPropScale("wall", WALL_HEIGHT);
   const foot = cemeteryPropFootprint("wall", scale, 0);
   const moduleWidth = foot.width;
@@ -57,7 +57,7 @@ export function addCemeteryEnclosure(parent: Group, collision: WorldCollision, s
     const scaleX = scale * (segmentLength / moduleWidth);
     for (let i = 0; i < segments; i++) {
       const offset = -run.length / 2 + segmentLength * (i + 0.5);
-      spawnCemeteryProp(parent, {
+      const wall = spawnCemeteryProp(parent, {
         id: "wall",
         x: run.alongX ? offset : run.fixed,
         z: run.alongX ? run.fixed : offset,
@@ -65,6 +65,7 @@ export function addCemeteryEnclosure(parent: Group, collision: WorldCollision, s
         scaleX,
         quarterTurns: run.quarterTurns,
       });
+      occluders?.push(wall);
     }
     collision.boxes.push(
       run.alongX
@@ -84,7 +85,8 @@ export function addCemeteryEnclosure(parent: Group, collision: WorldCollision, s
   }
 
   const mausoleumScale = MAUSOLEUM_WIDTH;
-  spawnCemeteryProp(parent, { id: "mausoleum", x: 0, z: 0, scale: mausoleumScale, yaw: MAUSOLEUM_YAW });
+  const maus = spawnCemeteryProp(parent, { id: "mausoleum", x: 0, z: 0, scale: mausoleumScale, yaw: MAUSOLEUM_YAW });
+  occluders?.push(maus);
   const mausoleumFoot = cemeteryPropFootprint("mausoleum", mausoleumScale, 2);
   collision.boxes.push(boxFromCenter(0, 0, mausoleumFoot.width, mausoleumFoot.depth));
 }

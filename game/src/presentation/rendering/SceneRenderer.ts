@@ -61,6 +61,7 @@ export class SceneRenderer {
   private readonly composer: EffectComposer;
   private readonly bloomPass: UnrealBloomPass;
   private readonly skyDome: Mesh;
+  private occluders: Object3D[] = [];
 
   constructor(options: SceneRendererOptions) {
     this.scene.name = "UAIDZIN_Scene";
@@ -320,6 +321,10 @@ export class SceneRenderer {
     this.bloomPass.setSize(w, h);
   }
 
+  setOccluders(occluders: Object3D[]): void {
+    this.occluders = occluders;
+  }
+
   private isFixedOccluder(obj: Object3D): boolean {
     let cur: Object3D | null = obj;
     while (cur) {
@@ -338,13 +343,13 @@ export class SceneRenderer {
     this.toPlayer.subVectors(this.playerCenter, camera.position);
     const dist = this.toPlayer.length();
     this.playerGhostMesh.visible = false;
-    if (dist < 0.2 || !this.playerView.ready) {
+    if (dist < 0.2 || !this.playerView.ready || this.occluders.length === 0) {
       this.playerView.setOcclusionGhostVisible(false);
       return;
     }
     this.raycaster.set(camera.position, this.toPlayer.normalize());
     this.raycaster.far = dist - 0.2;
-    const hits = this.raycaster.intersectObject(this.worldRoot, true);
+    const hits = this.raycaster.intersectObjects(this.occluders, true);
     const occluded = hits.some((hit) => this.isFixedOccluder(hit.object));
     this.playerView.setOcclusionGhostVisible(occluded);
   }

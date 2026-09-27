@@ -35,8 +35,6 @@ export interface SceneFadeOverlay {
   dispose(): void;
 }
 
-let bootSceneFade: SceneFadeOverlay | null = null;
-
 function waitOpacityTransition(el: HTMLElement): Promise<void> {
   return new Promise((resolve) => {
     let settled = false;
@@ -98,13 +96,6 @@ export function createSceneFadeOverlay(host: HTMLElement = document.body): Scene
       el.remove();
     },
   };
-}
-
-export async function releaseBootSceneFade(): Promise<void> {
-  if (!bootSceneFade) return;
-  await bootSceneFade.fadeOut();
-  bootSceneFade.dispose();
-  bootSceneFade = null;
 }
 
 function readStoredCharacter(): BootCharacter | null {
@@ -220,7 +211,6 @@ export async function runBootFlow(host: HTMLElement = document.body): Promise<Bo
   return new Promise((resolve) => {
     const origin = window.location.origin;
     const sceneFade = createSceneFadeOverlay(host);
-    bootSceneFade = sceneFade;
 
     const frame = document.createElement("iframe");
     frame.title = "UAIDZIN Login";
@@ -307,6 +297,7 @@ export async function runBootFlow(host: HTMLElement = document.body): Promise<Bo
         void enqueue(async () => {
           await sceneFade.fadeIn();
           frame.remove();
+          sceneFade.dispose();
           resolve(character);
         });
       });

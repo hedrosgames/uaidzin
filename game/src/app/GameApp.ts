@@ -23,6 +23,7 @@ import { HudBarsView } from "../ui/HudBarsView";
 import { SkillBarView } from "../ui/SkillBarView";
 import { DropLogView } from "../ui/DropLogView";
 import { SettingsPanel } from "../ui/SettingsPanel";
+import { getSkillVfxProfile } from "../presentation/effects/skill/SkillVfxCatalog";
 
 export interface GameAppDeps {
   canvas: HTMLCanvasElement;
@@ -95,6 +96,8 @@ export class GameApp {
   private autosaveTimer: number | null = null;
   private cachedWidth = 0;
   private cachedHeight = 0;
+  private firstFrameRendered = false;
+  private readonly onFirstFrameListeners: Array<() => void> = [];
 
   private readonly onPageHide = (): void => {
     if (!this.entered) return;
@@ -268,6 +271,25 @@ export class GameApp {
     this.speedToggle.hidden = false;
     if (!this.session.worlds.getCurrent()) this.session.start();
     this.bus.emit("game:ready", { at: Date.now() });
+  }
+
+  onFirstFrame(listener: () => void): void {
+    if (this.firstFrameRendered) {
+      listener();
+      return;
+    }
+    this.onFirstFrameListeners.push(listener);
+  }
+
+  private notifyFirstFrame(): void {
+    if (this.firstFrameRendered) return;
+    this.firstFrameRendered = true;
+    for (const fn of this.onFirstFrameListeners) {
+      try {
+        fn();
+      } catch {}
+    }
+    this.onFirstFrameListeners.length = 0;
   }
 
   private exposeDebugApi(): void {
@@ -449,14 +471,14 @@ export class GameApp {
     this.input.setUiOpen(this.isUiOpen());
   }
 
-  start(character: BootCharacter): void {
+  async start(character: BootCharacter): Promise<void> {
     if (accountLock.current() !== bootAccountId(character)) {
       clearBootCharacter();
       window.location.reload();
       return;
     }
     this.session.saveService.setProfileId(character.id);
-    void this.beginFromSave(character);
+    await this.beginFromSave(character);
   }
 
   private async beginFromSave(character: BootCharacter): Promise<void> {
@@ -468,6 +490,7 @@ export class GameApp {
     }
     if (loaded.status === "error") {
       this.session.saveUnreadable = true;
+      this.notifyFirstFrame();
       this.showSaveError(character);
       return;
     }
@@ -499,6 +522,15 @@ export class GameApp {
       return;
     }
     await this.session.start();
+    const tkRegistry = this.session.effects.getTkRegistry();
+    for (const slot of this.session.skillLoadout.slots) {
+      if (!slot) continue;
+      const profile = getSkillVfxProfile(slot.skill.id);
+      if (profile?.dedicatedVfx) {
+        tkRegistry.get(profile.dedicatedVfx);
+      }
+    }
+    this.renderer.renderer.compile(this.renderer.scene, this.session.camera.camera);
     this.loop.start();
     this.enterGame();
     bindHud(
@@ -599,6 +631,7 @@ export class GameApp {
         this.cachedHeight,
         this.isUiOpen() || !this.entered,
       );
+      this.notifyFirstFrame();
       const char = this.session.character;
       const timer = this.lastHud?.timer;
       this.debugHud.update({

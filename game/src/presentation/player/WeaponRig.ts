@@ -161,11 +161,15 @@ function makeGlovePlaceholder(size: number): Group {
   return g;
 }
 
+export interface WeaponGltfLoader {
+  loadAsync(url: string): Promise<{ scene: Object3D }>;
+}
+
 export class WeaponRig {
-  private readonly loader = new GLTFLoader();
+  private readonly loader: WeaponGltfLoader;
   private readonly prototypes = new Map<WeaponModelId, Promise<Object3D | null>>();
   private attachments: Attachment[] = [];
-  private currentSet: WeaponSetId | null = null;
+  private currentSetId: WeaponSetId | null = null;
   private model: Object3D | null = null;
   private generation = 0;
   private readonly rootInverse = new Matrix4();
@@ -173,17 +177,27 @@ export class WeaponRig {
   private readonly anchorScale = new Vector3();
   private readonly tmp = new Vector3();
   private readonly rootQuat = new Quaternion();
+  private readonly invRootQuat = new Quaternion();
+  private readonly worldQuat = new Quaternion();
   private readonly bowForward = new Vector3();
   private readonly bowSpan = new Vector3();
   private readonly bowRight = new Vector3();
   private readonly bowBasis = new Matrix4();
 
+  constructor(loader?: WeaponGltfLoader) {
+    this.loader = loader ?? new GLTFLoader();
+  }
+
   getVisualRoots(): Object3D[] {
     return this.attachments.map((a) => a.visual);
   }
 
+  get currentSet(): WeaponSetId | null {
+    return this.currentSetId;
+  }
+
   getSet(): WeaponSetId | null {
-    return this.currentSet;
+    return this.currentSetId;
   }
 
   bindModel(model: Object3D): void {
@@ -193,6 +207,7 @@ export class WeaponRig {
 
   clear(): void {
     this.generation += 1;
+    this.currentSetId = null;
     for (const a of this.attachments) {
       const node = a.socket ?? a.visual;
       node.removeFromParent();
@@ -210,7 +225,6 @@ export class WeaponRig {
 
   async equip(root: Group, set: WeaponSetId): Promise<void> {
     this.clear();
-    this.currentSet = set;
     const model = this.model;
     if (!model) return;
     const gen = this.generation;
@@ -222,6 +236,8 @@ export class WeaponRig {
       jobs.push(this.attach(root, model, side, id, gen));
     }
     await Promise.all(jobs);
+    if (gen !== this.generation) return;
+    this.currentSetId = set;
     this.sync(root);
   }
 
@@ -266,10 +282,11 @@ export class WeaponRig {
     this.bowRight.crossVectors(this.bowSpan, this.bowForward).normalize();
     this.bowForward.crossVectors(this.bowRight, this.bowSpan).normalize();
     this.bowBasis.makeBasis(this.bowRight, this.bowSpan, this.bowForward);
-    const worldQuat = new Quaternion().setFromRotationMatrix(this.bowBasis);
+    this.worldQuat.setFromRotationMatrix(this.bowBasis);
     this.tmp.applyMatrix4(this.rootInverse);
     a.visual.position.copy(this.tmp);
-    a.visual.quaternion.copy(this.rootQuat.clone().invert().multiply(worldQuat));
+    this.invRootQuat.copy(this.rootQuat).invert();
+    a.visual.quaternion.copy(this.invRootQuat.multiply(this.worldQuat));
   }
 
   private async attach(
@@ -285,7 +302,18 @@ export class WeaponRig {
     const frame = this.measureHand(model, hand, side);
     if (!frame) return;
     const built = await this.buildVisual(id, spec);
-    if (!built || gen !== this.generation) return;
+    if (!built || gen !== this.generation) {
+      if (built?.ownsGeometry) {
+        built.body.traverse((obj) => {
+          const mesh = obj as Mesh;
+          if (!mesh.isMesh) return;
+          mesh.geometry.dispose();
+          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          for (const m of mats) m.dispose();
+        });
+      }
+      return;
+    }
 
     const visual = new Group();
     visual.name = `weapon-${side}-${id}`;
@@ -422,7 +450,10 @@ export class WeaponRig {
               hardenWeaponMaterials(gltf.scene);
               return gltf.scene as Object3D | null;
             })
-            .catch(() => null)
+            .catch(() => {
+              this.prototypes.delete(id);
+              return null;
+            })
         : Promise.resolve(null);
       this.prototypes.set(id, pending);
     }

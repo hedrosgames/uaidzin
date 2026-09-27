@@ -467,6 +467,7 @@ export class SkillVfxDirector {
   private readonly root = new Group();
   private readonly casts = new Set<GenericSkillVfxCast>();
   private readonly passiveIds = new Set<string>();
+  private readonly passiveActiveIds = new Set<string>();
   private readonly batchResolution = new Vector2(1, 1);
   private accumulator = 0;
   private castIndex = 0;
@@ -505,11 +506,15 @@ export class SkillVfxDirector {
   }
 
   syncPassives(profiles: SkillVfxProfile[], origin: Vector3): void {
-    const activeIds = new Set(profiles.map((profile) => profile.id));
-    for (const id of this.passiveIds) {
-      if (!activeIds.has(id)) this.passiveIds.delete(id);
+    this.passiveActiveIds.clear();
+    for (let i = 0; i < profiles.length; i++) {
+      this.passiveActiveIds.add(profiles[i]!.id);
     }
-    for (const profile of profiles) {
+    for (const id of this.passiveIds) {
+      if (!this.passiveActiveIds.has(id)) this.passiveIds.delete(id);
+    }
+    for (let i = 0; i < profiles.length; i++) {
+      const profile = profiles[i]!;
       if (this.passiveIds.has(profile.id)) continue;
       this.passiveIds.add(profile.id);
       this.play({
