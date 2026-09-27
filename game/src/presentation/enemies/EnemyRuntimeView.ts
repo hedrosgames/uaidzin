@@ -15,7 +15,6 @@ import {
   VectorKeyframeTrack,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 import type { EnemyArchetype } from "../../data/balance/combat";
 import type { EnemyModel } from "../../domain/enemies/EnemyModel";
@@ -29,7 +28,6 @@ const DEFAULT_COLORS: Record<EnemyArchetype, number> = {
 };
 
 const gltfLoader = new GLTFLoader();
-const fbxLoader = new FBXLoader();
 
 export interface ModelPrototype {
   root: Object3D;
@@ -43,48 +41,26 @@ function loadModelPrototype(url: string): Promise<ModelPrototype> {
   if (existing) return existing;
 
   const promise = new Promise<ModelPrototype>((resolve, reject) => {
-    if (url.toLowerCase().endsWith(".fbx")) {
-      fbxLoader.load(
-        url,
-        (fbx) => {
-          fbx.traverse((obj) => {
-            const m = obj as Mesh;
-            if (m.isMesh) {
-              m.castShadow = true;
-              m.receiveShadow = true;
-              m.userData.occlusionIgnore = true;
-            }
-          });
-          resolve({ root: fbx, animations: fbx.animations || [] });
-        },
-        undefined,
-        (err) => {
-          modelPrototypes.delete(url);
-          reject(err);
-        },
-      );
-    } else {
-      gltfLoader.load(
-        url,
-        (gltf) => {
-          const root = gltf.scene;
-          root.traverse((obj) => {
-            const m = obj as Mesh;
-            if (m.isMesh) {
-              m.castShadow = true;
-              m.receiveShadow = true;
-              m.userData.occlusionIgnore = true;
-            }
-          });
-          resolve({ root, animations: gltf.animations || [] });
-        },
-        undefined,
-        (err) => {
-          modelPrototypes.delete(url);
-          reject(err);
-        },
-      );
-    }
+    gltfLoader.load(
+      url,
+      (gltf) => {
+        const root = gltf.scene;
+        root.traverse((obj) => {
+          const m = obj as Mesh;
+          if (m.isMesh) {
+            m.castShadow = true;
+            m.receiveShadow = true;
+            m.userData.occlusionIgnore = true;
+          }
+        });
+        resolve({ root, animations: gltf.animations || [] });
+      },
+      undefined,
+      (err) => {
+        modelPrototypes.delete(url);
+        reject(err);
+      },
+    );
   }).catch((err) => {
     modelPrototypes.delete(url);
     throw err;

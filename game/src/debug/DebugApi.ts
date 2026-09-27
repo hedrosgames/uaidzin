@@ -94,6 +94,7 @@ export function installDebugApi(app: DebugHost): void {
   };
   w.__UAIDZIN__ = {
     session: app.session,
+    renderer: app.renderer,
     getState: () => app.state.getMode(),
     getSnapshot: (): DebugSnapshot => ({
       mode: app.state.getMode(),

@@ -1,6 +1,7 @@
 import { DoubleSide, Group, Mesh, MeshStandardMaterial, Object3D, SRGBColorSpace } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { CITY_SURFACE_GLSL } from "./CitySurface";
+import { isCheapShaders } from "../presentation/rendering/GraphicsQuality";
 
 export type CityPropId =
   | "wall"
@@ -76,6 +77,7 @@ function hardenPropMaterials(root: Object3D, id: CityPropId): void {
         std.map.needsUpdate = true;
       }
       std.onBeforeCompile = (shader) => {
+        if (isCheapShaders()) return;
         shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vPropSurface;");
         shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", `#include <begin_vertex>\nvPropSurface = position / ${height.toFixed(4)};`);
         shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>
@@ -102,7 +104,7 @@ propRoughness = mix(0.82 + pores * 0.13, 0.98, cloth);`}`);
         shader.fragmentShader = shader.fragmentShader.replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = max(roughnessFactor, propRoughness);");
         shader.fragmentShader = shader.fragmentShader.replace("#include <normal_fragment_maps>", "#include <normal_fragment_maps>\nnormal = cityRelief(normal, -vViewPosition, propRelief);");
       };
-      std.customProgramCacheKey = () => `city-prop-natural-1-${id}`;
+      std.customProgramCacheKey = () => `${isCheapShaders() ? "cheap" : "natural"}-city-prop-1-${id}`;
       src.dispose();
       return std;
     });
@@ -151,7 +153,6 @@ export function spawnCityProp(
       const mesh = obj as Mesh;
       if (!mesh.isMesh) return;
       mesh.visible = true;
-      mesh.frustumCulled = false;
     });
     anchor.add(clone);
     onReady?.(clone);

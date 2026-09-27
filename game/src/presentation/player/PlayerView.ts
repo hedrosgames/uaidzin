@@ -20,6 +20,7 @@ import {
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
 import {
+  SHARED_IDLE_URL,
   humanAnimUrl,
   humanCombatUrl,
   idleAnimUrl,
@@ -156,11 +157,32 @@ export class PlayerView {
     this.idleClip = "class";
     this.clearGhosts();
 
-    const base = await this.loader.loadAsync(CLASS_MODEL[id]);
+    const animEntries = Object.entries(FIXED_ANIM_URLS) as Array<
+      [Exclude<PlayerAnim, "idle" | "attack">, string]
+    >;
+
+    const [base, sharedIdleGltf, loadedAnims] = await Promise.all([
+      this.loader.loadAsync(CLASS_MODEL[id]),
+      id === "TK"
+        ? this.loader.loadAsync(SHARED_IDLE_URL).catch(() => null)
+        : Promise.resolve(null),
+      Promise.all(
+        animEntries.map(async ([name, url]) => {
+          const gltf = await this.loader.loadAsync(url);
+          return [name, gltf] as const;
+        }),
+      ),
+    ]);
+
     if (loadToken !== this.loadGen) {
       this.disposeObject(base.scene);
+      if (sharedIdleGltf) this.disposeObject(sharedIdleGltf.scene);
+      for (const [, gltf] of loadedAnims) {
+        this.disposeObject(gltf.scene);
+      }
       return;
     }
+
     const model = base.scene;
     model.name = id;
     this.hardenMaterials(model);
@@ -177,43 +199,19 @@ export class PlayerView {
       this.hipsRest = hipsRestFromClip(embeddedIdle);
     }
 
-    if (id === "TK") {
-      try {
-        const donor = await this.loader.loadAsync(CLASS_MODEL.BM);
-        if (loadToken !== this.loadGen) {
-          this.disposeObject(donor.scene);
-          return;
-        }
-        const donorIdle = donor.animations[0] ?? null;
-        this.disposeObject(donor.scene);
-        if (donorIdle) {
-          this.classIdleClip = this.adaptExternalClip(donorIdle);
-          this.classIdleClip.name = "idle";
-        }
-      } catch {
+    if (id === "TK" && sharedIdleGltf) {
+      const donorIdle = sharedIdleGltf.animations[0] ?? null;
+      this.disposeObject(sharedIdleGltf.scene);
+      if (donorIdle) {
+        this.classIdleClip = this.adaptExternalClip(donorIdle);
+        this.classIdleClip.name = "idle";
       }
     }
-    if (loadToken !== this.loadGen) return;
 
-    const entries = Object.entries(FIXED_ANIM_URLS) as Array<
-      [Exclude<PlayerAnim, "idle" | "attack">, string]
-    >;
-    const loaded = await Promise.all(
-      entries.map(async ([name, url]) => {
-        const gltf = await this.loader.loadAsync(url);
-        if (loadToken !== this.loadGen) {
-          this.disposeObject(gltf.scene);
-          return [name, null] as const;
-        }
-        const raw = gltf.animations[0] ?? null;
-        const clip = raw ? this.adaptExternalClip(raw) : null;
-        this.disposeObject(gltf.scene);
-        return [name, clip] as const;
-      }),
-    );
-    if (loadToken !== this.loadGen) return;
-
-    for (const [name, clip] of loaded) {
+    for (const [name, gltf] of loadedAnims) {
+      const raw = gltf.animations[0] ?? null;
+      const clip = raw ? this.adaptExternalClip(raw) : null;
+      this.disposeObject(gltf.scene);
       if (!clip || !this.mixer) continue;
       clip.name = name;
       this.actions.set(name, this.mixer.clipAction(clip));

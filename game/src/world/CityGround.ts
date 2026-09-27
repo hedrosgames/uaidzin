@@ -1,24 +1,58 @@
-import { MeshStandardMaterial, MirroredRepeatWrapping, RepeatWrapping, SRGBColorSpace, TextureLoader } from "three";
+import {
+  MeshStandardMaterial,
+  MirroredRepeatWrapping,
+  RepeatWrapping,
+  SRGBColorSpace,
+  Texture,
+  TextureLoader,
+} from "three";
 import { CITY_SURFACE_GLSL } from "./CitySurface";
-import { CITY_GARDEN_GLSL } from "./CityLandscape";
+import { getCityGardenGlsl } from "./CityLandscape";
+import { isCheapShaders } from "../presentation/rendering/GraphicsQuality";
+
+let graniteTexture: Texture | null = null;
+const graniteClones: Texture[] = [];
+
+function getGraniteTexture(): Texture {
+  if (!graniteTexture) {
+    graniteTexture = new TextureLoader().load(
+      "/textures/city-granite-albedo.png",
+      () => {
+        for (const t of graniteClones) {
+          t.needsUpdate = true;
+        }
+        graniteClones.length = 0;
+      },
+    );
+    graniteTexture.colorSpace = SRGBColorSpace;
+    graniteTexture.anisotropy = 8;
+  }
+  return graniteTexture;
+}
 
 export function makeCityFloorMaterial(halfSize: number, plazaRadius = 5.5): MeshStandardMaterial {
-  const texture = new TextureLoader().load("/textures/city-granite-albedo.png");
+  const base = getGraniteTexture();
+  const texture = base.clone();
   texture.wrapS = MirroredRepeatWrapping;
   texture.wrapT = MirroredRepeatWrapping;
-  texture.colorSpace = SRGBColorSpace;
-  texture.anisotropy = 8;
   texture.repeat.setScalar(halfSize * 2 / 4.8);
+  if (!base.image) {
+    texture.version = 0;
+    graniteClones.push(texture);
+  } else {
+    texture.needsUpdate = true;
+  }
   const material = new MeshStandardMaterial({ map: texture, roughness: 0.94, metalness: 0 });
   material.name = "city-granite-earth";
   material.onBeforeCompile = (shader) => {
+    if (isCheapShaders()) return;
     shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nvarying vec2 vCityGround;");
     shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvCityGround = (modelMatrix * vec4(position, 1.0)).xz;");
     shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>
 varying vec2 vCityGround;
 float cityGroundHeight;
 ${CITY_SURFACE_GLSL}
-${CITY_GARDEN_GLSL}`);
+${getCityGardenGlsl()}`);
     shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", `#include <map_fragment>
 float bed = cityGarden(vCityGround);
 float edge = smoothstep(${(halfSize - 3.4).toFixed(2)}, ${(halfSize - 0.8).toFixed(2)}, max(abs(vCityGround.x), abs(vCityGround.y)));
@@ -36,17 +70,16 @@ diffuseColor.rgb = mix(diffuseColor.rgb, earth, soil);`);
     shader.fragmentShader = shader.fragmentShader.replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
 normal = cityRelief(normal, -vViewPosition, cityGroundHeight);`);
   };
-  material.customProgramCacheKey = () => `city-ground-natural-1-${halfSize}-${plazaRadius}`;
+  material.customProgramCacheKey = () => `${isCheapShaders() ? "cheap" : "natural"}-city-ground-1-${halfSize}-${plazaRadius}`;
   return material;
 }
 
 export function makeCityPlazaMaterial(plazaRadius: number): MeshStandardMaterial {
-  const detail = new TextureLoader().load("/textures/city-granite-albedo.png");
-  detail.colorSpace = SRGBColorSpace;
-  detail.anisotropy = 8;
+  const detail = getGraniteTexture();
   const material = new MeshStandardMaterial({ color: 0xffffff, map: detail, roughness: 0.96 });
   material.name = "city-radial-slate";
   material.onBeforeCompile = (shader) => {
+    if (isCheapShaders()) return;
     shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nvarying vec2 vCityPlaza;");
     shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvCityPlaza = (modelMatrix * vec4(position, 1.0)).xz;");
     shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>
@@ -80,7 +113,7 @@ diffuseColor.rgb *= mix(1.0, mineralDetail, 0.55);`);
     shader.fragmentShader = shader.fragmentShader.replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
 normal = cityRelief(normal, -vViewPosition, cityPlazaHeight);`);
   };
-  material.customProgramCacheKey = () => `city-plaza-stone-1-${plazaRadius}`;
+  material.customProgramCacheKey = () => `${isCheapShaders() ? "cheap" : "natural"}-city-plaza-1-${plazaRadius}`;
   return material;
 }
 
@@ -94,13 +127,14 @@ export function makeDungeon2FloorMaterial(halfSize: number): MeshStandardMateria
   const material = new MeshStandardMaterial({ map: texture, roughness: 0.95, metalness: 0 });
   material.name = "dungeon-cemetery-ground";
   material.onBeforeCompile = (shader) => {
+    if (isCheapShaders()) return;
     shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nvarying vec2 vCityGround;");
     shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvCityGround = (modelMatrix * vec4(position, 1.0)).xz;");
     shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>
 varying vec2 vCityGround;
 float cityGroundHeight;
 ${CITY_SURFACE_GLSL}
-${CITY_GARDEN_GLSL}`);
+${getCityGardenGlsl()}`);
     shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", `#include <map_fragment>
 float bed = cityGarden(vCityGround);
 float edge = smoothstep(${(halfSize - 3.4).toFixed(2)}, ${(halfSize - 0.8).toFixed(2)}, max(abs(vCityGround.x), abs(vCityGround.y)));
@@ -117,6 +151,6 @@ diffuseColor.rgb = mix(diffuseColor.rgb, earth, soil * 0.65);`);
     shader.fragmentShader = shader.fragmentShader.replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
 normal = cityRelief(normal, -vViewPosition, cityGroundHeight);`);
   };
-  material.customProgramCacheKey = () => `dungeon-2-cemetery-ground-${halfSize}`;
+  material.customProgramCacheKey = () => `${isCheapShaders() ? "cheap" : "natural"}-dungeon-2-cemetery-ground-${halfSize}`;
   return material;
 }

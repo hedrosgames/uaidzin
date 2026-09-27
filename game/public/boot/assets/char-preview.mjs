@@ -9,9 +9,15 @@ const MODEL = {
   HT: "/models/player/HT/HT.glb",
 };
 
-const IDLE_FROM = {
-  TK: "BM",
-};
+const SHARED_IDLE_URL = "/models/player/shared/anims/idle.glb";
+let sharedIdlePromise = null;
+function loadSharedIdle() {
+  if (!sharedIdlePromise) {
+    const loader = new GLTFLoader();
+    sharedIdlePromise = loader.loadAsync(SHARED_IDLE_URL).catch(() => null);
+  }
+  return sharedIdlePromise;
+}
 
 const TARGET_HEIGHT = 1.72 * 1.1;
 const gltfCache = new Map();
@@ -127,10 +133,9 @@ async function loadGltf(classId) {
 }
 
 async function resolveIdleClip(classId, classGltf) {
-  const fromId = IDLE_FROM[classId];
-  if (fromId) {
-    const donor = await loadGltf(fromId);
-    if (donor.animations[0]) return donor.animations[0];
+  if (classId === "TK") {
+    const donor = await loadSharedIdle();
+    if (donor?.animations?.[0]) return donor.animations[0];
   }
   return classGltf.animations[0] || null;
 }

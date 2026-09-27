@@ -24,6 +24,24 @@ import { SkillBarView } from "../ui/SkillBarView";
 import { DropLogView } from "../ui/DropLogView";
 import { SettingsPanel } from "../ui/SettingsPanel";
 import { getSkillVfxProfile } from "../presentation/effects/skill/SkillVfxCatalog";
+import {
+  DEFAULT_GRAPHICS_QUALITY,
+  type GraphicsQualityLevel,
+  isGraphicsQualityLevel,
+} from "../presentation/rendering/GraphicsQuality";
+
+function readInitialQuality(): GraphicsQualityLevel {
+  try {
+    const raw = localStorage.getItem("uaidzin_settings");
+    if (raw) {
+      const data = JSON.parse(raw) as Record<string, unknown>;
+      if (isGraphicsQualityLevel(data.optGraphicsQuality)) return data.optGraphicsQuality;
+      if (data.optShadows === false) return "baixo";
+    }
+  } catch {
+  }
+  return DEFAULT_GRAPHICS_QUALITY;
+}
 
 export interface GameAppDeps {
   canvas: HTMLCanvasElement;
@@ -134,7 +152,7 @@ export class GameApp {
 
   constructor(deps: GameAppDeps) {
     this.canvasElement = deps.canvas;
-    this.renderer = new SceneRenderer({ canvas: deps.canvas });
+    this.renderer = new SceneRenderer({ canvas: deps.canvas, quality: readInitialQuality() });
     this.hint = deps.interactionHintElement;
     this.playerFrame = deps.playerFrameElement;
     this.playerFace = deps.playerFaceElement;
@@ -205,6 +223,7 @@ export class GameApp {
     const btnSettings = deps.hudToolsElement.querySelector<HTMLButtonElement>("#btn-settings");
     this.settingsPanel = new SettingsPanel(deps.settingsOverlayElement, btnSettings, {
       applyArmorAura: (enabled) => this.session.setArmorAuraEnabled(enabled),
+      applyQuality: (quality) => this.renderer.setQuality(quality),
       applyShadows: (enabled) => this.renderer.setShadowsEnabled(enabled),
       onChangeCharacter: () => void this.leaveToBoot("select"),
       onLogout: () => void this.leaveToBoot("login"),

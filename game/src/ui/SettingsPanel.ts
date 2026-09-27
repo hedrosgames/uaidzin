@@ -1,8 +1,15 @@
+import {
+  DEFAULT_GRAPHICS_QUALITY,
+  type GraphicsQualityLevel,
+  isGraphicsQualityLevel,
+} from "../presentation/rendering/GraphicsQuality";
+
 const SETTINGS_KEY = "uaidzin_settings";
 
 export interface SettingsCallbacks {
   applyArmorAura: (enabled: boolean) => void;
-  applyShadows: (enabled: boolean) => void;
+  applyQuality: (quality: GraphicsQualityLevel) => void;
+  applyShadows?: (enabled: boolean) => void;
   onChangeCharacter: () => void;
   onLogout: () => void;
   showToast: (text: string, kind?: "skill" | "attr" | "level" | "dungeon") => void;
@@ -127,6 +134,15 @@ export class SettingsPanel {
       fullscreenEl.checked = Boolean(data.optFullscreen);
     }
 
+    const qualityEl = document.getElementById("opt-graphics-quality") as HTMLSelectElement | null;
+    if (qualityEl) {
+      qualityEl.value = isGraphicsQualityLevel(data.optGraphicsQuality)
+        ? data.optGraphicsQuality
+        : data.optShadows === false
+          ? "baixo"
+          : DEFAULT_GRAPHICS_QUALITY;
+    }
+
     const shadowsEl = document.getElementById("opt-shadows") as HTMLInputElement | null;
     if (shadowsEl) {
       shadowsEl.checked = data.optShadows == null ? true : Boolean(data.optShadows);
@@ -153,7 +169,13 @@ export class SettingsPanel {
 
   private applyInitialSettings(): void {
     const data = this.readStored();
-    this.callbacks.applyShadows(data.optShadows == null ? true : Boolean(data.optShadows));
+    const q = isGraphicsQualityLevel(data.optGraphicsQuality)
+      ? data.optGraphicsQuality
+      : data.optShadows === false
+        ? "baixo"
+        : DEFAULT_GRAPHICS_QUALITY;
+    this.callbacks.applyQuality(q);
+    this.callbacks.applyShadows?.(data.optShadows == null ? true : Boolean(data.optShadows));
     this.callbacks.applyArmorAura(Boolean(data.optArmorAura));
   }
 
@@ -169,11 +191,15 @@ export class SettingsPanel {
     });
 
     const fullscreen = document.getElementById("opt-fullscreen") as HTMLInputElement | null;
+    const qualityEl = document.getElementById("opt-graphics-quality") as HTMLSelectElement | null;
     const shadows = document.getElementById("opt-shadows") as HTMLInputElement | null;
     const armorAura = document.getElementById("opt-armor-aura") as HTMLInputElement | null;
     const skipConfirm = document.getElementById("opt-skip-dungeon-confirm") as HTMLInputElement | null;
 
     if (fullscreen) data.optFullscreen = fullscreen.checked;
+    if (qualityEl && isGraphicsQualityLevel(qualityEl.value)) {
+      data.optGraphicsQuality = qualityEl.value;
+    }
     if (shadows) data.optShadows = shadows.checked;
     if (armorAura) data.optArmorAura = armorAura.checked;
     if (skipConfirm) data.optSkipDungeonConfirm = skipConfirm.checked;
@@ -185,7 +211,11 @@ export class SettingsPanel {
     } catch {
     }
 
-    this.callbacks.applyShadows(shadows ? shadows.checked : true);
+    const q = isGraphicsQualityLevel(data.optGraphicsQuality)
+      ? data.optGraphicsQuality
+      : DEFAULT_GRAPHICS_QUALITY;
+    this.callbacks.applyQuality(q);
+    if (shadows) this.callbacks.applyShadows?.(shadows.checked);
     this.callbacks.applyArmorAura(Boolean(armorAura?.checked));
   }
 }

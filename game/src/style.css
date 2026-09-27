@@ -280,6 +280,21 @@ textarea,
   text-align: right;
 }
 
+.settings select {
+  background: var(--bg-card);
+  color: var(--ink);
+  border: 1px solid var(--iron);
+  border-radius: 2px;
+  padding: 4px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.settings select:focus {
+  border-color: var(--gold);
+}
+
 .settings .toggle {
   appearance: none;
   width: 40px;

@@ -148,7 +148,7 @@
     "respawnSeconds": 25,
     "xpReward": 40,
     "color": "#e8a838",
-    "modelUrl": "/models/enemies/skeleton-special.fbx",
+    "modelUrl": "/models/enemies/skeleton-special.glb",
     "modelScale": 1.15,
     "isBoss": false
   }

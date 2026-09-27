@@ -78,7 +78,8 @@ Props de **dungeon** (cercas, alvos, tochas, etc.): **falta** em disco — catá
 | `game/public/models/player/BM/texture.jpg` | texture | Albedo BM | final |
 | `game/public/models/player/HT/texture.jpg` | texture | Albedo HT | final |
 
-**Falta (sem GLB):** NPC do hub (hoje marcador cilindro em `CityWorld`), monstro/inimigo (cápsula em `EnemyRuntimeView`), árvores fora da praça (instâncias cilindro em `CityScenery`).
+**Inimigos em GLB:** `skeleton-normal.glb` e `skeleton-special.glb` em `game/public/models/enemies/`.
+**Falta (sem GLB):** NPC do hub (hoje marcador cilindro em `CityWorld`), árvores fora da praça (instâncias cilindro em `CityScenery`).
 
 ---
 
@@ -86,6 +87,7 @@ Props de **dungeon** (cercas, alvos, tochas, etc.): **falta** em disco — catá
 
 | Caminho | Tipo | Uso | Status |
 |---|---|---|---|
+| `game/public/models/player/shared/anims/idle.glb` | anim | Idle compartilhado — carregado por `PlayerView` e `char-preview` | final |
 | `game/public/models/player/shared/anims/run.glb` | anim | Corrida — carregada por `PlayerView` | final |
 | `game/public/models/player/shared/anims/attack.glb` | anim | Ataque | final |
 | `game/public/models/player/shared/anims/cast.glb` | anim | Cast | final |
@@ -116,6 +118,8 @@ Detalhe I1 (clips por arma / por classe) fica fora deste doc mínimo.
 | Caminho | Tipo | Uso | Status |
 |---|---|---|---|
 | `game/public/textures/city-floor.webp` | texture | Chão da cidade (`CityGround`) | final |
+| `game/public/textures/city-granite-albedo.png` | texture | Granito da praça (≤ 1 MB) | final |
+| `game/public/textures/dungeon-cemetery-albedo.png` | texture | Albedo do cemitério D2 (≤ 1 MB) | final |
 | texturas de solo por dungeon (D1–D8) | texture | LD dungeon | falta |
 
 ---

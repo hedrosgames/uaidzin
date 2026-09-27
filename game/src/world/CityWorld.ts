@@ -444,10 +444,6 @@ export function buildTestDungeonWorld(): BuiltWorld {
     fill.position.set(arena.centerX, 5.8, arena.centerZ);
     group.add(fill);
 
-    const cool = new PointLight(0xa8c8e8, 2.4, 18, 1.8);
-    cool.position.set(arena.centerX + 3.5, 4.2, arena.centerZ - 2);
-    group.add(cool);
-
     const next = DUNGEON_TEST.arenas[DUNGEON_TEST.arenas.indexOf(arena) + 1];
     if (next) {
       const midZ = (arena.centerZ + next.centerZ) / 2;
@@ -481,11 +477,15 @@ export function buildTestDungeonWorld(): BuiltWorld {
   addCampoFence(group, collision, 10, 0, false, 8, occluders);
 
   DUNGEON_BRAZIER_SPOTS.forEach(([bx, bz], i) => {
-    const brazier = createBrazier(`dungeon-brazier-${i}`, bx, bz);
+    const brazier = createBrazier(`dungeon-brazier-${i}`, bx, bz, false);
     group.add(brazier.group);
     tickables.push(brazier);
     collision.circles.push({ x: bx, z: bz, r: BRAZIER_RADIUS });
   });
+
+  const portalLight = new PointLight(0x44c0ff, 4, 10, 2);
+  portalLight.position.set(0, 2, 7);
+  group.add(portalLight);
 
   const exitPortal = makePortal(
     {
@@ -552,7 +552,7 @@ export function buildDungeon2World(): BuiltWorld {
   const tickables: WorldTickable[] = [];
   group.add(buildCityVegetation(collision, []));
   BRAZIER_SPOTS.forEach(([bx, bz], i) => {
-    const brazier = createBrazier(`d2-brazier-${i}`, bx, bz);
+    const brazier = createBrazier(`d2-brazier-${i}`, bx, bz, i < 4);
     group.add(brazier.group);
     tickables.push(brazier);
     collision.circles.push({ x: bx, z: bz, r: BRAZIER_RADIUS });
