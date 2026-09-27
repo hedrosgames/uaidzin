@@ -1,0 +1,106 @@
+[
+  {
+    "resolution": "1k",
+    "url": "https://polyhaven.com/a/rock_04",
+    "asset": "rock_04",
+    "license": "CC0-1.0",
+    "files": [
+      {
+        "file": "rock_04-diffuse.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_04/rock_04_diff_1k.jpg",
+        "map": "Diffuse",
+        "md5": "cf0ec6db74559af9204840dbe1e30a37"
+      },
+      {
+        "file": "rock_04-nor_gl.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_04/rock_04_nor_gl_1k.jpg",
+        "map": "nor_gl",
+        "md5": "fffd1d7f7acc05c087236e07ed840e83"
+      },
+      {
+        "file": "rock_04-rough.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_04/rock_04_rough_1k.jpg",
+        "map": "rough",
+        "md5": "98c2580599e79a5d004ab00072d167c3"
+      }
+    ]
+  },
+  {
+    "resolution": "1k",
+    "url": "https://polyhaven.com/a/rough_wood",
+    "asset": "rough_wood",
+    "license": "CC0-1.0",
+    "files": [
+      {
+        "file": "rough_wood-diffuse.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_wood/rough_wood_diff_1k.jpg",
+        "map": "Diffuse",
+        "md5": "92d4b3dd46bab95248f5a7680b7882e7"
+      },
+      {
+        "file": "rough_wood-nor_gl.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_wood/rough_wood_nor_gl_1k.jpg",
+        "map": "nor_gl",
+        "md5": "1c9829c9023f74c74eaeba28e56e5144"
+      },
+      {
+        "file": "rough_wood-rough.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_wood/rough_wood_rough_1k.jpg",
+        "map": "rough",
+        "md5": "ef62954e4ea0e9cd78757ce79e6eeb58"
+      }
+    ]
+  },
+  {
+    "resolution": "1k",
+    "url": "https://polyhaven.com/a/rough_linen",
+    "asset": "rough_linen",
+    "license": "CC0-1.0",
+    "files": [
+      {
+        "file": "rough_linen-diffuse.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_linen/rough_linen_diff_1k.jpg",
+        "map": "Diffuse",
+        "md5": "663db789fb075462b685c1f740e58930"
+      },
+      {
+        "file": "rough_linen-nor_gl.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_linen/rough_linen_nor_gl_1k.jpg",
+        "map": "nor_gl",
+        "md5": "3350269a2e9c472aa406bd3cc1eaf2c8"
+      },
+      {
+        "file": "rough_linen-rough.jpg",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rough_linen/rough_linen_rough_1k.jpg",
+        "map": "rough",
+        "md5": "a380b24cc43cff88c39510305ebf0020"
+      }
+    ]
+  },
+  {
+    "license": "CC0-1.0",
+    "resolution": "1k",
+    "asset": "rust_coarse_01",
+    "url": "https://polyhaven.com/a/rust_coarse_01",
+    "files": [
+      {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rust_coarse_01/rust_coarse_01_diff_1k.jpg",
+        "file": "rust_coarse_01-diffuse.jpg",
+        "md5": "c2d2facc7184f216d15a8f9957d3aa4c",
+        "map": "Diffuse"
+      },
+      {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rust_coarse_01/rust_coarse_01_nor_gl_1k.jpg",
+        "file": "rust_coarse_01-nor_gl.jpg",
+        "md5": "77f701cbbf5042f6531e7a5af3a4d171",
+        "map": "nor_gl"
+      },
+      {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rust_coarse_01/rust_coarse_01_rough_1k.jpg",
+        "file": "rust_coarse_01-rough.jpg",
+        "md5": "5c06aa68ed5f0d597ef92198050c0c6a",
+        "map": "Rough"
+      }
+    ]
+  }
+]

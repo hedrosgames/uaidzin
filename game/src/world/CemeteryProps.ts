@@ -1,5 +1,6 @@
-import { Group, Mesh, MeshStandardMaterial, Object3D, SRGBColorSpace } from "three";
+import { Group, Mesh, Object3D } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { applyCemeteryMaterials } from "./CemeteryMaterials";
 
 export type CemeteryPropId = "wall" | "tomb" | "tree" | "mausoleum";
 
@@ -43,32 +44,11 @@ export function cemeteryPropRadius(id: CemeteryPropId, scale: number): number {
 const loader = new GLTFLoader();
 const prototypes = new Map<CemeteryPropId, Promise<Object3D>>();
 
-function preparePrototype(root: Object3D): void {
-  root.traverse((obj) => {
-    const mesh = obj as Mesh;
-    if (!mesh.isMesh) return;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for (const mat of mats) {
-      const std = mat as MeshStandardMaterial;
-      if (!std.isMeshStandardMaterial) continue;
-      std.metalness = 0;
-      std.roughness = 0.9;
-      if (std.map) {
-        std.map.colorSpace = SRGBColorSpace;
-        std.map.anisotropy = 8;
-        std.map.needsUpdate = true;
-      }
-    }
-  });
-}
-
 function loadPrototype(id: CemeteryPropId): Promise<Object3D> {
   let pending = prototypes.get(id);
   if (!pending) {
-    pending = loader.loadAsync(CEMETERY_PROP_SPECS[id].url).then((gltf) => {
-      preparePrototype(gltf.scene);
+    pending = loader.loadAsync(CEMETERY_PROP_SPECS[id].url).then(async (gltf) => {
+      await applyCemeteryMaterials(gltf.scene, id);
       return gltf.scene;
     }).catch(() => new Group());
     prototypes.set(id, pending);

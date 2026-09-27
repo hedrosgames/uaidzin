@@ -1,0 +1,549 @@
+{
+  "checks": [
+    "Carga em curso: 3.7,0.9,0",
+    "Núcleo de carga visível: 3.7,0.9,0",
+    "Motes de carga na origem: 3.7,0.9,0",
+    "Voo e impacto aguardam carga: 3.7,0.9,0",
+    "Luz acende na carga: 3.7,0.9,0",
+    "Voo após carga de 0,12 s: 3.7,0.9,0",
+    "Núcleo de lava 3D em voo: 3.7,0.9,0",
+    "Coração incandescente em voo: 3.7,0.9,0",
+    "Cauda de estilhaços 3D em voo: 3.7,0.9,0",
+    "Três cascas de bronze orbitando: 3.7,0.9,0",
+    "Nenhum sprite na cena: 3.7,0.9,0",
+    "Invólucro e brasas em voo: 3.7,0.9,0",
+    "Impacto ainda não emitiu: 3.7,0.9,0",
+    "Impacto no destino: 3.7,0.9,0",
+    "Pico de luz no impacto: 3.7,0.9,0",
+    "Burst e pluma no impacto: 3.7,0.9,0",
+    "Flash no impacto: 3.7,0.9,0",
+    "Anel de choque no impacto: 3.7,0.9,0",
+    "Queimadura no alvo: 3.7,0.9,0",
+    "Estilhaços geométricos no impacto: 3.7,0.9,0",
+    "Matrizes de estilhaço finitas: 3.7,0.9,0",
+    "Cascas de bronze se abrem no impacto: 3.7,0.9,0",
+    "Cauda some no contato: 3.7,0.9,0",
+    "Núcleo recolhe no impacto: 3.7,0.9,0",
+    "Cleanup sem resíduo: 3.7,0.9,0",
+    "Carga em curso: -7.5,0.9,0",
+    "Núcleo de carga visível: -7.5,0.9,0",
+    "Motes de carga na origem: -7.5,0.9,0",
+    "Voo e impacto aguardam carga: -7.5,0.9,0",
+    "Luz acende na carga: -7.5,0.9,0",
+    "Voo após carga de 0,12 s: -7.5,0.9,0",
+    "Núcleo de lava 3D em voo: -7.5,0.9,0",
+    "Coração incandescente em voo: -7.5,0.9,0",
+    "Cauda de estilhaços 3D em voo: -7.5,0.9,0",
+    "Três cascas de bronze orbitando: -7.5,0.9,0",
+    "Nenhum sprite na cena: -7.5,0.9,0",
+    "Invólucro e brasas em voo: -7.5,0.9,0",
+    "Impacto ainda não emitiu: -7.5,0.9,0",
+    "Impacto no destino: -7.5,0.9,0",
+    "Pico de luz no impacto: -7.5,0.9,0",
+    "Burst e pluma no impacto: -7.5,0.9,0",
+    "Flash no impacto: -7.5,0.9,0",
+    "Anel de choque no impacto: -7.5,0.9,0",
+    "Queimadura no alvo: -7.5,0.9,0",
+    "Estilhaços geométricos no impacto: -7.5,0.9,0",
+    "Matrizes de estilhaço finitas: -7.5,0.9,0",
+    "Cascas de bronze se abrem no impacto: -7.5,0.9,0",
+    "Cauda some no contato: -7.5,0.9,0",
+    "Núcleo recolhe no impacto: -7.5,0.9,0",
+    "Cleanup sem resíduo: -7.5,0.9,0",
+    "Carga em curso: -3.45,0.9,5",
+    "Núcleo de carga visível: -3.45,0.9,5",
+    "Motes de carga na origem: -3.45,0.9,5",
+    "Voo e impacto aguardam carga: -3.45,0.9,5",
+    "Luz acende na carga: -3.45,0.9,5",
+    "Voo após carga de 0,12 s: -3.45,0.9,5",
+    "Núcleo de lava 3D em voo: -3.45,0.9,5",
+    "Coração incandescente em voo: -3.45,0.9,5",
+    "Cauda de estilhaços 3D em voo: -3.45,0.9,5",
+    "Três cascas de bronze orbitando: -3.45,0.9,5",
+    "Nenhum sprite na cena: -3.45,0.9,5",
+    "Invólucro e brasas em voo: -3.45,0.9,5",
+    "Impacto ainda não emitiu: -3.45,0.9,5",
+    "Impacto no destino: -3.45,0.9,5",
+    "Pico de luz no impacto: -3.45,0.9,5",
+    "Burst e pluma no impacto: -3.45,0.9,5",
+    "Flash no impacto: -3.45,0.9,5",
+    "Anel de choque no impacto: -3.45,0.9,5",
+    "Queimadura no alvo: -3.45,0.9,5",
+    "Estilhaços geométricos no impacto: -3.45,0.9,5",
+    "Matrizes de estilhaço finitas: -3.45,0.9,5",
+    "Cascas de bronze se abrem no impacto: -3.45,0.9,5",
+    "Cauda some no contato: -3.45,0.9,5",
+    "Núcleo recolhe no impacto: -3.45,0.9,5",
+    "Cleanup sem resíduo: -3.45,0.9,5",
+    "Carga em curso: -3.45,0.9,-5",
+    "Núcleo de carga visível: -3.45,0.9,-5",
+    "Motes de carga na origem: -3.45,0.9,-5",
+    "Voo e impacto aguardam carga: -3.45,0.9,-5",
+    "Luz acende na carga: -3.45,0.9,-5",
+    "Voo após carga de 0,12 s: -3.45,0.9,-5",
+    "Núcleo de lava 3D em voo: -3.45,0.9,-5",
+    "Coração incandescente em voo: -3.45,0.9,-5",
+    "Cauda de estilhaços 3D em voo: -3.45,0.9,-5",
+    "Três cascas de bronze orbitando: -3.45,0.9,-5",
+    "Nenhum sprite na cena: -3.45,0.9,-5",
+    "Invólucro e brasas em voo: -3.45,0.9,-5",
+    "Impacto ainda não emitiu: -3.45,0.9,-5",
+    "Impacto no destino: -3.45,0.9,-5",
+    "Pico de luz no impacto: -3.45,0.9,-5",
+    "Burst e pluma no impacto: -3.45,0.9,-5",
+    "Flash no impacto: -3.45,0.9,-5",
+    "Anel de choque no impacto: -3.45,0.9,-5",
+    "Queimadura no alvo: -3.45,0.9,-5",
+    "Estilhaços geométricos no impacto: -3.45,0.9,-5",
+    "Matrizes de estilhaço finitas: -3.45,0.9,-5",
+    "Cascas de bronze se abrem no impacto: -3.45,0.9,-5",
+    "Cauda some no contato: -3.45,0.9,-5",
+    "Núcleo recolhe no impacto: -3.45,0.9,-5",
+    "Cleanup sem resíduo: -3.45,0.9,-5",
+    "Carga em curso: 1.5,0.9,4",
+    "Núcleo de carga visível: 1.5,0.9,4",
+    "Motes de carga na origem: 1.5,0.9,4",
+    "Voo e impacto aguardam carga: 1.5,0.9,4",
+    "Luz acende na carga: 1.5,0.9,4",
+    "Voo após carga de 0,12 s: 1.5,0.9,4",
+    "Núcleo de lava 3D em voo: 1.5,0.9,4",
+    "Coração incandescente em voo: 1.5,0.9,4",
+    "Cauda de estilhaços 3D em voo: 1.5,0.9,4",
+    "Três cascas de bronze orbitando: 1.5,0.9,4",
+    "Nenhum sprite na cena: 1.5,0.9,4",
+    "Invólucro e brasas em voo: 1.5,0.9,4",
+    "Impacto ainda não emitiu: 1.5,0.9,4",
+    "Impacto no destino: 1.5,0.9,4",
+    "Pico de luz no impacto: 1.5,0.9,4",
+    "Burst e pluma no impacto: 1.5,0.9,4",
+    "Flash no impacto: 1.5,0.9,4",
+    "Anel de choque no impacto: 1.5,0.9,4",
+    "Queimadura no alvo: 1.5,0.9,4",
+    "Estilhaços geométricos no impacto: 1.5,0.9,4",
+    "Matrizes de estilhaço finitas: 1.5,0.9,4",
+    "Cascas de bronze se abrem no impacto: 1.5,0.9,4",
+    "Cauda some no contato: 1.5,0.9,4",
+    "Núcleo recolhe no impacto: 1.5,0.9,4",
+    "Cleanup sem resíduo: 1.5,0.9,4",
+    "Carga em curso: 1.5,0.9,-4",
+    "Núcleo de carga visível: 1.5,0.9,-4",
+    "Motes de carga na origem: 1.5,0.9,-4",
+    "Voo e impacto aguardam carga: 1.5,0.9,-4",
+    "Luz acende na carga: 1.5,0.9,-4",
+    "Voo após carga de 0,12 s: 1.5,0.9,-4",
+    "Núcleo de lava 3D em voo: 1.5,0.9,-4",
+    "Coração incandescente em voo: 1.5,0.9,-4",
+    "Cauda de estilhaços 3D em voo: 1.5,0.9,-4",
+    "Três cascas de bronze orbitando: 1.5,0.9,-4",
+    "Nenhum sprite na cena: 1.5,0.9,-4",
+    "Invólucro e brasas em voo: 1.5,0.9,-4",
+    "Impacto ainda não emitiu: 1.5,0.9,-4",
+    "Impacto no destino: 1.5,0.9,-4",
+    "Pico de luz no impacto: 1.5,0.9,-4",
+    "Burst e pluma no impacto: 1.5,0.9,-4",
+    "Flash no impacto: 1.5,0.9,-4",
+    "Anel de choque no impacto: 1.5,0.9,-4",
+    "Queimadura no alvo: 1.5,0.9,-4",
+    "Estilhaços geométricos no impacto: 1.5,0.9,-4",
+    "Matrizes de estilhaço finitas: 1.5,0.9,-4",
+    "Cascas de bronze se abrem no impacto: 1.5,0.9,-4",
+    "Cauda some no contato: 1.5,0.9,-4",
+    "Núcleo recolhe no impacto: 1.5,0.9,-4",
+    "Cleanup sem resíduo: 1.5,0.9,-4",
+    "Carga em curso: -7,0.9,4",
+    "Núcleo de carga visível: -7,0.9,4",
+    "Motes de carga na origem: -7,0.9,4",
+    "Voo e impacto aguardam carga: -7,0.9,4",
+    "Luz acende na carga: -7,0.9,4",
+    "Voo após carga de 0,12 s: -7,0.9,4",
+    "Núcleo de lava 3D em voo: -7,0.9,4",
+    "Coração incandescente em voo: -7,0.9,4",
+    "Cauda de estilhaços 3D em voo: -7,0.9,4",
+    "Três cascas de bronze orbitando: -7,0.9,4",
+    "Nenhum sprite na cena: -7,0.9,4",
+    "Invólucro e brasas em voo: -7,0.9,4",
+    "Impacto ainda não emitiu: -7,0.9,4",
+    "Impacto no destino: -7,0.9,4",
+    "Pico de luz no impacto: -7,0.9,4",
+    "Burst e pluma no impacto: -7,0.9,4",
+    "Flash no impacto: -7,0.9,4",
+    "Anel de choque no impacto: -7,0.9,4",
+    "Queimadura no alvo: -7,0.9,4",
+    "Estilhaços geométricos no impacto: -7,0.9,4",
+    "Matrizes de estilhaço finitas: -7,0.9,4",
+    "Cascas de bronze se abrem no impacto: -7,0.9,4",
+    "Cauda some no contato: -7,0.9,4",
+    "Núcleo recolhe no impacto: -7,0.9,4",
+    "Cleanup sem resíduo: -7,0.9,4",
+    "Carga em curso: -7,0.9,-4",
+    "Núcleo de carga visível: -7,0.9,-4",
+    "Motes de carga na origem: -7,0.9,-4",
+    "Voo e impacto aguardam carga: -7,0.9,-4",
+    "Luz acende na carga: -7,0.9,-4",
+    "Voo após carga de 0,12 s: -7,0.9,-4",
+    "Núcleo de lava 3D em voo: -7,0.9,-4",
+    "Coração incandescente em voo: -7,0.9,-4",
+    "Cauda de estilhaços 3D em voo: -7,0.9,-4",
+    "Três cascas de bronze orbitando: -7,0.9,-4",
+    "Nenhum sprite na cena: -7,0.9,-4",
+    "Invólucro e brasas em voo: -7,0.9,-4",
+    "Impacto ainda não emitiu: -7,0.9,-4",
+    "Impacto no destino: -7,0.9,-4",
+    "Pico de luz no impacto: -7,0.9,-4",
+    "Burst e pluma no impacto: -7,0.9,-4",
+    "Flash no impacto: -7,0.9,-4",
+    "Anel de choque no impacto: -7,0.9,-4",
+    "Queimadura no alvo: -7,0.9,-4",
+    "Estilhaços geométricos no impacto: -7,0.9,-4",
+    "Matrizes de estilhaço finitas: -7,0.9,-4",
+    "Cascas de bronze se abrem no impacto: -7,0.9,-4",
+    "Cauda some no contato: -7,0.9,-4",
+    "Núcleo recolhe no impacto: -7,0.9,-4",
+    "Cleanup sem resíduo: -7,0.9,-4",
+    "Carga em curso: -3.45,2.5,0",
+    "Núcleo de carga visível: -3.45,2.5,0",
+    "Motes de carga na origem: -3.45,2.5,0",
+    "Voo e impacto aguardam carga: -3.45,2.5,0",
+    "Luz acende na carga: -3.45,2.5,0",
+    "Voo após carga de 0,12 s: -3.45,2.5,0",
+    "Núcleo de lava 3D em voo: -3.45,2.5,0",
+    "Coração incandescente em voo: -3.45,2.5,0",
+    "Cauda de estilhaços 3D em voo: -3.45,2.5,0",
+    "Três cascas de bronze orbitando: -3.45,2.5,0",
+    "Nenhum sprite na cena: -3.45,2.5,0",
+    "Invólucro e brasas em voo: -3.45,2.5,0",
+    "Impacto ainda não emitiu: -3.45,2.5,0",
+    "Impacto no destino: -3.45,2.5,0",
+    "Pico de luz no impacto: -3.45,2.5,0",
+    "Burst e pluma no impacto: -3.45,2.5,0",
+    "Flash no impacto: -3.45,2.5,0",
+    "Anel de choque no impacto: -3.45,2.5,0",
+    "Queimadura no alvo: -3.45,2.5,0",
+    "Estilhaços geométricos no impacto: -3.45,2.5,0",
+    "Matrizes de estilhaço finitas: -3.45,2.5,0",
+    "Cascas de bronze se abrem no impacto: -3.45,2.5,0",
+    "Cauda some no contato: -3.45,2.5,0",
+    "Núcleo recolhe no impacto: -3.45,2.5,0",
+    "Cleanup sem resíduo: -3.45,2.5,0",
+    "Carga em curso: -3.45,0.2,0",
+    "Núcleo de carga visível: -3.45,0.2,0",
+    "Motes de carga na origem: -3.45,0.2,0",
+    "Voo e impacto aguardam carga: -3.45,0.2,0",
+    "Luz acende na carga: -3.45,0.2,0",
+    "Voo após carga de 0,12 s: -3.45,0.2,0",
+    "Núcleo de lava 3D em voo: -3.45,0.2,0",
+    "Coração incandescente em voo: -3.45,0.2,0",
+    "Cauda de estilhaços 3D em voo: -3.45,0.2,0",
+    "Três cascas de bronze orbitando: -3.45,0.2,0",
+    "Nenhum sprite na cena: -3.45,0.2,0",
+    "Invólucro e brasas em voo: -3.45,0.2,0",
+    "Impacto ainda não emitiu: -3.45,0.2,0",
+    "Impacto no destino: -3.45,0.2,0",
+    "Pico de luz no impacto: -3.45,0.2,0",
+    "Burst e pluma no impacto: -3.45,0.2,0",
+    "Flash no impacto: -3.45,0.2,0",
+    "Anel de choque no impacto: -3.45,0.2,0",
+    "Queimadura no alvo: -3.45,0.2,0",
+    "Estilhaços geométricos no impacto: -3.45,0.2,0",
+    "Matrizes de estilhaço finitas: -3.45,0.2,0",
+    "Cascas de bronze se abrem no impacto: -3.45,0.2,0",
+    "Cauda some no contato: -3.45,0.2,0",
+    "Núcleo recolhe no impacto: -3.45,0.2,0",
+    "Cleanup sem resíduo: -3.45,0.2,0",
+    "Carga em curso: -3.45,1.2,0",
+    "Núcleo de carga visível: -3.45,1.2,0",
+    "Motes de carga na origem: -3.45,1.2,0",
+    "Voo e impacto aguardam carga: -3.45,1.2,0",
+    "Luz acende na carga: -3.45,1.2,0",
+    "Voo após carga de 0,12 s: -3.45,1.2,0",
+    "Núcleo de lava 3D em voo: -3.45,1.2,0",
+    "Coração incandescente em voo: -3.45,1.2,0",
+    "Cauda de estilhaços 3D em voo: -3.45,1.2,0",
+    "Três cascas de bronze orbitando: -3.45,1.2,0",
+    "Nenhum sprite na cena: -3.45,1.2,0",
+    "Invólucro e brasas em voo: -3.45,1.2,0",
+    "Impacto ainda não emitiu: -3.45,1.2,0",
+    "Impacto no destino: -3.45,1.2,0",
+    "Pico de luz no impacto: -3.45,1.2,0",
+    "Burst e pluma no impacto: -3.45,1.2,0",
+    "Flash no impacto: -3.45,1.2,0",
+    "Anel de choque no impacto: -3.45,1.2,0",
+    "Queimadura no alvo: -3.45,1.2,0",
+    "Estilhaços geométricos no impacto: -3.45,1.2,0",
+    "Matrizes de estilhaço finitas: -3.45,1.2,0",
+    "Cascas de bronze se abrem no impacto: -3.45,1.2,0",
+    "Cauda some no contato: -3.45,1.2,0",
+    "Núcleo recolhe no impacto: -3.45,1.2,0",
+    "Cleanup sem resíduo: -3.45,1.2,0",
+    "Memória estável após ciclos",
+    "Memória estável após ciclos",
+    "Memória estável após ciclos",
+    "Memória estável após ciclos",
+    "Alvo inválido não altera cena",
+    "Controller recusa coordenadas inválidas",
+    "Limite de três esferas concorrentes",
+    "Clear imediato",
+    "Voo iniciado a 30 fps",
+    "Carga completa antes do voo a 30 fps",
+    "Voo em 0,12 s ± 1 passo fixo a 30 fps",
+    "Sem salto de fase a 30 fps",
+    "Voo iniciado a 60 fps",
+    "Carga completa antes do voo a 60 fps",
+    "Voo em 0,12 s ± 1 passo fixo a 60 fps",
+    "Sem salto de fase a 60 fps",
+    "Voo iniciado a 144 fps",
+    "Carga completa antes do voo a 144 fps",
+    "Voo em 0,12 s ± 1 passo fixo a 144 fps",
+    "Sem salto de fase a 144 fps",
+    "Dispose idempotente remove todos os recursos da cena"
+  ],
+  "directions": [
+    {
+      "flightDuration": 0.2750605097495252,
+      "head": [
+        3.7,
+        0.9,
+        0
+      ],
+      "target": [
+        3.7,
+        0.9,
+        0
+      ]
+    },
+    {
+      "flightDuration": 0.18,
+      "head": [
+        -7.5,
+        0.9,
+        0
+      ],
+      "target": [
+        -7.5,
+        0.9,
+        0
+      ]
+    },
+    {
+      "flightDuration": 0.192394211306834,
+      "head": [
+        -3.45,
+        0.9,
+        5
+      ],
+      "target": [
+        -3.45,
+        0.9,
+        5
+      ]
+    },
+    {
+      "flightDuration": 0.192394211306834,
+      "head": [
+        -3.45,
+        0.9,
+        -5
+      ],
+      "target": [
+        -3.45,
+        0.9,
+        -5
+      ]
+    },
+    {
+      "flightDuration": 0.24484326589079597,
+      "head": [
+        1.5,
+        0.9,
+        4
+      ],
+      "target": [
+        1.5,
+        0.9,
+        4
+      ]
+    },
+    {
+      "flightDuration": 0.24484326589079597,
+      "head": [
+        1.5,
+        0.9,
+        -4
+      ],
+      "target": [
+        1.5,
+        0.9,
+        -4
+      ]
+    },
+    {
+      "flightDuration": 0.2057782169137759,
+      "head": [
+        -7,
+        0.9,
+        4
+      ],
+      "target": [
+        -7,
+        0.9,
+        4
+      ]
+    },
+    {
+      "flightDuration": 0.2057782169137759,
+      "head": [
+        -7,
+        0.9,
+        -4
+      ],
+      "target": [
+        -7,
+        0.9,
+        -4
+      ]
+    },
+    {
+      "flightDuration": 0.18,
+      "head": [
+        -3.45,
+        2.5,
+        0
+      ],
+      "target": [
+        -3.45,
+        2.5,
+        0
+      ]
+    },
+    {
+      "flightDuration": 0.18,
+      "head": [
+        -3.45,
+        0.9,
+        0
+      ],
+      "target": [
+        -3.45,
+        0.2,
+        0
+      ]
+    },
+    {
+      "flightDuration": 0.18,
+      "head": [
+        -3.45,
+        1.2,
+        0
+      ],
+      "target": [
+        -3.45,
+        1.2,
+        0
+      ]
+    }
+  ],
+  "memory": [
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    },
+    {
+      "geometries": 22,
+      "textures": 20
+    }
+  ],
+  "inputLimitations": [],
+  "skillId": "fm_mag_esfera_ignea",
+  "controls": [
+    "direção elevada",
+    "pausa",
+    "velocidade",
+    "órbita por mouse",
+    "restaurar câmera"
+  ],
+  "webgl": {
+    "error": 0,
+    "shadersValid": true
+  },
+  "gate": [
+    "Catálogo mapeia fm_mag_esfera_ignea",
+    "Catálogo resolve a família FM dedicada",
+    "DedicatedSkillVfx declara esfera-ignea",
+    "EffectManager tem ramo de dispatch",
+    "EffectManager despacha para o controller da esfera",
+    "EffectManager soma casts da esfera no estado",
+    "EffectManager soma partículas da esfera no estado",
+    "Vite tem rota do lab da esfera",
+    "Lab usa a marca de qualidade UAID no título",
+    "Lab sem emoji",
+    "Zero comentário em src/presentation/effects/fmSkills/esfera-ignea/EsferaIgneaVfx.ts",
+    "Sem console de debug em src/presentation/effects/fmSkills/esfera-ignea/EsferaIgneaVfx.ts",
+    "Zero comentário em src/presentation/effects/fmSkills/esfera-ignea/EsferaIgneaParticleSystems.ts",
+    "Sem console de debug em src/presentation/effects/fmSkills/esfera-ignea/EsferaIgneaParticleSystems.ts",
+    "Zero comentário em src/presentation/effects/fmSkills/esfera-ignea/EsferaIgneaTextures.ts",
+    "Sem console de debug em src/presentation/effects/fmSkills/esfera-ignea/EsferaIgneaTextures.ts",
+    "Zero comentário em src/presentation/effects/fmSkills/esfera-ignea/demo.ts",
+    "Sem console de debug em src/presentation/effects/fmSkills/esfera-ignea/demo.ts",
+    "Zero comentário em src/presentation/effects/vfxKit/cometTail.ts",
+    "Sem console de debug em src/presentation/effects/vfxKit/cometTail.ts",
+    "Zero comentário em src/presentation/effects/vfxKit/curveTrajectory.ts",
+    "Sem console de debug em src/presentation/effects/vfxKit/curveTrajectory.ts"
+  ],
+  "frameScheduling": true
+}

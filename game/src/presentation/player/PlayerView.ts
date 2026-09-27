@@ -37,6 +37,7 @@ import {
   type WeaponSetId,
 } from "./WeaponSetCatalog";
 import { WeaponRig } from "./WeaponRig";
+import { polishCharacterMaterial } from "../../../public/boot/assets/character-materials.mjs";
 
 const HIPS_POSITION_TRACK = /Hips\.position$/;
 const RUN_REF_SPEED = 3.4;
@@ -477,6 +478,7 @@ export class PlayerView {
           std.map.colorSpace = "srgb";
           std.map.needsUpdate = true;
         }
+        polishCharacterMaterial(std, src.name);
         src.dispose();
         next.push(std);
       }

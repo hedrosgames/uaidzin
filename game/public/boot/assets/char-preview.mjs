@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
+import { polishCharacterMaterial } from "./character-materials.mjs";
 
 const MODEL = {
   TK: "/models/player/TK/TK.glb",
@@ -41,6 +42,7 @@ function harden(model) {
         std.map.colorSpace = THREE.SRGBColorSpace;
         std.map.needsUpdate = true;
       }
+      polishCharacterMaterial(std, src.name);
       src.dispose();
       return std;
     });

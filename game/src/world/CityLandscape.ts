@@ -52,8 +52,8 @@ function makeGrassGeometry(): BufferGeometry {
 export function buildCityVegetation(collision: WorldCollision, services: InteractableDef[]): Group {
   const group = new Group();
   group.name = "city-gardens";
-  const material = new MeshStandardMaterial({ color: 0xd3d2ac, roughness: 1, side: DoubleSide, vertexColors: true });
-  const grass = new InstancedMesh(makeGrassGeometry(), material, 3600);
+  const material = new MeshStandardMaterial({ color: 0xc6d1bc, roughness: 1, side: DoubleSide, vertexColors: true });
+  const grass = new InstancedMesh(makeGrassGeometry(), material, 5200);
   grass.name = "city-grass";
   grass.userData.occlusionIgnore = true;
   grass.raycast = () => {};
@@ -66,7 +66,7 @@ export function buildCityVegetation(collision: WorldCollision, services: Interac
     return (seed >>> 0) / 4294967296;
   };
   let count = 0;
-  for (let attempt = 0; attempt < 12000 && count < 3600; attempt++) {
+  for (let attempt = 0; attempt < 20000 && count < 5200; attempt++) {
     const bed = CITY_GARDEN_BEDS[attempt % CITY_GARDEN_BEDS.length]!;
     const x = bed[0] + (random() * 2 - 1) * bed[2] * 1.2;
     const z = bed[1] + (random() * 2 - 1) * bed[3] * 1.2;
@@ -77,10 +77,10 @@ export function buildCityVegetation(collision: WorldCollision, services: Interac
     if (collision.circles.some((circle) => Math.hypot(x - circle.x, z - circle.z) < circle.r + 0.2)) continue;
     transform.position.set(x, 0.015, z);
     transform.rotation.y = random() * Math.PI * 2;
-    transform.scale.setScalar(0.7 + random() * 0.85);
+    transform.scale.setScalar(0.55 + random() * 0.8);
     transform.updateMatrix();
     grass.setMatrixAt(count, transform.matrix);
-    color.setHSL(0.17 + random() * 0.07, 0.22 + random() * 0.18, 0.42 + random() * 0.17);
+    color.setHSL(0.23 + random() * 0.06, 0.3 + random() * 0.2, 0.31 + random() * 0.15);
     grass.setColorAt(count, color);
     count++;
   }

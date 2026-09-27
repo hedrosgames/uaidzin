@@ -43,6 +43,17 @@ export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
   tk_fis_earthquake: "avalanche",
 };
 
+export const FM_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
+  fm_mag_esfera_ignea: "esfera-ignea",
+  fm_mag_lanca_glacial: "lanca-glacial",
+  fm_mag_choque_vital: "choque-vital",
+  fm_mag_picada: "picada-peconhenta",
+  fm_mag_tempestade_brasa: "tempestade-brasa",
+  fm_mag_sombra_corrosiva: "sombra-corrosiva",
+  fm_mag_nevasca: "nevasca",
+  fm_mag_colapso: "colapso-elemental",
+};
+
 function hashId(value: string): number {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
@@ -81,7 +92,7 @@ function passiveEventFor(skill: SkillDef): SkillVfxPassiveEvent | null {
 }
 
 function dedicatedVfxFor(skillId: string): DedicatedSkillVfx | undefined {
-  return TK_DEDICATED_VFX_BY_SKILL_ID[skillId];
+  return TK_DEDICATED_VFX_BY_SKILL_ID[skillId] ?? FM_DEDICATED_VFX_BY_SKILL_ID[skillId];
 }
 
 function createProfile(

@@ -40,7 +40,15 @@ export type DedicatedSkillVfx =
   | "ancora"
   | "desafio"
   | "guarda"
-  | "bastiao";
+  | "bastiao"
+  | "esfera-ignea"
+  | "lanca-glacial"
+  | "choque-vital"
+  | "picada-peconhenta"
+  | "tempestade-brasa"
+  | "sombra-corrosiva"
+  | "nevasca"
+  | "colapso-elemental";
 
 export interface SkillVfxProfile {
   id: string;

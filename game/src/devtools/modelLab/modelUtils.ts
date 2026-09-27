@@ -8,6 +8,7 @@ import {
 } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
+import { polishCharacterMaterial } from "../../../public/boot/assets/character-materials.mjs";
 
 const loader = new GLTFLoader();
 const templateCache = new Map<string, Promise<GLTF>>();
@@ -71,6 +72,7 @@ function hardenMaterials(model: Object3D): void {
         std.map.colorSpace = "srgb";
         std.map.needsUpdate = true;
       }
+      polishCharacterMaterial(std, src.name);
       src.dispose();
       next.push(std);
     }

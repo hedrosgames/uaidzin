@@ -36,6 +36,9 @@ import { QuebraVfxController } from "./tkSkills/quebra/QuebraVfx";
 import { RugidoVfxController } from "./tkSkills/rugido/RugidoVfx";
 import { SeloVfxController } from "./tkSkills/selo/SeloVfx";
 import { TribunalVfxController } from "./tkSkills/tribunal/TribunalVfx";
+import { EsferaIgneaVfxController } from "./fmSkills/esfera-ignea/EsferaIgneaVfx";
+import { LancaGlacialVfxController } from "./fmSkills/lanca-glacial/LancaGlacialVfx";
+import { ChoqueVitalVfxController } from "./fmSkills/choque-vital/ChoqueVitalVfx";
 import { FireBurstVfxController } from "./fireBurst/FireBurstVfx";
 import { getSkillVfxProfile } from "./skill/SkillVfxCatalog";
 import { SkillVfxDirector } from "./skill/SkillVfxRuntime";
@@ -105,6 +108,9 @@ export class EffectManager {
   private readonly tkDesafio: DesafioVfxController;
   private readonly tkGuarda: GuardaVfxController;
   private readonly tkBastiao: BastiaoVfxController;
+  private readonly fmEsferaIgnea: EsferaIgneaVfxController;
+  private readonly fmLancaGlacial: LancaGlacialVfxController;
+  private readonly fmChoqueVital: ChoqueVitalVfxController;
 
   constructor(
     parent: HTMLElement,
@@ -135,6 +141,9 @@ export class EffectManager {
     this.tkDesafio = new DesafioVfxController(sceneRoot);
     this.tkGuarda = new GuardaVfxController(sceneRoot);
     this.tkBastiao = new BastiaoVfxController(sceneRoot);
+    this.fmEsferaIgnea = new EsferaIgneaVfxController(sceneRoot);
+    this.fmLancaGlacial = new LancaGlacialVfxController(sceneRoot);
+    this.fmChoqueVital = new ChoqueVitalVfxController(sceneRoot);
     this.overlay = document.createElement("div");
     this.overlay.id = "combat-overlay";
     this.overlay.className = "combat-overlay";
@@ -364,6 +373,15 @@ export class EffectManager {
       case "bastiao":
         this.tkBastiao.castBastiao(input.origin);
         return;
+      case "esfera-ignea":
+        this.fmEsferaIgnea.castEsferaIgnea(input.origin, target);
+        return;
+      case "lanca-glacial":
+        this.fmLancaGlacial.castLancaGlacial(input.origin, target);
+        return;
+      case "choque-vital":
+        this.fmChoqueVital.castChoqueVital(input.origin, target);
+        return;
       default:
         break;
     }
@@ -397,7 +415,10 @@ export class EffectManager {
         this.tkAncora.getActiveCastCount() +
         this.tkDesafio.getActiveCastCount() +
         this.tkGuarda.getActiveCastCount() +
-        this.tkBastiao.getActiveCastCount(),
+        this.tkBastiao.getActiveCastCount() +
+        this.fmEsferaIgnea.getActiveCastCount() +
+        this.fmLancaGlacial.getActiveCastCount() +
+        this.fmChoqueVital.getActiveCastCount(),
       particles:
         this.skillVfx.getParticleCount() +
         this.fireBurst.getParticleCount() +
@@ -423,7 +444,10 @@ export class EffectManager {
         this.tkAncora.getParticleCount() +
         this.tkDesafio.getParticleCount() +
         this.tkGuarda.getParticleCount() +
-        this.tkBastiao.getParticleCount(),
+        this.tkBastiao.getParticleCount() +
+        this.fmEsferaIgnea.getParticleCount() +
+        this.fmLancaGlacial.getParticleCount() +
+        this.fmChoqueVital.getParticleCount(),
     };
   }
 
