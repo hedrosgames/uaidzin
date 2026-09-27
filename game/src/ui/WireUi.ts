@@ -165,6 +165,19 @@ export class WireUi {
     host.appendChild(run);
 
     const ui = new WireUi(host);
+    (window as unknown as { __UAIDZIN_WIRE_NOTIFY_DIALOG__?: (open: boolean) => void }).__UAIDZIN_WIRE_NOTIFY_DIALOG__ = (dialogOpen: boolean) => {
+      ui.setDialogOpen(dialogOpen);
+    };
+    (window as unknown as { __UAIDZIN_WIRE_NOTIFY_PANELS__?: (open: boolean) => void }).__UAIDZIN_WIRE_NOTIFY_PANELS__ = (panelsOpen: boolean) => {
+      ui.setPanelsOpen(panelsOpen);
+    };
+    if (typeof MutationObserver !== "undefined") {
+      const observer = new MutationObserver(() => {
+        const hasOpen = !!host.querySelector(".win:not(.is-closed)");
+        ui.setPanelsOpen(hasOpen);
+      });
+      observer.observe(host, { subtree: true, attributes: true, attributeFilter: ["class"] });
+    }
     if (view) ui.applyCharacter(view);
     return ui;
   }
@@ -174,8 +187,27 @@ export class WireUi {
     bindWirePanels(this.root, view);
   }
 
+  private panelsOpen = false;
+  private dialogOpen = false;
+  private onOpenChange?: (open: boolean) => void;
+
+  setOnOpenChange(cb: (open: boolean) => void): void {
+    this.onOpenChange = cb;
+  }
+
+  setDialogOpen(open: boolean): void {
+    this.dialogOpen = open;
+    this.onOpenChange?.(this.isOpen());
+  }
+
+  setPanelsOpen(open: boolean): void {
+    if (this.panelsOpen === open) return;
+    this.panelsOpen = open;
+    this.onOpenChange?.(this.isOpen());
+  }
+
   isOpen(): boolean {
-    return !!this.root.querySelector(".win:not(.is-closed)");
+    return this.panelsOpen || this.dialogOpen;
   }
 
   open(name: WirePanelName, opts?: { title?: string; shopId?: string }): void {
@@ -241,18 +273,43 @@ export class WireUi {
       api?.paintQuest?.();
     }
     el.classList.remove("is-closed");
+    this.panelsOpen = true;
+    this.onOpenChange?.(this.isOpen());
   }
 
   close(): void {
     this.root.querySelectorAll(".win").forEach((win) => {
       win.classList.add("is-closed");
     });
+    this.panelsOpen = false;
+    this.onOpenChange?.(this.isOpen());
   }
 
   toggle(name: WirePanelName): void {
     const el = this.root.querySelector("#" + PANEL_IDS[name]);
     if (!el) return;
-    if (el.classList.contains("is-closed")) this.open(name);
-    else el.classList.add("is-closed");
+    if (el.classList.contains("is-closed")) {
+      this.open(name);
+    } else {
+      el.classList.add("is-closed");
+      this.panelsOpen = !!this.root.querySelector(".win:not(.is-closed)");
+      this.onOpenChange?.(this.isOpen());
+    }
+  }
+
+  handleEscape(): boolean {
+    const api = (window as unknown as { __UAIDZIN_WIRE__?: { handleEscape?: () => boolean } })
+      .__UAIDZIN_WIRE__;
+    if (api?.handleEscape) {
+      const handled = api.handleEscape();
+      this.panelsOpen = !!this.root.querySelector(".win:not(.is-closed)");
+      this.onOpenChange?.(this.isOpen());
+      if (handled) return true;
+    }
+    if (this.isOpen()) {
+      this.close();
+      return true;
+    }
+    return false;
   }
 }

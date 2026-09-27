@@ -263,6 +263,7 @@ export class SceneRenderer {
   }
 
   setShadowsEnabled(enabled: boolean): void {
+    if (this.renderer.shadowMap.enabled === enabled) return;
     this.renderer.shadowMap.enabled = enabled;
     this.keyLight.castShadow = enabled;
     this.playerBlobShadow.visible = enabled;

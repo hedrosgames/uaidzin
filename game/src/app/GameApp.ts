@@ -1,12 +1,10 @@
-﻿import { EventBus } from "../core/events/EventBus";
+import { EventBus } from "../core/events/EventBus";
 import { ErrorReporter } from "../core/errors/ErrorReporter";
 import { GameStateStore } from "../core/state/GameStateStore";
 import { GameClock } from "../core/time/GameClock";
 import { formatMMSS } from "../core/time/FormatTime";
 import { DebugHud } from "../debug/DebugHud";
 import { SceneRenderer } from "../presentation/rendering/SceneRenderer";
-import { WEAPON_SET_IDS, WEAPON_SET_LABEL, type WeaponSetId } from "../presentation/player/WeaponRig";
-import { weaponSetIconMarkup } from "../ui/WeaponSetHudIcons";
 import { InteractionPanel } from "../ui/InteractionPanel";
 import { GamePanels } from "../ui/GamePanels";
 import { WireUi, isWirePanelName } from "../ui/WireUi";
@@ -17,9 +15,14 @@ import type { BootCharacter } from "./BootFlow";
 import { bootAccountId, clearBootCharacter } from "./BootFlow";
 import { accountLock } from "../persistence/AccountLock";
 import { saveVault } from "../persistence/SaveVault";
-import { artForClass, bindHud } from "../ui/CharacterUiBinder";
+import { bindHud } from "../ui/CharacterUiBinder";
 import type { CharacterViewModel, LoadSaveResult } from "../persistence/SaveTypes";
 import { emptyAttrs } from "../persistence/SaveTypes";
+import { InputService, normalizeWheelZoom } from "../gameplay/InputService";
+import { HudBarsView } from "../ui/HudBarsView";
+import { SkillBarView } from "../ui/SkillBarView";
+import { DropLogView } from "../ui/DropLogView";
+import { SettingsPanel } from "../ui/SettingsPanel";
 
 export interface GameAppDeps {
   canvas: HTMLCanvasElement;
@@ -51,24 +54,17 @@ export interface GameAppDeps {
   helpBarElement: HTMLElement;
 }
 
-const CLASS_FACE: Record<string, string> = {
-  TK: artForClass("TK").face,
-  FM: artForClass("FM").face,
-  BM: artForClass("BM").face,
-  HT: artForClass("HT").face,
-};
-
-const SETTINGS_KEY = "uaidzin_settings";
 const LEAVE_SAVE_TIMEOUT_MS = 3000;
 const LEAVE_WARNING_MS = 1200;
 
 type TimeScale = 1 | 2 | 4 | 10;
 
 export class GameApp {
-  readonly bus = new EventBus();
-  readonly state = new GameStateStore();
+  readonly errors = new ErrorReporter();
+  readonly bus = new EventBus(this.errors);
+  readonly state = new GameStateStore(this.errors);
   readonly clock = new GameClock();
-  readonly errors = new ErrorReporter(this.bus);
+  readonly input = new InputService();
 
   private readonly renderer: SceneRenderer;
   private readonly debugHud: DebugHud;
@@ -78,22 +74,10 @@ export class GameApp {
   private readonly playerFace: HTMLImageElement;
   private readonly playerName: HTMLElement;
   private readonly playerLevel: HTMLElement;
-  private readonly hpFill: HTMLElement;
-  private readonly hpText: HTMLElement;
-  private readonly mpFill: HTMLElement;
-  private readonly mpText: HTMLElement;
-  private readonly xpFill: HTMLElement;
-  private readonly xpText: HTMLElement;
   private readonly skillBar: HTMLElement;
   private readonly deathOverlay: HTMLElement;
-  private readonly timerEl: HTMLElement;
-  private readonly farmStats: HTMLElement;
-  private readonly dropLogEl: HTMLElement;
   private readonly resultOverlay: HTMLElement;
   private readonly speedToggle: HTMLElement;
-  private readonly weaponSetStrip: HTMLElement;
-  private readonly weaponSetButtons = new Map<WeaponSetId, HTMLButtonElement>();
-  private readonly settingsOverlay: HTMLElement;
   private readonly saveErrorOverlay: HTMLElement;
   private readonly toastEl: HTMLElement;
   private readonly helpBar: HTMLElement;
@@ -102,85 +86,48 @@ export class GameApp {
   private wireUi: WireUi | null = null;
   private readonly session: CityGameSession;
   private readonly loop: GameLoop;
+  private readonly canvasElement: HTMLCanvasElement;
+  private readonly hudBarsView: HudBarsView;
+  private readonly skillBarView: SkillBarView;
+  private readonly dropLogView: DropLogView;
+  private readonly settingsPanel: SettingsPanel;
   private resizeObserver: ResizeObserver | null = null;
   private lastHud: SessionHud | null = null;
   private timeScale: TimeScale = 1;
   private toastTimer = 0;
   private lastToastText = "";
-  private lastDropLogKey = "";
   private entered = false;
   private leaving = false;
   private autosaveTimer: number | null = null;
+  private cachedWidth = 0;
+  private cachedHeight = 0;
+
   private readonly onPageHide = (): void => {
     if (!this.entered) return;
     saveVault.writeMirror();
     if (this.modeAllowsSave()) void this.session.saves.checkpoint();
   };
+
   private readonly onVisibility = (): void => {
     if (document.visibilityState === "hidden" && this.entered && this.modeAllowsSave()) {
       void this.session.saves.checkpoint();
     }
   };
+
   private readonly onWindowResize = (): void => {
-    const canvas = this.renderer.renderer.domElement;
-    const parent = canvas.parentElement;
-    const width = parent?.clientWidth || window.innerWidth;
-    const height = parent?.clientHeight || window.innerHeight;
-    this.renderer.resize(width, height);
+    const parent = this.canvasElement.parentElement;
+    this.cachedWidth = parent?.clientWidth || window.innerWidth;
+    this.cachedHeight = parent?.clientHeight || window.innerHeight;
+    this.renderer.resize(this.cachedWidth, this.cachedHeight);
   };
-  private readonly onKeyPanels = (event: KeyboardEvent): void => {
-    if (event.repeat) return;
-    if (!this.entered) return;
-    const target = event.target as HTMLElement | null;
-    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
-    const mode = this.state.getMode();
-    if (mode === "DUNGEON" || mode === "DEAD") return;
-    if (this.wireUi) {
-      if (event.code === "KeyC") this.wireUi.toggle("person");
-      if (event.code === "KeyK") this.wireUi.toggle("skills");
-      if (event.code === "KeyI") this.wireUi.toggle("inv");
-      if (event.code === "KeyB") this.wireUi.toggle("vault");
-      return;
-    }
-    if (event.code === "KeyC") this.panels.toggle("person");
-    if (event.code === "KeyK") this.panels.toggle("skills");
-    if (event.code === "KeyI") this.panels.toggle("inv");
-  };
-  private readonly onKeyDebugProgression = (event: KeyboardEvent): void => {
-    if (event.key === "F2") {
-      event.preventDefault();
-      this.session.debugAddLevels(1);
-    }
-    if (event.key === "F3") {
-      event.preventDefault();
-      this.session.debugSpendAll("FOR");
-    }
-    if (event.key === "F5") {
-      event.preventDefault();
-      const ok = this.session.debugTryReset();
-      console.info("[UAIDZIN] reset", ok ? "ok" : "bloqueado");
-    }
-    if (event.key === "F6") {
-      event.preventDefault();
-      const evolved = this.session.debugTryEvolve();
-      if (!evolved.ok && evolved.reason) this.showToast(evolved.reason, "dungeon");
-    }
-  };
-  private readonly onKeyDebugToggle = (event: KeyboardEvent): void => {
-    if (event.key === "F1") {
-      event.preventDefault();
-      this.state.setDebugHudVisible(!this.state.getState().debugHudVisible);
-    }
-  };
-  private readonly onKeyEscape = (event: KeyboardEvent): void => {
-    if (event.key !== "Escape") return;
-    this.dismissUiLikeEscape();
-  };
-  private readonly onKeyDebugTimer = (event: KeyboardEvent): void => {
-    if (event.key === "F9") {
-      event.preventDefault();
-      this.session.debugSetTimer(3);
-    }
+
+  private readonly onWheel = (event: WheelEvent): void => {
+    if (!this.entered || this.isUiOpen()) return;
+    if (event.ctrlKey || event.metaKey) return;
+    const delta = normalizeWheelZoom(event, this.cachedHeight || 600);
+    if (delta === 0) return;
+    event.preventDefault();
+    this.session.camera.zoomBy(delta);
   };
 
   private modeAllowsSave(): boolean {
@@ -189,37 +136,56 @@ export class GameApp {
   }
 
   constructor(deps: GameAppDeps) {
+    this.canvasElement = deps.canvas;
     this.renderer = new SceneRenderer({ canvas: deps.canvas });
-    this.debugHud = new DebugHud(deps.debugHudElement);
     this.hint = deps.interactionHintElement;
     this.playerFrame = deps.playerFrameElement;
     this.playerFace = deps.playerFaceElement;
     this.playerName = deps.playerNameElement;
     this.playerLevel = deps.playerLevelElement;
-    this.hpFill = deps.hpFillElement;
-    this.hpText = deps.hpTextElement;
-    this.mpFill = deps.mpFillElement;
-    this.mpText = deps.mpTextElement;
-    this.xpFill = deps.xpFillElement;
-    this.xpText = deps.xpTextElement;
     this.skillBar = deps.skillBarElement;
     this.deathOverlay = deps.deathOverlayElement;
-    this.timerEl = deps.timerElement;
-    this.farmStats = deps.farmStatsElement;
-    this.dropLogEl = deps.dropLogElement;
     this.resultOverlay = deps.resultOverlayElement;
     this.speedToggle = deps.hudToolsElement;
-    this.weaponSetStrip = deps.hudToolsElement.querySelector<HTMLElement>("#weapon-set-strip")!;
-    this.buildWeaponSetStrip();
-    this.settingsOverlay = deps.settingsOverlayElement;
     this.saveErrorOverlay = deps.saveErrorOverlayElement;
     this.toastEl = deps.toastElement;
     this.helpBar = deps.helpBarElement;
+    this.wireHost = deps.wireUiElement;
+
+    this.debugHud = new DebugHud(deps.debugHudElement, () => {
+      const ok = this.session.debugTryReset();
+      console.info("[UAIDZIN] reset", ok ? "ok" : "bloqueado");
+    });
+
+    const weaponSetStrip = deps.hudToolsElement.querySelector<HTMLElement>("#weapon-set-strip")!;
+    this.hudBarsView = new HudBarsView(
+      {
+        playerFaceElement: deps.playerFaceElement,
+        playerNameElement: deps.playerNameElement,
+        playerLevelElement: deps.playerLevelElement,
+        hpFillElement: deps.hpFillElement,
+        hpTextElement: deps.hpTextElement,
+        mpFillElement: deps.mpFillElement,
+        mpTextElement: deps.mpTextElement,
+        xpFillElement: deps.xpFillElement,
+        xpTextElement: deps.xpTextElement,
+        timerElement: deps.timerElement,
+        farmStatsElement: deps.farmStatsElement,
+        weaponSetStrip,
+      },
+      (set) => {
+        void this.renderer.playerView.setWeaponSet(set);
+        this.hudBarsView.setActiveWeaponSet(set);
+      },
+    );
 
     this.panel = new InteractionPanel(
       deps.interactionPanelElement,
       (id) => this.session.confirmInteraction(id),
-      () => this.session.closePanel(),
+      () => {
+        this.session.closePanel();
+        this.syncUiOpen();
+      },
     );
 
     this.session = new CityGameSession(
@@ -227,17 +193,37 @@ export class GameApp {
       this.bus,
       deps.canvas,
       this.panel,
-      (mode) => this.state.setMode(mode),
-      (hud) => this.renderHud(hud),
-      (text) => {
-        this.resultOverlay.hidden = !text;
-        if (text) this.resultOverlay.textContent = text;
-      },
-      () => this.dismissUiLikeEscape(),
+      this.input,
     );
 
+    this.session.onHud((hud) => this.renderHud(hud));
+
     this.panels = new GamePanels(deps.gamePanelsElement, this.session);
-    this.wireHost = deps.wireUiElement;
+
+    this.skillBarView = new SkillBarView(deps.skillBarElement, (index) => {
+      this.session.forceSkillSlot(index);
+    });
+
+    this.dropLogView = new DropLogView(deps.dropLogElement);
+
+    const btnSettings = deps.hudToolsElement.querySelector<HTMLButtonElement>("#btn-settings");
+    this.settingsPanel = new SettingsPanel(deps.settingsOverlayElement, btnSettings, {
+      applyArmorAura: (enabled) => this.session.setArmorAuraEnabled(enabled),
+      applyShadows: (enabled) => this.renderer.setShadowsEnabled(enabled),
+      onChangeCharacter: () => void this.leaveToBoot("select"),
+      onLogout: () => void this.leaveToBoot("login"),
+      showToast: (text, kind) => this.showToast(text, kind),
+      onOpenChange: () => this.syncUiOpen(),
+    });
+
+    this.bus.on("game:mode-changed", ({ mode }) => {
+      this.state.setMode(mode);
+    });
+
+    this.bus.on("session:result", ({ text }) => {
+      this.resultOverlay.hidden = !text;
+      if (text) this.resultOverlay.textContent = text;
+    });
 
     this.bus.on("ui:open-panel", ({ panel, title, shopId }) => {
       if (!this.entered) return;
@@ -249,13 +235,13 @@ export class GameApp {
             shopId,
           });
         }
+        this.syncUiOpen();
         return;
       }
-      if (panel === "person" || panel === "skills" || panel === "inv") this.panels.open(panel);
-    });
-
-    this.bus.on("game:state-changed", ({ mode }) => {
-      if (mode === "CITY" && this.entered) void this.session.saves.checkpoint();
+      if (panel === "person" || panel === "skills" || panel === "inv") {
+        this.panels.open(panel);
+        this.syncUiOpen();
+      }
     });
 
     this.autosaveTimer = window.setInterval(() => {
@@ -272,7 +258,7 @@ export class GameApp {
     this.state.subscribe((state) => {
       this.debugHud.setVisible(state.debugHudVisible);
       this.deathOverlay.hidden = state.mode !== "DEAD";
-      this.bus.emit("game:state-changed", { mode: state.mode });
+      this.input.setMode(state.mode);
     });
 
     this.bus.on("player:near-interactable", () => {
@@ -282,14 +268,8 @@ export class GameApp {
     this.loop = new GameLoop((dt) => this.tick(dt));
     this.bindResize(deps.canvas);
     this.bindWheelZoom(deps.canvas);
-    this.bindDebugToggle();
-    this.bindEscape();
-    this.bindDebugTimer();
-    this.bindDebugProgression();
-    this.bindPanels();
-    this.bindSettings();
+    this.bindInputActions();
     this.bindJuiceToasts();
-    this.bindSkillBarClicks();
     this.exposeDebugApi();
   }
 
@@ -313,206 +293,63 @@ export class GameApp {
     installDebugApi(this as unknown as import("../debug/DebugApi").DebugHost);
   }
 
-
-  private bindSkillBarClicks(): void {
-    this.skillBar.addEventListener("click", (e) => {
-      const slot = (e.target as HTMLElement).closest("[data-skill-slot]");
-      if (!slot) return;
-      const index = Number(slot.getAttribute("data-skill-slot"));
-      if (Number.isFinite(index)) this.session.forceSkillSlot(index);
+  private bindInputActions(): void {
+    this.input.registerAction("panel.person", () => {
+      if (!this.entered) return;
+      if (this.wireUi) this.wireUi.toggle("person");
+      else this.panels.toggle("person");
+      this.syncUiOpen();
     });
-  }
 
-  private buildWeaponSetStrip(): void {
-    this.weaponSetStrip.replaceChildren();
-    this.weaponSetButtons.clear();
-    for (const set of WEAPON_SET_IDS) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "btn-weapon-set btn-opt-hud";
-      btn.dataset.weaponSet = set;
-      btn.setAttribute("aria-label", WEAPON_SET_LABEL[set]);
-      btn.innerHTML = weaponSetIconMarkup(set);
-      btn.addEventListener("click", () => {
-        void this.renderer.playerView.setWeaponSet(set);
-        this.refreshWeaponSetStrip();
+    this.input.registerAction("panel.skills", () => {
+      if (!this.entered) return;
+      if (this.wireUi) this.wireUi.toggle("skills");
+      else this.panels.toggle("skills");
+      this.syncUiOpen();
+    });
+
+    this.input.registerAction("panel.inv", () => {
+      if (!this.entered) return;
+      if (this.wireUi) this.wireUi.toggle("inv");
+      else this.panels.toggle("inv");
+      this.syncUiOpen();
+    });
+
+    this.input.registerAction("panel.vault", () => {
+      if (!this.entered) return;
+      if (this.wireUi) this.wireUi.toggle("vault");
+      this.syncUiOpen();
+    });
+
+    this.input.registerAction("ui.escape", () => {
+      this.dismissUiLikeEscape();
+    });
+
+    if (import.meta.env.DEV) {
+      this.input.registerAction("debug.toggle", () => {
+        this.state.setDebugHudVisible(!this.state.getState().debugHudVisible);
       });
-      this.weaponSetStrip.appendChild(btn);
-      this.weaponSetButtons.set(set, btn);
+      this.input.registerAction("debug.addLevel", () => {
+        this.session.debugAddLevels(1);
+      });
+      this.input.registerAction("debug.spendAll", () => {
+        this.session.debugSpendAll("FOR");
+      });
+      this.input.registerAction("debug.evolve", () => {
+        const evolved = this.session.debugTryEvolve();
+        if (!evolved.ok && evolved.reason) this.showToast(evolved.reason, "dungeon");
+      });
+      this.input.registerAction("debug.timer", () => {
+        this.session.debugSetTimer(3);
+      });
     }
-  }
-
-  private refreshWeaponSetStrip(): void {
-    const active = this.renderer.playerView.getWeaponSet();
-    for (const [set, btn] of this.weaponSetButtons) {
-      const on = set === active;
-      btn.classList.toggle("is-active", on);
-      btn.setAttribute("aria-pressed", on ? "true" : "false");
-    }
-  }
-
-  private bindSettings(): void {
-    const btnOpen = this.speedToggle.querySelector<HTMLButtonElement>("#btn-settings");
-    const btnCancel = this.settingsOverlay.querySelector<HTMLButtonElement>("#btn-settings-cancel");
-    const btnSave = this.settingsOverlay.querySelector<HTMLButtonElement>("#btn-settings-save");
-    const btnChange = this.settingsOverlay.querySelector<HTMLButtonElement>("#btn-change-character");
-    const btnLogout = this.settingsOverlay.querySelector<HTMLButtonElement>("#btn-logout");
-    const ranges: Array<[string, string]> = [
-      ["vol-master", "vol-master-val"],
-      ["vol-music", "vol-music-val"],
-      ["vol-sfx", "vol-sfx-val"],
-    ];
-
-    const loadSettings = () => {
-      try {
-        const raw = localStorage.getItem(SETTINGS_KEY);
-        const data = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
-        const map: Record<string, string> = {
-          "vol-master": "volMaster",
-          "vol-music": "volMusic",
-          "vol-sfx": "volSfx",
-          "opt-fullscreen": "optFullscreen",
-          "opt-shadows": "optShadows",
-          "opt-armor-aura": "optArmorAura",
-          "opt-skip-dungeon-confirm": "optSkipDungeonConfirm",
-        };
-        ranges.forEach(([id, valId]) => {
-          const key = map[id];
-          const el = document.getElementById(id) as HTMLInputElement | null;
-          const label = document.getElementById(valId);
-          if (!el || !key) return;
-          const value = data[key];
-          if (value != null) {
-            el.value = String(value);
-            if (label) label.textContent = String(value);
-          }
-        });
-        (["opt-fullscreen", "opt-shadows"] as const).forEach((id) => {
-          const el = document.getElementById(id) as HTMLInputElement | null;
-          const key = map[id];
-          if (!el || !key || data[key] == null) return;
-          el.checked = Boolean(data[key]);
-        });
-        const auraEl = document.getElementById("opt-armor-aura") as HTMLInputElement | null;
-        if (auraEl) {
-          if (data.optArmorAura == null) auraEl.checked = false;
-          else auraEl.checked = Boolean(data.optArmorAura);
-        }
-        const skipEl = document.getElementById("opt-skip-dungeon-confirm") as HTMLInputElement | null;
-        if (skipEl) {
-          if (data.optSkipDungeonConfirm == null) {
-            try {
-              skipEl.checked = localStorage.getItem("uaidzin_portal_skip_confirm") === "1";
-            } catch {
-              skipEl.checked = false;
-            }
-          } else {
-            skipEl.checked = Boolean(data.optSkipDungeonConfirm);
-          }
-        }
-        this.applyArmorAuraSetting();
-        this.applyShadowSetting();
-      } catch {
-
-      }
-    };
-
-    const saveSettings = () => {
-      let prev: Record<string, unknown> = {};
-      try {
-        prev = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") as Record<string, unknown>;
-      } catch {
-        prev = {};
-      }
-      const data: Record<string, unknown> = { ...prev };
-      ranges.forEach(([id]) => {
-        const el = document.getElementById(id) as HTMLInputElement | null;
-        if (!el) return;
-        if (id === "vol-master") data.volMaster = Number(el.value);
-        if (id === "vol-music") data.volMusic = Number(el.value);
-        if (id === "vol-sfx") data.volSfx = Number(el.value);
-      });
-      const fullscreen = document.getElementById("opt-fullscreen") as HTMLInputElement | null;
-      const shadows = document.getElementById("opt-shadows") as HTMLInputElement | null;
-      const armorAura = document.getElementById("opt-armor-aura") as HTMLInputElement | null;
-      const skipConfirm = document.getElementById("opt-skip-dungeon-confirm") as HTMLInputElement | null;
-      if (fullscreen) data.optFullscreen = fullscreen.checked;
-      if (shadows) data.optShadows = shadows.checked;
-      if (armorAura) data.optArmorAura = armorAura.checked;
-      if (skipConfirm) data.optSkipDungeonConfirm = skipConfirm.checked;
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(data));
-      try {
-        if (skipConfirm?.checked) localStorage.setItem("uaidzin_portal_skip_confirm", "1");
-        else localStorage.removeItem("uaidzin_portal_skip_confirm");
-      } catch {
-        
-      }
-      this.applyArmorAuraSetting();
-      this.applyShadowSetting();
-    };
-
-    ranges.forEach(([id, valId]) => {
-      const el = document.getElementById(id) as HTMLInputElement | null;
-      const label = document.getElementById(valId);
-      if (!el || !label) return;
-      el.addEventListener("input", () => {
-        label.textContent = el.value;
-        saveSettings();
-      });
-    });
-
-    (["opt-fullscreen", "opt-shadows", "opt-armor-aura", "opt-skip-dungeon-confirm"] as const).forEach((id) => {
-      const el = document.getElementById(id) as HTMLInputElement | null;
-      el?.addEventListener("change", () => {
-        saveSettings();
-        if (id === "opt-armor-aura") this.applyArmorAuraSetting();
-        if (id === "opt-shadows") this.applyShadowSetting();
-      });
-    });
-
-    const armorAuraEl = document.getElementById("opt-armor-aura") as HTMLInputElement | null;
-    void armorAuraEl;
-
-    btnOpen?.addEventListener("click", () => {
-      loadSettings();
-      this.settingsOverlay.classList.add("open");
-    });
-    btnCancel?.addEventListener("click", () => this.closeSettings());
-    this.settingsOverlay.addEventListener("click", (event) => {
-      if (event.target === this.settingsOverlay) this.closeSettings();
-    });
-    btnSave?.addEventListener("click", () => {
-      saveSettings();
-      this.closeSettings();
-      this.showToast("Opções salvas.", "skill");
-    });
-    btnChange?.addEventListener("click", () => {
-      void this.leaveToBoot("select");
-    });
-    btnLogout?.addEventListener("click", () => {
-      void this.leaveToBoot("login");
-    });
-    loadSettings();
-  }
-
-  private applyArmorAuraSetting(): void {
-    const el = document.getElementById("opt-armor-aura") as HTMLInputElement | null;
-    this.session.setArmorAuraEnabled(Boolean(el?.checked));
-  }
-
-  private applyShadowSetting(): void {
-    const el = document.getElementById("opt-shadows") as HTMLInputElement | null;
-    this.renderer.setShadowsEnabled(el ? el.checked : true);
-  }
-
-  private closeSettings(): void {
-    this.settingsOverlay.classList.remove("open");
   }
 
   private async leaveToBoot(mode: "login" | "select"): Promise<void> {
     if (this.leaving) return;
     this.leaving = true;
-    this.closeSettings();
+    this.settingsPanel.close();
+    this.syncUiOpen();
     const startedAt = performance.now();
     const saved = await Promise.race([
       this.session.saves.checkpoint().then(() => !saveVault.hasPendingCritical()),
@@ -618,17 +455,20 @@ export class GameApp {
     }
   }
 
-  private isPanelsOpen(): boolean {
-    if (this.wireUi) return this.wireUi.isOpen();
-    return this.panels.isOpen();
+  private isUiOpen(): boolean {
+    return (
+      (this.wireUi ? this.wireUi.isOpen() : this.panels.isOpen()) ||
+      this.panel.isOpen() ||
+      this.settingsPanel.isOpen()
+    );
   }
 
-  private bindPanels(): void {
-    window.addEventListener("keydown", this.onKeyPanels);
+  isPanelsOpen(): boolean {
+    return this.isUiOpen();
   }
 
-  private bindDebugProgression(): void {
-    window.addEventListener("keydown", this.onKeyDebugProgression);
+  private syncUiOpen(): void {
+    this.input.setUiOpen(this.isUiOpen());
   }
 
   start(character: BootCharacter): void {
@@ -659,6 +499,7 @@ export class GameApp {
     try {
       const view = this.currentViewModel();
       this.wireUi = await WireUi.mount(this.wireHost, view);
+      this.wireUi.setOnOpenChange(() => this.syncUiOpen());
       this.wireHost.hidden = false;
       window.dispatchEvent(new Event("resize"));
     } catch (error) {
@@ -668,7 +509,6 @@ export class GameApp {
     await this.session.start();
     this.loop.start();
     this.enterGame();
-    this.applyArmorAuraSetting();
     bindHud(
       { face: this.playerFace, name: this.playerName, level: this.playerLevel },
       this.currentViewModel(),
@@ -706,106 +546,53 @@ export class GameApp {
       this.autosaveTimer = null;
     }
     window.removeEventListener("resize", this.onWindowResize);
-    window.removeEventListener("keydown", this.onKeyPanels);
-    window.removeEventListener("keydown", this.onKeyDebugProgression);
-    window.removeEventListener("keydown", this.onKeyDebugToggle);
-    window.removeEventListener("keydown", this.onKeyEscape);
-    window.removeEventListener("keydown", this.onKeyDebugTimer);
+    window.removeEventListener("pagehide", this.onPageHide);
+    document.removeEventListener("visibilitychange", this.onVisibility);
+    this.canvasElement.removeEventListener("wheel", this.onWheel);
+    this.input.dispose();
     this.session.dispose();
     this.renderer.dispose();
   }
 
-  private setBar(fill: HTMLElement, text: HTMLElement, value: number, max: number, label: string): void {
-    const safeMax = Math.max(max, 1);
-    const ratio = Math.max(0, Math.min(1, value / safeMax));
-    fill.style.width = `${Math.round(ratio * 100)}%`;
-    text.textContent = `${Math.ceil(value)} / ${Math.ceil(max)}`;
-    if (label === "hp") fill.classList.toggle("low", ratio < 0.4);
-  }
-
-  private renderSkillBar(skills: SessionHud["skills"]): void {
-    const count = Math.max(skills.length, 1);
-    let html = "";
-    for (let i = 0; i < count; i++) {
-      const s = skills[i];
-      if (!s) {
-        html += `<button type="button" class="skill-slot empty" disabled><span class="skill-key">${i + 1}</span><span class="skill-name">—</span></button>`;
-        continue;
-      }
-      const cd = Math.max(0, Math.min(1, s.cdRatio));
-      html += `<button type="button" class="skill-slot ${s.ready ? "ready" : "cooling"}" data-skill-slot="${i}" title="${s.name}">
-        <span class="skill-cd" style="height:${(cd * 100).toFixed(1)}%"></span>
-        <span class="skill-key">${s.key}</span>
-        <span class="skill-name">${s.name}</span>
-      </button>`;
-    }
-    this.skillBar.innerHTML = html;
-  }
-
   private renderHud(hud: SessionHud): void {
     this.lastHud = hud;
-    this.playerFace.src = CLASS_FACE[hud.classId] || CLASS_FACE.TK;
-    this.playerName.textContent = hud.playerName;
-    this.playerLevel.textContent = `Lv ${hud.level}`;
-    this.setBar(this.hpFill, this.hpText, hud.hp, hud.maxHp, "hp");
-    this.setBar(this.mpFill, this.mpText, hud.mp, hud.maxMp, "mp");
-    this.setBar(this.xpFill, this.xpText, hud.progressionXp, Math.max(hud.xpToNext, 1), "xp");
-    this.xpText.textContent = `${hud.progressionXp} / ${hud.xpToNext}`;
-    this.renderSkillBar(hud.skills);
-
-    if (hud.timer != null) {
-      this.timerEl.hidden = false;
-      const seconds = Number(hud.timer);
-      this.timerEl.textContent = formatMMSS(Number.isFinite(seconds) ? seconds : 0);
-      this.timerEl.classList.toggle("urgent", Number.isFinite(seconds) && seconds < 30);
-    } else {
-      this.timerEl.hidden = true;
-      this.timerEl.classList.remove("urgent");
-    }
-
-    this.farmStats.hidden = hud.timer == null;
-    if (hud.timer != null) {
-      this.farmStats.textContent = `Abates ${hud.kills} · XP ${hud.xp} · ${hud.arenaHint ?? ""}`;
-    }
-
-    this.renderDropLog(hud.dropLog);
-
+    this.hudBarsView.update(hud);
+    const weaponSet = this.renderer.playerView.getWeaponSet() || "sword-shield";
+    this.hudBarsView.setActiveWeaponSet(weaponSet);
+    this.skillBarView.update(hud.skills, Boolean(this.wireUi));
+    this.dropLogView.update(hud.drops);
     if (hud.lootToast) this.showToast(hud.lootToast, hud.uiToastKind);
   }
 
-  private renderDropLog(lines: SessionHud["dropLog"]): void {
-    const key = lines.map((l) => `${l.id}:${l.text}`).join("|");
-    if (key === this.lastDropLogKey) {
-      this.dropLogEl.hidden = lines.length === 0;
-      return;
+  private handleConsecutiveErrors(): void {
+    const mode = this.state.getMode();
+    if (mode !== "CITY") {
+      void this.session.saves.checkpoint();
+      this.session.returnToCityWithFade();
+      this.errors.resetConsecutive();
+    } else {
+      this.loop.stop();
+      this.showFatalErrorScreen();
     }
-    this.lastDropLogKey = key;
-    if (lines.length === 0) {
-      this.dropLogEl.hidden = true;
-      this.dropLogEl.innerHTML = "";
-      return;
+  }
+
+  private showFatalErrorScreen(): void {
+    let el = document.getElementById("fatal-error-overlay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "fatal-error-overlay";
+      el.style.cssText =
+        "position:fixed;inset:0;background:#100c08;color:#f0e6d0;display:flex;align-items:center;justify-content:center;font-size:18px;font-family:serif;z-index:999999;text-align:center;padding:24px;";
+      document.body.appendChild(el);
     }
-    this.dropLogEl.hidden = false;
-    let html = "";
-    for (let i = lines.length - 1; i >= 0; i--) {
-      const line = lines[i]!;
-      const tag =
-        line.kind === "gold"
-          ? "ouro"
-          : line.kind === "item"
-            ? "item"
-            : line.kind === "lost"
-              ? "perda"
-              : "info";
-      html += `<div class="drop-log-line ${line.kind}" data-drop-id="${line.id}"><span class="tag">${tag}</span><span>${line.text}</span></div>`;
-    }
-    this.dropLogEl.innerHTML = html;
+    el.textContent = "O jogo encontrou um erro. Recarregue a página.";
+    el.hidden = false;
   }
 
   private tick(deltaSeconds: number): void {
+    this.errors.beginFrame();
     try {
       this.clock.advance(deltaSeconds);
-      this.refreshWeaponSetStrip();
       if (this.toastTimer > 0) {
         this.toastTimer -= deltaSeconds;
         if (this.toastTimer <= 0) {
@@ -813,35 +600,29 @@ export class GameApp {
           this.lastToastText = "";
         }
       }
-      const parent = this.renderer.renderer.domElement.parentElement;
-      const width = parent?.clientWidth || window.innerWidth;
-      const height = parent?.clientHeight || window.innerHeight;
       const scaled = deltaSeconds * this.timeScale;
-      this.session.update(scaled, width / Math.max(height, 1), this.isPanelsOpen() || !this.entered);
+      this.session.update(
+        scaled,
+        this.cachedWidth,
+        this.cachedHeight,
+        this.isUiOpen() || !this.entered,
+      );
       const char = this.session.character;
       const timer = this.lastHud?.timer;
       this.debugHud.update({
         mode: this.state.getMode(),
         elapsed: this.clock.getElapsedSeconds(),
         extra: `hp ${char.hp}/${char.maxHp} · mp ${char.mp}/${char.maxMp} · ${this.session.worlds.getCurrentId() ?? "-"} · timer ${timer != null ? formatMMSS(Number(timer)) : "--"} · kills ${this.session.dungeonRun.getKills()}`,
+        errorStats: this.errors.getStats(),
       });
     } catch (error) {
       this.errors.report(error, "GameApp.tick");
-      this.showToast("Erro no jogo — veja o console", "dungeon");
-      this.loop.stop();
+    } finally {
+      const consecutive = this.errors.endFrame();
+      if (consecutive >= 5) {
+        this.handleConsecutiveErrors();
+      }
     }
-  }
-
-  private bindWheelZoom(canvas: HTMLCanvasElement): void {
-    canvas.addEventListener(
-      "wheel",
-      (event) => {
-        if (!this.entered || this.isPanelsOpen()) return;
-        event.preventDefault();
-        this.session.camera.zoomBy(Math.sign(-event.deltaY));
-      },
-      { passive: false },
-    );
   }
 
   private bindResize(canvas: HTMLCanvasElement): void {
@@ -853,29 +634,29 @@ export class GameApp {
     }
   }
 
-  private bindDebugToggle(): void {
-    window.addEventListener("keydown", this.onKeyDebugToggle);
+  private bindWheelZoom(canvas: HTMLCanvasElement): void {
+    canvas.addEventListener("wheel", this.onWheel, { passive: false });
   }
 
   private dismissUiLikeEscape(): void {
-    if (this.settingsOverlay.classList.contains("open")) {
-      this.closeSettings();
+    if (this.settingsPanel.isOpen()) {
+      this.settingsPanel.close();
+      this.syncUiOpen();
+      return;
+    }
+    if (this.panel.isOpen()) {
+      this.panel.close();
+      this.syncUiOpen();
       return;
     }
     if (this.wireUi) {
-      this.wireUi.close();
-      this.panel.close();
-      return;
+      const handled = this.wireUi.handleEscape();
+      this.syncUiOpen();
+      if (handled) return;
     }
-    this.panels.close();
-    this.panel.close();
-  }
-
-  private bindEscape(): void {
-    window.addEventListener("keydown", this.onKeyEscape);
-  }
-
-  private bindDebugTimer(): void {
-    window.addEventListener("keydown", this.onKeyDebugTimer);
+    if (this.panels.isOpen()) {
+      this.panels.close();
+      this.syncUiOpen();
+    }
   }
 }

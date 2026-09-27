@@ -39,6 +39,12 @@ async function bootstrap(): Promise<GameApp> {
     toastElement: requireElement<HTMLElement>("ui-toast"),
     helpBarElement: document.querySelector(".help-bar") as HTMLElement,
   });
+  window.addEventListener("error", (event) => {
+    app.errors.report(event.error ?? event.message, "window.error");
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    app.errors.report(event.reason, "window.unhandledrejection");
+  });
   const character = await runBootFlow(document.body);
   app.start(character);
   await releaseBootSceneFade();

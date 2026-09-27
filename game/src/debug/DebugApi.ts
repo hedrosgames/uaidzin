@@ -74,9 +74,8 @@ export type DebugHost = {
 };
 
 export function installDebugApi(app: DebugHost): void {
-  const w = window as unknown as { __UAIDZIN__?: unknown; __UAIDZIN_DEBUG__?: boolean };
-  const isDev = !!(import.meta as { env?: { DEV?: boolean } }).env?.DEV;
-  if (!isDev && !w.__UAIDZIN_DEBUG__) return;
+  if (!import.meta.env.DEV) return;
+  const w = window as unknown as { __UAIDZIN__?: unknown };
   if (import.meta.env.DEV) {
     void import("../integrations/threejs-devtools/registerThreeDevTools").then(({ registerThreeDevTools }) => {
       registerThreeDevTools({

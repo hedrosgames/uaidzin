@@ -231,6 +231,7 @@ export class PlayerView {
   }
 
   setArmorAuraEnabled(on: boolean): void {
+    if (this.armorAura.isEnabled() === on) return;
     this.armorAura.setEnabled(on);
   }
 

@@ -1,7 +1,8 @@
 export type GameEventMap = {
   "game:ready": { at: number };
   "game:state-changed": { mode: string };
-  "game:error": { message: string; stack?: string };
+  "game:mode-changed": { mode: "CITY" | "DUNGEON" | "DEAD" | "RESULT" };
+  "session:result": { text: string | null };
   "world:changed": { worldId: string };
   "player:near-interactable": { id: string | null; label: string | null; kind: string | null };
   "interaction:opened": { id: string; label: string; body: string };

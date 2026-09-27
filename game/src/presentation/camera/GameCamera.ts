@@ -2,7 +2,6 @@ import { MathUtils, PerspectiveCamera, Vector3 } from "three";
 
 const ZOOM_MIN = 0.7;
 const ZOOM_MAX = 1;
-const ZOOM_STEP = 0.05;
 
 export class GameCamera {
   readonly camera: PerspectiveCamera;
@@ -25,8 +24,9 @@ export class GameCamera {
     this.camera.updateProjectionMatrix();
   }
 
-  zoomBy(steps: number): void {
-    this.zoom = MathUtils.clamp(this.zoom - steps * ZOOM_STEP, ZOOM_MIN, ZOOM_MAX);
+  zoomBy(delta: number): void {
+    const capped = MathUtils.clamp(delta, -0.15, 0.15);
+    this.zoom = MathUtils.clamp(this.zoom + capped, ZOOM_MIN, ZOOM_MAX);
   }
 
   snapTo(x: number, z: number): void {

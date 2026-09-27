@@ -161,9 +161,6 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-    await page.addInitScript(() => {
-      window.__UAIDZIN_DEBUG__ = true;
-    });
     await wipeSave(page, BASE);
     await page.goto(BASE, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.waitForTimeout(600);

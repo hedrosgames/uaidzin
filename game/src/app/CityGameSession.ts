@@ -47,6 +47,8 @@ import type { EvolutionId } from "../data/balance/progression";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
 import { createSceneFadeOverlay, type BootCharacter, type SceneFadeOverlay } from "./BootFlow";
 import { PlayerController } from "../gameplay/PlayerController";
+import type { InputService } from "../gameplay/InputService";
+import type { HudModel } from "../ui/HudModel";
 import { PlayerRuntime } from "../gameplay/PlayerRuntime";
 import { EnemyRuntimeView } from "../presentation/enemies/EnemyRuntimeView";
 import { EffectManager } from "../presentation/effects/EffectManager";
@@ -73,33 +75,7 @@ export interface DropLogEntry {
   life: number;
 }
 
-export interface SessionHud {
-  hp: number;
-  maxHp: number;
-  mp: number;
-  maxMp: number;
-  skillCd: number;
-  timer: string | null;
-  kills: number;
-  xp: number;
-  progressionXp: number;
-  arenaHint: string | null;
-  level: number;
-  evolution: string;
-  unspentPoints: number;
-  xpToNext: number;
-  sessionXp: number;
-  gold: number;
-  invUsed: number;
-  invCap: number;
-  playerName: string;
-  classId: string;
-  skills: Array<{ key: number; name: string; cdRatio: number; ready: boolean; auto: boolean }>;
-  lootToast: string | null;
-  uiToastKind: "skill" | "attr" | "level" | "dungeon";
-  dropLog: Array<{ id: number; text: string; kind: DropLogKind }>;
-  moveLocked: boolean;
-}
+export type SessionHud = HudModel;
 
 export type DungeonEnterReason = "missing" | "evolution" | "level" | "entry";
 export type DungeonEnterResult = { ok: true } | { ok: false; reason: DungeonEnterReason };
@@ -168,8 +144,6 @@ export class CityGameSession {
   private readonly interactNdc = new Vector2();
   private nearby: InteractableDef | null = null;
   private pendingInteract: InteractableDef | null = null;
-  private lastInteractDown = false;
-  private panelOpen = false;
   private deathReturnTimer = 0;
   private resultHold = 0;
   private sessionXp = 0;
@@ -194,17 +168,23 @@ export class CityGameSession {
     this.renderer.playerView.setArmorAuraEnabled(on);
   }
 
+  private hudListener?: (model: HudModel) => void;
+
+  onHud(listener: (model: HudModel) => void): () => void {
+    this.hudListener = listener;
+    return () => {
+      if (this.hudListener === listener) this.hudListener = undefined;
+    };
+  }
+
   constructor(
     private readonly renderer: SceneRenderer,
     private readonly bus: EventBus,
     canvas: HTMLCanvasElement,
     private readonly panel: InteractionPanel,
-    private readonly onModeChange: (mode: "CITY" | "DUNGEON" | "DEAD" | "RESULT") => void,
-    private readonly onHud: (hud: SessionHud) => void,
-    private readonly onResult: (text: string | null) => void,
-    private readonly onDismissUi: () => void = () => undefined,
+    private readonly input: InputService,
   ) {
-    this.controller = new PlayerController(canvas);
+    this.controller = new PlayerController(canvas, input);
     this.worlds = new WorldManager(renderer.worldRoot);
     this.camera = new GameCamera(1);
     this.enemyView = new EnemyRuntimeView(renderer.worldRoot);
@@ -322,7 +302,7 @@ export class CityGameSession {
     this.panel.close();
     this.deathReturnTimer = 0;
     this.resultHold = 0;
-    this.onResult(null);
+    this.bus.emit("session:result", { text: null });
     this.pendingSkillSlot = -1;
     this.moveLock = 0;
 
@@ -348,7 +328,7 @@ export class CityGameSession {
       this.dungeonRun.reset();
       this.character.healFull();
       this.character.isDead = false;
-      this.onModeChange("CITY");
+      this.bus.emit("game:mode-changed", { mode: "CITY" });
     } else {
       this.effects.clearNpcNameplates();
       this.character.healFull();
@@ -362,7 +342,7 @@ export class CityGameSession {
       this.skillLoadout.refresh();
       this.skill.reset();
       this.sessionXp = 0;
-      this.onModeChange("DUNGEON");
+      this.bus.emit("game:mode-changed", { mode: "DUNGEON" });
       this.deathEmitCount = 0;
       this.autoAttackSwings = 0;
       this.bus.emit("dungeon:entered", { dungeonId: def.id });
@@ -425,12 +405,14 @@ export class CityGameSession {
       this.renderer.playerView.clearDeath();
       this.character.isDead = false;
       this.enterWorld("city");
+      void this.saves.checkpoint();
       return;
     }
     void this.withWorldFade(() => {
       this.renderer.playerView.clearDeath();
       this.character.isDead = false;
       this.enterWorld("city");
+      void this.saves.checkpoint();
     });
   }
 
@@ -629,8 +611,8 @@ export class CityGameSession {
     this.refreshWeaponSetFromGear();
   }
 
-  update(dt: number, aspect: number, uiBlocked = false): void {
-    this.camera.setAspect(aspect);
+  update(dt: number, width: number, height: number, uiBlocked = false): void {
+    this.camera.setAspect(width / Math.max(height, 1));
     const world = this.worlds.getCurrent();
     if (!world) return;
     for (const tick of world.tickables) tick.update(dt);
@@ -639,7 +621,7 @@ export class CityGameSession {
     if (this.worldFadeBusy) {
       this.renderer.updatePlayer(dt);
       this.enemyView.sync(this.enemies, dt);
-      this.updateEffects(dt);
+      this.updateEffects(dt, width, height);
       this.renderer.render(this.camera.camera);
       this.pushHud(inDungeon);
       return;
@@ -659,7 +641,7 @@ export class CityGameSession {
       this.renderer.updatePlayer(dt);
       this.enemyView.sync(this.enemies, dt);
       this.camera.follow(this.player.x, this.player.z, dt);
-      this.updateEffects(dt);
+      this.updateEffects(dt, width, height);
       this.renderer.render(this.camera.camera);
       this.pushHud(inDungeon);
       if (this.deathReturnTimer <= 0) {
@@ -675,7 +657,7 @@ export class CityGameSession {
         if (this.lootToastTimer <= 0) this.lootToast = null;
       }
       this.renderer.updatePlayer(dt);
-      this.updateEffects(dt);
+      this.updateEffects(dt, width, height);
       this.renderer.render(this.camera.camera);
       this.pushHud(inDungeon);
       if (this.resultHold <= 0) {
@@ -717,7 +699,7 @@ export class CityGameSession {
     const locked = this.moveLock > 0;
     const click = this.controller.consumeClickMove();
     if (click) {
-      if (this.panel.isOpen() || uiBlocked) this.onDismissUi();
+      if (this.panel.isOpen() || uiBlocked) this.input.triggerAction("ui.escape");
       const meshHit = this.pickInteractableByRay(click.ndcX, click.ndcY, world.interactables);
       if (meshHit) {
         if (!locked || this.player.distanceTo(meshHit.x, meshHit.z) <= INTERACT_RANGE) {
@@ -774,7 +756,7 @@ export class CityGameSession {
       );
       this.renderer.updatePlayer(dt);
       this.camera.follow(this.player.x, this.player.z, dt);
-      this.updateEffects(dt);
+      this.updateEffects(dt, width, height);
       this.renderer.render(this.camera.camera);
       this.pushHud(inDungeon);
       return;
@@ -813,8 +795,7 @@ export class CityGameSession {
 
     this.effects.setRangeIndicator(0, 0, this.weaponReach().attackRange, false);
 
-    const el = this.renderer.renderer.domElement;
-    this.effects.update(dt, this.camera.camera, el.clientWidth || 1, el.clientHeight || 1);
+    this.effects.update(dt, this.camera.camera, width, height);
     this.renderer.render(this.camera.camera);
     const playerRatio = hpCap > 0 ? Math.min(1, this.character.hp / hpCap) : 0;
     this.effects.spawnHpBar("player", this.player.x, groundY + 2.05, this.player.z, playerRatio);
@@ -824,48 +805,46 @@ export class CityGameSession {
     this.pushHud(inDungeon);
   }
 
-  private updateEffects(dt: number): void {
-    const canvas = this.renderer.renderer.domElement;
+  private updateEffects(dt: number, width: number, height: number): void {
     this.effects.update(
       dt,
       this.camera.camera,
-      canvas.clientWidth || 1,
-      canvas.clientHeight || 1,
+      width,
+      height,
     );
   }
 
   private pushHud(inDungeon: boolean): void {
     const p = this.progression.state;
-    this.onHud({
+    const maxLevel = PROGRESSION_BALANCE.evolutions[p.evolution]?.maxLevel ?? 50;
+    const model: HudModel = {
       hp: this.character.hp,
       maxHp: Math.round(this.character.maxHp * (1 + Math.max(0, this.frameMods.maxHpMul))),
       mp: this.character.mp,
       maxMp: this.character.maxMp,
-      skillCd: this.skill.getCooldownRatio(0),
+      xp: p.xp,
+      xpMax: p.xpToNext,
+      isMaxLevel: p.level >= maxLevel,
+      level: p.level,
+      evolution: p.evolution,
+      playerName: this.character.name,
+      classId: this.skillTree.state.classId,
       timer:
         inDungeon && this.dungeonRun.getPhase() === "active"
           ? String(this.dungeonRun.getRemainingSeconds())
           : null,
       kills: this.dungeonRun.getKills(),
-      xp: this.sessionXp,
-      progressionXp: p.xp,
       arenaHint: inDungeon ? this.currentArenaLabel() : null,
-      level: p.level,
-      evolution: p.evolution,
-      unspentPoints: p.unspentAttributePoints,
-      xpToNext: p.xpToNext,
-      sessionXp: this.sessionXp,
-      gold: this.inventory.gold,
-      invUsed: this.inventory.usedSlots(),
-      invCap: this.inventory.capacity,
-      playerName: this.character.name,
-      classId: this.skillTree.state.classId,
       skills: this.skill.slotStates(),
+      drops: this.visibleDropLog(),
+      weaponSet: this.renderer.playerView.getWeaponSet() || "sword-shield",
+      pendingSave: saveVault.hasPendingCritical(),
       lootToast: this.lootToastTimer > 0 ? this.lootToast : null,
       uiToastKind: this.uiToastKind,
-      dropLog: this.visibleDropLog(),
-      moveLocked: this.moveLock > 0,
-    });
+      gold: this.inventory.gold,
+      unspentPoints: p.unspentAttributePoints,
+    };
+    this.hudListener?.(model);
   }
 
   private currentArenaLabel(): string | null {
@@ -1019,7 +998,7 @@ export class CityGameSession {
       this.enemies.clear();
       this.effects.hideAllHpBars();
       this.renderer.playerView.clearDeath();
-      this.onResult(null);
+      this.bus.emit("session:result", { text: null });
       this.resultHold = 0;
       this.bus.emit("dungeon:completed", {
         dungeonId: result.dungeonId,
@@ -1314,7 +1293,7 @@ export class CityGameSession {
       this.form.clear();
       this.summons.clear();
       this.summonView.clear();
-      this.onModeChange("DEAD");
+      this.bus.emit("game:mode-changed", { mode: "DEAD" });
       this.deathReturnTimer = 1.2;
       this.bus.emit("character:death", { at: Date.now() });
       this.deathEmitCount += 1;
@@ -1327,11 +1306,7 @@ export class CityGameSession {
       this.pendingSkillSlot = -1;
       return i;
     }
-    if (this.controller.consumeSkillPressed()) return 0;
-    if (this.controller.consumeSkill2Pressed()) return 1;
-    if (this.controller.consumeSkill3Pressed()) return 2;
-    if (this.controller.consumeSkill4Pressed()) return 3;
-    return -1;
+    return this.input.consumeSkillSlot();
   }
 
   forceSkillSlot(index: number): void {
@@ -1383,10 +1358,8 @@ export class CityGameSession {
   }
 
   private handleInteractKey(): void {
-    const down = this.controller.isInteractPressed();
-    const pressed = down && !this.lastInteractDown;
-    this.lastInteractDown = down;
-    if (!pressed || this.panelOpen || this.character.isDead) return;
+    if (this.input.isUiOpen() || this.character.isDead) return;
+    if (!this.controller.isInteractPressed()) return;
     if (!this.nearby || this.nearby.kind === "npc") return;
     this.tryInteract(this.nearby);
   }
@@ -1531,7 +1504,6 @@ export class CityGameSession {
 
   private closeInteractionOverlay(): void {
     this.panel.close();
-    this.panelOpen = false;
   }
 
   private openVaultBank(): void {
@@ -1574,7 +1546,7 @@ export class CityGameSession {
 
   openInteraction(def: InteractableDef): void {
     if (this.openNpcService(def.id)) return;
-    this.panelOpen = true;
+    this.input.setUiOpen(true);
     let body = def.body;
     if (def.kind === "portal") {
       const pick = this.pickDungeonForLevel();
@@ -1611,7 +1583,6 @@ export class CityGameSession {
   }
 
   closePanel(): void {
-    this.panelOpen = false;
     this.bus.emit("interaction:closed", { id: null });
   }
 
@@ -1673,7 +1644,7 @@ export class CityGameSession {
     this.character.applyDamage(this.character.maxHp + 999);
     if (!this.character.isDead) this.character.isDead = true;
     this.renderer.playerView.playDeath();
-    this.onModeChange("DEAD");
+    this.bus.emit("game:mode-changed", { mode: "DEAD" });
     this.deathReturnTimer =
       this.renderer.playerView.getAnimDurationSec("death") + DEATH_HOLD_PAD_SEC;
     this.bus.emit("character:death", { at: Date.now() });

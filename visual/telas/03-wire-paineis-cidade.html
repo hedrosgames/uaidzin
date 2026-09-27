@@ -2075,10 +2075,16 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       paintQuestPanel();
     }
     el.classList.toggle("is-closed");
+    syncPanelsState();
+  }
+  function syncPanelsState() {
+    const hasOpen = !!document.querySelector("#wire-ui .win:not(.is-closed), .win:not(.is-closed)");
+    window.__UAIDZIN_WIRE_NOTIFY_PANELS__?.(hasOpen);
   }
   function closeAll() {
     if (typeof paintComposerCatalog === "function") paintComposerCatalog();
     Object.values(panels).forEach((p) => p.classList.add("is-closed"));
+    syncPanelsState();
   }
   document.querySelectorAll("[data-hint]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -2092,16 +2098,29 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       const id = x.getAttribute("data-close");
       if (id === "composer" && typeof exitComposerWork === "function" && exitComposerWork()) return;
       if (panels[id]) panels[id].classList.add("is-closed");
+      syncPanelsState();
     });
   });
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      hideTip(true);
-      hideItemTip(true);
-      endItemDrag();
-      closeAll();
+  window.__UAIDZIN_WIRE__ = window.__UAIDZIN_WIRE__ || {};
+  window.__UAIDZIN_WIRE__.handleEscape = function () {
+    if (typeof confirmLayer !== "undefined" && confirmLayer && confirmLayer.classList.contains("is-on")) {
+      closeConfirm();
+      return true;
     }
-  });
+    if (typeof portalConfirmLayer !== "undefined" && portalConfirmLayer && portalConfirmLayer.classList.contains("is-on")) {
+      closePortalConfirm();
+      return true;
+    }
+    hideTip(true);
+    hideItemTip(true);
+    endItemDrag();
+    const openWins = document.querySelectorAll("#wire-ui .win:not(.is-closed), .win:not(.is-closed)");
+    if (openWins.length > 0) {
+      closeAll();
+      return true;
+    }
+    return false;
+  };
 
   const SLOT_LABEL = {
     cape: "Capa",
@@ -2874,6 +2893,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     pendingDelete = null;
     confirmLayer.classList.remove("is-on");
     confirmLayer.hidden = true;
+    window.__UAIDZIN_WIRE_NOTIFY_DIALOG__?.(false);
   }
 
   function openDeleteConfirm(payload) {
@@ -2883,6 +2903,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     confirmMsg.innerHTML = "Descartar <b>" + it.name + refine + "</b>?";
     confirmLayer.hidden = false;
     confirmLayer.classList.add("is-on");
+    window.__UAIDZIN_WIRE_NOTIFY_DIALOG__?.(true);
   }
 
   function applyDelete(payload) {
@@ -2908,14 +2929,6 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   confirmLayer.addEventListener("click", (e) => {
     if (e.target === confirmLayer) closeConfirm();
   });
-  window.addEventListener("keydown", (e) => {
-    if (!confirmLayer.classList.contains("is-on")) return;
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      closeConfirm();
-    }
-  }, true);
 
   function showBagPage(page) {
     bagPage = page;
@@ -4116,6 +4129,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     if (!portalConfirmLayer) return;
     portalConfirmLayer.classList.remove("is-on");
     portalConfirmLayer.hidden = true;
+    window.__UAIDZIN_WIRE_NOTIFY_DIALOG__?.(false);
   }
 
   function openPortalConfirm(dungeon, entryLabel) {
@@ -4136,6 +4150,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
     if (portalConfirmLayer) {
       portalConfirmLayer.hidden = false;
       portalConfirmLayer.classList.add("is-on");
+      window.__UAIDZIN_WIRE_NOTIFY_DIALOG__?.(true);
     }
   }
 
@@ -4294,18 +4309,6 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       if (e.target === portalConfirmLayer) closePortalConfirm();
     });
   }
-  window.addEventListener(
-    "keydown",
-    (e) => {
-      if (!portalConfirmLayer || !portalConfirmLayer.classList.contains("is-on")) return;
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        closePortalConfirm();
-      }
-    },
-    true,
-  );
 
   void ensurePortalConfig();
 

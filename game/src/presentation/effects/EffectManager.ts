@@ -74,6 +74,19 @@ export class EffectManager {
   private rangeRing: Mesh | null = null;
   private count = 0;
   private readonly hpBars = new Map<string, HTMLDivElement>();
+  private readonly hpBarEntries = new Map<
+    string,
+    {
+      el: HTMLDivElement;
+      inner: HTMLElement;
+      world: Vector3;
+      ratio: number;
+      lastX: number;
+      lastY: number;
+      lastVisible: boolean;
+    }
+  >();
+  private readonly scratchVec = new Vector3();
   private readonly nameplates = new Map<string, HTMLDivElement>();
   private readonly skillFx: Array<{ mesh: Mesh; t: number; max: number; kind: string }> = [];
   private shake = 0;
@@ -520,37 +533,48 @@ export class EffectManager {
   }
 
   spawnHpBar(id: string, x: number, y: number, z: number, ratio: number): void {
-    let el = this.hpBars.get(id);
-    if (!el) {
-      el = document.createElement("div");
+    let entry = this.hpBarEntries.get(id);
+    if (!entry) {
+      const el = document.createElement("div");
       el.className = id === "player" ? "hp-bar-enemy hp-bar-player" : "hp-bar-enemy";
-      el.innerHTML = '<i></i>';
+      const inner = document.createElement("i");
+      el.appendChild(inner);
       this.overlay.appendChild(el);
+      entry = {
+        el,
+        inner,
+        world: new Vector3(x, y, z),
+        ratio: -1,
+        lastX: -9999,
+        lastY: -9999,
+        lastVisible: false,
+      };
+      this.hpBarEntries.set(id, entry);
       this.hpBars.set(id, el);
     }
-    el.hidden = false;
-    const inner = el.querySelector("i") as HTMLElement;
+    if (entry.el.hidden) entry.el.hidden = false;
+    entry.world.set(x, y, z);
     const r = Math.max(0, Math.min(1, ratio));
-    inner.style.width = `${r * 100}%`;
-    if (id === "player") {
-      el.classList.toggle("low", r < 0.4);
-      inner.style.background =
-        r < 0.4
+    if (Math.abs(entry.ratio - r) > 0.005) {
+      entry.ratio = r;
+      entry.inner.style.width = `${r * 100}%`;
+      if (id === "player") {
+        const low = r < 0.4;
+        entry.el.classList.toggle("low", low);
+        entry.inner.style.background = low
           ? "linear-gradient(90deg, #a33b3b, #d45555)"
           : "linear-gradient(90deg, #3d9a6a, #5ecf8f)";
+      }
     }
-    const p = new Vector3(x, y, z);
-
-    (el as HTMLElement & { _w?: Vector3 })._w = p;
   }
 
   hideAllHpBars(): void {
-    for (const el of this.hpBars.values()) el.hidden = true;
+    for (const entry of this.hpBarEntries.values()) entry.el.hidden = true;
   }
 
   hideHpBar(id: string): void {
-    const el = this.hpBars.get(id);
-    if (el) el.hidden = true;
+    const entry = this.hpBarEntries.get(id);
+    if (entry) entry.el.hidden = true;
   }
 
   setNpcNameplates(
@@ -586,30 +610,39 @@ export class EffectManager {
   }
 
   private updateHpBars(camera: PerspectiveCamera, width: number, height: number): void {
-    for (const el of this.hpBars.values()) {
-      const w = (el as HTMLElement & { _w?: Vector3 })._w;
-      if (!w || el.hidden) continue;
-      const p = w.clone().project(camera);
-      if (p.z > 1) {
-        el.style.visibility = "hidden";
+    for (const entry of this.hpBarEntries.values()) {
+      if (entry.el.hidden) continue;
+      this.scratchVec.copy(entry.world).project(camera);
+      if (this.scratchVec.z > 1) {
+        if (entry.lastVisible) {
+          entry.lastVisible = false;
+          entry.el.style.visibility = "hidden";
+        }
         continue;
       }
-      el.style.visibility = "visible";
-      const x = (p.x * 0.5 + 0.5) * width;
-      const y = (-p.y * 0.5 + 0.5) * height;
-      el.style.transform = `translate(-50%,-100%) translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      if (!entry.lastVisible) {
+        entry.lastVisible = true;
+        entry.el.style.visibility = "visible";
+      }
+      const x = Math.round(((this.scratchVec.x * 0.5 + 0.5) * width) * 10) / 10;
+      const y = Math.round(((-this.scratchVec.y * 0.5 + 0.5) * height) * 10) / 10;
+      if (x !== entry.lastX || y !== entry.lastY) {
+        entry.lastX = x;
+        entry.lastY = y;
+        entry.el.style.transform = `translate(-50%,-100%) translate(${x}px, ${y}px)`;
+      }
     }
     for (const el of this.nameplates.values()) {
       const w = (el as HTMLElement & { _w?: Vector3 })._w;
       if (!w || el.hidden) continue;
-      const p = w.clone().project(camera);
-      if (p.z > 1) {
+      this.scratchVec.copy(w).project(camera);
+      if (this.scratchVec.z > 1) {
         el.style.visibility = "hidden";
         continue;
       }
       el.style.visibility = "visible";
-      const x = (p.x * 0.5 + 0.5) * width;
-      const y = (-p.y * 0.5 + 0.5) * height;
+      const x = (this.scratchVec.x * 0.5 + 0.5) * width;
+      const y = (-this.scratchVec.y * 0.5 + 0.5) * height;
       el.style.transform = `translate(-50%,-100%) translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     }
   }
@@ -776,6 +809,7 @@ export class EffectManager {
     this.drainMeshFx();
     for (const el of this.hpBars.values()) el.remove();
     this.hpBars.clear();
+    this.hpBarEntries.clear();
     for (const el of this.nameplates.values()) el.remove();
     this.nameplates.clear();
     for (const s of this.skillFx) {
