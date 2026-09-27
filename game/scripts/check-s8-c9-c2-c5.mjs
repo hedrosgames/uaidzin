@@ -83,13 +83,16 @@ await frame.locator("#newName").fill("ZeroGold");
 await frame.locator("#btnCreateConfirm").click();
 await page.waitForTimeout(900);
 
-const slot = await page.evaluate(async () => {
+const loaded = await page.evaluate(async () => {
   const w = document.querySelector("iframe")?.contentWindow;
   const session = JSON.parse(w.sessionStorage.getItem("uaidzin_session_v1"));
   const data = await w.UaidzinSave.loadSave(session);
-  return (data?.slots || []).find((s) => s && s.name === "ZeroGold") || null;
+  return { version: data?.version, slot: (data?.slots || []).find((s) => s && s.name === "ZeroGold") || null };
 });
-console.log("SLOT", JSON.stringify(slot));
+const slot = loaded.slot;
+console.log("SLOT", JSON.stringify(loaded));
+if (loaded.version === 3 && slot?.saveVersion === 4) ok("C9: conta v3 com resumo v4");
+else fail("C9: formato conta " + loaded.version + " resumo " + slot?.saveVersion);
 if (slot?.gold === 0) ok("C9: gold 0 create");
 else fail("C9: gold " + slot?.gold);
 if (slot?.attrs?.FOR === 5 && slot?.attrs?.INT === 5) ok("C9: attrs 5");

@@ -93,6 +93,7 @@
     <p style="margin-top:16px"><a href="/">Voltar ao jogo</a></p>
     <div id="log"></div>
   </div>
+  <script src="../boot/assets/save-store.js"></script>
   <script>
     const log = document.getElementById("log");
     function say(msg) { log.textContent = String(msg); }
@@ -113,7 +114,7 @@
       localStorage.removeItem("uaidzin.save." + profileId + ":prev");
       localStorage.removeItem("uaidzin.mirror." + profileId);
       return new Promise((resolve, reject) => {
-        const req = indexedDB.open("uaidzin", 3);
+        const req = indexedDB.open("uaidzin", UaidzinSave.dbVersion);
         req.onupgradeneeded = () => {
           const db = req.result;
           if (!db.objectStoreNames.contains("save")) db.createObjectStore("save");
@@ -135,6 +136,35 @@
           tx.onerror = () => {
             db.close();
             reject(new Error("Falha ao apagar o profile."));
+          };
+        };
+      });
+    }
+
+    function clearAccount(user) {
+      localStorage.removeItem("uaidzin_save_v1_" + user);
+      localStorage.removeItem("uaidzin.mirror.vault." + user);
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open("uaidzin", UaidzinSave.dbVersion);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains("save")) db.createObjectStore("save");
+          if (!db.objectStoreNames.contains("sections")) db.createObjectStore("sections");
+        };
+        req.onblocked = () => reject(new Error("IndexedDB bloqueado por outra aba do jogo."));
+        req.onerror = () => reject(new Error("Falha ao abrir o IndexedDB."));
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction("sections", "readwrite");
+          tx.objectStore("sections").delete("account:" + user + ":slots");
+          tx.objectStore("sections").delete("account:" + user + ":vault");
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            reject(new Error("Falha ao apagar a conta."));
           };
         };
       });
@@ -172,11 +202,11 @@
       const user = document.getElementById("userId").value.trim() || "admin";
       try {
         for (let i = 0; i < 4; i++) await clearProfile(user + ":slot:" + i);
+        await clearAccount(user);
       } catch (err) {
         say(String(err && err.message ? err.message : err));
         return;
       }
-      localStorage.removeItem("uaidzin_save_v1_" + user);
       const acc = JSON.parse(localStorage.getItem("uaidzin_accounts_v1") || "{}");
       delete acc[user];
       localStorage.setItem("uaidzin_accounts_v1", JSON.stringify(acc));

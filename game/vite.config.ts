@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig, type Plugin } from "vite";
+import { build as viteBuild, defineConfig, type Plugin } from "vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const wireRoot = path.resolve(__dirname, "../visual/telas");
@@ -17,6 +17,8 @@ const composerJsonPath = path.resolve(__dirname, "src/data/composer/compose-reci
 const weaponMountsJsonPath = path.resolve(__dirname, "src/data/weapons/weapon-mounts.json");
 
 const modelsPublicRoot = path.resolve(__dirname, "public/models");
+const persistenceRoot = path.resolve(__dirname, "src/persistence");
+const bootStoreDir = path.resolve(__dirname, "public/boot/assets");
 const visualAssetsRoot = path.resolve(__dirname, "../visual/telas/assets");
 
 const MIME: Record<string, string> = {
@@ -245,6 +247,51 @@ function wireUiPlugin(): Plugin {
   };
 }
 
+function buildBootStore(): Promise<unknown> {
+  return viteBuild({
+    root: __dirname,
+    configFile: false,
+    publicDir: false,
+    logLevel: "warn",
+    build: {
+      outDir: bootStoreDir,
+      target: "es2022",
+      emptyOutDir: false,
+      copyPublicDir: false,
+      minify: false,
+      sourcemap: false,
+      lib: {
+        entry: path.join(persistenceRoot, "bootEntry.ts"),
+        formats: ["iife"],
+        name: "UaidzinSaveBoot",
+        fileName: () => "save-store.js",
+      },
+    },
+  });
+}
+
+function bootStorePlugin(): Plugin {
+  let command = "serve";
+  return {
+    name: "uaidzin-boot-store",
+    config(_config, env) {
+      command = env.command;
+    },
+    async configureServer(server) {
+      await buildBootStore();
+      server.watcher.on("change", (file) => {
+        if (!path.resolve(file).startsWith(persistenceRoot)) return;
+        buildBootStore().catch((err: unknown) => {
+          server.config.logger.error(`[uaidzin-boot-store] falha ao gerar save-store.js: ${String(err)}`);
+        });
+      });
+    },
+    async buildStart() {
+      if (command === "build") await buildBootStore();
+    },
+  };
+}
+
 function vfxStudioPlugin(): Plugin {
   return {
     name: "uaidzin-vfx-studio",
@@ -332,5 +379,5 @@ export default defineConfig({
       ],
     },
   },
-  plugins: [devToolsPlugin(), wireUiPlugin(), vfxStudioPlugin()],
+  plugins: [bootStorePlugin(), devToolsPlugin(), wireUiPlugin(), vfxStudioPlugin()],
 });

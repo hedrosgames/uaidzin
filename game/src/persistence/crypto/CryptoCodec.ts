@@ -158,12 +158,3 @@ export async function decryptJson(key: CodecKey, raw: string): Promise<unknown> 
   );
   return JSON.parse(dec.decode(new Uint8Array(plain)));
 }
-
-export function looksEncrypted(raw: string): boolean {
-  try {
-    const p = JSON.parse(raw) as CipherEnvelope;
-    return !!(p && (p.mode === "aes" || p.mode === "xor") && typeof p.data === "string");
-  } catch {
-    return false;
-  }
-}

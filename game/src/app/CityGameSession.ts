@@ -217,7 +217,6 @@ export class CityGameSession {
   }
 
   async start(): Promise<void> {
-    await this.reloadAccountVault();
     this.adoptItemUidsFromState();
     await this.renderer.loadPlayerModel(this.skillTree.state.classId);
     this.enterWorld("city");
@@ -499,6 +498,7 @@ export class CityGameSession {
 
   async loadSave(): Promise<LoadSaveResult> {
     try {
+      await this.reloadAccountVault();
       const result = await this.saveService.load();
       if (result.status === "unreadable") {
         this.saveUnreadable = true;

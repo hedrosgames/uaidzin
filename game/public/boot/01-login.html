@@ -538,6 +538,10 @@ input[type="range"]::-webkit-slider-thumb{
 
 <script src="assets/save-store.js"></script>
 <script>(function(){
+  if (window.top === window) {
+    window.location.replace("/");
+    return;
+  }
   const $ = (id) => document.getElementById(id);
   const user = $("user");
   const pass = $("pass");
@@ -578,7 +582,7 @@ input[type="range"]::-webkit-slider-thumb{
 
   function goSelecao(session){
     if (inBootFrame) {
-      window.parent.postMessage({ type: "uaidzin-boot-login-ok", session: session || UaidzinSave.getSession() }, "*");
+      window.parent.postMessage({ type: "uaidzin-boot-login-ok", session: session || UaidzinSave.getSession() }, window.location.origin);
       return;
     }
     try { sessionStorage.setItem("uaidzin_boot_fade", "1"); } catch (_) {}
@@ -646,6 +650,13 @@ input[type="range"]::-webkit-slider-thumb{
 
   UaidzinSave.bootstrap().catch(() => {});
 
+  window.addEventListener("message", (event) => {
+    if (!inBootFrame || event.source !== window.parent || event.origin !== window.location.origin) return;
+    const data = event.data;
+    if (!data || data.type !== "uaidzin-boot-refused" || typeof data.message !== "string") return;
+    showMsg(msgError, msgErrorText, data.message);
+  });
+
   user.addEventListener("input", () => { hideMsgs(); refreshBtn(); });
   pass.addEventListener("input", () => { hideMsgs(); refreshBtn(); });
 
@@ -697,13 +708,7 @@ input[type="range"]::-webkit-slider-thumb{
             if (!reg || !reg.ok) {
               return { ok: false, error: (reg && reg.error) || "Não foi possível criar a conta." };
             }
-            return UaidzinSave.login(u, p).then((res) => {
-              if (!res || !res.ok) return res;
-              return UaidzinSave.saveData(res.session, {
-                slots: [null, null, null, null],
-                vault: { gold: 0, items: [] },
-              }).then(() => res);
-            });
+            return UaidzinSave.login(u, p);
           })
       : UaidzinSave.bootstrap().then(() => UaidzinSave.login(u, p));
 

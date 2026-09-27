@@ -14,7 +14,8 @@ import { CityGameSession, type SessionHud } from "./CityGameSession";
 import { GameLoop } from "./GameLoop";
 import { installDebugApi } from "../debug/DebugApi";
 import type { BootCharacter } from "./BootFlow";
-import { clearBootCharacter, clearBootSession } from "./BootFlow";
+import { bootAccountId, clearBootCharacter } from "./BootFlow";
+import { accountLock } from "../persistence/AccountLock";
 import { saveVault } from "../persistence/SaveVault";
 import { artForClass, bindHud } from "../ui/CharacterUiBinder";
 import type { CharacterViewModel, LoadSaveResult } from "../persistence/SaveTypes";
@@ -524,10 +525,15 @@ export class GameApp {
       await new Promise<void>((resolve) => window.setTimeout(resolve, Math.max(0, Math.min(LEAVE_WARNING_MS, left))));
     }
     clearBootCharacter();
+    let idle = saved;
     if (mode === "login") {
-      clearBootSession();
-      await saveVault.logout();
+      const left = LEAVE_SAVE_TIMEOUT_MS - (performance.now() - startedAt);
+      idle = await Promise.race([
+        saveVault.logout().then(() => true),
+        new Promise<boolean>((resolve) => window.setTimeout(() => resolve(false), Math.max(0, left))),
+      ]);
     }
+    if (idle) await accountLock.release();
     window.location.reload();
   }
 
@@ -626,6 +632,11 @@ export class GameApp {
   }
 
   start(character: BootCharacter): void {
+    if (accountLock.current() !== bootAccountId(character)) {
+      clearBootCharacter();
+      window.location.reload();
+      return;
+    }
     this.session.saveService.setProfileId(character.id);
     void this.beginFromSave(character);
   }

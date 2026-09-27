@@ -1,4 +1,7 @@
+import { SESSION_KEY } from "../persistence/AccountAuth";
+import { ACCOUNT_LOCKED_MESSAGE, accountLock } from "../persistence/AccountLock";
 import { normalizeBootCharacter } from "../persistence/migrations";
+import { parseProfileId, type AuthSession } from "../persistence/SaveTypes";
 import { saveVault } from "../persistence/SaveVault";
 
 export interface BootCharacter {
@@ -134,15 +137,34 @@ export function clearBootCharacter(): void {
 
 export function clearBootSession(): void {
   try {
-    sessionStorage.removeItem("uaidzin_session_v1");
+    sessionStorage.removeItem(SESSION_KEY);
   } catch {
-    
+
   }
   void saveVault.logout();
+  void accountLock.release();
+}
+
+export function bootAccountId(character: BootCharacter): string {
+  return saveVault.getSession()?.user ?? parseProfileId(character.id)?.userId ?? character.id;
 }
 
 function hasBootSession(): boolean {
   return !!saveVault.getSession();
+}
+
+function isBootSession(value: unknown): value is AuthSession {
+  const s = value as Partial<AuthSession> | null;
+  return (
+    !!s &&
+    typeof s.user === "string" &&
+    !!s.user &&
+    typeof s.key === "string" &&
+    !!s.key &&
+    typeof s.at === "number" &&
+    typeof s.salt === "string" &&
+    (s.mode === "aes" || s.mode === "fallback")
+  );
 }
 
 async function storedCharacterStillValid(character: BootCharacter): Promise<boolean> {
@@ -167,20 +189,36 @@ function waitFrameLoad(frame: HTMLIFrameElement): Promise<void> {
 
 export async function runBootFlow(host: HTMLElement = document.body): Promise<BootCharacter> {
   await saveVault.bootstrap();
+  let refused = false;
 
-  const skip = normalizeBootCharacter(window.__UAIDZIN_SKIP_BOOT__);
+  const skip = import.meta.env.DEV ? normalizeBootCharacter(window.__UAIDZIN_SKIP_BOOT__) : null;
   if (skip) {
-    rememberBootCharacter(skip);
-    return skip;
+    if (await accountLock.acquire(bootAccountId(skip))) {
+      rememberBootCharacter(skip);
+      return skip;
+    }
+    refused = true;
   }
 
-  const stored = normalizeBootCharacter(readStoredCharacter());
-  if (stored) {
-    if (await storedCharacterStillValid(stored)) return stored;
+  const session = refused ? null : saveVault.getSession();
+  if (session) {
+    if (await accountLock.acquire(session.user)) {
+      const stored = normalizeBootCharacter(readStoredCharacter());
+      if (stored) {
+        if (await storedCharacterStillValid(stored)) return stored;
+        clearBootCharacter();
+      }
+    } else {
+      refused = true;
+    }
+  }
+  if (refused) {
     clearBootCharacter();
+    clearBootSession();
   }
 
   return new Promise((resolve) => {
+    const origin = window.location.origin;
     const sceneFade = createSceneFadeOverlay(host);
     bootSceneFade = sceneFade;
 
@@ -206,6 +244,18 @@ export async function runBootFlow(host: HTMLElement = document.body): Promise<Bo
         await sceneFade.fadeOut();
       });
 
+    const showRefusal = () => {
+      frame.contentWindow?.postMessage({ type: "uaidzin-boot-refused", message: ACCOUNT_LOCKED_MESSAGE }, origin);
+    };
+
+    let entering = false;
+    const refuse = () => {
+      entering = false;
+      clearBootCharacter();
+      clearBootSession();
+      void goBootPage("/boot/01-login.html").then(showRefusal);
+    };
+
     sceneFade.holdBlack();
     const firstLoad = waitFrameLoad(frame);
     frame.src = hasBootSession() ? "/boot/02-selecao-personagem.html" : "/boot/01-login.html";
@@ -213,27 +263,29 @@ export async function runBootFlow(host: HTMLElement = document.body): Promise<Bo
     void enqueue(async () => {
       await firstLoad;
       await sceneFade.fadeOut();
+      if (refused) showRefusal();
     });
 
     const onMessage = (event: MessageEvent) => {
-      const data = event.data as {
-        type?: string;
-        character?: BootCharacter;
-        session?: { user: string; key: string; at: number; salt: string; mode: string };
-      } | null;
-      if (!data?.type) return;
+      if (event.source !== frame.contentWindow || event.origin !== origin) return;
+      const data = event.data as { type?: unknown; character?: unknown; session?: unknown } | null;
+      if (!data || typeof data.type !== "string") return;
       if (data.type === "uaidzin-boot-login-ok") {
-        if (data.session?.user && data.session?.key) {
-          try {
-            sessionStorage.setItem("uaidzin_session_v1", JSON.stringify(data.session));
-          } catch {
-            
+        if (!isBootSession(data.session)) return;
+        const loginSession = data.session;
+        void accountLock.acquire(loginSession.user).then((ok) => {
+          if (!ok) {
+            refuse();
+            return;
           }
-          const encoded = encodeURIComponent(JSON.stringify(data.session));
+          try {
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(loginSession));
+          } catch {
+
+          }
+          const encoded = encodeURIComponent(JSON.stringify(loginSession));
           void goBootPage(`/boot/02-selecao-personagem.html#s=${encoded}`);
-          return;
-        }
-        void goBootPage("/boot/02-selecao-personagem.html");
+        });
         return;
       }
       if (data.type === "uaidzin-boot-need-login") {
@@ -241,15 +293,22 @@ export async function runBootFlow(host: HTMLElement = document.body): Promise<Bo
         void goBootPage("/boot/01-login.html");
         return;
       }
-      if (data.type !== "uaidzin-boot-enter" || !data.character?.id) return;
+      if (data.type !== "uaidzin-boot-enter" || entering) return;
       const character = normalizeBootCharacter(data.character);
       if (!character) return;
-      window.removeEventListener("message", onMessage);
-      rememberBootCharacter(character);
-      void enqueue(async () => {
-        await sceneFade.fadeIn();
-        frame.remove();
-        resolve(character);
+      entering = true;
+      void accountLock.acquire(bootAccountId(character)).then((ok) => {
+        if (!ok) {
+          refuse();
+          return;
+        }
+        window.removeEventListener("message", onMessage);
+        rememberBootCharacter(character);
+        void enqueue(async () => {
+          await sceneFade.fadeIn();
+          frame.remove();
+          resolve(character);
+        });
       });
     };
     window.addEventListener("message", onMessage);

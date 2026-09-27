@@ -45,13 +45,16 @@ await frame.locator("#newName").fill("CavTK");
 await frame.locator("#btnCreateConfirm").click();
 await page.waitForTimeout(900);
 
-const slot = await page.evaluate(async () => {
+const loaded = await page.evaluate(async () => {
   const w = document.querySelector("iframe")?.contentWindow;
   const session = JSON.parse(w.sessionStorage.getItem("uaidzin_session_v1"));
   const data = await w.UaidzinSave.loadSave(session);
-  return (data?.slots || []).find((s) => s && s.name === "CavTK") || null;
+  return { version: data?.version, slot: (data?.slots || []).find((s) => s && s.name === "CavTK") || null };
 });
-console.log("SLOT", JSON.stringify(slot));
+const slot = loaded.slot;
+console.log("SLOT", JSON.stringify(loaded));
+if (loaded.version === 3 && slot?.saveVersion === 4) ok("C4: conta v3 com resumo v4");
+else fail("C4: formato conta " + loaded.version + " resumo " + slot?.saveVersion);
 if (slot?.classId === "TK") ok("C4: slot classId TK");
 else fail("C4: slot classId " + slot?.classId);
 if (slot?.attrs?.FOR === 5 && slot?.attrs?.DES === 5) ok("C3: slot attrs 5");

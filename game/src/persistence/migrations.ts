@@ -5,6 +5,7 @@ import type { ActiveBuff } from "../domain/character/BuffService";
 import { CLASSES } from "../data/classes/class-definitions";
 import { remapSkillId } from "../data/classes/skill-legacy";
 import {
+  ACCOUNT_SAVE_VERSION,
   SAVE_VERSION,
   emptyAttrs,
   normalizeTreeMap,
@@ -235,6 +236,13 @@ export function migrateSave(raw: unknown, profileIdHint = "default"): SavePayloa
   const version = (raw as { saveVersion?: unknown }).saveVersion;
   if (typeof version !== "number" || !(version >= SAVE_VERSION)) return null;
   return normalizeSavePayload(raw, profileIdHint);
+}
+
+export function migrateAccount(raw: unknown): Record<string, unknown> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const version = (raw as { version?: unknown }).version;
+  if (typeof version !== "number" || !(version >= ACCOUNT_SAVE_VERSION)) return null;
+  return raw as Record<string, unknown>;
 }
 
 function remapLearnedSkills(payload: SavePayload): void {

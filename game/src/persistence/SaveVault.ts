@@ -1,7 +1,7 @@
 import { AccountAuth, SESSION_KEY } from "./AccountAuth";
-import { decryptJson, encryptJson, importCodecKey, looksEncrypted, type CodecKey } from "./crypto/CryptoCodec";
-import { migrateSave } from "./migrations";
-import { SaveStore, type SectionBlobs } from "./SaveStore";
+import { decryptJson, encryptJson, importCodecKey, type CodecKey } from "./crypto/CryptoCodec";
+import { migrateAccount, migrateSave } from "./migrations";
+import { SaveStore, type AccountBlobs, type AccountWrite, type SectionBlobs } from "./SaveStore";
 import {
   ACCOUNT_SAVE_VERSION,
   emptyAttrs,
@@ -78,8 +78,8 @@ function emptyAccount(user: string): AccountSave {
   };
 }
 
-function copyAccount(account: AccountSave): AccountSave {
-  return { ...account, slots: [...account.slots] };
+function sameSummary(a: SlotSummary | null, b: SlotSummary | null): boolean {
+  return JSON.stringify(normalizeSlots([a])[0]) === JSON.stringify(normalizeSlots([b])[0]);
 }
 
 export class SaveVault {
@@ -97,8 +97,8 @@ export class SaveVault {
   private writeCount = 0;
   private lastStamp = 0;
   private codec: { key: string; mode: AuthSession["mode"]; codec: Promise<CodecKey> } | null = null;
-  private accountCache: { user: string; raw: string; account: AccountSave } | null = null;
-  private accountEnvelope: { user: string; raw: string } | null = null;
+  private vaultEnvelope: { user: string; raw: string } | null = null;
+  private accountCache: { user: string; account: AccountSave } | null = null;
   private encrypted: { profileId: string; sections: SectionBlobs } | null = null;
   private readonly legacyCleared = new Set<string>();
 
@@ -157,8 +157,8 @@ export class SaveVault {
     this.auth.logout();
     await this.flushChain;
     this.codec = null;
+    this.vaultEnvelope = null;
     this.accountCache = null;
-    this.accountEnvelope = null;
     this.encrypted = null;
   }
 
@@ -210,53 +210,109 @@ export class SaveVault {
     return account.slots;
   }
 
-  async loadAccount(session: AuthSession): Promise<AccountSave> {
-    const raw = this.store.readAccountBlob(session.user);
-    if (!raw) return emptyAccount(session.user);
+  async loadAccount(session: AuthSession, fresh = false): Promise<AccountSave> {
     const cached = this.accountCache;
-    if (cached && cached.user === session.user && cached.raw === raw) return copyAccount(cached.account);
-    try {
-      let data: AccountSave;
-      if (looksEncrypted(raw)) {
-        data = (await decryptJson(await this.codecFor(session), raw)) as AccountSave;
-      } else {
-        data = JSON.parse(raw) as AccountSave;
-      }
-      const account: AccountSave = {
-        version: ACCOUNT_SAVE_VERSION,
-        user: session.user,
-        slots: normalizeSlots(data.slots),
-        vault: normalizeVault(data.vault),
-        updatedAt: data.updatedAt || Date.now(),
-      };
-      this.accountCache = { user: session.user, raw, account };
-      return copyAccount(account);
-    } catch {
-      return emptyAccount(session.user);
-    }
+    if (!fresh && cached?.user === session.user) return structuredClone(cached.account);
+    const account = await this.readAccount(session);
+    this.lastStamp = Math.max(this.lastStamp, account.updatedAt);
+    this.accountCache = { user: session.user, account };
+    return structuredClone(account);
   }
 
-  private async persistAccount(session: AuthSession, account: AccountSave): Promise<void> {
-    const next: AccountSave = {
-      ...account,
+  private async readAccount(session: AuthSession): Promise<AccountSave> {
+    const blobs = await this.store.readAccount(session.user);
+    const mirror = this.store.readVaultMirror(session.user);
+    if (!blobs.slots && !blobs.vault && !mirror) return emptyAccount(session.user);
+    const codec = await this.codecFor(session);
+    const slots = blobs.slots ? migrateAccount(await decryptJson(codec, blobs.slots)) : null;
+    let vault = blobs.vault ? migrateAccount(await decryptJson(codec, blobs.vault)) : null;
+    if (mirror) {
+      try {
+        const fromMirror = migrateAccount(await decryptJson(codec, mirror));
+        if (fromMirror && (!vault || Number(fromMirror.updatedAt) > Number(vault.updatedAt))) vault = fromMirror;
+      } catch {
+
+      }
+    }
+    return {
       version: ACCOUNT_SAVE_VERSION,
       user: session.user,
-      vault: normalizeVault(account.vault),
-      updatedAt: Date.now(),
+      slots: normalizeSlots(slots?.slots),
+      vault: normalizeVault(vault?.vault),
+      updatedAt: Math.max(Number(slots?.updatedAt) || 0, Number(vault?.updatedAt) || 0),
     };
-    const envelope = await encryptJson(await this.codecFor(session), next);
-    this.accountEnvelope = { user: session.user, raw: envelope };
-    if (!this.store.writeAccountBlob(session.user, envelope)) {
-      throw new Error("account_write_failed");
-    }
-    this.accountCache = { user: session.user, raw: envelope, account: next };
+  }
+
+  private encryptAccountPart(
+    codec: CodecKey,
+    session: AuthSession,
+    part: { slots: AccountSave["slots"] } | { vault: AccountVaultState },
+  ): Promise<string> {
+    return encryptJson(codec, { version: ACCOUNT_SAVE_VERSION, user: session.user, ...part, updatedAt: this.nextStamp() });
+  }
+
+  private nextStamp(): number {
+    this.lastStamp = Math.max(Date.now(), this.lastStamp + 1);
+    return this.lastStamp;
+  }
+
+  private remember(session: AuthSession, account: AccountSave): void {
+    this.accountCache = { user: session.user, account: structuredClone(account) };
+  }
+
+  private vaultPersisted(session: AuthSession, raw: string): void {
+    if (this.vaultEnvelope?.raw !== raw) return;
+    this.vaultEnvelope = null;
+    this.store.clearVaultMirror(session.user);
+  }
+
+  writeAccount(patch: { slots?: unknown; vault?: unknown }): Promise<void> {
+    const session = this.requireSessionOrThrow();
+    return this.enqueue(async () => {
+      const codec = await this.codecFor(session);
+      const blobs: AccountBlobs = {};
+      if (patch.slots !== undefined) blobs.slots = await this.encryptAccountPart(codec, session, { slots: normalizeSlots(patch.slots) });
+      if (patch.vault !== undefined) blobs.vault = await this.encryptAccountPart(codec, session, { vault: normalizeVault(patch.vault) });
+      this.accountCache = null;
+      await this.store.writeMany(null, {}, { userId: session.user, ...blobs });
+    });
   }
 
   async loadAccountVault(): Promise<AccountVaultState> {
     const session = this.getSession();
     if (!session) return emptyVault();
-    const account = await this.loadAccount(session);
-    return normalizeVault(account.vault);
+    const account = await this.loadAccount(session, true);
+    return account.vault;
+  }
+
+  private newSummary(
+    userId: string,
+    input: {
+      slotIndex: number;
+      classId: string;
+      name: string;
+      level?: number;
+      evolution?: string;
+      gold?: number;
+      attrs?: SlotSummary["attrs"];
+      trees?: SlotSummary["trees"];
+      spec?: SlotSummary["spec"];
+      resets?: number;
+    },
+  ): SlotSummary {
+    return {
+      profileId: profileIdFor(userId, input.slotIndex),
+      classId: input.classId,
+      name: input.name,
+      level: input.level ?? 1,
+      evolution: input.evolution ?? "Mortal",
+      gold: input.gold ?? 0,
+      resets: input.resets ?? 0,
+      attrs: input.attrs ? { ...input.attrs } : emptyAttrs(),
+      trees: input.trees ? { ...input.trees } : { controle: 0, magia: 0, fisica: 0 },
+      spec: input.spec ? { ...input.spec } : { controle: 0, magia: 0, fisica: 0 },
+      saveVersion: SAVE_VERSION,
+    };
   }
 
   createSlot(input: {
@@ -276,19 +332,7 @@ export class SaveVault {
       const account = await this.loadAccount(session);
       if (input.slotIndex < 0 || input.slotIndex >= SLOT_COUNT) throw new Error("bad_slot");
       if (account.slots[input.slotIndex]) throw new Error("slot_occupied");
-      const summary: SlotSummary = {
-        profileId: profileIdFor(session.user, input.slotIndex),
-        classId: input.classId,
-        name: input.name,
-        level: input.level ?? 1,
-        evolution: input.evolution ?? "Mortal",
-        gold: input.gold ?? 0,
-        resets: input.resets ?? 0,
-        attrs: input.attrs ? { ...input.attrs } : emptyAttrs(),
-        trees: input.trees ? { ...input.trees } : { controle: 0, magia: 0, fisica: 0 },
-        spec: input.spec ? { ...input.spec } : { controle: 0, magia: 0, fisica: 0 },
-        saveVersion: SAVE_VERSION,
-      };
+      const summary = this.newSummary(session.user, input);
       const payload = this.seedPayload(summary, session.user, input.slotIndex);
       await this.writeNow(session, {
         payload,
@@ -344,18 +388,36 @@ export class SaveVault {
     };
   }
 
+  reserveSlot(slotIndex: number, classId: string, name: string): Promise<SlotSummary> {
+    const session = this.requireSessionOrThrow();
+    return this.enqueue(async () => {
+      const account = await this.loadAccount(session);
+      if (slotIndex < 0 || slotIndex >= SLOT_COUNT) throw new Error("bad_slot");
+      if (account.slots[slotIndex]) throw new Error("slot_occupied");
+      const summary = this.newSummary(session.user, { slotIndex, classId, name });
+      account.slots[slotIndex] = summary;
+      await this.writeSlots(session, account, summary.profileId);
+      return summary;
+    });
+  }
+
   deleteSlot(slotIndex: number): Promise<void> {
     const session = this.requireSessionOrThrow();
     const current = parseProfileId(this.profileId);
     if (current && current.userId === session.user && current.slotIndex === slotIndex) this.cancelPending();
     return this.enqueue(async () => {
       const account = await this.loadAccount(session);
-      const slot = account.slots[slotIndex];
-      if (!slot) return;
-      await this.clearProfileNow(slot.profileId);
+      if (slotIndex < 0 || slotIndex >= SLOT_COUNT) throw new Error("bad_slot");
+      const profileId = account.slots[slotIndex]?.profileId || profileIdFor(session.user, slotIndex);
       account.slots[slotIndex] = null;
-      await this.persistAccount(session, account);
+      await this.writeSlots(session, account, profileId);
     });
+  }
+
+  private async writeSlots(session: AuthSession, account: AccountSave, clearProfileId: string): Promise<void> {
+    const slots = await this.encryptAccountPart(await this.codecFor(session), session, { slots: account.slots });
+    await this.clearProfileNow(clearProfileId, { userId: session.user, slots });
+    this.remember(session, account);
   }
 
   commit(write: SaveWrite): Promise<void> {
@@ -421,11 +483,10 @@ export class SaveVault {
   }
 
   private stamp(payload: SavePayload): SavePayload {
-    this.lastStamp = Math.max(Date.now(), this.lastStamp + 1);
     return {
       ...payload,
       saveVersion: SAVE_VERSION,
-      meta: { ...payload.meta, updatedAt: this.lastStamp },
+      meta: { ...payload.meta, updatedAt: this.nextStamp() },
     };
   }
 
@@ -439,13 +500,16 @@ export class SaveVault {
         blobs[section] = await encryptJson(codec, sectionValue(payload, section));
       }
     }
-    const account = await this.nextAccount(session, write.vault, payload);
-    if (account) await this.persistAccount(session, account);
-    if (!payload) return;
-    const profileId = payload.meta.profileId;
-    this.cacheEncrypted(profileId, blobs);
-    await this.store.writeMany(profileId, blobs);
-    if (this.legacyCleared.has(profileId)) return;
+    const { blobs: account, next } = await this.accountBlobs(session, codec, write.vault, payload);
+    if (account.vault) this.vaultEnvelope = { user: session.user, raw: account.vault };
+    const profileId = payload ? payload.meta.profileId : null;
+    if (profileId) this.cacheEncrypted(profileId, blobs);
+    const touchesAccount = account.slots !== undefined || account.vault !== undefined;
+    if (!profileId && !touchesAccount) return;
+    await this.store.writeMany(profileId, blobs, touchesAccount ? { userId: session.user, ...account } : null);
+    if (next && touchesAccount) this.remember(session, next);
+    if (account.vault) this.vaultPersisted(session, account.vault);
+    if (!profileId || this.legacyCleared.has(profileId)) return;
     try {
       await this.store.clearLegacyProfile(profileId);
       this.legacyCleared.add(profileId);
@@ -454,27 +518,32 @@ export class SaveVault {
     }
   }
 
-  private async nextAccount(
+  private async accountBlobs(
     session: AuthSession,
+    codec: CodecKey,
     vault: AccountVaultState | null,
     payload: SavePayload | null,
-  ): Promise<AccountSave | null> {
-    if (!vault && !payload) return null;
+  ): Promise<{ blobs: AccountBlobs; next: AccountSave | null }> {
+    if (!vault && !payload) return { blobs: {}, next: null };
     const account = await this.loadAccount(session);
-    let changed = false;
+    const out: AccountBlobs = {};
     if (vault) {
       account.vault = normalizeVault(vault);
-      changed = true;
+      out.vault = await this.encryptAccountPart(codec, session, { vault: account.vault });
     }
-    const parsed = payload ? parseProfileId(payload.meta.profileId) : null;
-    if (payload && parsed && parsed.userId === session.user && parsed.slotIndex >= 0 && parsed.slotIndex < SLOT_COUNT) {
-      const summary = summaryFromPayload(payload);
-      if (JSON.stringify(account.slots[parsed.slotIndex]) !== JSON.stringify(summary)) {
-        account.slots[parsed.slotIndex] = summary;
-        changed = true;
-      }
+    if (payload && this.syncSlotSummary(session, account, payload)) {
+      out.slots = await this.encryptAccountPart(codec, session, { slots: account.slots });
     }
-    return changed ? account : null;
+    return { blobs: out, next: account };
+  }
+
+  private syncSlotSummary(session: AuthSession, account: AccountSave, payload: SavePayload): boolean {
+    const parsed = parseProfileId(payload.meta.profileId);
+    if (!parsed || parsed.userId !== session.user || parsed.slotIndex < 0 || parsed.slotIndex >= SLOT_COUNT) return false;
+    const summary = summaryFromPayload(payload);
+    if (sameSummary(account.slots[parsed.slotIndex], summary)) return false;
+    account.slots[parsed.slotIndex] = summary;
+    return true;
   }
 
   private cacheEncrypted(profileId: string, blobs: SectionBlobs): void {
@@ -488,10 +557,8 @@ export class SaveVault {
     if (cached && PROFILE_SECTIONS.every((s) => !!cached.sections[s])) {
       this.store.writeMirror(cached.profileId, cached.sections);
     }
-    const account = this.accountEnvelope;
-    if (account && this.store.readAccountBlob(account.user) !== account.raw) {
-      this.store.writeAccountBlob(account.user, account.raw);
-    }
+    const vault = this.vaultEnvelope;
+    if (vault) this.store.writeVaultMirror(vault.user, vault.raw);
   }
 
   private async decodeSections(
@@ -556,8 +623,8 @@ export class SaveVault {
     return { status: "ok", payload: best, fromMirror: useMirror };
   }
 
-  private async clearProfileNow(profileId: string): Promise<void> {
-    await this.store.clearProfile(profileId);
+  private async clearProfileNow(profileId: string, account: AccountWrite | null = null): Promise<void> {
+    await this.store.clearProfile(profileId, account);
     if (this.encrypted?.profileId === profileId) this.encrypted = null;
   }
 
@@ -565,15 +632,18 @@ export class SaveVault {
     if (profileId === this.profileId) this.cancelPending();
     const session = this.getSession();
     return this.enqueue(async () => {
-      await this.clearProfileNow(profileId);
-      if (!session) return;
       const parsed = parseProfileId(profileId);
-      if (!parsed || parsed.userId !== session.user) return;
-      const account = await this.loadAccount(session);
-      if (account.slots[parsed.slotIndex]?.profileId === profileId) {
-        account.slots[parsed.slotIndex] = null;
-        await this.persistAccount(session, account);
+      if (!session || !parsed || parsed.userId !== session.user) {
+        await this.clearProfileNow(profileId);
+        return;
       }
+      const account = await this.loadAccount(session);
+      if (account.slots[parsed.slotIndex]?.profileId !== profileId) {
+        await this.clearProfileNow(profileId);
+        return;
+      }
+      account.slots[parsed.slotIndex] = null;
+      await this.writeSlots(session, account, profileId);
     });
   }
 
@@ -581,9 +651,9 @@ export class SaveVault {
     if (parseProfileId(this.profileId)?.userId === userId || this.getSession()?.user === userId) this.cancelPending();
     await this.enqueue(async () => {
       for (let i = 0; i < SLOT_COUNT; i++) await this.clearProfileNow(profileIdFor(userId, i));
-      this.store.clearAccountBlob(userId);
+      await this.store.clearAccount(userId);
+      if (this.vaultEnvelope?.user === userId) this.vaultEnvelope = null;
       if (this.accountCache?.user === userId) this.accountCache = null;
-      if (this.accountEnvelope?.user === userId) this.accountEnvelope = null;
     });
     if (this.getSession()?.user === userId) await this.logout();
     try {
@@ -592,7 +662,7 @@ export class SaveVault {
 
     }
     if (userId === "admin") {
-      this.auth.deleteAccountRecord("admin");
+      await this.auth.deleteAccountRecord("admin");
       await this.auth.bootstrap();
     }
   }

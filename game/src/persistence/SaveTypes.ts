@@ -6,7 +6,7 @@ import type { AccountVaultState } from "../domain/account/AccountVaultService";
 
 export const SAVE_VERSION = 4;
 export const SLOT_COUNT = 4;
-export const ACCOUNT_SAVE_VERSION = 2;
+export const ACCOUNT_SAVE_VERSION = 3;
 
 export type AttrBlock = { FOR: number; DES: number; CONS: number; INT: number };
 

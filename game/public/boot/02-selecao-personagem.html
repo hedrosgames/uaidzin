@@ -968,6 +968,10 @@ window.__mountCharPreview = mountCharPreview;
 </script>
 <script src="assets/save-store.js"></script>
 <script>(function(){
+  if (window.top === window) {
+    window.location.replace("/");
+    return;
+  }
   const inBootFrame = !!(window.parent && window.parent !== window);
   const sceneFadeEl = document.getElementById("sceneFade");
 
@@ -993,7 +997,7 @@ window.__mountCharPreview = mountCharPreview;
 
   function sceneFadeNavigate(url, parentMessage){
     if (inBootFrame && parentMessage) {
-      window.parent.postMessage(parentMessage, "*");
+      window.parent.postMessage(parentMessage, window.location.origin);
       return;
     }
     try { sessionStorage.setItem("uaidzin_boot_fade", "1"); } catch (_) {}
@@ -1018,7 +1022,6 @@ window.__mountCharPreview = mountCharPreview;
     TK: {
       id:"TK", name:"Thegn Knight", namePt:"Cavaleiro Thegn", primary:"FOR",
       blurb:"Nobre guerreiro de ferro. Linha de frente, escudo e golpe pesado.",
-      base:{ FOR:12, DES:8, CONS:14, INT:6 },
       trees:["Controle","Magia","Física"],
       accent:"#c9a227",
       face:"assets/face-tk.png",
@@ -1027,7 +1030,6 @@ window.__mountCharPreview = mountCharPreview;
     FM: {
       id:"FM", name:"Frost Maiden", namePt:"Donzela Glacial", primary:"INT",
       blurb:"Magia de gelo e véu. Frágil de corpo, letal de longe.",
-      base:{ FOR:6, DES:8, CONS:8, INT:16 },
       trees:["Controle","Magia","Física"],
       accent:"#8b4ac9",
       face:"assets/face-fm.png",
@@ -1036,7 +1038,6 @@ window.__mountCharPreview = mountCharPreview;
     BM: {
       id:"BM", name:"Beast Master", namePt:"Mestre das Feras", primary:"INT",
       blurb:"Domina feras e o campo. Pressão de área e invocação.",
-      base:{ FOR:10, DES:10, CONS:12, INT:12 },
       trees:["Controle","Magia","Física"],
       accent:"#a33b3b",
       face:"assets/face-bm.png",
@@ -1045,7 +1046,6 @@ window.__mountCharPreview = mountCharPreview;
     HT: {
       id:"HT", name:"Huntress", namePt:"Caçadora", primary:"DES",
       blurb:"Alcance e precisão. Abate antes de ser vista.",
-      base:{ FOR:8, DES:14, CONS:9, INT:8 },
       trees:["Controle","Magia","Física"],
       accent:"#4a8f7a",
       face:"assets/face-ht.png",
@@ -1174,6 +1174,7 @@ window.__mountCharPreview = mountCharPreview;
   if (!session) return;
 
   function normalizeSlots(arr){
+    const base = UaidzinSave.defaultAttrs();
     const out = [];
     for (let i=0;i<MAX_SLOTS;i++) {
       const s = arr && arr[i];
@@ -1188,10 +1189,10 @@ window.__mountCharPreview = mountCharPreview;
         ...s,
         profileId: s.profileId || (String(session.user) + ":slot:" + i),
         attrs: {
-          FOR: Number.isFinite(Number(attrs.FOR)) ? Number(attrs.FOR) : 5,
-          DES: Number.isFinite(Number(attrs.DES)) ? Number(attrs.DES) : 5,
-          CONS: Number.isFinite(Number(attrs.CONS)) ? Number(attrs.CONS) : 5,
-          INT: Number.isFinite(Number(attrs.INT)) ? Number(attrs.INT) : 5,
+          FOR: Number.isFinite(Number(attrs.FOR)) ? Number(attrs.FOR) : base.FOR,
+          DES: Number.isFinite(Number(attrs.DES)) ? Number(attrs.DES) : base.DES,
+          CONS: Number.isFinite(Number(attrs.CONS)) ? Number(attrs.CONS) : base.CONS,
+          INT: Number.isFinite(Number(attrs.INT)) ? Number(attrs.INT) : base.INT,
         },
         trees: {
           controle: Number(trees.controle) || 0,
@@ -1212,17 +1213,9 @@ window.__mountCharPreview = mountCharPreview;
     return out;
   }
 
-  async function persist(){
-    if (!session) return;
-    try {
-      await UaidzinSave.saveData(session, { slots });
-    } catch (err) {
-      console.error(err);
-      toast("Falha ao salvar.", true);
-    }
-  }
-
   let slots = DEFAULT_SLOTS.map(s => s ? JSON.parse(JSON.stringify(s)) : null);
+
+  let accountUnreadable = false;
   let selected = -1;
   let createClassId = "TK";
 
@@ -1427,6 +1420,13 @@ window.__mountCharPreview = mountCharPreview;
       classPick.appendChild(d);
     });
   }
+  function storageError(err){
+    const code = err && err.message;
+    if (code === "slot_occupied") return "o slot já está ocupado.";
+    if (code === "bad_slot") return "slot inválido.";
+    if (code === "no_session") return "sessão expirada, entre de novo.";
+    return "falha no armazenamento.";
+  }
   function isValidCharName(name){
     return /^[A-Za-zÀ-ÖØ-öø-ÿ]{3,12}$/.test(name);
   }
@@ -1455,33 +1455,20 @@ window.__mountCharPreview = mountCharPreview;
     const name = newName.value.trim();
     if (!isValidCharName(name)) { toast("Nome: 3 a 12 letras, sem número ou símbolo.", true); return; }
     if (!createClassId) return;
+    if (accountUnreadable) { toast("Não foi possível ler a conta. Recarregue a página.", true); return; }
     const emptyIdx = slots.findIndex(s => !s);
     if (emptyIdx < 0) { toast("Sem slots livres.", true); return; }
 
-    const slot = {
-      profileId: String(session.user) + ":slot:" + emptyIdx,
-      classId: createClassId,
-      name,
-      level: 1,
-      gold: 0,
-      attrs: { FOR:5, DES:5, CONS:5, INT:5 },
-      trees: { controle:0, magia:0, fisica:0 },
-      spec: { controle:0, magia:0, fisica:0 },
-      evolution: "Mortal",
-      resets: 0
-    };
     clearClassPickPreviews();
-    if (UaidzinSave.clearProfileStorage) {
-      try {
-        await UaidzinSave.clearProfileStorage(slot.profileId);
-      } catch (err) {
-        console.error(err);
-        toast("Não foi possível criar o personagem: " + (err && err.message ? err.message : "falha no armazenamento."), true);
-        return;
-      }
+    let slot;
+    try {
+      slot = await UaidzinSave.createSlot(session, emptyIdx, { classId: createClassId, name });
+    } catch (err) {
+      console.error(err);
+      toast("Não foi possível criar o personagem: " + storageError(err), true);
+      return;
     }
-    slots[emptyIdx] = slot;
-    await persist();
+    slots[emptyIdx] = normalizeSlots([slot])[0];
     modalCreate.classList.remove("open");
     buildScene();
     selectSlot(emptyIdx);
@@ -1499,20 +1486,13 @@ window.__mountCharPreview = mountCharPreview;
   document.getElementById("btnDeleteConfirm").addEventListener("click", async () => {
     if (selected < 0 || !slots[selected]) return;
     const name = slots[selected].name;
-    if (UaidzinSave.deleteSlot) {
-      try {
-        slots = normalizeSlots(await UaidzinSave.deleteSlot(session, selected));
-      } catch (err) {
-        console.error(err);
-        modalDelete.classList.remove("open");
-        toast("Não foi possível excluir " + name + ": " + (err && err.message ? err.message : "falha no armazenamento."), true);
-        return;
-      }
-    } else {
-      const profileId = slots[selected].profileId || (String(session.user) + ":slot:" + selected);
-      if (UaidzinSave.clearProfileStorage) UaidzinSave.clearProfileStorage(profileId);
-      slots[selected] = null;
-      await persist();
+    try {
+      slots = normalizeSlots(await UaidzinSave.deleteSlot(session, selected));
+    } catch (err) {
+      console.error(err);
+      modalDelete.classList.remove("open");
+      toast("Não foi possível excluir " + name + ": " + storageError(err), true);
+      return;
     }
     modalDelete.classList.remove("open");
     deselect();
@@ -1546,7 +1526,7 @@ window.__mountCharPreview = mountCharPreview;
 
     setTimeout(() => {
       if (inBootFrame) {
-        window.parent.postMessage({ type: "uaidzin-boot-enter", character: character }, "*");
+        window.parent.postMessage({ type: "uaidzin-boot-enter", character: character }, window.location.origin);
         return;
       }
       sceneFadeNavigate("/");
@@ -1614,11 +1594,10 @@ window.__mountCharPreview = mountCharPreview;
     }
     const data = await UaidzinSave.loadSave(session);
     if (data && data.corrupted) {
-      toast("Save ilegível — usando dados padrão.", true);
+      accountUnreadable = true;
+      toast("Não foi possível ler a conta. Recarregue a página.", true);
     } else if (data && Array.isArray(data.slots)) {
       slots = normalizeSlots(data.slots);
-    } else {
-      await persist();
     }
     buildScene();
   })();

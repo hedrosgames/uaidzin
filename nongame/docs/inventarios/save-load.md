@@ -60,13 +60,50 @@ Apagar personagem: só o blob + summary daquele slot. Baú e outros chars intact
 
 | Camada | O quê |
 |---|---|
-| Hub (login/seleção) | `save-store.js` → LocalStorage `uaidzin_save_v1_{user}` (conta + `SlotSummary`) |
-| Runtime (cidade/dungeon) | `SaveVault` → IndexedDB `uaidzin` + mirror LS; blob `{user}:slot:{n}` |
+| Hub (login/seleção) | `public/boot/assets/save-store.js` — **gerado** pelo Vite (IIFE, API `UaidzinSave`) a partir de `src/persistence/bootEntry.ts`; mesmo `SaveVault` do runtime. Não versionado |
+| Runtime (cidade/dungeon) | `SaveVault` → IndexedDB `uaidzin` (versão **3**, store `sections`) + espelho em LS |
+| Conta (v3) | IndexedDB `account:{user}:slots` e `account:{user}:vault` (cifrados) |
+| Registro de login | LocalStorage `uaidzin_accounts_v1` (salt + hash) |
 | Sessão (aba) | `sessionStorage`: `uaidzin_session_v1` (chave), `uaidzin_active_char` (quem entrou) |
 | Preferências | LocalStorage `uaidzin_settings` |
 | Lembrar login | Só `userId` (nunca senha) |
 
-Autoridade do personagem em jogo = `SavePayload` (profile). Summary do hub sincroniza em todo `saveCharacter`.
+Autoridade do personagem em jogo = `SavePayload` (perfil v4). O resumo do slot só regrava quando algum campo do resumo muda.
+
+### Formato e chaves
+
+| Registro | Chave | Conteúdo |
+|---|---|---|
+| Perfil v4 (10 seções) | `profile:{user}:slot:{n}:{seção}` | `meta` (inclui `saveVersion`), `character`, `skills`, `skillLoadout`, `equipment`, `inventory`, `bags`, `buffs`, `progress`, `options` |
+| Slots da conta | `account:{user}:slots` | `{ version: 3, user, slots[4], updatedAt }` — `SlotSummary` com `saveVersion` |
+| Cofre da conta | `account:{user}:vault` | `{ version: 3, user, vault: { gold, items }, updatedAt }` |
+| Espelho do perfil | LS `uaidzin.mirror.{user}:slot:{n}` | Seções cifradas da última escrita tentada |
+| Espelho do cofre | LS `uaidzin.mirror.vault.{user}` | Envelope do cofre da última escrita tentada |
+
+- Tudo cifrado (AES-GCM; XOR só em `file://`) **antes** de abrir a transação. Sem sessão, nada grava.
+- Perfil `saveVersion < 4` ou conta `version < 3` = **ausente** (sem migração): seleção vazia; lab **admin/admin** recriado pelo `bootstrap()`. A chave antiga `uaidzin_save_v1_{user}` não é mais lida.
+- `loadAccount`: falha de leitura ou de decifrar **lança** e nunca grava; conta ausente não é gravada na leitura.
+- Cofre + inventário (ouro/item cruzando a fronteira) vão na **mesma** transação IDB, junto do resumo do slot quando ele muda.
+- Espelho: gravado no `pagehide` (perfil + cofre). Na carga, vence o IDB só se for mais novo (`updatedAt`, carimbo monotônico semeado pelo que foi carregado); perfil vindo do espelho é regravado nas seções. O espelho do cofre sai do LS assim que o cofre grava no IDB. O espelho nunca guarda a lista de slots (não ressuscita slot excluído).
+- Durante a sessão a conta decifrada fica em memória (fonte de verdade; o lock garante um escritor por conta) e só é atualizada por escrita própria. Releitura do IDB só na carga do personagem e no boot.
+
+### Política crítico × adiável (`SaveCoordinator`)
+
+| Classe | Eventos | Regra |
+|---|---|---|
+| Crítico | abate com XP, drop, level up, cofre, comprar, vender, consumir entrada, consumível, descartar, Reset, Evolução, criar personagem | Grava na hora; eventos do mesmo frame viram uma escrita; falha fica pendente e visível até gravar |
+| Adiável | atributos, aprender skill, equipar, barra, bolsa, `options` | Debounce **2 s (provisório)** ou próximo crítico/saída |
+
+Fila única (`SaveVault`) para perfil, cofre e slots: criar, excluir, wipe e import passam por ela.
+
+### Uma conta por aba
+
+- Lock `uaidzin:account:{user}` (`navigator.locks`, segurado pela vida da aba) adquirido pelo **documento pai** (`BootFlow`) em todo caminho: login pelo iframe, personagem guardado no `sessionStorage` e `__UAIDZIN_SKIP_BOOT__` (só DEV).
+- Segunda aba ou aba duplicada na mesma conta: login recusado com “Esta conta já está aberta em outra aba.”; não carrega o jogo nem grava. Contas diferentes em abas diferentes entram.
+- Liberado em logout, troca de personagem/conta e ao fechar a aba.
+- Sem `navigator.locks`: `BroadcastChannel` + heartbeat em LS `uaidzin.lock.{user}`; expira sem renovação em **5 s (provisório)**. Quem pede o lock anuncia no canal e espera **300 ms (provisório)**; quem segura responde por um worker dedicado (não depende do thread principal ocupado com o render); aba recusada não deixa heartbeat. Volta do bfcache readquire o lock ou recarrega.
+- Páginas do boot abertas fora do iframe do jogo redirecionam para `/`.
+- Cadastro/login serializados pelo lock `uaidzin:accounts` (a lista de contas não perde registro com duas abas).
 
 ---
 
@@ -76,8 +113,9 @@ Autoridade do personagem em jogo = `SavePayload` (profile). Summary do hub sincr
 
 | Momento | O que grava |
 |---|---|
-| Login ok | Sessão na aba; migração envelope se preciso |
-| Criar / editar / excluir slot | Envelope da conta (slots); excluir também limpa blob do profile |
+| Login ok | Sessão na aba (depois do lock de conta no documento pai) |
+| Criar slot | Só o resumo daquele slot, na mesma transação que limpa o perfil do slot |
+| Excluir slot | Resumo nulo + perfil apagado na mesma transação |
 | Entrar no jogo | `uaidzin_active_char` na sessão (não é o blob completo) |
 | Lembrar usuário | Só userId persistente |
 | Logout | Limpa sessão (e active char no fluxo do hub) |
@@ -118,7 +156,7 @@ Autoridade do personagem em jogo = `SavePayload` (profile). Summary do hub sincr
 | Entrar no jogo | `loadCharacter` do profile; se faltar blob, seed a partir do summary do boot e grava |
 | Cidade | Spawn centro; HP/MP full ao entrar na cidade |
 | Preferências | Ao abrir Settings / boot das telas que leem `uaidzin_settings` |
-| Falha de load | IDB → LS → backups `:prev` → seed mínimo do summary (contrato `22`) |
+| Falha de load | Três estados: `found`, `absent`, `error`. `error` (inclui conta ilegível) não cria personagem nem grava por cima; oferece Tentar de novo |
 
 ---
 

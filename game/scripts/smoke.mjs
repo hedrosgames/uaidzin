@@ -1,5 +1,5 @@
 /**
- * Smoke test do UAIDZIN — sobe o preview sozinho, roda um ciclo cidade→dungeon→combate→save→cidade.
+ * Smoke test do UAIDZIN — sobe o servidor dev sozinho, roda um ciclo cidade→dungeon→combate→save→cidade.
  * Uso: npm run smoke
  */
 import { spawn, spawnSync } from "node:child_process";
@@ -41,12 +41,7 @@ const globalTimer = setTimeout(() => {
 }, GLOBAL_TIMEOUT_MS);
 globalTimer.unref();
 
-function run(command) {
-  const res = spawnSync(command, { cwd: ROOT, stdio: "inherit", shell: true });
-  if (res.status !== 0) throw new Error(`${command} falhou (status ${res.status})`);
-}
-
-async function waitForServer(timeoutMs = 30000) {
+async function waitForServer(timeoutMs = 60000) {
   const t0 = Date.now();
   let lastErr = "sem resposta";
   while (Date.now() - t0 < timeoutMs) {
@@ -59,7 +54,7 @@ async function waitForServer(timeoutMs = 30000) {
     }
     await new Promise((r) => setTimeout(r, 300));
   }
-  throw new Error(`preview não respondeu em ${timeoutMs}ms na porta ${PORT}: ${lastErr}`);
+  throw new Error(`servidor dev não respondeu em ${timeoutMs}ms na porta ${PORT}: ${lastErr}`);
 }
 
 function startServer() {
@@ -67,10 +62,11 @@ function startServer() {
     process.execPath,
     [
       path.join(ROOT, "node_modules", "vite", "bin", "vite.js"),
-      "preview",
       "--port",
       String(PORT),
       "--strictPort",
+      "--host",
+      "127.0.0.1",
     ],
     {
       cwd: ROOT,
@@ -78,16 +74,11 @@ function startServer() {
     },
   );
   server.on("error", (err) => {
-    console.error("SMOKE_FAIL preview não iniciou:", err.message);
+    console.error("SMOKE_FAIL servidor dev não iniciou:", err.message);
   });
 }
 
 async function main() {
-  // Sempre reconstrói: servir um dist/ velho faria o smoke testar código que não é o
-  // do working tree, e ele passaria verde sobre uma regressão já introduzida.
-  console.log("vite build");
-  run("npx vite build");
-
   startServer();
   await waitForServer();
 
@@ -147,6 +138,11 @@ async function main() {
     else fail(`boot classId esperado "TK", recebido "${s.classId}"`);
     if (s.level === 1) ok("boot level=1");
     else fail(`boot level esperado 1, recebido ${s.level}`);
+    const skipLock = await page.evaluate(async () =>
+      (await navigator.locks.query()).held.map((l) => l.name).filter((n) => n.startsWith("uaidzin:account:")),
+    );
+    if (skipLock.length === 1) ok(`lock de conta adquirido pelo skip (${skipLock[0]})`);
+    else fail(`lock de conta pelo skip: ${JSON.stringify(skipLock)}`);
 
     const logged = await page.evaluate(async () => window.__UAIDZIN__.login("admin", "admin"));
     if (logged && logged.ok === true) ok("sessão de conta admin");

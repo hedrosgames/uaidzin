@@ -1,16 +1,19 @@
 import { SESSION_KEY } from "./AccountAuth";
 import { b64, encryptJson, importCodecKey, randomBytes } from "./crypto/CryptoCodec";
-import type { SaveStore, SectionBlobs } from "./SaveStore";
+import type { AccountBlobs, AccountWrite, SaveStore, SectionBlobs } from "./SaveStore";
 import { SaveVault } from "./SaveVault";
 import { PROFILE_SECTIONS, type AuthSession, type ProfileSection, type SavePayload } from "./SaveTypes";
 
 export class FakeSaveStore {
   readonly sections = new Map<string, SectionBlobs>();
   readonly mirrors = new Map<string, SectionBlobs>();
-  readonly accounts = new Map<string, string>();
+  readonly accounts = new Map<string, AccountBlobs>();
+  readonly vaultMirrors = new Map<string, string>();
   readonly writes: Array<{ profileId: string; sections: ProfileSection[] }> = [];
   accountWrites = 0;
+  accountReads = 0;
   failReads = false;
+  failAccountReads = false;
   failWrites = false;
   beforeWrite: (() => Promise<void>) | null = null;
 
@@ -19,18 +22,36 @@ export class FakeSaveStore {
     return { ...(this.sections.get(profileId) || {}) };
   }
 
-  async writeMany(profileId: string, blobs: SectionBlobs): Promise<void> {
+  async readAccount(userId: string): Promise<AccountBlobs> {
+    this.accountReads += 1;
+    if (this.failAccountReads) throw new Error("idb_read_failed");
+    return { ...(this.accounts.get(userId) || {}) };
+  }
+
+  private putAccount(account: AccountWrite | null): void {
+    if (!account) return;
+    const { userId, ...blobs } = account;
+    this.accountWrites += 1;
+    this.accounts.set(userId, { ...(this.accounts.get(userId) || {}), ...blobs });
+  }
+
+  async writeMany(profileId: string | null, blobs: SectionBlobs, account: AccountWrite | null = null): Promise<void> {
     if (this.beforeWrite) await this.beforeWrite();
     if (this.failWrites) throw new Error("idb_write_failed");
-    this.writes.push({ profileId, sections: Object.keys(blobs) as ProfileSection[] });
-    this.sections.set(profileId, { ...(this.sections.get(profileId) || {}), ...blobs });
+    if (profileId) {
+      this.writes.push({ profileId, sections: Object.keys(blobs) as ProfileSection[] });
+      this.sections.set(profileId, { ...(this.sections.get(profileId) || {}), ...blobs });
+    }
+    this.putAccount(account);
   }
 
   async clearLegacyProfile(): Promise<void> {}
 
-  async clearProfile(profileId: string): Promise<void> {
+  async clearProfile(profileId: string, account: AccountWrite | null = null): Promise<void> {
+    if (this.failWrites) throw new Error("idb_delete_failed");
     this.sections.delete(profileId);
     this.mirrors.delete(profileId);
+    this.putAccount(account);
   }
 
   readMirror(profileId: string): SectionBlobs | null {
@@ -42,24 +63,29 @@ export class FakeSaveStore {
     return true;
   }
 
-  readAccountBlob(userId: string): string | null {
-    return this.accounts.get(userId) ?? null;
+  readVaultMirror(userId: string): string | null {
+    return this.vaultMirrors.get(userId) ?? null;
   }
 
-  writeAccountBlob(userId: string, envelope: string): boolean {
-    this.accountWrites += 1;
-    this.accounts.set(userId, envelope);
+  writeVaultMirror(userId: string, envelope: string): boolean {
+    this.vaultMirrors.set(userId, envelope);
     return true;
   }
 
-  clearAccountBlob(userId: string): void {
+  clearVaultMirror(userId: string): void {
+    this.vaultMirrors.delete(userId);
+  }
+
+  async clearAccount(userId: string): Promise<void> {
     this.accounts.delete(userId);
+    this.vaultMirrors.delete(userId);
   }
 
   async wipeAllUaidzinStorage(): Promise<void> {
     this.sections.clear();
     this.mirrors.clear();
     this.accounts.clear();
+    this.vaultMirrors.clear();
   }
 }
 

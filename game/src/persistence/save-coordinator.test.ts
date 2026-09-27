@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { decryptJson, importCodecKey } from "./crypto/CryptoCodec";
 import { DEFERRED_SAVE_DELAY_MS, SaveCoordinator } from "./SaveCoordinator";
 import { installSession, makeVault, removeSession } from "./save-test-kit";
+import type { AccountBlobs } from "./SaveStore";
 import { SAVE_VERSION, type AccountSave, type AuthSession, type SavePayload } from "./SaveTypes";
 import type { SaveVault } from "./SaveVault";
 
@@ -66,8 +67,11 @@ async function settle(vault: SaveVault): Promise<void> {
   await vault.flush();
 }
 
-async function readAccount(session: AuthSession, raw: string | undefined): Promise<AccountSave> {
-  return (await decryptJson(await importCodecKey(session), raw || "")) as AccountSave;
+async function readAccount(session: AuthSession, blobs: AccountBlobs | undefined): Promise<Pick<AccountSave, "slots" | "vault">> {
+  const codec = await importCodecKey(session);
+  const slots = (await decryptJson(codec, blobs?.slots || "")) as Pick<AccountSave, "slots">;
+  const vault = (await decryptJson(codec, blobs?.vault || "")) as Pick<AccountSave, "vault">;
+  return { slots: slots.slots, vault: vault.vault };
 }
 
 afterEach(() => {

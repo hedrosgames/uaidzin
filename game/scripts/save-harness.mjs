@@ -554,8 +554,8 @@ async function main() {
     s.saves.markDirty("character", "deferred");
     await s.saves.checkpoint();
     const armed = api.save.pendingCritical();
-    await api.save.wipeProfile();
     IDBObjectStore.prototype.put = window.__harnessPut;
+    await api.save.wipeProfile();
     await new Promise((resolve) => setTimeout(resolve, 3500));
     return { id, armed, pending: api.save.pendingCritical(), mirror: localStorage.getItem("uaidzin.mirror." + id) };
   });
@@ -565,6 +565,130 @@ async function main() {
   } else {
     fail("wipe com flush pendente: " + JSON.stringify({ ...wiped, left: Object.keys(afterWipe.sections) }));
   }
+
+  const vaultTx = await page.evaluate(async () => {
+    const api = window.__UAIDZIN__;
+    const s = api.session;
+    const user = api.sessionUser();
+    const id = s.saveService.getProfileId();
+    const orig = IDBObjectStore.prototype.put;
+    const seen = new Map();
+    IDBObjectStore.prototype.put = function (value, key) {
+      if (!seen.has(this.transaction)) seen.set(this.transaction, []);
+      seen.get(this.transaction).push(String(key));
+      return orig.call(this, value, key);
+    };
+    try {
+      s.inventory.gold += 9;
+      api.vault.depositGold(9);
+      await s.saves.checkpoint();
+    } finally {
+      IDBObjectStore.prototype.put = orig;
+    }
+    const groups = [...seen.values()];
+    return {
+      together: groups.some((g) => g.includes("account:" + user + ":vault") && g.includes("profile:" + id + ":inventory")),
+      groups,
+    };
+  });
+  if (vaultTx.together) ok("cofre + inventário gravados na mesma transação IDB");
+  else fail("cofre e inventário em transações separadas: " + JSON.stringify(vaultTx.groups));
+
+  const bootLoad = () =>
+    page.evaluate(async () => {
+      const w = document.querySelector("iframe")?.contentWindow;
+      const data = await w.UaidzinSave.loadSave(w.UaidzinSave.getSession());
+      return data.slots;
+    });
+  await page.evaluate(() => document.getElementById("btn-change-character").click());
+  await page.waitForEvent("load", { timeout: 20000 }).catch(() => null);
+  await frame.locator("#slotList .slot-card").first().waitFor({ timeout: 20000 });
+  await page.waitForTimeout(800);
+  const slotsBefore = await bootLoad();
+  const deletedId = slotsBefore[0]?.profileId;
+  await frame.locator("#slotList .slot-card").nth(0).click();
+  await frame.locator("#btnDelete").click();
+  await frame.locator("#btnDeleteConfirm").click();
+  await page.waitForTimeout(800);
+  const slotsAfterDelete = await bootLoad();
+  const leftSections = deletedId ? Object.keys((await readSections(page, deletedId)).sections) : ["sem_slot"];
+  if (deletedId && slotsAfterDelete[0] === null && !leftSections.length) ok("excluir slot no boot apaga resumo e perfil");
+  else fail("excluir slot no boot: " + JSON.stringify({ deletedId, slot0: slotsAfterDelete[0], leftSections }));
+
+  await frame.locator("#slotList .slot-card").nth(0).click();
+  await frame.locator("#newName").waitFor({ state: "visible", timeout: 10000 });
+  await frame.locator("#newName").fill("Bravo");
+  await frame.locator("#btnCreateConfirm").click();
+  await page.waitForTimeout(800);
+  const slotsAfterCreate = await bootLoad();
+  if (slotsAfterCreate[0]?.name === "Bravo") ok("criou B no slot recém-excluído");
+  else fail("criar B: " + JSON.stringify(slotsAfterCreate[0]));
+  await connect.waitFor({ state: "visible", timeout: 15000 });
+  await connect.click();
+  await waitEntered(page);
+  const bravo = await page.evaluate(() => {
+    const s = window.__UAIDZIN__.session;
+    return { name: s.character.name, level: s.progression.state.level, gold: s.inventory.gold, id: s.saveService.getProfileId() };
+  });
+  if (bravo.name === "Bravo" && bravo.level === 1 && bravo.gold === 0 && bravo.id === deletedId) ok("entrou com B (nível 1, 0 ouro) no slot recém-excluído");
+  else fail("entrar com B: " + JSON.stringify(bravo));
+
+  const v2 = await page.evaluate(async () => {
+    const api = window.__UAIDZIN__;
+    const user = api.sessionUser();
+    const session = JSON.parse(sessionStorage.getItem("uaidzin_session_v1"));
+    const raw = Uint8Array.from(atob(session.key), (c) => c.charCodeAt(0));
+    const key = await crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt"]);
+    const b64 = (u) => btoa(String.fromCharCode(...u));
+    const encrypt = async (obj) => {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const data = new TextEncoder().encode(JSON.stringify(obj));
+      const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data));
+      return JSON.stringify({ v: 1, mode: "aes", iv: b64(iv), data: b64(cipher), at: Date.now() });
+    };
+    const slot = { profileId: user + ":slot:1", classId: "TK", name: "Antigo", level: 40, gold: 500, attrs: { FOR: 20, DES: 5, CONS: 5, INT: 5 } };
+    const env = await encrypt({ version: 2, user, slots: [null, slot, null, null], vault: { gold: 700, items: [] }, updatedAt: Date.now() });
+    const idb = (mode, body) =>
+      new Promise((resolve, reject) => {
+        const req = indexedDB.open("uaidzin", 3);
+        req.onerror = () => reject(new Error("idb_open"));
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction("sections", mode);
+          const out = body(tx.objectStore("sections"));
+          tx.oncomplete = () => {
+            db.close();
+            resolve(out);
+          };
+          tx.onerror = () => reject(new Error("idb_tx"));
+        };
+      });
+    await api.session.saves.checkpoint();
+    localStorage.removeItem("uaidzin.mirror.vault." + user);
+    localStorage.setItem("uaidzin_save_v1_" + user, env);
+    await idb("readwrite", (store) => {
+      store.put(env, "account:" + user + ":slots");
+      store.put(env, "account:" + user + ":vault");
+    });
+    const beforeWrites = api.save.writeCount();
+    await api.session.reloadAccountVault();
+    const slots = await api.account.listSlots();
+    const vaultGold = api.vault.snapshot().gold;
+    const writes = api.save.writeCount() - beforeWrites;
+    const reqs = {};
+    await idb("readonly", (store) => {
+      reqs.slots = store.get("account:" + user + ":slots");
+      reqs.vault = store.get("account:" + user + ":vault");
+    });
+    return {
+      empty: slots.every((x) => x === null),
+      vaultGold,
+      writes,
+      untouched: reqs.slots.result === env && reqs.vault.result === env,
+    };
+  });
+  if (v2.empty && v2.vaultGold === 0 && v2.writes === 0 && v2.untouched) ok("conta v2 vira absent: seleção vazia, cofre vazio, nada gravado");
+  else fail("conta v2: " + JSON.stringify(v2));
 
   await browser.close();
   if (failed) {

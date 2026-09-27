@@ -3,10 +3,14 @@ import { PROFILE_SECTIONS, type ProfileSection } from "./SaveTypes";
 const DB_NAME = "uaidzin";
 const LEGACY_STORE = "save";
 const SECTIONS_STORE = "sections";
-const DB_VERSION = 3;
+export const DB_VERSION = 3;
 const OPEN_BLOCKED_TIMEOUT_MS = 5000;
 
 export type SectionBlobs = Partial<Record<ProfileSection, string>>;
+
+export type AccountBlobs = { slots?: string; vault?: string };
+
+export type AccountWrite = AccountBlobs & { userId: string };
 
 export function lsProfileKey(profileId: string): string {
   return `uaidzin.save.${profileId}`;
@@ -32,8 +36,18 @@ export function mirrorKey(profileId: string): string {
   return `uaidzin.mirror.${profileId}`;
 }
 
-export function lsAccountKey(userId: string): string {
-  return `uaidzin_save_v1_${userId}`;
+export function vaultMirrorKey(userId: string): string {
+  return `uaidzin.mirror.vault.${userId}`;
+}
+
+export function accountKey(userId: string, part: keyof AccountBlobs): string {
+  return `account:${userId}:${part}`;
+}
+
+function putAccount(store: IDBObjectStore, account: AccountWrite | null): void {
+  if (!account) return;
+  if (account.slots !== undefined) store.put(account.slots, accountKey(account.userId, "slots"));
+  if (account.vault !== undefined) store.put(account.vault, accountKey(account.userId, "vault"));
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -159,16 +173,43 @@ export class SaveStore {
     });
   }
 
-  writeMany(profileId: string, blobs: SectionBlobs): Promise<void> {
+  async readAccount(userId: string): Promise<AccountBlobs> {
+    if (typeof indexedDB === "undefined") return {};
+    const db = await openDb();
+    return new Promise<AccountBlobs>((resolve, reject) => {
+      const out: AccountBlobs = {};
+      try {
+        const tx = db.transaction(SECTIONS_STORE, "readonly");
+        const store = tx.objectStore(SECTIONS_STORE);
+        for (const part of ["slots", "vault"] as const) {
+          const req = store.get(accountKey(userId, part));
+          req.onsuccess = () => {
+            if (typeof req.result === "string") out[part] = req.result;
+          };
+          req.onerror = () => reject(new Error("idb_read_failed"));
+        }
+        tx.oncomplete = () => resolve(out);
+        tx.onerror = () => reject(new Error("idb_read_failed"));
+        tx.onabort = () => reject(new Error("idb_read_failed"));
+      } catch {
+        reject(new Error("idb_read_failed"));
+      }
+    });
+  }
+
+  writeMany(profileId: string | null, blobs: SectionBlobs, account: AccountWrite | null = null): Promise<void> {
     return runTx(
       [SECTIONS_STORE],
       "readwrite",
       (tx) => {
         const store = tx.objectStore(SECTIONS_STORE);
-        for (const section of PROFILE_SECTIONS) {
-          const blob = blobs[section];
-          if (blob !== undefined) store.put(blob, sectionKey(profileId, section));
+        if (profileId) {
+          for (const section of PROFILE_SECTIONS) {
+            const blob = blobs[section];
+            if (blob !== undefined) store.put(blob, sectionKey(profileId, section));
+          }
         }
+        putAccount(store, account);
       },
       "idb_write_failed",
     );
@@ -189,12 +230,12 @@ export class SaveStore {
     );
   }
 
-  async clearProfile(profileId: string): Promise<void> {
+  async clearProfile(profileId: string, account: AccountWrite | null = null): Promise<void> {
     lsRemove(lsProfileKey(profileId));
     lsRemove(lsProfilePrevKey(profileId));
     lsRemove(mirrorKey(profileId));
     lsRemove(`uaidzin.save`);
-    if (typeof indexedDB === "undefined") return;
+    if (typeof indexedDB === "undefined" && !account) return;
     await runTx(
       [SECTIONS_STORE, LEGACY_STORE],
       "readwrite",
@@ -205,6 +246,7 @@ export class SaveStore {
         legacy.delete(idbProfileKey(profileId));
         legacy.delete(idbProfilePrevKey(profileId));
         legacy.delete("profile");
+        putAccount(sections, account);
       },
       "idb_delete_failed",
     );
@@ -225,16 +267,31 @@ export class SaveStore {
     return lsSet(mirrorKey(profileId), JSON.stringify({ sections: blobs }));
   }
 
-  readAccountBlob(userId: string): string | null {
-    return lsGet(lsAccountKey(userId));
+  readVaultMirror(userId: string): string | null {
+    return lsGet(vaultMirrorKey(userId));
   }
 
-  writeAccountBlob(userId: string, envelope: string): boolean {
-    return lsSet(lsAccountKey(userId), envelope);
+  writeVaultMirror(userId: string, envelope: string): boolean {
+    return lsSet(vaultMirrorKey(userId), envelope);
   }
 
-  clearAccountBlob(userId: string): void {
-    lsRemove(lsAccountKey(userId));
+  clearVaultMirror(userId: string): void {
+    lsRemove(vaultMirrorKey(userId));
+  }
+
+  async clearAccount(userId: string): Promise<void> {
+    lsRemove(vaultMirrorKey(userId));
+    if (typeof indexedDB === "undefined") return;
+    await runTx(
+      [SECTIONS_STORE],
+      "readwrite",
+      (tx) => {
+        const store = tx.objectStore(SECTIONS_STORE);
+        store.delete(accountKey(userId, "slots"));
+        store.delete(accountKey(userId, "vault"));
+      },
+      "idb_delete_failed",
+    );
   }
 
   async wipeAllUaidzinStorage(includeSettings = false): Promise<void> {

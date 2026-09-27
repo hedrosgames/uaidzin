@@ -1,7 +1,7 @@
 /**
  * Bot Playwright headed — joga o UAIDZIN em loop (classe, skills, atributos, dungeons).
  * Uso: node scripts/bot-play.mjs [--base URL] [--max-level 150] [--timeout-min 120] [--speed 10]
- * Requer: npm run dev (ou preview) + chromium do Playwright.
+ * Requer: npm run dev + chromium do Playwright.
  */
 import { chromium } from "playwright";
 
@@ -74,6 +74,10 @@ await page.waitForTimeout(400);
 
 let s = await snap();
 log("classe", classId, "modo", s.mode);
+const skipLock = await page.evaluate(async () =>
+  (await navigator.locks.query()).held.some((l) => l.name.startsWith("uaidzin:account:")),
+);
+if (!skipLock) throw new Error("lock de conta não adquirido pelo skip");
 
 // 10x
 await page.evaluate((n) => window.__UAIDZIN__.setTimeScale(n), SPEED);
