@@ -29,6 +29,7 @@ import {
   disposeProvocacaoTextures,
   type ProvocacaoTextureSet,
 } from "./ProvocacaoTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface ProvocacaoVfxConfig {
   shockDuration: number;
@@ -189,7 +190,8 @@ class ProvocacaoCast {
   private readonly lineMaterial: ShaderMaterial;
   private readonly lines: Group;
   private readonly halo: Sprite;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private phase: ProvocacaoPhase = "shock";
   private shockElapsed = 0;
   private surgeElapsed = 0;
@@ -206,6 +208,7 @@ class ProvocacaoCast {
     private readonly config: ProvocacaoVfxConfig,
     center: Vector3,
     private readonly onDispose: (cast: ProvocacaoCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     scene.add(this.castRoot);
     this.burstSystems = createProvocacaoBurstSystems(shared.particleMaterials, config);
@@ -251,8 +254,14 @@ class ProvocacaoCast {
     this.halo.renderOrder = 13;
     this.castRoot.add(this.halo);
 
-    this.light = new PointLight(0xd8493a, 0, 7, 2);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xd8493a, 7);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xd8493a, 0, 7, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) this.castRoot.add(this.light);
 
     this.place(center);
     this.triggerShock();
@@ -280,7 +289,7 @@ class ProvocacaoCast {
         scale: this.halo.scale.x,
       },
       position: this.castRoot.position.toArray(),
-      lightIntensity: this.light.intensity,
+      lightIntensity: this.light?.intensity ?? 0,
     };
   }
 
@@ -309,7 +318,13 @@ class ProvocacaoCast {
     if (this.disposed) return;
     this.disposed = true;
     for (const system of this.systems) system.dispose();
-    this.castRoot.remove(this.ring, this.lines, this.halo, this.light);
+    this.castRoot.remove(this.ring, this.lines, this.halo);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.ring.material.dispose();
     this.lineMaterial.dispose();
     this.halo.material.dispose();
@@ -326,7 +341,7 @@ class ProvocacaoCast {
     this.ring.position.set(0, 0.01, 0);
     this.halo.position.set(0, 1.18, 0);
     this.halo.scale.setScalar(0.1);
-    this.light.position.set(0, 1, 0);
+    if (this.light) this.light.position.set(0, 1, 0);
   }
 
   private triggerShock(): void {
@@ -344,7 +359,7 @@ class ProvocacaoCast {
     this.ring.material.uniforms.uIntensity.value = 1;
     this.lineMaterial.uniforms.uIntensity.value = 1;
     this.halo.material.opacity = 0.95;
-    this.light.intensity = 6.2;
+    if (this.light) this.light.intensity = 6.2;
   }
 
   private updateShock(deltaTime: number): void {
@@ -356,7 +371,7 @@ class ProvocacaoCast {
     this.lineHead = MathUtils.clamp(this.shockElapsed / (this.config.shockDuration + 0.13), 0, 1);
     this.lineMaterial.uniforms.uHead.value = this.lineHead;
     this.halo.scale.setScalar(this.config.haloScale * (0.4 + ease * 0.6));
-    this.light.intensity = 6.2 * (1 - progress * 0.68);
+    if (this.light) this.light.intensity = 6.2 * (1 - progress * 0.68);
     this.ring.material.uniforms.uTime.value = this.pulseTime;
     this.lineMaterial.uniforms.uTime.value = this.pulseTime;
     if (this.shockElapsed >= this.config.shockDuration) {
@@ -380,7 +395,7 @@ class ProvocacaoCast {
     const aggression = 1 + Math.sin(this.pulseTime * 9.2) * 0.16 + Math.sin(this.pulseTime * 15.7) * 0.06;
     this.halo.scale.setScalar(this.config.haloScale * aggression);
     this.halo.material.opacity = 0.72 + Math.sin(this.pulseTime * 9.2) * 0.2;
-    this.light.intensity = 1.9 + Math.sin(this.pulseTime * 9.2) * 0.75;
+    if (this.light) this.light.intensity = 1.9 + Math.sin(this.pulseTime * 9.2) * 0.75;
     this.ring.material.uniforms.uTime.value = this.pulseTime;
     this.lineMaterial.uniforms.uTime.value = this.pulseTime;
     if (this.surgeElapsed >= this.config.surgeDuration) this.triggerFade();
@@ -401,7 +416,7 @@ class ProvocacaoCast {
     this.lineMaterial.uniforms.uIntensity.value = fade * 0.45;
     this.halo.material.opacity = 0.7 * fade;
     this.halo.scale.setScalar(this.config.haloScale * (1 + (1 - fade) * 0.3));
-    this.light.intensity = 1.9 * fade;
+    if (this.light) this.light.intensity = 1.9 * fade;
     this.ring.material.uniforms.uTime.value = this.pulseTime;
     this.lineMaterial.uniforms.uTime.value = this.pulseTime;
     if (this.fadeElapsed >= this.config.fadeDuration) this.dispose();
@@ -422,6 +437,7 @@ export class ProvocacaoVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<ProvocacaoVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_PROVOCACAO_VFX_CONFIG, ...config };
     this.config = {
@@ -465,12 +481,13 @@ export class ProvocacaoVfxController {
       },
       center,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime) ? MathUtils.clamp(deltaTime, 0, 0.1) : 0;
     this.accumulator = Math.min(this.accumulator + frameDelta, 0.2);
     let stepCount = 0;

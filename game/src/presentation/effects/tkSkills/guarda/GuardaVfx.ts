@@ -32,6 +32,7 @@ import {
   disposeGuardaTextures,
   type GuardaTextureSet,
 } from "./GuardaTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface GuardaVfxConfig {
   riseDuration: number;
@@ -259,7 +260,8 @@ class GuardaCast {
   private readonly aura: Mesh<RingGeometry, MeshBasicMaterial>;
   private readonly ripples: Mesh<TorusGeometry, MeshBasicMaterial>[] = [];
   private readonly rippleAges = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private readonly waveSparks: ParticleSystem;
   private readonly flash: ParticleSystem;
   private readonly motes: ParticleSystem;
@@ -280,6 +282,7 @@ class GuardaCast {
     position: Vector3,
     direction: Vector3,
     private readonly onDispose: (cast: GuardaCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.direction = direction.clone().normalize();
 
@@ -325,9 +328,17 @@ class GuardaCast {
     this.shellGroup.add(this.shell, this.rimTop, this.rimBottom, ...this.ripples);
     this.castGroup.add(this.shellGroup, this.aura);
 
-    this.light = new PointLight(0xd4a017, 0, 7, 2);
-    this.light.position.set(0, config.originHeight, config.forwardOffset * 0.8);
-    this.castGroup.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xd4a017, 7);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xd4a017, 0, 7, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) {
+      this.light.position.set(0, config.originHeight, config.forwardOffset * 0.8);
+      this.castGroup.add(this.light);
+    }
     this.castRoot.add(this.castGroup);
 
     const forward = this.direction;
@@ -417,7 +428,7 @@ class GuardaCast {
     this.rimBottom.material.opacity = 0.78 * factor;
     this.aura.material.opacity = 0.34 * factor * (1 + Math.sin(this.elapsed * 6.5) * 0.18);
     this.aura.rotation.y += deltaTime * 0.4;
-    this.light.intensity = (0.9 + this.lightPulse * 3.4) * factor;
+    if (this.light) this.light.intensity = (0.9 + this.lightPulse * 3.4) * factor;
     if (this.elapsed >= this.config.shieldDuration + this.config.fadeDuration) {
       this.dispose();
     }
@@ -428,6 +439,12 @@ class GuardaCast {
     this.disposed = true;
     for (const system of this.systems) system.dispose();
     this.castRoot.remove(this.castGroup);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castGroup.remove(this.light);
+      this.light.dispose();
+    }
     this.shell.material.dispose();
     this.rimTop.material.dispose();
     this.rimBottom.material.dispose();
@@ -506,6 +523,7 @@ export class GuardaVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<GuardaVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_GUARDA_VFX_CONFIG, ...config };
     const finiteOr = (value: number, fallback: number, minimum: number) =>
@@ -559,12 +577,13 @@ export class GuardaVfxController {
       origin.clone(),
       horizontal,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

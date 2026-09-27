@@ -13,33 +13,12 @@ import {
   Vector3,
 } from "three";
 import { VFX_BALANCE } from "../../data/balance/vfx";
-import { AncoraVfxController } from "./tkSkills/ancora/AncoraVfx";
-import { AvalancheVfxController } from "./tkSkills/avalanche/AvalancheVfx";
-import { AuraVfxController } from "./tkSkills/aura/AuraVfx";
-import { BastiaoVfxController } from "./tkSkills/bastiao/BastiaoVfx";
-import { BencaoVfxController } from "./tkSkills/bencao/BencaoVfx";
-import { CorteVfxController } from "./tkSkills/corte/CorteVfx";
-import { DesafioVfxController } from "./tkSkills/desafio/DesafioVfx";
-import { EscudoSagradoVfxController } from "./tkSkills/escudo-sagrado/EscudoSagradoVfx";
-import { FuriaVfxController } from "./tkSkills/furia/FuriaVfx";
-import { DESCUIDADO_PALETTE } from "./tkSkills/furia/FuriaPalette";
-import { GolpeVfxController, DEFAULT_GOLPE_VFX_CONFIG } from "./tkSkills/golpe/GolpeVfx";
-import { GuardaVfxController } from "./tkSkills/guarda/GuardaVfx";
-import { InvestidaVfxController } from "./tkSkills/investida/InvestidaVfx";
-import { JulgamentoVfxController } from "./tkSkills/julgamento/JulgamentoVfx";
-import { LuzVfxController } from "./tkSkills/luz/LuzVfx";
-import { MachadoVfxController } from "./tkSkills/machado/MachadoVfx";
-import { MuralhaVfxController } from "./tkSkills/muralha/MuralhaVfx";
-import { PosturaVfxController } from "./tkSkills/postura/PosturaVfx";
-import { ProvocacaoVfxController } from "./tkSkills/provocacao/ProvocacaoVfx";
-import { PurificarVfxController } from "./tkSkills/purificar/PurificarVfx";
-import { QuebraVfxController } from "./tkSkills/quebra/QuebraVfx";
-import { RugidoVfxController } from "./tkSkills/rugido/RugidoVfx";
-import { SeloVfxController } from "./tkSkills/selo/SeloVfx";
-import { TribunalVfxController } from "./tkSkills/tribunal/TribunalVfx";
+import { DEFAULT_GOLPE_VFX_CONFIG } from "./tkSkills/golpe/GolpeVfx";
 import { FireBurstVfxController } from "./fireBurst/FireBurstVfx";
 import { getSkillVfxProfile } from "./skill/SkillVfxCatalog";
 import { SkillVfxDirector } from "./skill/SkillVfxRuntime";
+import { TkLightPool } from "./TkLightPool";
+import { TkVfxRegistry } from "./TkVfxRegistry";
 import type { SkillDef } from "../../data/classes/skill-types";
 import type { SkillVfxRequest } from "./skill/SkillVfxTypes";
 
@@ -94,96 +73,19 @@ export class EffectManager {
   private shakeAmp = 0;
   private frame = 0;
   private tokenSeq = 1;
+  private readonly lightPool: TkLightPool;
   private readonly fireBurst: FireBurstVfxController;
   private readonly skillVfx: SkillVfxDirector;
-  private readonly tkGolpe: GolpeVfxController;
-  private readonly tkInvestida: InvestidaVfxController;
-  private readonly tkCorte: CorteVfxController;
-  private readonly tkMachado: MachadoVfxController;
-  private readonly tkQuebra: QuebraVfxController;
-  private readonly tkFuria: FuriaVfxController;
-  private readonly tkDescuidado: FuriaVfxController;
-  private readonly tkAvalanche: AvalancheVfxController;
-  private readonly tkBencao: BencaoVfxController;
-  private readonly tkSelo: SeloVfxController;
-  private readonly tkAura: AuraVfxController;
-  private readonly tkEscudoSagrado: EscudoSagradoVfxController;
-  private readonly tkJulgamento: JulgamentoVfxController;
-  private readonly tkLuz: LuzVfxController;
-  private readonly tkPurificar: PurificarVfxController;
-  private readonly tkTribunal: TribunalVfxController;
-  private readonly tkProvocacao: ProvocacaoVfxController;
-  private readonly tkPostura: PosturaVfxController;
-  private readonly tkRugido: RugidoVfxController;
-  private readonly tkMuralha: MuralhaVfxController;
-  private readonly tkAncora: AncoraVfxController;
-  private readonly tkDesafio: DesafioVfxController;
-  private readonly tkGuarda: GuardaVfxController;
-  private readonly tkBastiao: BastiaoVfxController;
-  private readonly tkControllers: Array<{
-    update(dt: number, width?: number, height?: number): void;
-    clear(): void;
-    dispose(): void;
-    getActiveCastCount(): number;
-    getParticleCount(): number;
-  }>;
+  private readonly tkRegistry: TkVfxRegistry;
 
   constructor(
     parent: HTMLElement,
     private readonly sceneRoot: Scene,
   ) {
-    this.fireBurst = new FireBurstVfxController(sceneRoot);
-    this.skillVfx = new SkillVfxDirector(sceneRoot);
-    this.tkGolpe = new GolpeVfxController(sceneRoot);
-    this.tkInvestida = new InvestidaVfxController(sceneRoot);
-    this.tkCorte = new CorteVfxController(sceneRoot);
-    this.tkMachado = new MachadoVfxController(sceneRoot);
-    this.tkQuebra = new QuebraVfxController(sceneRoot);
-    this.tkFuria = new FuriaVfxController(sceneRoot);
-    this.tkDescuidado = new FuriaVfxController(sceneRoot, { palette: DESCUIDADO_PALETTE });
-    this.tkAvalanche = new AvalancheVfxController(sceneRoot);
-    this.tkBencao = new BencaoVfxController(sceneRoot);
-    this.tkSelo = new SeloVfxController(sceneRoot);
-    this.tkAura = new AuraVfxController(sceneRoot);
-    this.tkEscudoSagrado = new EscudoSagradoVfxController(sceneRoot);
-    this.tkJulgamento = new JulgamentoVfxController(sceneRoot);
-    this.tkLuz = new LuzVfxController(sceneRoot);
-    this.tkPurificar = new PurificarVfxController(sceneRoot);
-    this.tkTribunal = new TribunalVfxController(sceneRoot);
-    this.tkProvocacao = new ProvocacaoVfxController(sceneRoot);
-    this.tkPostura = new PosturaVfxController(sceneRoot);
-    this.tkRugido = new RugidoVfxController(sceneRoot);
-    this.tkMuralha = new MuralhaVfxController(sceneRoot);
-    this.tkAncora = new AncoraVfxController(sceneRoot);
-    this.tkDesafio = new DesafioVfxController(sceneRoot);
-    this.tkGuarda = new GuardaVfxController(sceneRoot);
-    this.tkBastiao = new BastiaoVfxController(sceneRoot);
-    this.tkControllers = [
-      this.tkGolpe,
-      this.tkInvestida,
-      this.tkCorte,
-      this.tkMachado,
-      this.tkQuebra,
-      this.tkFuria,
-      this.tkDescuidado,
-      this.tkAvalanche,
-      this.tkBencao,
-      this.tkSelo,
-      this.tkAura,
-      this.tkEscudoSagrado,
-      this.tkJulgamento,
-      this.tkLuz,
-      this.tkPurificar,
-      this.tkTribunal,
-      this.tkProvocacao,
-      this.tkPostura,
-      this.tkRugido,
-      this.tkMuralha,
-      this.tkAncora,
-      this.tkDesafio,
-      this.tkGuarda,
-      this.tkBastiao,
-    ];
+    this.lightPool = new TkLightPool(sceneRoot);
+    this.fireBurst = new FireBurstVfxController(sceneRoot, {}, this.lightPool);
+    this.skillVfx = new SkillVfxDirector(sceneRoot, this.lightPool);
+    this.tkRegistry = new TkVfxRegistry(sceneRoot, this.lightPool);
     this.overlay = document.createElement("div");
     this.overlay.id = "combat-overlay";
     this.overlay.className = "combat-overlay";
@@ -301,7 +203,7 @@ export class EffectManager {
   clearSkillVfx(): void {
     this.fireBurst.clear();
     this.skillVfx.clear();
-    for (const c of this.tkControllers) c.clear();
+    this.tkRegistry.clear();
   }
 
   clearFireBurst(): void {
@@ -323,9 +225,9 @@ export class EffectManager {
     const target = input.target ?? input.center;
     switch (input.profile.dedicatedVfx) {
       case "golpe":
-        this.tkGolpe.castGolpe(input.origin, target.clone().sub(input.origin));
+        this.tkRegistry.get("golpe").castGolpe(input.origin, target.clone().sub(input.origin));
         if (input.origin.distanceTo(target) > DEFAULT_GOLPE_VFX_CONFIG.arcRadius) {
-          this.tkQuebra.castQuebra(target);
+          this.tkRegistry.get("quebra").castQuebra(target);
         }
         return;
       case "investida": {
@@ -346,74 +248,74 @@ export class EffectManager {
             endTarget = new Vector3(farthestHit.x, target.y, farthestHit.z);
           }
         }
-        this.tkInvestida.castInvestida(input.origin, endTarget);
+        this.tkRegistry.get("investida").castInvestida(input.origin, endTarget);
         return;
       }
       case "corte":
-        this.tkCorte.castCorte(input.origin, target);
+        this.tkRegistry.get("corte").castCorte(input.origin, target);
         return;
       case "machado":
-        this.tkMachado.castMachado(target);
+        this.tkRegistry.get("machado").castMachado(target);
         return;
       case "quebra":
-        this.tkQuebra.castQuebra(target);
+        this.tkRegistry.get("quebra").castQuebra(target);
         return;
       case "furia":
-        this.tkFuria.castFuria(input.center);
+        this.tkRegistry.get("furia").castFuria(input.center);
         return;
       case "descuidado":
-        this.tkDescuidado.castFuria(input.center);
+        this.tkRegistry.get("descuidado").castFuria(input.center);
         return;
       case "avalanche":
-        this.tkAvalanche.castAvalanche(input.origin, target);
+        this.tkRegistry.get("avalanche").castAvalanche(input.origin, target);
         return;
       case "bencao":
-        this.tkBencao.castBencao(input.center);
+        this.tkRegistry.get("bencao").castBencao(input.center);
         return;
       case "selo":
-        this.tkSelo.castSelo(input.center);
+        this.tkRegistry.get("selo").castSelo(input.center);
         return;
       case "aura":
-        this.tkAura.castAura(input.center);
+        this.tkRegistry.get("aura").castAura(input.center);
         return;
       case "escudo-sagrado":
-        this.tkEscudoSagrado.castEscudo(input.origin, target.clone().sub(input.origin));
+        this.tkRegistry.get("escudo-sagrado").castEscudo(input.origin, target.clone().sub(input.origin));
         return;
       case "julgamento":
-        this.tkJulgamento.castJulgamento(target);
+        this.tkRegistry.get("julgamento").castJulgamento(target);
         return;
       case "luz":
-        this.tkLuz.castLuz(input.origin, target);
+        this.tkRegistry.get("luz").castLuz(input.origin, target);
         return;
       case "purificar":
-        this.tkPurificar.castPurificar(target);
+        this.tkRegistry.get("purificar").castPurificar(target);
         return;
       case "tribunal":
-        this.tkTribunal.castTribunal(target);
+        this.tkRegistry.get("tribunal").castTribunal(target);
         return;
       case "provocacao":
-        this.tkProvocacao.castProvocacao(input.center);
+        this.tkRegistry.get("provocacao").castProvocacao(input.center);
         return;
       case "postura":
-        this.tkPostura.castPostura(input.center);
+        this.tkRegistry.get("postura").castPostura(input.center);
         return;
       case "rugido":
-        this.tkRugido.castRugido(input.origin);
+        this.tkRegistry.get("rugido").castRugido(input.origin);
         return;
       case "muralha":
-        this.tkMuralha.castMuralha(input.origin, target.clone().sub(input.origin));
+        this.tkRegistry.get("muralha").castMuralha(input.origin, target.clone().sub(input.origin));
         return;
       case "ancora":
-        this.tkAncora.castAncora(input.origin, target);
+        this.tkRegistry.get("ancora").castAncora(input.origin, target);
         return;
       case "desafio":
-        this.tkDesafio.castDesafio(input.origin, target);
+        this.tkRegistry.get("desafio").castDesafio(input.origin, target);
         return;
       case "guarda":
-        this.tkGuarda.castGuarda(input.origin, target.clone().sub(input.origin));
+        this.tkRegistry.get("guarda").castGuarda(input.origin, target.clone().sub(input.origin));
         return;
       case "bastiao":
-        this.tkBastiao.castBastiao(input.origin);
+        this.tkRegistry.get("bastiao").castBastiao(input.origin);
         return;
       default:
         break;
@@ -422,12 +324,8 @@ export class EffectManager {
   }
 
   getSkillVfxState(): { active: number; particles: number } {
-    let active = this.skillVfx.getActiveCastCount() + this.fireBurst.getActiveCastCount();
-    let particles = this.skillVfx.getParticleCount() + this.fireBurst.getParticleCount();
-    for (const c of this.tkControllers) {
-      active += c.getActiveCastCount();
-      particles += c.getParticleCount();
-    }
+    const active = this.skillVfx.getActiveCastCount() + this.fireBurst.getActiveCastCount() + this.tkRegistry.getActiveCastCount();
+    const particles = this.skillVfx.getParticleCount() + this.fireBurst.getParticleCount() + this.tkRegistry.getParticleCount();
     return { active, particles };
   }
 
@@ -641,9 +539,7 @@ export class EffectManager {
   update(dt: number, camera: PerspectiveCamera, width: number, height: number): void {
     this.fireBurst.update(dt, width, height);
     this.skillVfx.update(dt, width, height);
-    for (const c of this.tkControllers) {
-      c.update(dt, width, height);
-    }
+    this.tkRegistry.update(dt, width, height);
     for (let i = this.floating.length - 1; i >= 0; i--) {
       const f = this.floating[i];
       f.life -= dt;
@@ -754,9 +650,8 @@ export class EffectManager {
   dispose(): void {
     this.fireBurst.dispose();
     this.skillVfx.dispose();
-    for (const c of this.tkControllers) {
-      c.dispose();
-    }
+    this.tkRegistry.dispose();
+    this.lightPool.dispose();
     this.drainMeshFx();
     for (const el of this.hpBars.values()) el.remove();
     this.hpBars.clear();

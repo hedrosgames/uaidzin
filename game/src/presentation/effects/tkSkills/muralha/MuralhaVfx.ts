@@ -36,6 +36,7 @@ import {
   disposeMuralhaTextures,
   type MuralhaTextureSet,
 } from "./MuralhaTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface MuralhaVfxConfig {
   materializeDuration: number;
@@ -242,7 +243,8 @@ class MuralhaCast {
   private readonly rimLeft: Mesh<BoxGeometry, MeshBasicMaterial>;
   private readonly rimRight: Mesh<BoxGeometry, MeshBasicMaterial>;
   private readonly shockRing: Mesh<RingGeometry, MeshBasicMaterial>;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private readonly jointDust: ParticleSystem;
   private readonly ringDust: ParticleSystem;
   private readonly crumbleDust: ParticleSystem;
@@ -275,6 +277,7 @@ class MuralhaCast {
     position: Vector3,
     direction: Vector3,
     private readonly onDispose: (cast: MuralhaCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.direction = direction.clone();
     this.layout = createBlockLayout(config);
@@ -356,11 +359,20 @@ class MuralhaCast {
     this.shockRing.renderOrder = 5;
     this.shockRing.position.y = 0.02;
 
-    this.light = new PointLight(0xd4a017, 0, 9, 2);
-    this.light.position.set(0, config.wallHeight * 0.6, config.wallDepth);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xd4a017, 9);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xd4a017, 0, 9, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) {
+      this.light.position.set(0, config.wallHeight * 0.6, config.wallDepth);
+      this.castGroup.add(this.light);
+    }
 
     this.wallGroup.add(this.wallMesh, this.pebbleMesh, this.rimTop, this.rimLeft, this.rimRight);
-    this.castGroup.add(this.wallGroup, this.shockRing, this.light);
+    this.castGroup.add(this.wallGroup, this.shockRing);
     this.castRoot.add(this.castGroup);
 
     this.jointDust = createMuralhaJointDust(shared.particleMaterials, config);
@@ -407,7 +419,7 @@ class MuralhaCast {
       elapsed: elapsedByPhase,
       progress: Math.min(1, this.materializeElapsed / this.config.materializeDuration),
       rimOpacity: this.rimTop.material.opacity,
-      lightIntensity: this.light.intensity,
+      lightIntensity: this.light?.intensity ?? 0,
       wallOpacity: this.wallMesh.material.opacity,
       pebblesActive: this.pebbles.filter((pebble) => pebble.active).length,
       pebblesSpawned: this.pebblesSpawned,
@@ -449,6 +461,12 @@ class MuralhaCast {
     this.disposed = true;
     for (const system of this.systems) system.dispose();
     this.castRoot.remove(this.castGroup);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castGroup.remove(this.light);
+      this.light.dispose();
+    }
     this.wallMesh.material.dispose();
     this.pebbleMesh.material.dispose();
     this.rimTop.material.dispose();
@@ -582,7 +600,7 @@ class MuralhaCast {
     this.rimRight.scale.y = Math.max(0.02, eased);
     this.shockRing.scale.setScalar(0.5 + progress * 2.2);
     this.shockRing.material.opacity = (1 - progress) * 0.65;
-    this.light.intensity = 1.2 + Math.sin(progress * Math.PI) * 3.4;
+    if (this.light) this.light.intensity = 1.2 + Math.sin(progress * Math.PI) * 3.4;
     this.wallGroup.position.x = Math.sin(this.materializeElapsed * 58) * 0.012 * (1 - eased);
     if (!this.pebblesSpawned && progress >= 0.82) {
       this.pebblesSpawned = true;
@@ -601,7 +619,7 @@ class MuralhaCast {
       * (1 - Math.min(1, this.persistElapsed / this.config.persistDuration));
     this.wallGroup.position.x = shake;
     this.rimTop.material.opacity = 0.95 - Math.min(0.25, this.persistElapsed * 0.25);
-    this.light.intensity = 2.4 - this.persistElapsed * 1.4;
+    if (this.light) this.light.intensity = 2.4 - this.persistElapsed * 1.4;
     if (this.persistElapsed >= this.config.persistDuration) {
       this.phase = "crumble";
       this.crumbleDust.emitter.visible = true;
@@ -629,7 +647,7 @@ class MuralhaCast {
     this.rimLeft.material.opacity = 0.55 * fade;
     this.rimRight.material.opacity = 0.55 * fade;
     this.rimTop.position.y = Math.max(0, this.config.wallHeight - this.crumbleElapsed * 2.4);
-    this.light.intensity = Math.max(0, 1.0 * fade);
+    if (this.light) this.light.intensity = Math.max(0, 1.0 * fade);
     if (progress >= 1) this.dispose();
   }
 }
@@ -647,6 +665,7 @@ export class MuralhaVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<MuralhaVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_MURALHA_VFX_CONFIG, ...config };
     const finiteOr = (value: number, fallback: number, minimum: number) =>
@@ -695,12 +714,13 @@ export class MuralhaVfxController {
       position,
       horizontal,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

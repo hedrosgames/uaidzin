@@ -33,6 +33,7 @@ import {
   disposeTribunalTextures,
   type TribunalTextureSet,
 } from "./TribunalTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export const TRIBUNAL_PILLAR_COUNT = 5;
 
@@ -220,7 +221,8 @@ class TribunalCast {
   private readonly finalFlashMaterial: MeshBasicMaterial;
   private readonly finalShock: Mesh;
   private readonly finalShockMaterial: MeshBasicMaterial;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private phase: CastPhase = "descent";
   private elapsed = 0;
   private impactElapsed = 0;
@@ -234,6 +236,7 @@ class TribunalCast {
     private readonly config: TribunalVfxConfig,
     private readonly target: Vector3,
     private readonly onDispose: (cast: TribunalCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     for (let index = 0; index < TRIBUNAL_PILLAR_COUNT; index += 1) {
       const angle = index * Math.PI * 2 / TRIBUNAL_PILLAR_COUNT + Math.PI / TRIBUNAL_PILLAR_COUNT;
@@ -266,9 +269,17 @@ class TribunalCast {
     this.finalShock.renderOrder = 11;
     this.castRoot.add(this.finalFlash, this.finalShock);
 
-    this.light = new PointLight(0xffc84a, 0, 12, 2);
-    this.light.position.set(this.target.x, this.target.y + 2.4, this.target.z);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xffc84a, 12);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xffc84a, 0, 12, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) {
+      this.light.position.set(this.target.x, this.target.y + 2.4, this.target.z);
+      this.castRoot.add(this.light);
+    }
   }
 
   private createPillar(
@@ -409,8 +420,8 @@ class TribunalCast {
         : this.phase === "impact" ? 1 : Math.min(1, this.elapsed / this.config.fissureDuration),
       impactAge: this.impactElapsed,
       target: this.target.toArray(),
-      light: this.light.position.toArray(),
-      lightIntensity: this.light.intensity,
+      light: this.light?.position.toArray() ?? [0, 0, 0],
+      lightIntensity: this.light?.intensity ?? 0,
       pillars: this.pillars.map((pillar) => ({
         position: pillar.position.toArray(),
         head: pillar.head.position.toArray(),
@@ -471,7 +482,13 @@ class TribunalCast {
       fissure.material.dispose();
     }
     for (const stone of this.stones) this.castRoot.remove(stone);
-    this.castRoot.remove(this.finalFlash, this.finalShock, this.light);
+    this.castRoot.remove(this.finalFlash, this.finalShock);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.finalFlashMaterial.dispose();
     this.finalShockMaterial.dispose();
     this.onDispose(this);
@@ -517,8 +534,10 @@ class TribunalCast {
       pillar.shockMaterial.opacity = 0.3;
       pillar.shock.visible = true;
     }
-    this.light.position.set(this.target.x, this.target.y + 1.6, this.target.z);
-    this.light.intensity = this.config.lightIntensity;
+    if (this.light) {
+      this.light.position.set(this.target.x, this.target.y + 1.6, this.target.z);
+      this.light.intensity = this.config.lightIntensity;
+    }
   }
 
   private updateFissures(deltaTime: number): void {
@@ -574,8 +593,10 @@ class TribunalCast {
       system.restart();
       system.play();
     }
-    this.light.position.set(this.target.x, this.target.y + 0.8, this.target.z);
-    this.light.intensity = this.config.finalLightIntensity;
+    if (this.light) {
+      this.light.position.set(this.target.x, this.target.y + 0.8, this.target.z);
+      this.light.intensity = this.config.finalLightIntensity;
+    }
   }
 
   private updateImpact(deltaTime: number): void {
@@ -610,12 +631,15 @@ class TribunalCast {
     this.finalFlash.scale.setScalar(0.26 + flashProgress * 1.05);
     this.finalFlashMaterial.opacity = Math.pow(1 - flashProgress, 2);
     this.finalFlash.visible = flashProgress < 1;
-    this.light.intensity = this.config.finalLightIntensity
-      * Math.pow(MathUtils.clamp(1 - this.impactElapsed / 0.6, 0, 1), 2);
+    if (this.light) {
+      this.light.intensity = this.config.finalLightIntensity
+        * Math.pow(MathUtils.clamp(1 - this.impactElapsed / 0.6, 0, 1), 2);
+    }
     if (this.impactElapsed >= this.config.cleanupDelay) this.dispose();
   }
 
   private moveLightAlongCircle(height: number, intensity: number, progress = 0): void {
+    if (!this.light) return;
     const sweep = progress * Math.PI * 2 + Math.PI / TRIBUNAL_PILLAR_COUNT;
     this.light.position.set(
       this.target.x + Math.cos(sweep) * this.config.circleRadius,
@@ -639,6 +663,7 @@ export class TribunalVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<TribunalVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_TRIBUNAL_VFX_CONFIG, ...config };
     this.config = {
@@ -681,12 +706,13 @@ export class TribunalVfxController {
       this.config,
       impactTarget,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

@@ -27,6 +27,7 @@ import {
   createSeloTextures,
   disposeSeloTextures,
 } from "./SeloTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface SeloVfxConfig {
   sealDuration: number;
@@ -96,7 +97,8 @@ class SeloCast {
   private readonly systems: ParticleSystem[];
   private readonly rings: [SeloRing, SeloRing];
   private readonly flash: Mesh<SphereGeometry, MeshBasicMaterial>;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private phase: SeloPhase = "materialize";
   private phaseElapsed = 0;
   private spinAngle = 0;
@@ -120,6 +122,7 @@ class SeloCast {
     private readonly config: SeloVfxConfig,
     center: Vector3,
     private readonly onDispose: (cast: SeloCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     scene.add(this.castRoot);
     this.ambientSystems = createSeloAmbientSystems(shared.particleMaterials, config);
@@ -145,9 +148,17 @@ class SeloCast {
     this.flash.visible = false;
     this.castRoot.add(this.flash);
 
-    this.light = new PointLight(LIGHT_COLOR, 0, 7.5, 2);
-    this.light.position.set(0, 0.85, 0);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(LIGHT_COLOR, 7.5);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(LIGHT_COLOR, 0, 7.5, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) {
+      this.light.position.set(0, 0.85, 0);
+      this.castRoot.add(this.light);
+    }
 
     this.place(center);
     this.triggerMaterialize();
@@ -175,7 +186,7 @@ class SeloCast {
         visible: this.flash.visible,
       },
       position: this.castRoot.position.toArray(),
-      lightIntensity: this.light.intensity,
+      lightIntensity: this.light?.intensity ?? 0,
     };
   }
 
@@ -208,7 +219,13 @@ class SeloCast {
     for (const system of this.systems) system.dispose();
     for (const ring of this.rings) ring.mesh.material.dispose();
     this.flash.material.dispose();
-    this.castRoot.remove(this.flash, this.light);
+    this.castRoot.remove(this.flash);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     for (const ring of this.rings) this.castRoot.remove(ring.mesh);
     this.castRoot.removeFromParent();
     this.castRoot.clear();
@@ -232,7 +249,7 @@ class SeloCast {
       ring.mesh.material.opacity = 0;
       ring.mesh.visible = true;
     }
-    this.light.intensity = 0.8;
+    if (this.light) this.light.intensity = 0.8;
   }
 
   private updateMaterialize(deltaTime: number): void {
@@ -244,7 +261,7 @@ class SeloCast {
       ring.mesh.rotation.z += ring.spin * deltaTime * (1.6 - ease * 0.6);
       ring.mesh.material.opacity = ease * 0.92;
     }
-    this.light.intensity = 0.8 + ease * 1.4;
+    if (this.light) this.light.intensity = 0.8 + ease * 1.4;
     if (this.phaseElapsed + 1e-9 >= this.config.sealDuration) this.triggerSealed();
   }
 
@@ -264,7 +281,7 @@ class SeloCast {
     this.flash.scale.setScalar(0.16);
     this.flash.material.opacity = 1;
     this.flash.visible = true;
-    this.light.intensity = 6.4;
+    if (this.light) this.light.intensity = 6.4;
   }
 
   private updateSealed(deltaTime: number): void {
@@ -278,10 +295,12 @@ class SeloCast {
     this.flash.scale.setScalar(0.16 + flashProgress * 0.78);
     this.flash.material.opacity = Math.pow(1 - flashProgress, 2);
     this.flash.visible = flashProgress < 1;
-    this.light.intensity = Math.max(
-      1.5 + Math.sin(this.pulseTime * 3.6) * 0.5,
-      6.4 * Math.pow(1 - flashProgress, 2),
-    );
+    if (this.light) {
+      this.light.intensity = Math.max(
+        1.5 + Math.sin(this.pulseTime * 3.6) * 0.5,
+        6.4 * Math.pow(1 - flashProgress, 2),
+      );
+    }
     if (this.phaseElapsed + 1e-9 >= this.config.activeDuration) this.triggerFade();
   }
 
@@ -300,7 +319,7 @@ class SeloCast {
       ring.mesh.material.opacity = fade * 0.92;
       ring.mesh.scale.multiplyScalar(1 + deltaTime * 0.22);
     }
-    this.light.intensity = 1.5 * fade;
+    if (this.light) this.light.intensity = 1.5 * fade;
     if (this.phaseElapsed + 1e-9 >= this.config.fadeDuration) this.dispose();
   }
 }
@@ -324,6 +343,7 @@ export class SeloVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<SeloVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_SELO_VFX_CONFIG, ...config };
     this.config = {
@@ -401,12 +421,13 @@ export class SeloVfxController {
       { ...this.config, activeDuration },
       center,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime) ? MathUtils.clamp(deltaTime, 0, 0.1) : 0;
     this.accumulator = Math.min(this.accumulator + frameDelta, 0.2);
     let stepCount = 0;

@@ -1,5 +1,8 @@
 import { type Texture } from "three";
-import { createCanvasTexture as createTexture, drawRadialGlow } from "../../vfxKit/canvasTexture";
+import {
+  createCanvasTexture as createTexture,
+  createGlowTexture,
+} from "../../vfxKit/canvasTexture";
 
 export interface QuebraTextureSet {
   shard: Texture;
@@ -36,14 +39,12 @@ export function createQuebraTextures(): QuebraTextureSet {
     context.globalAlpha = 1;
   });
 
-  const spark = createTexture(64, 64, (context) => {
-    drawRadialGlow(context, 32, 32, [
-      [0, "rgba(255,252,238,1)"],
-      [0.2, "rgba(255,226,140,1)"],
-      [0.5, "rgba(212,160,23,0.8)"],
-      [1, "rgba(74,50,20,0)"],
-    ]);
-  });
+  const spark = createGlowTexture(64, [
+    [0, "rgba(255,252,238,1)"],
+    [0.2, "rgba(255,226,140,1)"],
+    [0.5, "rgba(212,160,23,0.8)"],
+    [1, "rgba(74,50,20,0)"],
+  ]);
 
   return { shard, spark };
 }

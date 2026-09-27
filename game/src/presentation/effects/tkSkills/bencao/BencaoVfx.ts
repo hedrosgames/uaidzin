@@ -30,6 +30,7 @@ import {
   disposeBencaoTextures,
   type BencaoTextureSet,
 } from "./BencaoTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface BencaoVfxConfig {
   activationDuration: number;
@@ -168,7 +169,8 @@ class BencaoCast {
   private readonly ring: Mesh<PlaneGeometry, ShaderMaterial>;
   private readonly column: Mesh<CylinderGeometry, ShaderMaterial>;
   private readonly topGlow: Sprite;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private phase: BencaoPhase = "activation";
   private activationElapsed = 0;
   private activeElapsed = 0;
@@ -188,6 +190,7 @@ class BencaoCast {
     private readonly config: BencaoVfxConfig,
     center: Vector3,
     private readonly onDispose: (cast: BencaoCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     scene.add(this.castRoot);
     this.auraSystems = createBencaoAuraSystems(shared.particleMaterials, config);
@@ -221,8 +224,14 @@ class BencaoCast {
     this.topGlow.renderOrder = 12;
     this.castRoot.add(this.topGlow);
 
-    this.light = new PointLight(0xe8c547, 0, 6.5, 2);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xe8c547, 6.5);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xe8c547, 0, 6.5, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) this.castRoot.add(this.light);
 
     this.place(center);
     this.triggerActivation();
@@ -250,7 +259,7 @@ class BencaoCast {
         position: this.topGlow.position.toArray(),
       },
       position: this.castRoot.position.toArray(),
-      lightIntensity: this.light.intensity,
+      lightIntensity: this.light?.intensity ?? 0,
     };
   }
 
@@ -279,7 +288,13 @@ class BencaoCast {
     if (this.disposed) return;
     this.disposed = true;
     for (const system of this.systems) system.dispose();
-    this.castRoot.remove(this.ring, this.column, this.topGlow, this.light);
+    this.castRoot.remove(this.ring, this.column, this.topGlow);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.ring.material.dispose();
     this.column.material.dispose();
     this.topGlow.material.dispose();
@@ -295,7 +310,7 @@ class BencaoCast {
     this.ring.position.set(0, 0.01, 0);
     this.column.position.set(0, this.config.columnHeight / 2, 0);
     this.topGlow.position.set(0, this.config.columnHeight, 0);
-    this.light.position.set(0, 1.1, 0);
+    if (this.light) this.light.position.set(0, 1.1, 0);
   }
 
   private triggerActivation(): void {
@@ -314,7 +329,7 @@ class BencaoCast {
     this.column.scale.set(0.4, 0.05, 0.4);
     this.column.material.uniforms.uIntensity.value = 1;
     this.topGlow.scale.setScalar(0.1);
-    this.light.intensity = 4.6;
+    if (this.light) this.light.intensity = 4.6;
   }
 
   private updateActivation(deltaTime: number): void {
@@ -336,7 +351,7 @@ class BencaoCast {
     this.pulseTime += deltaTime;
     this.ring.material.uniforms.uTime.value = this.pulseTime;
     this.column.material.uniforms.uTime.value = this.pulseTime;
-    this.light.intensity = 4.6 * (1 - progress * 0.65);
+    if (this.light) this.light.intensity = 4.6 * (1 - progress * 0.65);
     if (this.activationElapsed + 1e-9 >= this.config.activationDuration) {
       this.phase = "active";
       this.activeElapsed = 0;
@@ -348,7 +363,7 @@ class BencaoCast {
     this.pulseTime += deltaTime;
     this.ring.material.uniforms.uTime.value = this.pulseTime;
     this.column.material.uniforms.uTime.value = this.pulseTime;
-    this.light.intensity = 1.6 + Math.sin(this.pulseTime * 3.4) * 0.5;
+    if (this.light) this.light.intensity = 1.6 + Math.sin(this.pulseTime * 3.4) * 0.5;
     const breathe = 1 + Math.sin(this.pulseTime * 2.2) * 0.03;
     this.ring.scale.setScalar(breathe);
     this.topGlow.material.opacity = 0.78 + Math.sin(this.pulseTime * 3.0) * 0.16;
@@ -377,7 +392,7 @@ class BencaoCast {
     this.column.material.uniforms.uIntensity.value = fade;
     this.topGlow.material.opacity = fade * 0.8;
     this.topGlow.position.y = this.config.columnHeight + progress * 0.4;
-    this.light.intensity = 1.6 * fade;
+    if (this.light) this.light.intensity = 1.6 * fade;
     this.ring.scale.setScalar(1 + progress * 0.16);
     this.column.scale.set(1 + progress * 0.08, 1, 1 + progress * 0.08);
     if (this.fadeElapsed + 1e-9 >= this.config.fadeDuration) this.dispose();
@@ -398,6 +413,7 @@ export class BencaoVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<BencaoVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_BENCAO_VFX_CONFIG, ...config };
     this.config = {
@@ -434,12 +450,13 @@ export class BencaoVfxController {
       { ...this.config, blessingDuration },
       center,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime) ? MathUtils.clamp(deltaTime, 0, 0.1) : 0;
     this.accumulator = Math.min(this.accumulator + frameDelta, 0.2);
     let stepCount = 0;

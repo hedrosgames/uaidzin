@@ -31,6 +31,7 @@ import {
   disposeEscudoSagradoTextures,
   type EscudoSagradoTextureSet,
 } from "./EscudoSagradoTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface EscudoSagradoVfxConfig {
   materializeDuration: number;
@@ -193,7 +194,8 @@ class EscudoSagradoCast {
   private readonly dome: Mesh<BufferGeometry, MeshBasicMaterial>;
   private readonly topRim: Mesh<TorusGeometry, MeshBasicMaterial>;
   private readonly bottomRim: Mesh<TorusGeometry, MeshBasicMaterial>;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private readonly flash: ParticleSystem;
   private readonly impactSparks: ParticleSystem;
   private readonly motes: ParticleSystem;
@@ -214,6 +216,7 @@ class EscudoSagradoCast {
     position: Vector3,
     direction: Vector3,
     private readonly onDispose: (cast: EscudoSagradoCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.direction = direction.clone();
 
@@ -241,8 +244,14 @@ class EscudoSagradoCast {
     this.domeGroup.add(this.dome, this.topRim, this.bottomRim);
     this.castGroup.add(this.domeGroup);
 
-    this.light = new PointLight(0xffc23f, 0, 7, 2);
-    this.castGroup.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xffc23f, 7);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xffc23f, 0, 7, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) this.castGroup.add(this.light);
     this.castRoot.add(this.castGroup);
 
     const forward = direction.clone().normalize();
@@ -316,6 +325,12 @@ class EscudoSagradoCast {
     this.disposed = true;
     for (const system of this.systems) system.dispose();
     this.castRoot.remove(this.castGroup);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castGroup.remove(this.light);
+      this.light.dispose();
+    }
     this.dome.material.dispose();
     this.topRim.material.dispose();
     this.bottomRim.material.dispose();
@@ -338,7 +353,7 @@ class EscudoSagradoCast {
     const pulse = 1 + Math.sin(progress * Math.PI * 3) * 0.05 * (1 - progress);
     this.topRim.material.opacity = 0.95 * eased * pulse;
     this.bottomRim.material.opacity = 0.8 * eased * pulse;
-    this.light.intensity = 0.8 + Math.sin(progress * Math.PI) * 2.6;
+    if (this.light) this.light.intensity = 0.8 + Math.sin(progress * Math.PI) * 2.6;
     if (!this.impactTriggered && this.materializeElapsed >= this.config.impactMoment) {
       this.triggerImpact();
     }
@@ -361,7 +376,7 @@ class EscudoSagradoCast {
     this.impactSparks.emitter.visible = true;
     this.impactSparks.restart();
     this.impactSparks.play();
-    this.light.intensity = 3.6;
+    if (this.light) this.light.intensity = 3.6;
   }
 
   private triggerLinger(): void {
@@ -383,7 +398,7 @@ class EscudoSagradoCast {
     this.dome.material.opacity = 0.85 * fade;
     this.topRim.material.opacity = 0.95 * fade;
     this.bottomRim.material.opacity = 0.8 * fade;
-    this.light.intensity = 2.2 * fade;
+    if (this.light) this.light.intensity = 2.2 * fade;
     if (this.lingerElapsed >= fadeWindow) this.dispose();
   }
 }
@@ -401,6 +416,7 @@ export class EscudoSagradoVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<EscudoSagradoVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_ESCUDO_SAGRADO_VFX_CONFIG, ...config };
     const finiteOr = (value: number, fallback: number, minimum: number) =>
@@ -497,12 +513,13 @@ export class EscudoSagradoVfxController {
       position,
       horizontal,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

@@ -27,6 +27,7 @@ import {
   disposeJulgamentoTextures,
   type JulgamentoTextureSet,
 } from "./JulgamentoTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface JulgamentoVfxConfig {
   boltCount: number;
@@ -148,7 +149,8 @@ class JulgamentoBolt {
   readonly flash: Mesh<SphereGeometry, MeshBasicMaterial>;
   readonly groundGlow: Mesh;
   readonly groundGlowMaterial: MeshBasicMaterial;
-  readonly light: PointLight;
+  readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   readonly index: number;
   private readonly castRoot: Group;
   private readonly target: Vector3;
@@ -167,6 +169,7 @@ class JulgamentoBolt {
     target: Vector3,
     index: number,
     scale: number,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.castRoot = castRoot;
     this.target = target;
@@ -212,8 +215,14 @@ class JulgamentoBolt {
     this.groundGlow.renderOrder = 10;
     castRoot.add(this.groundGlow);
 
-    this.light = new PointLight(0xf0c24a, 0, 9.5 * scale, 2);
-    castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xf0c24a, 9.5 * scale);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xf0c24a, 0, 9.5 * scale, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) castRoot.add(this.light);
 
     this.impactSystems = createJulgamentoImpactSystems(
       shared.particleMaterials,
@@ -273,7 +282,13 @@ class JulgamentoBolt {
     if (this.disposed) return;
     this.disposed = true;
     for (const system of this.systems) system.dispose();
-    this.castRoot.remove(this.beam, this.pillar, this.shock, this.flash, this.groundGlow, this.light);
+    this.castRoot.remove(this.beam, this.pillar, this.shock, this.flash, this.groundGlow);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.beam.material.dispose();
     this.pillar.material.dispose();
     this.shockMaterial.dispose();
@@ -286,12 +301,14 @@ class JulgamentoBolt {
     const progress = MathUtils.clamp(this.localTime / config.fallDuration, 0, 1);
     const eased = progress * progress;
     this.beam.scale.set(this.scale, Math.max(0.02, eased), this.scale);
-    this.light.position.set(
-      this.target.x,
-      this.target.y + config.dropHeight * (1 - eased),
-      this.target.z,
-    );
-    this.light.intensity = 1.2 + progress * 2.4;
+    if (this.light) {
+      this.light.position.set(
+        this.target.x,
+        this.target.y + config.dropHeight * (1 - eased),
+        this.target.z,
+      );
+      this.light.intensity = 1.2 + progress * 2.4;
+    }
     if (progress >= 1) this.triggerImpact();
   }
 
@@ -322,8 +339,10 @@ class JulgamentoBolt {
     this.groundGlow.scale.setScalar(2.6 * this.scale);
     this.groundGlowMaterial.opacity = 0.85;
     this.groundGlow.visible = true;
-    this.light.position.set(this.target.x, this.target.y + 0.5 * this.scale, this.target.z);
-    this.light.intensity = this.config.lightIntensity * this.scale;
+    if (this.light) {
+      this.light.position.set(this.target.x, this.target.y + 0.5 * this.scale, this.target.z);
+      this.light.intensity = this.config.lightIntensity * this.scale;
+    }
   }
 
   private updateImpact(deltaTime: number): void {
@@ -349,7 +368,9 @@ class JulgamentoBolt {
     this.groundGlowMaterial.opacity = glowFade * 0.85;
     this.groundGlow.visible = glowFade > 0.01;
     const lightFade = Math.pow(1 - MathUtils.clamp(this.impactElapsed / 0.45, 0, 1), 2);
-    this.light.intensity = this.config.lightIntensity * this.scale * lightFade;
+    if (this.light) {
+      this.light.intensity = this.config.lightIntensity * this.scale * lightFade;
+    }
     if (this.impactElapsed >= this.config.cleanupDelay) this.dispose();
   }
 }
@@ -370,6 +391,7 @@ class JulgamentoCast {
     private readonly config: JulgamentoVfxConfig,
     target: Vector3,
     private readonly onDispose: (cast: JulgamentoCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     for (let index = 0; index < config.boltCount; index += 1) {
       const scale = index === config.boltCount - 1 ? config.finalBoltScale : 1;
@@ -382,6 +404,7 @@ class JulgamentoCast {
         target,
         index,
         scale,
+        this.lightPool,
       );
       this.bolts.push(bolt);
     }
@@ -454,6 +477,7 @@ export class JulgamentoVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<JulgamentoVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_JULGAMENTO_VFX_CONFIG, ...config };
     this.config = {
@@ -492,12 +516,13 @@ export class JulgamentoVfxController {
       this.config,
       impactTarget,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

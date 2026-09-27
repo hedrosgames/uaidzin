@@ -27,6 +27,7 @@ import {
   disposeAvalancheTextures,
   type AvalancheTextureSet,
 } from "./AvalancheTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface AvalancheVfxConfig {
   waveDuration: number;
@@ -129,7 +130,8 @@ class AvalancheCast {
   private readonly pivot = new Group();
   private readonly arc: Mesh<TorusGeometry, MeshBasicMaterial>;
   private readonly body: Mesh<ConeGeometry, MeshBasicMaterial>;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private readonly axis: Vector3;
   private readonly distance: number;
   private phase: CastPhase = "wave";
@@ -146,6 +148,7 @@ class AvalancheCast {
     origin: Vector3,
     private readonly target: Vector3,
     private readonly onDispose: (cast: AvalancheCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     const offset = this.target.clone().sub(origin);
     this.distance = MathUtils.clamp(offset.length(), 0.8, this.config.maxRange);
@@ -179,8 +182,14 @@ class AvalancheCast {
     this.pivot.add(this.body, this.arc);
     this.castRoot.add(this.pivot);
 
-    this.light = new PointLight(0xd9a94f, 0, 9, 2);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xd9a94f, 9);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xd9a94f, 0, 9, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) this.castRoot.add(this.light);
 
     this.waveDust.play();
     this.waveDust.emitter.visible = true;
@@ -249,7 +258,13 @@ class AvalancheCast {
     if (this.disposed) return;
     this.disposed = true;
     for (const system of this.systems) system.dispose();
-    this.castRoot.remove(this.pivot, this.light);
+    this.castRoot.remove(this.pivot);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.pivot.remove(this.body, this.arc);
     this.arc.material.dispose();
     this.body.material.dispose();
@@ -354,8 +369,10 @@ class AvalancheCast {
     this.arc.material.opacity = 0.8 * (1 - progress * 0.3);
     this.body.scale.set(radius * 0.96, 0.9 + progress * 0.8, Math.max(frontDistance, 0.01));
     this.body.material.opacity = 0.5 * Math.min(1, progress * 5) * (1 - progress * 0.2);
-    this.light.position.copy(front);
-    this.light.intensity = 1.4 + Math.sin(progress * Math.PI) * 2.4;
+    if (this.light) {
+      this.light.position.copy(front);
+      this.light.intensity = 1.4 + Math.sin(progress * Math.PI) * 2.4;
+    }
 
     if (progress >= 1) this.finishWave(front);
   }
@@ -376,8 +393,10 @@ class AvalancheCast {
     this.body.material.opacity *= fade;
     this.arc.visible = this.arc.material.opacity > 0.004;
     this.body.visible = this.body.material.opacity > 0.004;
-    this.light.intensity *= Math.pow(0.001, deltaTime * 3);
-    if (this.light.intensity < 0.02) this.light.intensity = 0;
+    if (this.light) {
+      this.light.intensity *= Math.pow(0.001, deltaTime * 3);
+      if (this.light.intensity < 0.02) this.light.intensity = 0;
+    }
     if (this.cleanupElapsed >= this.config.cleanupDelay) this.dispose();
   }
 }
@@ -395,6 +414,7 @@ export class AvalancheVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<AvalancheVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_AVALANCHE_VFX_CONFIG, ...config };
     this.config = {
@@ -434,12 +454,13 @@ export class AvalancheVfxController {
       launchOrigin,
       target.clone(),
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

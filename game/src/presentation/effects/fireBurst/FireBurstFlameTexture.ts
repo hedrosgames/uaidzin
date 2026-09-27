@@ -121,7 +121,10 @@ function writeFlameFrame(pixels: Uint8ClampedArray, frame: number): void {
   }
 }
 
+let cachedFlameTexture: CanvasTexture | null = null;
+
 export function createFireBurstFlameTexture(): CanvasTexture {
+  if (cachedFlameTexture) return cachedFlameTexture;
   const canvas = document.createElement('canvas');
   canvas.width = ATLAS_SIZE;
   canvas.height = ATLAS_SIZE;
@@ -142,5 +145,6 @@ export function createFireBurstFlameTexture(): CanvasTexture {
   texture.wrapS = ClampToEdgeWrapping;
   texture.wrapT = ClampToEdgeWrapping;
   texture.generateMipmaps = false;
+  cachedFlameTexture = texture;
   return texture;
 }

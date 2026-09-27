@@ -31,6 +31,7 @@ import {
   DESCUIDADO_PALETTE,
   type FuriaPalette,
 } from "./FuriaPalette";
+import type { TkLightPool } from "../../TkLightPool";
 
 export { DEFAULT_FURIA_PALETTE, DESCUIDADO_PALETTE, type FuriaPalette };
 
@@ -123,7 +124,8 @@ class FuriaCast {
   private readonly burstSystems: FuriaBurstSystems;
   private readonly systems: ParticleSystem[];
   private readonly ring: Mesh<PlaneGeometry, ShaderMaterial>;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private phase: FuriaPhase = "activation";
   private activationElapsed = 0;
   private activeElapsed = 0;
@@ -142,6 +144,7 @@ class FuriaCast {
     private readonly config: FuriaVfxConfig,
     center: Vector3,
     private readonly onDispose: (cast: FuriaCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     scene.add(this.castRoot);
     const palette = config.palette ?? DEFAULT_FURIA_PALETTE;
@@ -159,8 +162,14 @@ class FuriaCast {
     this.ring.renderOrder = 11;
     this.castRoot.add(this.ring);
 
-    this.light = new PointLight(palette.lightColor, 0, 6.5, 2);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(palette.lightColor, 6.5);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(palette.lightColor, 0, 6.5, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) this.castRoot.add(this.light);
 
     this.place(center);
     this.triggerActivation();
@@ -180,7 +189,7 @@ class FuriaCast {
         scale: this.ring.scale.x,
       },
       position: this.castRoot.position.toArray(),
-      lightIntensity: this.light.intensity,
+      lightIntensity: this.light?.intensity ?? 0,
     };
   }
 
@@ -209,7 +218,13 @@ class FuriaCast {
     if (this.disposed) return;
     this.disposed = true;
     for (const system of this.systems) system.dispose();
-    this.castRoot.remove(this.ring, this.light);
+    this.castRoot.remove(this.ring);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.ring.material.dispose();
     this.castRoot.removeFromParent();
     this.castRoot.clear();
@@ -221,7 +236,7 @@ class FuriaCast {
     position.y = 0.02;
     this.castRoot.position.copy(position);
     this.ring.position.set(0, 0.01, 0);
-    this.light.position.set(0, 0.9, 0);
+    if (this.light) this.light.position.set(0, 0.9, 0);
   }
 
   private triggerActivation(): void {
@@ -237,7 +252,7 @@ class FuriaCast {
     this.auraSystems.embers.play();
     this.ring.scale.setScalar(0.24);
     this.ring.material.uniforms.uIntensity.value = 1;
-    this.light.intensity = 5.4;
+    if (this.light) this.light.intensity = 5.4;
   }
 
   private updateActivation(deltaTime: number): void {
@@ -251,7 +266,7 @@ class FuriaCast {
     this.ring.scale.setScalar(0.24 + ease * 0.76);
     this.pulseTime += deltaTime;
     this.ring.material.uniforms.uTime.value = this.pulseTime;
-    this.light.intensity = 5.4 * (1 - progress * 0.72);
+    if (this.light) this.light.intensity = 5.4 * (1 - progress * 0.72);
     if (progress >= 1) {
       this.phase = "active";
       this.activeElapsed = 0;
@@ -262,7 +277,7 @@ class FuriaCast {
     this.activeElapsed += deltaTime;
     this.pulseTime += deltaTime;
     this.ring.material.uniforms.uTime.value = this.pulseTime;
-    this.light.intensity = 1.5 + Math.sin(this.pulseTime * 4.4) * 0.55;
+    if (this.light) this.light.intensity = 1.5 + Math.sin(this.pulseTime * 4.4) * 0.55;
     const breathe = 1 + Math.sin(this.pulseTime * 2.6) * 0.035;
     this.ring.scale.setScalar(breathe);
     if (this.activeElapsed >= this.config.auraDuration) this.triggerFade();
@@ -281,7 +296,7 @@ class FuriaCast {
     const progress = MathUtils.clamp(this.fadeElapsed / this.config.fadeDuration, 0, 1);
     const fade = Math.pow(1 - progress, 2);
     this.ring.material.uniforms.uIntensity.value = fade;
-    this.light.intensity = 1.5 * fade;
+    if (this.light) this.light.intensity = 1.5 * fade;
     this.ring.scale.setScalar(1 + progress * 0.14);
     if (this.fadeElapsed >= this.config.fadeDuration) this.dispose();
   }
@@ -304,6 +319,7 @@ export class FuriaVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<FuriaVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_FURIA_VFX_CONFIG, ...config };
     const palette = config.palette ?? DEFAULT_FURIA_PALETTE;
@@ -342,12 +358,13 @@ export class FuriaVfxController {
       { ...this.config, auraDuration },
       center,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime) ? MathUtils.clamp(deltaTime, 0, 0.1) : 0;
     this.accumulator = Math.min(this.accumulator + frameDelta, 0.2);
     let stepCount = 0;

@@ -37,3 +37,13 @@ export function drawRadialGlow(
   context.fillStyle = gradient;
   context.fillRect(0, 0, center * 2, center * 2);
 }
+
+export function createGlowTexture(
+  size: number,
+  stops: Array<[number, string]>,
+): CanvasTexture {
+  const half = size / 2;
+  return createCanvasTexture(size, size, (context) => {
+    drawRadialGlow(context, half, half, stops);
+  });
+}

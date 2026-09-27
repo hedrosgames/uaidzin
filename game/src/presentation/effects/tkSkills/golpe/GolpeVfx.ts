@@ -29,6 +29,7 @@ import {
   disposeGolpeTextures,
   type GolpeTextureSet,
 } from "./GolpeTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface GolpeVfxConfig {
   swingDuration: number;
@@ -127,7 +128,8 @@ class GolpeCast {
   private readonly swingGroup: Group;
   private readonly arc: Mesh<TorusGeometry, MeshStandardMaterial>;
   private readonly edge: Mesh<TorusGeometry, MeshBasicMaterial>;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private readonly slashSparks: ParticleSystem;
   private readonly impactSparks: ParticleSystem;
   private readonly emberPuff: ParticleSystem;
@@ -149,6 +151,7 @@ class GolpeCast {
     position: Vector3,
     direction: Vector3,
     private readonly onDispose: (cast: GolpeCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.direction = direction.clone();
     this.startSweep = config.sweepArc;
@@ -183,8 +186,14 @@ class GolpeCast {
     tiltGroup.add(planeGroup);
     this.castGroup.add(tiltGroup);
 
-    this.light = new PointLight(0xff8a2a, 0, 6.5, 2);
-    this.castGroup.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xff8a2a, 6.5);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xff8a2a, 0, 6.5, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) this.castGroup.add(this.light);
     this.castRoot.add(this.castGroup);
 
     const forward = direction.clone().normalize();
@@ -255,6 +264,12 @@ class GolpeCast {
     this.disposed = true;
     for (const system of this.systems) system.dispose();
     this.castRoot.remove(this.castGroup);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castGroup.remove(this.light);
+      this.light.dispose();
+    }
     this.arc.material.dispose();
     this.edge.material.dispose();
     this.onDispose(this);
@@ -278,16 +293,18 @@ class GolpeCast {
     this.edge.scale.setScalar(grow);
     this.arc.material.emissiveIntensity = 2.6 * (1 - progress * 0.35);
     this.edge.material.opacity = 0.95 * (1 - progress * 0.5);
-    this.light.intensity = 1.2 + Math.sin(progress * Math.PI) * 2.4;
+    if (this.light) this.light.intensity = 1.2 + Math.sin(progress * Math.PI) * 2.4;
     if (progress >= 1) this.triggerAfterglow();
   }
 
   private triggerAfterglow(): void {
     this.phase = "afterglow";
+    const impactX = this.castGroup.position.x + this.direction.x * this.config.arcRadius * 0.8;
+    const impactZ = this.castGroup.position.z + this.direction.z * this.config.arcRadius * 0.8;
     this.impactSparks.emitter.position.set(
-      this.castGroup.position.x + this.direction.x * this.config.arcRadius * 0.8,
+      impactX,
       0.32,
-      this.castGroup.position.z + this.direction.z * this.config.arcRadius * 0.8,
+      impactZ,
     );
     this.impactSparks.emitter.visible = true;
     this.impactSparks.restart();
@@ -295,7 +312,7 @@ class GolpeCast {
     this.emberPuff.emitter.visible = true;
     this.emberPuff.restart();
     this.emberPuff.play();
-    this.light.intensity = 3.4;
+    if (this.light) this.light.intensity = 3.4;
   }
 
   private updateAfterglow(deltaTime: number): void {
@@ -311,7 +328,7 @@ class GolpeCast {
     this.arc.material.emissiveIntensity = 1.7 * fade;
     this.arc.material.opacity = 0.9 * fade;
     this.edge.material.opacity = 0.5 * fade;
-    this.light.intensity = 3.4 * fade;
+    if (this.light) this.light.intensity = 3.4 * fade;
     if (this.afterglowElapsed >= fadeWindow) this.dispose();
   }
 }
@@ -329,6 +346,7 @@ export class GolpeVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<GolpeVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_GOLPE_VFX_CONFIG, ...config };
     const finiteOr = (value: number, fallback: number, minimum: number) =>
@@ -379,12 +397,13 @@ export class GolpeVfxController {
       position,
       horizontal,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

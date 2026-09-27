@@ -35,6 +35,7 @@ import {
   disposeAncoraTextures,
   type AncoraTextureSet,
 } from "./AncoraTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface AncoraVfxConfig {
   chainDuration: number;
@@ -221,7 +222,8 @@ class AncoraCast {
   private readonly anchorMaterial: MeshStandardMaterial;
   private readonly rimMaterial: MeshBasicMaterial;
   private readonly rim: Mesh;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private readonly shock: Mesh;
   private readonly shockMaterial: MeshBasicMaterial;
   private readonly flash: Mesh;
@@ -248,6 +250,7 @@ class AncoraCast {
     origin: Vector3,
     target: Vector3,
     private readonly onDispose: (cast: AncoraCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.castRoot = castRoot;
     this.target = target;
@@ -308,8 +311,14 @@ class AncoraCast {
     this.groundGlow.renderOrder = 10;
     castRoot.add(this.groundGlow);
 
-    this.light = new PointLight(0xd4583b, 0, 9 * config.anchorScale, 2);
-    castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xd4583b, 9 * config.anchorScale);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xd4583b, 0, 9 * config.anchorScale, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) castRoot.add(this.light);
 
     this.impactSystems = createAncoraImpactSystems(
       shared.particleMaterials,
@@ -411,8 +420,14 @@ class AncoraCast {
     for (const system of this.systems) system.dispose();
     this.chain.dispose();
     this.castRoot.remove(
-      this.anchor, this.shock, this.flash, this.groundGlow, this.light,
+      this.anchor, this.shock, this.flash, this.groundGlow,
     );
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.anchorMaterial.dispose();
     this.rimMaterial.dispose();
     this.shockMaterial.dispose();
@@ -428,8 +443,10 @@ class AncoraCast {
       1,
     );
     this.chain.update(progress, this.elapsed);
-    this.light.position.copy(this.chain.head);
-    this.light.intensity = 0.7 + progress * 1.4;
+    if (this.light) {
+      this.light.position.copy(this.chain.head);
+      this.light.intensity = 0.7 + progress * 1.4;
+    }
     if (progress >= 1) this.startFall();
   }
 
@@ -443,12 +460,14 @@ class AncoraCast {
       this.target.y + ANCHOR_TIP_OFFSET + this.config.dropHeight,
       this.target.z,
     );
-    this.light.position.set(
-      this.target.x,
-      this.target.y + ANCHOR_TIP_OFFSET + this.config.dropHeight,
-      this.target.z,
-    );
-    this.light.intensity = 1.6;
+    if (this.light) {
+      this.light.position.set(
+        this.target.x,
+        this.target.y + ANCHOR_TIP_OFFSET + this.config.dropHeight,
+        this.target.z,
+      );
+      this.light.intensity = 1.6;
+    }
   }
 
   private updateFall(): void {
@@ -463,8 +482,10 @@ class AncoraCast {
       + this.config.dropHeight * (1 - eased);
     this.anchor.position.set(this.target.x, y, this.target.z);
     this.anchor.rotation.y = progress * 1.1;
-    this.light.position.copy(this.anchor.position);
-    this.light.intensity = 1.6 + progress * 2.2;
+    if (this.light) {
+      this.light.position.copy(this.anchor.position);
+      this.light.intensity = 1.6 + progress * 2.2;
+    }
     if (progress >= 1) this.triggerImpact();
   }
 
@@ -499,12 +520,14 @@ class AncoraCast {
     this.groundGlow.scale.setScalar(2.8 * this.config.anchorScale);
     this.groundGlowMaterial.opacity = 0.8;
     this.groundGlow.visible = true;
-    this.light.position.set(
-      this.target.x,
-      this.target.y + 0.6 * this.config.anchorScale,
-      this.target.z,
-    );
-    this.light.intensity = this.config.lightIntensity * this.config.anchorScale;
+    if (this.light) {
+      this.light.position.set(
+        this.target.x,
+        this.target.y + 0.6 * this.config.anchorScale,
+        this.target.z,
+      );
+      this.light.intensity = this.config.lightIntensity * this.config.anchorScale;
+    }
   }
 
   private updateImpact(deltaTime: number): void {
@@ -516,7 +539,8 @@ class AncoraCast {
     this.shockMaterial.opacity = shockFade * 0.42;
     this.shock.visible = shockFade > 0.01;
     const flashProgress = MathUtils.clamp(this.impactElapsed / 0.15, 0, 1);
-    this.flash.scale.setScalar((0.2 + flashProgress * 0.74) * scale);
+    const flashScale = (0.2 + flashProgress * 0.74) * scale;
+    this.flash.scale.setScalar(flashScale);
     this.flashMaterial.opacity = Math.pow(1 - flashProgress, 2);
     this.flash.visible = flashProgress < 1;
     const glowFade = Math.pow(
@@ -534,7 +558,9 @@ class AncoraCast {
       1 - MathUtils.clamp(this.impactElapsed / 0.5, 0, 1),
       1.6,
     );
-    this.light.intensity = this.config.lightIntensity * scale * lightFade;
+    if (this.light) {
+      this.light.intensity = this.config.lightIntensity * scale * lightFade;
+    }
 
     const dissolveProgress = MathUtils.clamp(
       (this.impactElapsed - this.config.plantedDuration)
@@ -580,6 +606,7 @@ export class AncoraVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<AncoraVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_ANCORA_VFX_CONFIG, ...config };
     this.config = {
@@ -625,12 +652,13 @@ export class AncoraVfxController {
       launchOrigin,
       impactTarget,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;
