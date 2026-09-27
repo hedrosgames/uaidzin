@@ -117,7 +117,7 @@ const city = await page.evaluate(() => {
     gold: s.inventory.gold,
     attrs: { ...s.character.attributes },
     equip: Object.keys(s.equipment.snapshotEquipped()).filter((k) => s.equipment.equipped[k]),
-    levels: Object.keys(s.skillTree.state.levels || {}).length,
+    learned: Array.from(s.skillTree.state.learned || []),
     loadout: s.skillLoadout.snapshot().length,
   };
 });
@@ -130,8 +130,8 @@ if (city.attrs.FOR === 5 && city.attrs.DES === 5) ok("C9: attrs 5 cidade");
 else fail("C9: attrs cidade " + JSON.stringify(city.attrs));
 if (!city.equip.length) ok("C9: equip vazio");
 else fail("C9: equip " + JSON.stringify(city.equip));
-if (city.levels === 0 && city.loadout === 0) ok("C2: skills/loadout 0");
-else fail("C2: levels/loadout " + city.levels + "/" + city.loadout);
+if (city.learned.length === 0 && city.loadout === 0) ok("C2: skills/loadout 0");
+else fail("C2: learned/loadout " + city.learned.length + "/" + city.loadout);
 
 await page.evaluate(async () => {
   const api = window.__UAIDZIN__;
@@ -145,13 +145,13 @@ await page.waitForTimeout(400);
 const before = await page.evaluate(() => {
   const s = window.__UAIDZIN__.session;
   return {
-    levels: { ...Object.fromEntries(Object.entries(s.skillTree.state.levels).map(([k, v]) => [k, v.level])) },
+    learned: Array.from(s.skillTree.state.learned || []),
     gold: s.inventory.gold,
     name: s.character.name,
   };
 });
 console.log("BEFORE_RELOAD", JSON.stringify(before));
-if (Object.keys(before.levels).length > 0) ok("C2: skill alocada");
+if (before.learned.length > 0) ok("C2: skill alocada");
 else fail("C2: nao alocou skill");
 
 await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
@@ -165,11 +165,11 @@ const after = await page.evaluate(() => {
   return {
     name: s.character.name,
     gold: s.inventory.gold,
-    levels: { ...Object.fromEntries(Object.entries(s.skillTree.state.levels).map(([k, v]) => [k, v.level])) },
+    learned: Array.from(s.skillTree.state.learned || []),
   };
 });
 console.log("AFTER_RELOAD", JSON.stringify(after));
-if (Object.keys(after.levels).length > 0) ok("C2: skills sobrevivem reload");
+if (after.learned.length > 0) ok("C2: skills sobrevivem reload");
 else fail("C2: skills sumiram");
 if (after.gold === before.gold) ok("C2: gold estavel no reload");
 else fail("C2: gold mudou " + after.gold);

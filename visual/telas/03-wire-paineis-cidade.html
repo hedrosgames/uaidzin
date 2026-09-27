@@ -1604,7 +1604,6 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
         icon: "assets/skills/" + tree + "-" + (i + 1) + ".svg",
         pointsCost: (window.__UAIDZIN_ECONOMY__ && window.__UAIDZIN_ECONOMY__.skillPointsCost()) || 0,
         goldCost: (window.__UAIDZIN_ECONOMY__ && window.__UAIDZIN_ECONOMY__.skillGoldCost(i)) || 0,
-        upCost: (window.__UAIDZIN_ECONOMY__ && window.__UAIDZIN_ECONOMY__.skillUpCost(i)) || 0,
       };
     });
   });
@@ -3238,8 +3237,6 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       "</div>" +
       '<div class="sub">' +
       (item.rarity || "Comum") +
-      " · estoque " +
-      slot.qty +
       "</div>" +
       '<p class="desc">' +
       (item.desc || "") +
@@ -3284,15 +3281,13 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
       if (!ico) return;
       const card = document.createElement("div");
       card.className = "shop-card r-" + (item.rarity || "Comum");
-      const qtyHtml = slot.qty > 1 ? '<div class="qty">' + slot.qty + "</div>" : "";
       card.innerHTML =
         '<div class="nm">' +
         item.name +
         "</div>" +
         '<img class="ico" src="' +
         ico +
-        '" alt="">' +
-        qtyHtml;
+        '" alt="">';
       card.addEventListener("mouseenter", () => {
         shopGrid.querySelectorAll(".shop-card.is-on").forEach((n) => n.classList.remove("is-on"));
         card.classList.add("is-on");

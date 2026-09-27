@@ -35,9 +35,10 @@ import { PROFILE_SECTIONS, SAVE_VERSION, emptyProgress, normalizeTreeMap, parseP
 import { normalizeSavePayload } from "../persistence/migrations";
 import { saveVault } from "../persistence/SaveVault";
 import { SaveCoordinator } from "../persistence/SaveCoordinator";
-import { adoptItemUidSeq, type ItemInstance } from "../domain/items/ItemModel";
+import type { ItemInstance } from "../domain/items/ItemModel";
 import type { EquipSlot } from "../domain/items/EquipmentService";
 import { ECONOMY_BALANCE } from "../data/balance/economy";
+import { sellItem } from "../domain/economy/ShopService";
 import type { DungeonDef } from "../data/dungeons/dungeon-definitions";
 import { CLASSES, type ClassId, type TreeId } from "../data/classes/class-definitions";
 import { SKILL_TRAINING } from "../data/balance/economy";
@@ -106,8 +107,8 @@ export class CityGameSession {
     attack: COMBAT_BALANCE.player.attack,
     defense: COMBAT_BALANCE.player.defense,
   });
-  readonly progression = new ProgressionService(this.character);
   readonly skillTree = new SkillTreeService();
+  readonly progression = new ProgressionService(this.character, this.skillTree);
   readonly inventory = new InventoryService();
   readonly bags = new BagLockService();
   readonly accountVault = new AccountVaultService();
@@ -197,19 +198,8 @@ export class CityGameSession {
   }
 
   async start(): Promise<void> {
-    this.adoptItemUidsFromState();
     await this.renderer.loadPlayerModel(this.skillTree.state.classId);
     this.enterWorld("city");
-  }
-
-  private adoptItemUidsFromState(): void {
-    const equipped = this.equipment.snapshotEquipped();
-    const uids = [
-      ...this.inventory.items.map((i) => i.uid),
-      ...Object.values(equipped).map((i) => i?.uid).filter((u): u is string => !!u),
-      ...this.accountVault.items.map((i) => i.uid),
-    ];
-    adoptItemUidSeq(uids);
   }
 
   async reloadAccountVault(): Promise<void> {
@@ -242,9 +232,14 @@ export class CityGameSession {
   moveItemToVault(uid: string): boolean {
     const item = this.inventory.remove(uid);
     if (!item) return false;
-    if (!this.accountVault.add(item)) {
-      this.inventory.add(item);
-      return false;
+    const res = this.accountVault.add(item);
+    if (!res.ok) {
+      if (res.rejected > 0) {
+        this.inventory.add({ ...item, stack: res.rejected, uid: item.uid });
+      }
+      if (res.added === 0) {
+        return false;
+      }
     }
     this.saves.markDirty(["vault", "inventory"], "critical");
     return true;
@@ -253,12 +248,26 @@ export class CityGameSession {
   moveItemFromVault(uid: string): boolean {
     const item = this.accountVault.remove(uid);
     if (!item) return false;
-    if (!this.inventory.add(item)) {
-      this.accountVault.add(item);
-      return false;
+    const res = this.inventory.add(item);
+    if (!res.ok) {
+      if (res.rejected > 0) {
+        this.accountVault.add({ ...item, stack: res.rejected, uid: item.uid });
+      }
+      if (res.added === 0) {
+        return false;
+      }
     }
     this.saves.markDirty(["vault", "inventory"], "critical");
     return true;
+  }
+
+  sellItem(uid: string, qty?: number): boolean {
+    const res = sellItem(this.inventory, uid, qty);
+    if (res.ok) {
+      this.saves.markDirty(["inventory"], "critical");
+      return true;
+    }
+    return false;
   }
 
   
@@ -452,7 +461,7 @@ export class CityGameSession {
       },
       skills: {
         classId,
-        levels: this.skillTree.state.levels,
+        learned: Array.from(this.skillTree.state.learned),
         eighthTree: this.skillTree.state.eighthTree,
         specialization: { ...this.skillTree.state.specialization },
         skillPoints: this.skillTree.state.skillPoints,
@@ -544,7 +553,6 @@ export class CityGameSession {
     this.skillLoadout.applySaved(null);
     const st = this.skillTree.state;
     st.skillPoints = Math.max(0, p.level - 1);
-    st.levels = {};
     st.eighthTree = null;
     st.specialization = normalizeTreeMap(character.spec);
     this.progression.recomputeCombatStats();
@@ -575,7 +583,7 @@ export class CityGameSession {
     const classId = (data.character.classId || data.skills.classId) as typeof s.classId;
     this.skillTree.setClass(classId);
     this.progression.setClassId(classId);
-    s.levels = data.skills.levels;
+    s.learned = new Set(data.skills.learned || []);
     s.eighthTree = data.skills.eighthTree as typeof s.eighthTree;
     const spec = data.skills.specialization;
     s.specialization = {
@@ -689,7 +697,7 @@ export class CityGameSession {
     this.frameMods = buildCombatMods(
       this.buffs.active,
       learnedPassives(this.skillTree),
-      this.renderer.playerView.getWeaponSet(),
+      this.equipment.getWeaponSet(this.progression.state.classId),
       this.form,
     );
     this.player.speedScale = 1 + this.frameMods.moveSpeed;
@@ -875,13 +883,14 @@ export class CityGameSession {
     this.dungeonRun.addKill(xp);
     this.economy.lootLevel = this.character.level;
     const loot = this.economy.grantKillLoot(key, isBoss);
-    if (loot.lostItem) {
-      this.pushDropLog("Inventário cheio — item perdido", "lost");
-    } else if (loot.droppedItem) {
+    if (loot.droppedItem) {
       const goldBit = loot.gold > 0 ? `+${loot.gold} Ouro · ` : "";
       this.pushDropLog(`${goldBit}${loot.droppedItem}`, "item");
     } else if (loot.gold > 0) {
       this.pushDropLog(`+${loot.gold} Ouro`, "gold");
+    }
+    if (loot.lostItem) {
+      this.pushDropLog(`Bolsa cheia: ${loot.lostItem} perdido.`, "lost");
     }
     this.applyQuestKillProgress();
     if (levelsGained > 0) {
@@ -1684,7 +1693,7 @@ export class CityGameSession {
   }
 
   
-  debugLearnRandomSkill(): { learned: boolean; tree?: string; index?: number; skillId?: string; level?: number; slots: number } {
+  debugLearnRandomSkill(): { learned: boolean; tree?: string; index?: number; skillId?: string; slots: number } {
     const trees = ["controle", "magia", "fisica"] as const;
     const options: Array<{ tree: (typeof trees)[number]; index: number }> = [];
     for (const tree of trees) {
@@ -1697,13 +1706,12 @@ export class CityGameSession {
     const pick = options[Math.floor(Math.random() * options.length)];
     const skill = this.skillTree.getTree(pick.tree)[pick.index];
     const ok = this.skillTree.learn(pick.tree, pick.index);
-    if (ok) this.skillLoadout.refresh();
+    if (ok && skill.kind !== "passive") this.skillLoadout.assign(skill.id);
     return {
       learned: ok,
       tree: pick.tree,
       index: pick.index,
       skillId: skill.id,
-      level: this.skillTree.getSkillLevel(skill.id),
       slots: this.skillLoadout.slots.length,
     };
   }
@@ -1760,22 +1768,17 @@ export class CityGameSession {
     if (!this.skillTree.canLearn(tree, index)) return false;
     if (!this.skillTree.learn(tree, index)) return false;
     this.inventory.gold -= goldCost;
-    this.skillLoadout.refresh();
+    const skill = this.skillTree.getTree(tree)[index];
+    if (skill && skill.kind !== "passive") {
+      this.skillLoadout.assign(skill.id);
+    }
     this.saves.markDirty(["skills", "skillLoadout", "inventory"], "deferred");
     return true;
   }
 
   refreshWeaponSetFromGear(): void {
-    const weapon = this.equipment.equipped.weapon;
-    let machados = this.inventory.items.filter((i) => i.defId === "machado_leve").length;
-    if (weapon?.defId === "machado_leve") machados += 1;
-    let set: import("../presentation/player/WeaponRig").WeaponSetId | null = null;
-    if (weapon?.defId === "machado_leve") {
-      set = machados >= 2 ? "dual-axe" : "axe-shield";
-    } else if (weapon?.defId === "espada_curta") {
-      set = "sword-shield";
-    }
-    if (set && isWeaponSetId(set)) {
+    const set = this.equipment.getWeaponSet(this.progression.state.classId);
+    if (isWeaponSetId(set)) {
       void this.renderer.playerView.setWeaponSet(set);
     }
   }

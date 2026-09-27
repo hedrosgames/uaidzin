@@ -18,14 +18,14 @@ function read(rel) {
 }
 
 function staticChecks() {
-  const compose = read("game/src/data/composer/compose-formulas.ts");
+  const compose = read("game/src/data/composer/compose-formulas.ts") + (fs.existsSync(path.join(ROOT, "game/src/data/composer/compose-recipes.json")) ? read("game/src/data/composer/compose-recipes.json") : "");
   const service = read("game/src/domain/items/CompositionService.ts");
   const quests = read("game/src/data/quests/quest-definitions.ts");
   const qsvc = read("game/src/domain/quests/QuestService.ts");
   const wire = read("visual/telas/03-wire-paineis-cidade.html");
   const session = read("game/src/app/CityGameSession.ts");
 
-  if (!compose.includes("compose_plus7_lac") || !compose.includes("1_000_000")) {
+  if (!compose.includes("compose_plus7_lac") || (!compose.includes("1_000_000") && !compose.includes("1000000"))) {
     fail("C7i: fórmula compose_plus7_lac ausente");
   } else ok("C7i: fórmula no data");
 

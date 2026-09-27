@@ -1,4 +1,5 @@
 import { CLASSES, type ClassId } from "../data/classes/class-definitions";
+import { sellItem } from "../domain/economy/ShopService";
 import type { CityGameSession } from "../app/CityGameSession";
 import type { SaveEventKind, SaveTarget } from "../persistence/SaveTypes";
 
@@ -76,7 +77,8 @@ export class GamePanels {
     if (action === "learn") {
       const ok = s.skillTree.learn(b as never, Number(a));
       if (ok) {
-        s.skillLoadout.refresh();
+        const skill = s.skillTree.getTree(b as never)[Number(a)];
+        if (skill && skill.kind !== "passive") s.skillLoadout.assign(skill.id);
         s.setUiToast(`Skill aprendida`, "skill");
       }
     }
@@ -89,7 +91,7 @@ export class GamePanels {
       s.skillTree.resetSkills();
       s.skillLoadout.refresh();
     }
-    if (action === "sell") s.inventory.sell(a);
+    if (action === "sell") sellItem(s.inventory, a);
     if (action === "equip") s.equipment.equip(a);
     if (action === "unequip") s.equipment.unequip(a as never);
     if (action === "refine") {
@@ -185,17 +187,18 @@ export class GamePanels {
       for (const tree of klass.treeOrder) {
         html += `<div class="wyd-sec">${klass.treeLabels[tree]} <button type="button" class="btn tiny" data-action="spec" data-arg="${tree}">+spec ${st.specialization[tree]}</button></div><div class="wyd-skill-grid">`;
         s.skillTree.getTree(tree).forEach((sk, i) => {
-          const lvl = s.skillTree.getSkillLevel(sk.id);
+          const owned = s.skillTree.hasSkill(sk.id);
           const locked = i === 7 && st.eighthTree && st.eighthTree !== tree;
-          const owned = lvl > 0;
           const equipped = slots.some((slot) => slot.skill.id === sk.id);
           html += `<div class="wyd-skill ${owned ? "owned" : ""} ${locked ? "locked" : ""}">
-            <div class="wyd-skill-icon">${owned ? lvl : ""}</div>
+            <div class="wyd-skill-icon">${owned ? "OK" : ""}</div>
             <div class="wyd-skill-name">${sk.name}</div>
             ${
               locked
                 ? `<em>bloq.</em>`
-                : `<button type="button" class="btn tiny" data-action="learn" data-arg="${i}" data-arg2="${tree}">+</button>`
+                : owned
+                  ? `<em>aprendida</em>`
+                  : `<button type="button" class="btn tiny" data-action="learn" data-arg="${i}" data-arg2="${tree}">+</button>`
             }
             ${
               owned && sk.kind !== "passive"

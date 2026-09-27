@@ -10,12 +10,11 @@ export type WireSkillRow = {
   skillId: string;
   name: string;
   desc: string;
-  level: number;
+  learned: boolean;
   mp: number;
   cd: number;
   pointsCost: number;
   goldCost: number;
-  upCost: number;
   icon: string;
 };
 
@@ -55,12 +54,11 @@ export function buildWireSkillCatalog(session: CityGameSession): WireSkillCatalo
         skillId: sk.id,
         name: sk.name,
         desc: sk.kind === "passive" ? "Passiva" : sk.name,
-        level: session.skillTree.getSkillLevel(sk.id),
+        learned: session.skillTree.hasSkill(sk.id),
         mp: sk.mp ?? 0,
         cd: sk.cooldown ?? 0,
         pointsCost: SKILL_TRAINING.pointsCost,
         goldCost: SKILL_TRAINING.goldCost(i),
-        upCost: SKILL_TRAINING.upCost(i),
         icon: skillIconPath(st.classId, tree, i),
       };
     });

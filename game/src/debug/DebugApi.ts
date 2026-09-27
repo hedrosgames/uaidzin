@@ -226,14 +226,19 @@ export function installDebugApi(app: DebugHost): void {
     learnFirstSkill: () => {
       app.session.debugAddLevels(1);
       const okLearn = app.session.skillTree.learn("fisica", 0);
-      app.session.skillLoadout.refresh();
+      if (okLearn) {
+        const skill = app.session.skillTree.getTree("fisica")[0];
+        if (skill && skill.kind !== "passive") {
+          app.session.skillLoadout.assign(skill.id);
+        }
+      }
       app.session.saves.markDirty(["skills", "skillLoadout"], "deferred");
       return { learned: okLearn, slots: app.session.skillLoadout.slots.length, names: app.session.skill.slotLabels() };
     },
     learnRandomSkill: () => {
       const result = app.session.debugLearnRandomSkill();
       if (result.learned) {
-        app.showToast(`Skill ${result.skillId} Lv${result.level}`, "skill");
+        app.showToast(`Skill ${result.skillId} aprendida`, "skill");
         app.pulseFrame();
         app.session.saves.markDirty(["skills", "skillLoadout"], "deferred");
       }

@@ -22,6 +22,15 @@ export const ECONOMY_BALANCE = {
     successByLevel: [1, 1, 0.95, 0.9, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35],
     goldCost: [10, 20, 40, 70, 110, 160, 230, 320, 430, 560],
     materialTierSwitchAt: 6,
+    bonusBySlot: {
+      weapon: { stat: "attack" as const, perLevel: 2 },
+      head: { stat: "defense" as const, perLevel: 1 },
+      armor: { stat: "defense" as const, perLevel: 1 },
+      ring1: { stat: "defense" as const, perLevel: 1 },
+      ring2: { stat: "defense" as const, perLevel: 1 },
+      neck: { stat: "defense" as const, perLevel: 1 },
+      ear: { stat: "defense" as const, perLevel: 1 },
+    },
   },
   sellValueByRarity: [5, 12, 28, 60, 120],
   equipBaseStat(level: number, rarityIndex: number): number {
@@ -31,6 +40,18 @@ export const ECONOMY_BALANCE = {
     return base + rarityIndex;
   },
 } as const;
+
+export const WEAPON_SET_BY_ITEM: Record<string, string> = {
+  espada_curta: "sword-shield",
+  machado_leve: "axe-shield",
+};
+
+export const CLASS_DEFAULT_WEAPON_SET: Record<string, string> = {
+  TK: "axe-shield",
+  FM: "greatstaff",
+  BM: "dual-gloves",
+  HT: "dual-sword",
+};
 
 export type Rarity = (typeof ECONOMY_BALANCE.rarities)[number];
 
@@ -45,7 +66,6 @@ export type ShopItemDef = {
 
 export type ShopSlotDef = {
   itemId: string;
-  qty: number;
   price: number;
 };
 
@@ -108,9 +128,6 @@ export const SKILL_TRAINING = {
   goldPerTier: 28,
   goldCost(index: number): number {
     return (index + 1) * SKILL_TRAINING.goldPerTier;
-  },
-  upCost(index: number): number {
-    return Math.max(1, index);
   },
   canAfford(skillPoints: number, gold: number, pointsCost: number, goldCost: number): boolean {
     return skillPoints >= pointsCost && gold >= goldCost;

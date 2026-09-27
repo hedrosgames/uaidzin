@@ -346,7 +346,7 @@ async function main() {
           (i) => i.defId !== "machado_leve" && i.defId !== "pocao_menor",
         );
         if (!drop) break;
-        sess.inventory.sell(drop.uid);
+        sess.sellItem(drop.uid);
       }
       let potions = 0;
       for (let n = 0; n < 15; n++) {

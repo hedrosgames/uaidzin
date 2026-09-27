@@ -57,6 +57,8 @@ export function createEquipDrop(level: number, random: () => number = Math.rando
           attackInterval: COMBAT_BALANCE.weapon.attackInterval,
         }
       : null;
+  const catalogItem = Object.values(ITEM_CATALOG).find((c) => c.name === name);
+  const weaponSet = slot === "weapon" ? catalogItem?.weaponSet : undefined;
   return {
     uid: nextItemUid(),
     defId: `${slot}_${rarity.toLowerCase()}`,
@@ -70,6 +72,7 @@ export function createEquipDrop(level: number, random: () => number = Math.rando
     sellValue: ECONOMY_BALANCE.sellValueByRarity[ri] + base,
     attackRange: reach?.attackRange,
     attackInterval: reach?.attackInterval,
+    weaponSet,
   };
 }
 
@@ -141,5 +144,6 @@ export function createFromCatalog(defId: string, qty = 1): ItemInstance | null {
     sellValue: def.sellValue ?? 1,
     attackRange: reach?.attackRange,
     attackInterval: reach?.attackInterval,
+    weaponSet: def.weaponSet,
   };
 }

@@ -22,21 +22,24 @@ function exists(rel) {
 }
 
 function staticChecks() {
-  const eco = read("game/src/data/balance/economy.ts");
+  const shopsStr = read("game/src/data/balance/shops.json");
+  const shops = JSON.parse(shopsStr);
+  const merchant = shops.shops?.merchant || shops.merchant;
+  const blacksmith = shops.shops?.blacksmith || shops.blacksmith;
   const catalog = read("game/src/data/items/item-catalog.ts");
   const wire = read("visual/telas/03-wire-paineis-cidade.html");
 
-  if (!eco.includes('id: "merchant"') || !eco.includes("entry_d4") || !eco.includes("entry_d8")) {
+  const merchantItemIds = (merchant?.slots || []).map((s) => s.itemId);
+  if (!merchant || !merchantItemIds.includes("entry_d4") || !merchantItemIds.includes("entry_d8")) {
     fail("C14: mercador sem selos entry_d4..d8");
   } else ok("C14: mercador com selos");
 
-  const merchantBlock = eco.match(/merchant:\s*\{[\s\S]*?\},\s*blacksmith:/);
-  if (!merchantBlock) fail("C14: bloco merchant ausente");
-  else if (/espada_curta|machado_leve|armadura_leve|capacete|anel_|colar_|brinco_/.test(merchantBlock[0])) {
+  if (merchantItemIds.some((id) => /espada_curta|machado_leve|armadura_leve|capacete|anel_|colar_|brinco_/.test(id))) {
     fail("C14: mercador ainda vende gear (conflito grill)");
   } else ok("C14: mercador sem gear");
 
-  if (!eco.includes('id: "blacksmith"') || !eco.includes("espada_curta") || !eco.includes("anel_ferro")) {
+  const blacksmithItemIds = (blacksmith?.slots || []).map((s) => s.itemId);
+  if (!blacksmith || !blacksmithItemIds.includes("espada_curta") || !blacksmithItemIds.includes("anel_ferro")) {
     fail("C10: ferreiro sem catálogo de peças");
   } else ok("C10: ferreiro catálogo");
 

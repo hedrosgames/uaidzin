@@ -43,7 +43,7 @@ export class CompositionService {
     if (this.inventory.countMaterial(recipe.materialId) < recipe.materialQty) {
       return { ok: false, message: "Material insuficiente." };
     }
-    if (this.inventory.gold < recipe.goldCost) {
+    if (!Number.isFinite(recipe.goldCost) || recipe.goldCost < 0 || this.inventory.gold < recipe.goldCost) {
       return { ok: false, message: "Ouro insuficiente." };
     }
     return { ok: true, message: "" };

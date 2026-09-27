@@ -13,19 +13,16 @@ export interface ItemInstance {
   sellValue: number;
   attackRange?: number;
   attackInterval?: number;
+  weaponSet?: string;
 }
 
-let uidSeq = 1;
 export function nextItemUid(): string {
-  return `item_${uidSeq++}`;
-}
-
-export function adoptItemUidSeq(uids: string[]): void {
-  let next = uidSeq;
-  for (const uid of uids) {
-    const match = /^item_(\d+)$/.exec(uid);
-    if (!match) continue;
-    next = Math.max(next, Number(match[1]) + 1);
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
   }
-  uidSeq = next;
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }

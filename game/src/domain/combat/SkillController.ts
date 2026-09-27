@@ -68,7 +68,6 @@ export class SkillController {
     if (!this.character.spendMp(cost)) return null;
     const resolved = resolveSkill({
       skill: slot.skill,
-      level: slot.level,
       attack: this.character.attack,
       maxHp: this.character.maxHp,
       px,
@@ -199,9 +198,9 @@ export class SkillController {
 
   private autoScore(slot: LoadoutSlot, hpRatio: number): number {
     const skill = slot.skill;
-    if (skill.kind === "heal") return (1 - hpRatio) * 12 + slot.level;
-    if (skill.kind === "buff" || skill.kind === "transform") return 3 + slot.level * 0.1;
-    if (skill.kind === "summon") return 2 + slot.level * 0.1;
-    return slot.level * Math.max(0.2, skill.damageMultiplier);
+    if (skill.kind === "heal") return (1 - hpRatio) * 12 + 1;
+    if (skill.kind === "buff" || skill.kind === "transform") return 3.1;
+    if (skill.kind === "summon") return 2.1;
+    return Math.max(0.2, skill.damageMultiplier);
   }
 }

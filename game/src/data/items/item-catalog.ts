@@ -22,12 +22,31 @@ export type ItemCatalogDef = {
   sellValue?: number;
   attackBonus?: number;
   defenseBonus?: number;
+  stackable?: boolean;
+  weaponSet?: string;
 };
 
 export const ITEM_CATALOG: Record<string, ItemCatalogDef> = {};
 
 for (const item of (rawItems as ItemCatalogDef[])) {
   ITEM_CATALOG[item.id] = item;
+}
+
+export function isStackable(
+  itemOrDefId: string | { defId?: string; id?: string; stackable?: boolean } | null | undefined,
+): boolean {
+  if (!itemOrDefId) return false;
+  if (typeof itemOrDefId === "string") {
+    return ITEM_CATALOG[itemOrDefId]?.stackable === true;
+  }
+  if (typeof itemOrDefId.stackable === "boolean") {
+    return itemOrDefId.stackable;
+  }
+  const id = itemOrDefId.defId || itemOrDefId.id;
+  if (id && ITEM_CATALOG[id]) {
+    return ITEM_CATALOG[id].stackable === true;
+  }
+  return false;
 }
 
 const NAME_ICON: Record<string, string> = {

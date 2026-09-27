@@ -93,7 +93,6 @@ function rollCrit(mods: CombatMods, transformed: boolean): boolean {
 
 export function resolveSkill(input: {
   skill: SkillDef;
-  level: number;
   attack: number;
   maxHp: number;
   px: number;
@@ -112,7 +111,6 @@ export function resolveSkill(input: {
   const canSelf = (skill.healRatio ?? 0) > 0 || skill.kind === "buff" || skill.kind === "heal" || skill.kind === "transform" || skill.kind === "summon";
   if (needsFoe && picked.length === 0 && !canSelf) return null;
 
-  const levelScale = 1 + (input.level - 1) * SKILL_BALANCE.skillLevelDamageBonus;
   const crit = rollCrit(input.mods, input.transformed);
   const hits: SkillHitPlan[] = [];
   const enemyEffects: SkillEnemyPlan[] = [];
@@ -127,7 +125,7 @@ export function resolveSkill(input: {
       if (skill.power === "magic") atk *= 1 + input.mods.magicPower;
       if (alone) atk *= 1 + input.mods.isolatedBonus;
       const defense = Math.max(0, input.defenseOf(target.id) * (1 - (skill.pierce ?? 0)));
-      let damage = Math.max(COMBAT_BALANCE.minDamage, Math.round((atk - defense) * skill.damageMultiplier * levelScale));
+      let damage = Math.max(COMBAT_BALANCE.minDamage, Math.round((atk - defense) * skill.damageMultiplier));
       if (skill.executeBelow != null && ratio <= skill.executeBelow) {
         damage = Math.round(damage * (1 + (skill.executeBonus ?? 0.5)));
       }
@@ -145,7 +143,7 @@ export function resolveSkill(input: {
 
   const heal =
     (skill.healRatio ?? 0) > 0
-      ? Math.max(1, Math.round(input.maxHp * (skill.healRatio ?? 0) * levelScale * (1 + input.mods.healPower)))
+      ? Math.max(1, Math.round(input.maxHp * (skill.healRatio ?? 0) * (1 + input.mods.healPower)))
       : 0;
   const dealt = hits.reduce((sum, hit) => sum + hit.damage, 0);
   const lifesteal = skill.lifesteal ? Math.round(dealt * skill.lifesteal) : 0;

@@ -79,6 +79,10 @@ export class HudBarsView {
   }
 
   private buildWeaponSetStrip(onSelect?: (set: WeaponSetId) => void): void {
+    if (!import.meta.env.DEV) {
+      if (this.weaponSetStrip) this.weaponSetStrip.style.display = "none";
+      return;
+    }
     this.weaponSetStrip.replaceChildren();
     this.weaponSetButtons.clear();
     for (const set of WEAPON_SET_IDS) {

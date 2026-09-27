@@ -6,7 +6,8 @@
     "rarity": "Comum",
     "desc": "Restaura parte do HP.",
     "icon": "items/potion.svg",
-    "sellValue": 4
+    "sellValue": 4,
+    "stackable": true
   },
   {
     "id": "mat_ori",
@@ -15,7 +16,8 @@
     "rarity": "Comum",
     "desc": "Material de reforço até +5.",
     "icon": "items/ori.svg",
-    "sellValue": 2
+    "sellValue": 2,
+    "stackable": true
   },
   {
     "id": "mat_lac",
@@ -24,7 +26,8 @@
     "rarity": "Comum",
     "desc": "Material de reforço de +6 a +10.",
     "icon": "items/lac.svg",
-    "sellValue": 8
+    "sellValue": 8,
+    "stackable": true
   },
   {
     "id": "poeira_ori",
@@ -33,7 +36,8 @@
     "rarity": "Comum",
     "desc": "Material de reforço até +5.",
     "icon": "items/ori.svg",
-    "sellValue": 2
+    "sellValue": 2,
+    "stackable": true
   },
   {
     "id": "poeira_lac",
@@ -42,7 +46,8 @@
     "rarity": "Comum",
     "desc": "Material de reforço de +6 a +10.",
     "icon": "items/lac.svg",
-    "sellValue": 8
+    "sellValue": 8,
+    "stackable": true
   },
   {
     "id": "entry_d4",
@@ -96,6 +101,7 @@
     "rarity": "Comum",
     "desc": "Ataque +4",
     "icon": "items/espada_curta.svg",
+    "weaponSet": "sword-shield",
     "attackBonus": 4,
     "defenseBonus": 0,
     "sellValue": 20
@@ -107,9 +113,10 @@
     "rarity": "Comum",
     "desc": "Ataque +5",
     "icon": "items/machado_leve.svg",
+    "weaponSet": "axe-shield",
     "attackBonus": 5,
     "defenseBonus": 0,
-    "sellValue": 24
+    "sellValue": 0
   },
   {
     "id": "armadura_leve",

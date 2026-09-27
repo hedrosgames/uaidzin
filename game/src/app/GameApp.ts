@@ -158,6 +158,9 @@ export class GameApp {
     });
 
     const weaponSetStrip = deps.hudToolsElement.querySelector<HTMLElement>("#weapon-set-strip")!;
+    if (!import.meta.env.DEV && weaponSetStrip) {
+      weaponSetStrip.style.display = "none";
+    }
     this.hudBarsView = new HudBarsView(
       {
         playerFaceElement: deps.playerFaceElement,

@@ -154,7 +154,6 @@ export class WireUi {
         resolveItemIcon(defId, slot, name),
       skillPointsCost: () => SKILL_TRAINING.pointsCost,
       skillGoldCost: (index: number) => SKILL_TRAINING.goldCost(index),
-      skillUpCost: (index: number) => SKILL_TRAINING.upCost(index),
       canAffordSkill: (skillPoints: number, gold: number, pointsCost: number, goldCost: number) =>
         SKILL_TRAINING.canAfford(skillPoints, gold, pointsCost, goldCost),
     };

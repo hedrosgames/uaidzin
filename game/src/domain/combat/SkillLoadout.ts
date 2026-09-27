@@ -5,9 +5,7 @@ import type { SkillTreeService } from "../skills/SkillTreeService";
 export interface LoadoutSlot {
   skill: SkillDef;
   tree: TreeId;
-  level: number;
-  cooldown: number;
-  
+  readonly cooldown: number;
   cd: number;
   auto: boolean;
 }
@@ -17,13 +15,27 @@ function specFactor(raw: number): number {
   return 1 - (Math.min(spec, SKILL_BALANCE.specializationPerTreeCap) / SKILL_BALANCE.specializationPerTreeCap) * SKILL_BALANCE.specializationCooldownPenalty;
 }
 
-
-
 export class SkillLoadout {
   slots: LoadoutSlot[] = [];
   private preferred: Array<{ skillId: string; tree: TreeId; auto: boolean }> = [];
 
   constructor(private readonly tree: SkillTreeService) {}
+
+  private createSlot(skill: SkillDef, tree: TreeId, auto: boolean, cd = 0): LoadoutSlot {
+    const treeService = this.tree;
+    return {
+      skill,
+      tree,
+      get cooldown(): number {
+        const spec = treeService.state.specialization[tree];
+        const cdScale = specFactor(spec);
+        const scaled = skill.cooldown * cdScale;
+        return Math.max(0.4, Number.isFinite(scaled) ? scaled : skill.cooldown);
+      },
+      cd: Number.isFinite(cd) ? cd : 0,
+      auto,
+    };
+  }
 
   snapshot(): Array<{ skillId: string; tree: string; auto: boolean }> {
     if (this.slots.length) {
@@ -52,51 +64,31 @@ export class SkillLoadout {
 
   refresh(): void {
     const st = this.tree.state;
-    const candidates: Array<{ skill: SkillDef; tree: TreeId; level: number; score: number }> = [];
+    const candidates: Array<{ skill: SkillDef; tree: TreeId }> = [];
 
     for (const tree of ["controle", "magia", "fisica"] as const) {
       const skills = CLASSES[st.classId].trees[tree];
       skills.forEach((skill) => {
-        const level = this.tree.getSkillLevel(skill.id);
-        if (level <= 0 || skill.kind === "passive") return;
-        const weight = skill.kind === "damage" ? skill.damageMultiplier : skill.kind === "heal" ? 1.2 : 0.85;
-        const score = weight * level * (1 + st.specialization[tree] / 40);
-        candidates.push({ skill, tree, level, score });
+        if (!this.tree.hasSkill(skill.id) || skill.kind === "passive") return;
+        candidates.push({ skill, tree });
       });
     }
 
-    candidates.sort((a, b) => b.score - a.score);
     const byId = new Map(candidates.map((c) => [c.skill.id, c] as const));
-    const picked: Array<{ skill: SkillDef; tree: TreeId; level: number; auto: boolean }> = [];
+    const picked: Array<{ skill: SkillDef; tree: TreeId; auto: boolean }> = [];
 
     for (const pref of this.preferred) {
       const hit = byId.get(pref.skillId);
       if (!hit) continue;
       if (picked.some((p) => p.skill.id === hit.skill.id)) continue;
-      picked.push({ skill: hit.skill, tree: hit.tree, level: hit.level, auto: pref.auto });
+      picked.push({ skill: hit.skill, tree: hit.tree, auto: pref.auto });
       if (picked.length >= 4) break;
-    }
-
-    for (const c of candidates) {
-      if (picked.length >= 4) break;
-      if (picked.some((p) => p.skill.id === c.skill.id)) continue;
-      picked.push({ skill: c.skill, tree: c.tree, level: c.level, auto: true });
     }
 
     const prevCd = new Map(this.slots.map((s) => [s.skill.id, s.cd] as const));
     this.slots = picked.map((c) => {
-      const cdScale = specFactor(st.specialization[c.tree]);
-      const scaled = c.skill.cooldown * cdScale;
-      const cooldown = Math.max(0.4, Number.isFinite(scaled) ? scaled : c.skill.cooldown);
       const remaining = prevCd.get(c.skill.id);
-      return {
-        skill: c.skill,
-        tree: c.tree,
-        level: c.level,
-        cooldown,
-        cd: remaining === undefined || !Number.isFinite(remaining) ? 0 : Math.min(cooldown, remaining),
-        auto: c.auto,
-      };
+      return this.createSlot(c.skill, c.tree, c.auto, remaining ?? 0);
     });
     this.preferred = this.slots.map((s) => ({
       skillId: s.skill.id,
@@ -115,27 +107,18 @@ export class SkillLoadout {
 
   assign(skillId: string): boolean {
     const st = this.tree.state;
-    let found: { skill: SkillDef; tree: TreeId; level: number } | null = null;
+    let found: { skill: SkillDef; tree: TreeId } | null = null;
     for (const tree of ["controle", "magia", "fisica"] as const) {
       const skill = CLASSES[st.classId].trees[tree].find((item) => item.id === skillId);
       if (!skill || skill.kind === "passive") continue;
-      const level = this.tree.getSkillLevel(skill.id);
-      if (level <= 0) continue;
-      found = { skill, tree, level };
+      if (!this.tree.hasSkill(skill.id)) continue;
+      found = { skill, tree };
       break;
     }
     if (!found) return false;
     const picked = found;
     if (this.slots.some((slot) => slot.skill.id === picked.skill.id)) return true;
-    const cdScale = specFactor(st.specialization[picked.tree]);
-    const slot: LoadoutSlot = {
-      skill: picked.skill,
-      tree: picked.tree,
-      level: picked.level,
-      cooldown: Math.max(0.4, picked.skill.cooldown * cdScale),
-      cd: 0,
-      auto: true,
-    };
+    const slot = this.createSlot(picked.skill, picked.tree, true);
     if (this.slots.length < 4) this.slots.push(slot);
     else this.slots[3] = slot;
     this.preferred = this.slots.map((item) => ({
@@ -171,7 +154,7 @@ export class SkillLoadout {
     let best: LoadoutSlot | null = null;
     for (const s of this.slots) {
       if (!s.auto || s.cd > 0) continue;
-      if (!best || s.level * s.skill.damageMultiplier > best.level * best.skill.damageMultiplier) {
+      if (!best || s.skill.damageMultiplier > best.skill.damageMultiplier) {
         best = s;
       }
     }

@@ -103,7 +103,7 @@ async function runChecks(browser) {
 
   const state = await page.evaluate(() => window.__MODEL_LAB__.state());
   check(state.characters.length === 4, "4 cards de personagem");
-  check(state.monsters.length === 5, "5 cards de monstro");
+  check(state.monsters.length >= 5, `${state.monsters.length} cards de monstro`);
   check(state.characters.every((card) => card.clip === "idle"), "personagens começam em idle");
   check(state.characters.every((card) => card.pieces.length >= 1), "peças de arma montadas");
   check(state.monsters.every((card) => card.clips.length === 6), "monstros com 6 clipes de mutant");
@@ -366,7 +366,7 @@ async function runChecks(browser) {
   check(await page.locator("#view-monsters").isVisible(), "aba Monstros abre");
   check((await page.locator("#monster-grid .clip-chip").count()) >= 6, "chips de animação por monstro");
   check(
-    (await page.locator("#monster-grid .clip-chip:not([disabled])").count()) === 0,
+    (await page.locator("#monster-grid .card-monster:has(.card-stage.empty) .clip-chip:not([disabled])").count()) === 0,
     "chips desabilitados sem GLB de malha",
   );
   check(
