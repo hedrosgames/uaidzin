@@ -51,3 +51,5 @@ export const COMBAT_BALANCE = {
 };
 
 export type EnemyArchetype = "fixed" | "chaser" | "ranged";
+
+export const DOT_TICK_SEC = 3;

@@ -153,7 +153,7 @@ export class GameApp {
     this.wireHost = deps.wireUiElement;
 
     this.debugHud = new DebugHud(deps.debugHudElement, () => {
-      const ok = this.session.debugTryReset();
+      const ok = this.session.tryReset();
       console.info("[UAIDZIN] reset", ok ? "ok" : "bloqueado");
     });
 
@@ -333,17 +333,17 @@ export class GameApp {
         this.state.setDebugHudVisible(!this.state.getState().debugHudVisible);
       });
       this.input.registerAction("debug.addLevel", () => {
-        this.session.debugAddLevels(1);
+        this.session.debug.addLevels(1);
       });
       this.input.registerAction("debug.spendAll", () => {
-        this.session.debugSpendAll("FOR");
+        this.session.debug.spendAll("FOR");
       });
       this.input.registerAction("debug.evolve", () => {
-        const evolved = this.session.debugTryEvolve();
+        const evolved = this.session.tryEvolve();
         if (!evolved.ok && evolved.reason) this.showToast(evolved.reason, "dungeon");
       });
       this.input.registerAction("debug.timer", () => {
-        this.session.debugSetTimer(3);
+        this.session.debug.setTimer(3);
       });
     }
   }

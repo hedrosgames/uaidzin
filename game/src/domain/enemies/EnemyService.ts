@@ -15,16 +15,23 @@ export interface SpawnPointDef {
 
 export class EnemyService {
   readonly enemies: EnemyModel[] = [];
+  private readonly byId = new Map<string, EnemyModel>();
+  private readonly aliveList: EnemyModel[] = [];
 
   constructor(private readonly random: () => number = Math.random) {}
 
   spawnFromDungeon(def: DungeonDef = DUNGEON_TEST): void {
     this.enemies.length = 0;
+    this.byId.clear();
+    this.aliveList.length = 0;
     for (let arenaIndex = 0; arenaIndex < def.arenas.length; arenaIndex++) {
       const arena = def.arenas[arenaIndex];
       const scale = dungeonArenaScale(def.id, arenaIndex);
       for (const sp of arena.spawns) {
-        this.enemies.push(this.makeEnemy(sp, scale));
+        const enemy = this.makeEnemy(sp, scale);
+        this.enemies.push(enemy);
+        this.byId.set(enemy.id, enemy);
+        if (enemy.alive) this.aliveList.push(enemy);
       }
     }
   }
@@ -70,6 +77,7 @@ export class EnemyService {
       preferred: def.preferred,
       retreatIfCloserThan: def.retreatIfCloserThan,
       leashRadius: def.leashRadius,
+      aggroRadius: def.aggroRadius,
       respawnSeconds: respawnTime,
       isBoss,
       xpReward: isBoss ? Math.round(def.xpReward * 3) : def.xpReward,
@@ -81,23 +89,33 @@ export class EnemyService {
 
   clear(): void {
     this.enemies.length = 0;
+    this.byId.clear();
+    this.aliveList.length = 0;
+  }
+
+  onEnemyDeath(enemy: EnemyModel): void {
+    const idx = this.aliveList.indexOf(enemy);
+    if (idx >= 0) this.aliveList.splice(idx, 1);
   }
 
   aliveTargets(): { id: string; x: number; z: number; alive: boolean }[] {
-    return this.enemies
-      .filter((e) => e.alive)
-      .map((e) => ({ id: e.id, x: e.x, z: e.z, alive: true }));
+    return this.aliveList.map((e) => ({ id: e.id, x: e.x, z: e.z, alive: true }));
   }
 
   updateRespawns(dt: number): void {
     for (const e of this.enemies) {
       if (e.alive) continue;
       e.respawnTimer -= dt;
-      if (e.respawnTimer <= 0) e.respawn();
+      if (e.respawnTimer <= 0) {
+        e.respawn();
+        if (!this.aliveList.includes(e)) {
+          this.aliveList.push(e);
+        }
+      }
     }
   }
 
   findById(id: string): EnemyModel | undefined {
-    return this.enemies.find((e) => e.id === id);
+    return this.byId.get(id);
   }
 }

@@ -12,6 +12,7 @@ export interface MonsterDef {
   attackInterval: number;
   speed: number;
   leashRadius: number;
+  aggroRadius?: number;
   minApproach: number;
   preferred: number;
   retreatIfCloserThan: number;

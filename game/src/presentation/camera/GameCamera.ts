@@ -20,6 +20,7 @@ export class GameCamera {
   }
 
   setAspect(aspect: number): void {
+    if (Math.abs(this.camera.aspect - aspect) < 1e-4) return;
     this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
   }

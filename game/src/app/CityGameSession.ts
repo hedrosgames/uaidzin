@@ -1,20 +1,14 @@
-import { Raycaster, Vector2, Vector3 } from "three";
-import type { Object3D } from "three";
+import { Vector3 } from "three";
 import { COMBAT_BALANCE } from "../data/balance/combat";
 import { DUNGEON_BALANCE } from "../data/balance/dungeon";
 import { VFX_BALANCE } from "../data/balance/vfx";
-import { DUNGEON_TEST } from "../data/dungeons/dungeon-definitions";
-import { DUNGEONS_MORTAL, dungeonsAllowedForLevel, findDungeon } from "../data/dungeons/dungeons-mortal";
 import type { EventBus } from "../core/events/EventBus";
 import { CharacterModel } from "../domain/character/CharacterModel";
 import { AttackController } from "../domain/combat/AttackController";
-import { learnedPassives, SkillController } from "../domain/combat/SkillController";
+import { SkillController } from "../domain/combat/SkillController";
 import { SkillLoadout } from "../domain/combat/SkillLoadout";
-import { buildCombatMods, emptyMods, type CombatMods } from "../domain/combat/CombatMods";
 import { FormState } from "../domain/combat/FormState";
 import { SummonRuntime } from "../domain/combat/SummonRuntime";
-import { calculateDamage } from "../domain/combat/DamageCalculator";
-import { rollHitSimple } from "../domain/combat/HitChanceCalculator";
 import { EnemyAI } from "../domain/enemies/EnemyAI";
 import { EnemyService } from "../domain/enemies/EnemyService";
 import { DungeonRun } from "../domain/dungeons/DungeonRun";
@@ -22,7 +16,6 @@ import { ProgressionService } from "../domain/progression/ProgressionService";
 import { SkillTreeService } from "../domain/skills/SkillTreeService";
 import { CompositionService } from "../domain/items/CompositionService";
 import { QuestService } from "../domain/quests/QuestService";
-import { QUEST_BY_ID } from "../data/quests/quest-definitions";
 import { InventoryService } from "../domain/inventory/InventoryService";
 import { BagLockService } from "../domain/inventory/BagLockService";
 import { EconomyService } from "../domain/economy/EconomyService";
@@ -30,41 +23,42 @@ import { RefinementService } from "../domain/items/RefinementService";
 import { EquipmentService } from "../domain/items/EquipmentService";
 import { AccountVaultService } from "../domain/account/AccountVaultService";
 import { BuffService } from "../domain/character/BuffService";
-import { SaveService, type SavePayload } from "../persistence/SaveService";
-import { PROFILE_SECTIONS, SAVE_VERSION, emptyProgress, normalizeTreeMap, parseProfileId, type LoadSaveResult } from "../persistence/SaveTypes";
-import { normalizeSavePayload } from "../persistence/migrations";
+import { SaveService } from "../persistence/SaveService";
+import { emptyProgress, type SavePayload, type LoadSaveResult } from "../persistence/SaveTypes";
 import { saveVault } from "../persistence/SaveVault";
 import { SaveCoordinator } from "../persistence/SaveCoordinator";
-import type { ItemInstance } from "../domain/items/ItemModel";
-import type { EquipSlot } from "../domain/items/EquipmentService";
-import { ECONOMY_BALANCE } from "../data/balance/economy";
 import { sellItem } from "../domain/economy/ShopService";
 import type { DungeonDef } from "../data/dungeons/dungeon-definitions";
-import { CLASSES, type ClassId, type TreeId } from "../data/classes/class-definitions";
+import { DUNGEON_TEST } from "../data/dungeons/dungeon-definitions";
+import { findDungeon } from "../data/dungeons/dungeons-mortal";
+import { type TreeId } from "../data/classes/class-definitions";
 import { SKILL_TRAINING } from "../data/balance/economy";
 import { CONSUMABLE_BALANCE, isConsumableId } from "../data/balance/consumables";
 import { isWeaponSetId } from "../presentation/player/WeaponRig";
-import type { EvolutionId } from "../data/balance/progression";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
-import { createSceneFadeOverlay, type BootCharacter, type SceneFadeOverlay } from "./BootFlow";
+import type { BootCharacter } from "./BootFlow";
 import { PlayerController } from "../gameplay/PlayerController";
 import type { InputService } from "../gameplay/InputService";
 import type { HudModel } from "../ui/HudModel";
 import { PlayerRuntime } from "../gameplay/PlayerRuntime";
 import { EnemyRuntimeView } from "../presentation/enemies/EnemyRuntimeView";
 import { EffectManager } from "../presentation/effects/EffectManager";
-import { getSkillVfxProfile } from "../presentation/effects/skill/SkillVfxCatalog";
-import type { SkillVfxRequest } from "../presentation/effects/skill/SkillVfxTypes";
 import { GameCamera } from "../presentation/camera/GameCamera";
 import { SceneRenderer } from "../presentation/rendering/SceneRenderer";
 import { SummonView } from "../presentation/combat/SummonView";
-import { InteractionPanel } from "../ui/InteractionPanel";
 import { WorldManager, type WorldId } from "../world/WorldManager";
+import { InteractionPanel } from "../ui/InteractionPanel";
 import type { InteractableDef } from "../world/definitions";
+import { DungeonFlow, type LeaveReason } from "./session/DungeonFlow";
+import { InteractionController, INTERACT_RANGE } from "./session/InteractionController";
+import { CombatOrchestrator } from "./session/CombatOrchestrator";
+import { RewardService } from "./session/RewardService";
+import { VaultTransfer } from "./session/VaultTransfer";
+import { SessionSnapshot } from "./session/SessionSnapshot";
+import { SessionDebug } from "../debug/SessionDebug";
+import type { DungeonEnterReason, DungeonEnterResult } from "./session/types";
+import { dungeonEnterMessage } from "./session/types";
 import { projectWalkTarget } from "../world/collision";
-
-const INTERACT_RANGE = 1.6;
-const DEATH_HOLD_PAD_SEC = 0.2;
 
 export type DropLogKind = "gold" | "item" | "lost" | "info";
 
@@ -76,29 +70,9 @@ export interface DropLogEntry {
   life: number;
 }
 
-export type SessionHud = HudModel;
-
-export type DungeonEnterReason = "missing" | "evolution" | "level" | "entry";
-export type DungeonEnterResult = { ok: true } | { ok: false; reason: DungeonEnterReason };
-
-function assertNever(value: never): never {
-  throw new Error(String(value));
-}
-
-export function dungeonEnterMessage(reason: DungeonEnterReason): string {
-  switch (reason) {
-    case "missing":
-      return "Dungeon não encontrada";
-    case "evolution":
-      return "Evolução sem conteúdo nesta dungeon";
-    case "level":
-      return "Fora da faixa";
-    case "entry":
-      return "Entrada insuficiente";
-    default:
-      return assertNever(reason);
-  }
-}
+export type { SessionHud } from "./session/types";
+export type { DungeonEnterReason, DungeonEnterResult };
+export { dungeonEnterMessage };
 
 export class CityGameSession {
   readonly player = new PlayerRuntime();
@@ -121,10 +95,9 @@ export class CityGameSession {
   readonly saveService = new SaveService();
   readonly saves = new SaveCoordinator(
     saveVault,
-    () => this.buildSavePayload(),
+    () => this.snapshot.buildSavePayload(),
     () => this.accountVault.snapshot(),
   );
-  activeDungeonId = "dungeon-test";
   readonly controller: PlayerController;
   readonly worlds: WorldManager;
   readonly camera: GameCamera;
@@ -134,53 +107,57 @@ export class CityGameSession {
   readonly skill = new SkillController(this.skillLoadout, this.character, this.skillTree);
   readonly form = new FormState();
   readonly summons = new SummonRuntime();
-  private readonly summonView: SummonView;
-  private frameMods: CombatMods = emptyMods();
   readonly enemyAi = new EnemyAI();
   readonly dungeonRun = new DungeonRun();
-
-  private readonly enemyView: EnemyRuntimeView;
   readonly effects: EffectManager;
-  private readonly interactRaycaster = new Raycaster();
-  private readonly interactNdc = new Vector2();
-  private nearby: InteractableDef | null = null;
-  private pendingInteract: InteractableDef | null = null;
-  private deathReturnTimer = 0;
-  private resultHold = 0;
-  private sessionXp = 0;
-  private lootToast: string | null = null;
-  private lootToastTimer = 0;
-  private uiToastKind: "skill" | "attr" | "level" | "dungeon" = "skill";
-  private hitStop = 0;
-  private moveLock = 0;
+  readonly enemyView: EnemyRuntimeView;
+  private readonly summonView: SummonView;
+
+  readonly dungeonFlow: DungeonFlow;
+  readonly interactions: InteractionController;
+  readonly rewards: RewardService;
+  readonly combat: CombatOrchestrator;
+  readonly vaultTransfer: VaultTransfer;
+  readonly snapshot: SessionSnapshot;
+  readonly debug: SessionDebug;
+
+  deathReturnTimer = 0;
+  resultHold = 0;
+  sessionXp = 0;
+  lootToast: string | null = null;
+  lootToastTimer = 0;
+  uiToastKind: "skill" | "attr" | "level" | "dungeon" = "skill";
+  hitStop = 0;
+  moveLock = 0;
   private dropLog: DropLogEntry[] = [];
   private dropLogSeq = 0;
-  private pendingSkillSlot = -1;
-  private sceneFade: SceneFadeOverlay | null = null;
-  private worldFadeBusy = false;
+  pendingSkillSlot = -1;
   hadSave = false;
   saveUnreadable = false;
   lastCombatMissAt = 0;
   deathEmitCount = 0;
   autoAttackSwings = 0;
-  progressState = emptyProgress();
+  progressState: SavePayload["progress"] = emptyProgress();
 
-  setArmorAuraEnabled(on: boolean): void {
-    this.renderer.playerView.setArmorAuraEnabled(on);
-  }
-
+  private cachedWeaponReach: { attackRange: number; attackInterval: number } | null = null;
+  private lastAttackRange = -1;
+  private readonly passiveVfxOrigin = new Vector3();
   private hudListener?: (model: HudModel) => void;
 
-  onHud(listener: (model: HudModel) => void): () => void {
-    this.hudListener = listener;
-    return () => {
-      if (this.hudListener === listener) this.hudListener = undefined;
-    };
+  get activeDungeonId(): string {
+    return this.dungeonFlow.activeDungeonId;
+  }
+  set activeDungeonId(id: string) {
+    this.dungeonFlow.activeDungeonId = id;
+  }
+
+  get worldFadeBusy(): boolean {
+    return this.dungeonFlow.worldFadeBusy;
   }
 
   constructor(
-    private readonly renderer: SceneRenderer,
-    private readonly bus: EventBus,
+    readonly renderer: SceneRenderer,
+    readonly bus: EventBus,
     canvas: HTMLCanvasElement,
     private readonly panel: InteractionPanel,
     private readonly input: InputService,
@@ -195,6 +172,156 @@ export class CityGameSession {
     );
     this.enemyView.bindEffects(this.effects);
     this.summonView = new SummonView(renderer.scene);
+
+    this.dungeonFlow = new DungeonFlow({
+      inventory: this.inventory,
+      progression: this.progression,
+      character: this.character,
+      dungeonRun: this.dungeonRun,
+      economy: this.economy,
+      saves: this.saves,
+      effects: this.effects,
+      renderer: this.renderer,
+      enemies: this.enemies,
+      bus: this.bus,
+      enterWorld: (id) => this.enterWorld(id),
+      getWorldId: () => (this.worlds.getCurrent()?.id as WorldId) ?? "city",
+      clearDeathReturnTimer: () => {
+        this.deathReturnTimer = 0;
+      },
+      clearResultHold: () => {
+        this.resultHold = 0;
+      },
+    });
+
+    this.interactions = new InteractionController({
+      player: this.player,
+      character: this.character,
+      worlds: this.worlds,
+      camera: this.camera,
+      renderer: this.renderer,
+      bus: this.bus,
+      input: this.input,
+      controller: this.controller,
+      panel: this.panel,
+      dungeonFlow: this.dungeonFlow,
+      dungeonRun: this.dungeonRun,
+      showToast: (text, kind) => this.setUiToast(text, kind),
+    });
+
+    this.rewards = new RewardService({
+      progression: this.progression,
+      character: this.character,
+      skillTree: this.skillTree,
+      skillLoadout: this.skillLoadout,
+      inventory: this.inventory,
+      composition: this.composition,
+      quests: this.quests,
+      dungeonRun: this.dungeonRun,
+      economy: this.economy,
+      saves: this.saves,
+      effects: this.effects,
+      bus: this.bus,
+      player: this.player,
+      playerMesh: () => this.renderer.playerMesh,
+      getActiveDungeonId: () => this.activeDungeonId,
+      pushDropLog: (text, kind) => this.pushDropLog(text, kind),
+      showToast: (text, kind) => this.setUiToast(text, kind),
+      addSessionXp: (amount) => {
+        this.sessionXp += amount;
+      },
+    });
+
+    this.combat = new CombatOrchestrator({
+      enemies: this.enemies,
+      enemyView: this.enemyView,
+      attack: this.attack,
+      skill: this.skill,
+      skillLoadout: this.skillLoadout,
+      skillTree: this.skillTree,
+      buffs: this.buffs,
+      form: this.form,
+      summons: this.summons,
+      summonView: this.summonView,
+      character: this.character,
+      progression: this.progression,
+      equipment: this.equipment,
+      effects: this.effects,
+      renderer: this.renderer,
+      bus: this.bus,
+      player: this.player,
+      rewards: this.rewards,
+      enemyAi: this.enemyAi,
+      worlds: this.worlds,
+      lockFromAnim: (anim, fallback) => this.lockFromAnim(anim, fallback),
+      skillSlotPressed: () => this.skillSlotPressed(),
+      getWeaponReach: () => this.weaponReach(),
+      onCombatMiss: () => {
+        this.lastCombatMissAt = Date.now();
+      },
+      onPlayerDeath: () => {
+        this.renderer.playerView.playDeath();
+        this.form.clear();
+        this.summons.clear();
+        this.summonView.clear();
+        this.bus.emit("game:mode-changed", { mode: "DEAD" });
+        this.deathReturnTimer = 1.2;
+        this.bus.emit("character:death", { at: Date.now() });
+        this.deathEmitCount += 1;
+      },
+      getMoveLock: () => this.moveLock,
+      triggerHitStop: (duration) => {
+        this.hitStop = duration;
+      },
+      onAutoAttackSwing: () => {
+        this.autoAttackSwings += 1;
+      },
+    });
+
+    this.vaultTransfer = new VaultTransfer({
+      inventory: this.inventory,
+      accountVault: this.accountVault,
+      saves: this.saves,
+    });
+
+    this.snapshot = new SessionSnapshot({
+      saveService: this.saveService,
+      saves: this.saves,
+      skillTree: this.skillTree,
+      character: this.character,
+      progression: this.progression,
+      inventory: this.inventory,
+      skillLoadout: this.skillLoadout,
+      equipment: this.equipment,
+      bags: this.bags,
+      buffs: this.buffs,
+      getProgressState: () => this.progressState,
+      setProgressState: (state) => {
+        this.progressState = state;
+      },
+      reloadAccountVault: () => this.reloadAccountVault(),
+      isSaveUnreadable: () => this.saveUnreadable,
+      setSaveUnreadable: (val) => {
+        this.saveUnreadable = val;
+      },
+      setHadSave: (val) => {
+        this.hadSave = val;
+      },
+      refreshWeaponSetFromGear: () => this.refreshWeaponSetFromGear(),
+    });
+
+    this.debug = new SessionDebug(this);
+  }
+
+  setArmorAuraEnabled(on: boolean): void {
+    this.renderer.playerView.setArmorAuraEnabled(on);
+  }
+
+  onHud(listener: (model: HudModel) => void): () => void {
+    this.hudListener = listener;
+    return () => {
+      if (this.hudListener === listener) this.hudListener = undefined;
+    };
   }
 
   async start(): Promise<void> {
@@ -207,90 +334,13 @@ export class CityGameSession {
     this.accountVault.apply(vault);
   }
 
-  depositGoldToVault(amount: number): number {
-    const want = Math.max(0, Math.floor(amount));
-    const room = ECONOMY_BALANCE.goldCap - this.accountVault.gold;
-    const moved = Math.min(want, this.inventory.gold, room);
-    if (moved <= 0) return 0;
-    this.inventory.gold -= moved;
-    this.accountVault.gold += moved;
-    this.saves.markDirty(["vault", "inventory"], "critical");
-    return moved;
-  }
-
-  withdrawGoldFromVault(amount: number): number {
-    const want = Math.max(0, Math.floor(amount));
-    const room = ECONOMY_BALANCE.goldCap - this.inventory.gold;
-    const moved = Math.min(want, this.accountVault.gold, room);
-    if (moved <= 0) return 0;
-    this.accountVault.gold -= moved;
-    this.inventory.gold += moved;
-    this.saves.markDirty(["vault", "inventory"], "critical");
-    return moved;
-  }
-
-  moveItemToVault(uid: string): boolean {
-    const item = this.inventory.remove(uid);
-    if (!item) return false;
-    const res = this.accountVault.add(item);
-    if (!res.ok) {
-      if (res.rejected > 0) {
-        this.inventory.add({ ...item, stack: res.rejected, uid: item.uid });
-      }
-      if (res.added === 0) {
-        return false;
-      }
-    }
-    this.saves.markDirty(["vault", "inventory"], "critical");
-    return true;
-  }
-
-  moveItemFromVault(uid: string): boolean {
-    const item = this.accountVault.remove(uid);
-    if (!item) return false;
-    const res = this.inventory.add(item);
-    if (!res.ok) {
-      if (res.rejected > 0) {
-        this.accountVault.add({ ...item, stack: res.rejected, uid: item.uid });
-      }
-      if (res.added === 0) {
-        return false;
-      }
-    }
-    this.saves.markDirty(["vault", "inventory"], "critical");
-    return true;
-  }
-
   sellItem(uid: string, qty?: number): boolean {
     const res = sellItem(this.inventory, uid, qty);
     if (res.ok) {
-      this.saves.markDirty(["inventory"], "critical");
-      return true;
+      this.refreshWeaponSetFromGear();
+      this.saves.markDirty("inventory", "critical");
     }
-    return false;
-  }
-
-  
-  resetToNewGame(): void {
-    this.inventory.gold = 0;
-    this.inventory.items.length = 0;
-    this.skillTree.setClass("TK");
-    this.progression.setClassId("TK");
-    this.skillTree.resetSkills();
-    this.skillLoadout.refresh();
-    this.progression.state.evolution = "Mortal";
-    this.progression.state.level = 1;
-    this.progression.state.xp = 0;
-    this.progression.state.xpToNext = 1;
-    this.progression.state.unspentAttributePoints = 0;
-    this.progression.state.resetsInEvolution = 0;
-    this.progression.state.bonusAttributePoints = 0;
-    this.character.level = 1;
-    const base = PROGRESSION_BALANCE.baseAttributes;
-    this.character.attributes = { FOR: base.FOR, DES: base.DES, CONS: base.CONS, INT: base.INT };
-    this.progression.recomputeCombatStats();
-    this.character.healFull();
-    this.enterWorld("city");
+    return res.ok;
   }
 
   enterWorld(id: WorldId): void {
@@ -300,14 +350,14 @@ export class CityGameSession {
     if (id === "city") this.character.healFull();
     this.player.setPosition(world.spawn.x, world.spawn.z);
     this.player.clearMoveTarget();
-    this.clearPendingInteract();
+    this.interactions.clearPendingInteract();
     this.attack.reset();
     this.skill.reset();
     this.camera.snapTo(world.spawn.x, world.spawn.z);
     this.renderer.playerView.clearDeath();
     const gy = world.groundY(world.spawn.x, world.spawn.z);
     this.renderer.setPlayerTransform(world.spawn.x, world.spawn.z, 0, false, undefined, gy);
-    this.nearby = null;
+    this.interactions.nearby = null;
     this.panel.close();
     this.deathReturnTimer = 0;
     this.resultHold = 0;
@@ -361,262 +411,43 @@ export class CityGameSession {
   }
 
   pickDungeonForLevel(): DungeonDef {
-    const list = dungeonsAllowedForLevel(this.progression.state.level);
-    return list[list.length - 1] ?? DUNGEON_TEST;
+    return this.dungeonFlow.pickDungeonForLevel();
   }
 
   dungeonEntryGate(dungeonId: string): { ok: true; def: DungeonDef } | { ok: false; reason: DungeonEnterReason; def?: DungeonDef } {
-    const def = findDungeon(dungeonId);
-    if (!def) return { ok: false, reason: "missing" };
-    if (this.progression.state.evolution !== "Mortal") {
-      return { ok: false, reason: "evolution", def };
-    }
-    if (this.character.level < def.minLevel || this.character.level > def.maxLevel) {
-      return { ok: false, reason: "level", def };
-    }
-    if (def.entryItemId) {
-      if (this.inventory.countMaterial(def.entryItemId) < 1) {
-        return { ok: false, reason: "entry", def };
-      }
-    }
-    return { ok: true, def };
+    return this.dungeonFlow.dungeonEntryGate(dungeonId);
   }
 
   entryItemCounts(): Record<string, number> {
-    const counts: Record<string, number> = {};
-    for (const dungeon of DUNGEONS_MORTAL) {
-      const id = dungeon.entryItemId;
-      if (!id || counts[id] != null) continue;
-      counts[id] = this.inventory.countMaterial(id);
-    }
-    return counts;
+    return this.dungeonFlow.entryItemCounts();
   }
 
   tryEnterDungeon(dungeonId: string): DungeonEnterResult {
-    const gate = this.dungeonEntryGate(dungeonId);
-    if (!gate.ok) return { ok: false, reason: gate.reason };
-    if (gate.def.entryItemId) {
-      if (!this.inventory.consumeMaterial(gate.def.entryItemId, 1)) {
-        return { ok: false, reason: "entry" };
-      }
-      this.saves.markDirty("inventory", "critical");
-    }
-    this.activeDungeonId = gate.def.id;
-    this.economy.setDungeonIndexFromId(gate.def.id);
-    void this.withWorldFade(() => {
-      this.enterWorld(gate.def.id === "dungeon-2" ? "dungeon-2" : "dungeon-test");
-    });
-    return { ok: true };
+    return this.dungeonFlow.tryEnterDungeon(dungeonId);
   }
 
   returnToCityWithFade(): void {
-    if (this.worldFadeBusy) {
-      this.renderer.playerView.clearDeath();
-      this.character.isDead = false;
-      this.enterWorld("city");
-      void this.saves.checkpoint();
-      return;
-    }
-    void this.withWorldFade(() => {
-      this.renderer.playerView.clearDeath();
-      this.character.isDead = false;
-      this.enterWorld("city");
-      void this.saves.checkpoint();
-    });
+    this.dungeonFlow.returnToCityWithFade();
+  }
+
+  finishDungeon(reason: LeaveReason): void {
+    this.dungeonFlow.finishDungeon(reason);
+  }
+
+  withWorldFade(swap: () => void | Promise<void>): Promise<void> {
+    return this.dungeonFlow.withWorldFade(swap);
   }
 
   eligibleDungeons(): DungeonDef[] {
-    return dungeonsAllowedForLevel(this.progression.state.level);
+    return this.dungeonFlow.eligibleDungeons();
   }
 
-  private buildSavePayload(): SavePayload | null {
-    if (this.saveUnreadable) return null;
-    const profileId = this.saveService.getProfileId();
-    const parsed = parseProfileId(profileId);
-    const classId = this.skillTree.state.classId;
-    const payload: SavePayload = {
-      saveVersion: SAVE_VERSION,
-      meta: {
-        profileId,
-        userId: parsed?.userId || "unknown",
-        slotIndex: parsed?.slotIndex ?? 0,
-        updatedAt: Date.now(),
-      },
-      character: {
-        name: this.character.name,
-        classId,
-        level: this.progression.state.level,
-        evolution: this.progression.state.evolution,
-        xp: this.progression.state.xp,
-        unspentAttributePoints: this.progression.state.unspentAttributePoints,
-        resetsInEvolution: this.progression.state.resetsInEvolution,
-        bonusAttributePoints: this.progression.state.bonusAttributePoints,
-        attributes: { ...this.character.attributes },
-        hp: this.character.hp,
-        mp: this.character.mp,
-      },
-      inventory: {
-        gold: this.inventory.gold,
-        items: this.inventory.items.map((i) => ({ ...i })),
-      },
-      skills: {
-        classId,
-        learned: Array.from(this.skillTree.state.learned),
-        eighthTree: this.skillTree.state.eighthTree,
-        specialization: { ...this.skillTree.state.specialization },
-        skillPoints: this.skillTree.state.skillPoints,
-        specPoints: this.skillTree.state.specPoints,
-      },
-      skillLoadout: {
-        slots: this.skillLoadout.snapshot(),
-      },
-      equipment: {
-        equipped: this.equipment.snapshotEquipped(),
-      },
-      bags: {
-        unlocked: this.bags.snapshot(),
-      },
-      buffs: this.buffs.snapshot(),
-      progress: {
-        dungeonsUnlocked: [...this.progressState.dungeonsUnlocked],
-        dungeonClears: { ...this.progressState.dungeonClears },
-        quests: { ...this.progressState.quests },
-      },
-      options: {},
-    };
-    return payload;
-  }
-
-  async loadSave(): Promise<LoadSaveResult> {
-    try {
-      await this.reloadAccountVault();
-      const result = await this.saveService.load();
-      if (result.status === "unreadable") {
-        this.saveUnreadable = true;
-        this.hadSave = true;
-        return { status: "error" };
-      }
-      this.saveUnreadable = false;
-      if (result.status === "missing") {
-        if (await this.slotSummaryHasProgress()) {
-          this.saveUnreadable = true;
-          this.hadSave = true;
-          console.error("[UAIDZIN] perfil ausente com progresso no resumo do slot", this.saveService.getProfileId());
-          return { status: "error" };
-        }
-        this.hadSave = false;
-        return { status: "absent" };
-      }
-      this.hadSave = true;
-      this.applySavePayload(normalizeSavePayload(result.payload, this.saveService.getProfileId()));
-      if (result.fromMirror) this.saves.markDirty([...PROFILE_SECTIONS], "critical");
-      return { status: "found" };
-    } catch (error) {
-      console.error("[UAIDZIN] falha ao ler o save", error);
-      this.saveUnreadable = true;
-      this.hadSave = true;
-      return { status: "error" };
-    }
-  }
-
-  private async slotSummaryHasProgress(): Promise<boolean> {
-    if (!saveVault.getSession()) return false;
-    const profileId = this.saveService.getProfileId();
-    const summary = (await saveVault.listSlots()).find((s) => s?.profileId === profileId);
-    if (!summary || summary.saveVersion < SAVE_VERSION) return false;
-    return summary.level > 1 || summary.gold > 0 || summary.resets > 0;
+  loadSave(): Promise<LoadSaveResult> {
+    return this.snapshot.loadSave();
   }
 
   applyBootCharacter(character: BootCharacter): void {
-    this.saveService.setProfileId(character.id);
-    this.character.name = character.name;
-    const classId = (character.classId in CLASSES ? character.classId : "TK") as ClassId;
-    this.skillTree.setClass(classId);
-    this.progression.setClassId(classId);
-    this.skillTree.resetSkills();
-    const p = this.progression.state;
-    const base = PROGRESSION_BALANCE.baseAttributes;
-    p.level = 1;
-    p.evolution = (character.evolution as EvolutionId) || "Mortal";
-    p.xp = 0;
-    p.xpToNext = PROGRESSION_BALANCE.xpToLevel(p.level);
-    p.unspentAttributePoints = 0;
-    p.resetsInEvolution = Number.isFinite(character.resets) ? Math.max(0, Math.floor(character.resets || 0)) : 0;
-    p.bonusAttributePoints = 0;
-    this.character.level = 1;
-    this.character.attributes = { FOR: base.FOR, DES: base.DES, CONS: base.CONS, INT: base.INT };
-    this.inventory.gold = 0;
-    this.inventory.items.length = 0;
-    this.equipment.restoreEquipped({});
-    this.bags.apply(null);
-    this.buffs.clear();
-    this.skillLoadout.applySaved(null);
-    const st = this.skillTree.state;
-    st.skillPoints = Math.max(0, p.level - 1);
-    st.eighthTree = null;
-    st.specialization = normalizeTreeMap(character.spec);
-    this.progression.recomputeCombatStats();
-    this.character.healFull();
-    this.skillLoadout.refresh();
-    this.hadSave = false;
-    this.saves.markDirty([...PROFILE_SECTIONS], "critical");
-  }
-
-  private applySavePayload(data: SavePayload): void {
-    const p = this.progression.state;
-    this.character.name = data.character.name || this.character.name;
-    p.level = data.character.level;
-    p.evolution = data.character.evolution as typeof p.evolution;
-    p.xp = data.character.xp;
-    p.unspentAttributePoints = data.character.unspentAttributePoints;
-    p.resetsInEvolution = data.character.resetsInEvolution;
-    p.bonusAttributePoints = data.character.bonusAttributePoints;
-    p.xpToNext = PROGRESSION_BALANCE.xpToLevel(p.level);
-    this.character.level = data.character.level;
-    this.character.attributes = { ...data.character.attributes };
-    this.inventory.gold = data.inventory.gold;
-    this.inventory.items.length = 0;
-    for (const raw of data.inventory.items) {
-      this.inventory.items.push(raw as ItemInstance);
-    }
-    const s = this.skillTree.state;
-    const classId = (data.character.classId || data.skills.classId) as typeof s.classId;
-    this.skillTree.setClass(classId);
-    this.progression.setClassId(classId);
-    s.learned = new Set(data.skills.learned || []);
-    s.eighthTree = data.skills.eighthTree as typeof s.eighthTree;
-    const spec = data.skills.specialization;
-    s.specialization = {
-      controle: spec.controle,
-      magia: spec.magia,
-      fisica: spec.fisica,
-    };
-    s.skillPoints = data.skills.skillPoints;
-    s.specPoints = data.skills.specPoints;
-    this.equipment.restoreEquipped(
-      (data.equipment?.equipped || {}) as Partial<Record<EquipSlot, ItemInstance>>,
-    );
-    this.bags.apply(data.bags?.unlocked);
-    this.buffs.apply(data.buffs);
-    this.skillLoadout.applySaved(data.skillLoadout?.slots);
-    this.progressState = {
-      dungeonsUnlocked: [...(data.progress?.dungeonsUnlocked || [])],
-      dungeonClears: { ...(data.progress?.dungeonClears || {}) },
-      quests: { ...(data.progress?.quests || {}) },
-    };
-    this.progression.recomputeCombatStats();
-    this.character.syncMaxMp();
-    const savedHp = Number(data.character.hp);
-    const savedMp = Number(data.character.mp);
-    this.character.hp = Number.isFinite(savedHp)
-      ? Math.max(0, Math.min(this.character.maxHp, savedHp))
-      : this.character.maxHp;
-    this.character.mp = Number.isFinite(savedMp)
-      ? Math.max(0, Math.min(this.character.maxMp, savedMp))
-      : this.character.maxMp;
-    this.character.isDead = this.character.hp <= 0;
-    this.skillLoadout.refresh();
-    this.refreshWeaponSetFromGear();
+    this.snapshot.applyBootCharacter(character);
   }
 
   update(dt: number, width: number, height: number, uiBlocked = false): void {
@@ -653,7 +484,7 @@ export class CityGameSession {
       this.renderer.render(this.camera.camera);
       this.pushHud(inDungeon);
       if (this.deathReturnTimer <= 0) {
-        void this.leaveDungeonWithFade("death");
+        void this.dungeonFlow.leaveDungeonWithFade("death");
       }
       return;
     }
@@ -690,39 +521,37 @@ export class CityGameSession {
     this.character.regenMp(4 * dt);
     this.buffs.tick(dt);
     this.form.advance(dt);
+
+    this.passiveVfxOrigin.set(this.player.x, 0, this.player.z);
     this.effects.syncPassiveVfx(
-      learnedPassives(this.skillTree),
-      new Vector3(this.player.x, 0, this.player.z),
+      this.combat.getLearnedPassives(),
+      this.passiveVfxOrigin,
     );
-    this.frameMods = buildCombatMods(
-      this.buffs.active,
-      learnedPassives(this.skillTree),
-      this.equipment.getWeaponSet(this.progression.state.classId),
-      this.form,
-    );
-    this.player.speedScale = 1 + this.frameMods.moveSpeed;
-    const hpCap = Math.round(this.character.maxHp * (1 + Math.max(0, this.frameMods.maxHpMul)));
+
+    const frameMods = this.combat.getCombatMods();
+    this.player.speedScale = 1 + frameMods.moveSpeed;
+    const hpCap = Math.round(this.character.maxHp * (1 + Math.max(0, frameMods.maxHpMul)));
     if (this.character.hp > hpCap) this.character.hp = hpCap;
 
     const locked = this.moveLock > 0;
     const click = this.controller.consumeClickMove();
     if (click) {
       if (this.panel.isOpen() || uiBlocked) this.input.triggerAction("ui.escape");
-      const meshHit = this.pickInteractableByRay(click.ndcX, click.ndcY, world.interactables);
+      const meshHit = this.interactions.pickInteractableByRay(click.ndcX, click.ndcY, world.interactables);
       if (meshHit) {
         if (!locked || this.player.distanceTo(meshHit.x, meshHit.z) <= INTERACT_RANGE) {
-          this.queueOrInteract(meshHit);
+          this.interactions.queueOrInteract(meshHit);
         }
       } else {
-        const point = this.groundPointFromNdc(click.ndcX, click.ndcY);
+        const point = this.interactions.groundPointFromNdc(click.ndcX, click.ndcY);
         if (point) {
-          const hit = this.pickInteractableAt(point.x, point.z, world.interactables);
+          const hit = this.interactions.pickInteractableAt(point.x, point.z, world.interactables);
           if (hit) {
             if (!locked || this.player.distanceTo(hit.x, hit.z) <= INTERACT_RANGE) {
-              this.queueOrInteract(hit);
+              this.interactions.queueOrInteract(hit);
             }
           } else if (!locked) {
-            this.clearPendingInteract();
+            this.interactions.clearPendingInteract();
             const safe = projectWalkTarget(
               point.x,
               point.z,
@@ -743,12 +572,12 @@ export class CityGameSession {
       this.player.update(dt, 0, 0, world.boundary, world.collision);
     } else {
       const axes = this.controller.getMoveAxes();
-      if (axes.x !== 0 || axes.z !== 0) this.clearPendingInteract();
+      if (axes.x !== 0 || axes.z !== 0) this.interactions.clearPendingInteract();
       const worldAxes = this.camera.toWorldMove(axes.x, axes.z);
       this.player.update(dt, worldAxes.x, worldAxes.z, world.boundary, world.collision);
     }
 
-    this.resolvePendingInteract();
+    this.interactions.resolvePendingInteract();
 
     if (this.hitStop > 0) {
       this.hitStop -= dt;
@@ -778,7 +607,7 @@ export class CityGameSession {
         this.pushHud(true);
         return;
       }
-      this.updateCombat(dt);
+      this.combat.updateCombat(dt);
     }
 
     const groundY = world.groundY(this.player.x, this.player.z);
@@ -800,34 +629,33 @@ export class CityGameSession {
       this.camera.camera.position.y += shake.y;
     }
 
-
-    this.effects.setRangeIndicator(0, 0, this.weaponReach().attackRange, false);
+    const reach = this.weaponReach();
+    if (reach.attackRange !== this.lastAttackRange) {
+      this.lastAttackRange = reach.attackRange;
+      this.effects.setRangeIndicator(0, 0, reach.attackRange, false);
+    }
 
     this.effects.update(dt, this.camera.camera, width, height);
     this.renderer.render(this.camera.camera);
     const playerRatio = hpCap > 0 ? Math.min(1, this.character.hp / hpCap) : 0;
     this.effects.spawnHpBar("player", this.player.x, groundY + 2.05, this.player.z, playerRatio);
 
-    this.updateNearby(world.interactables);
-    this.handleInteractKey();
+    this.interactions.updateNearby(world.interactables);
+    this.interactions.handleInteractKey();
     this.pushHud(inDungeon);
   }
 
   private updateEffects(dt: number, width: number, height: number): void {
-    this.effects.update(
-      dt,
-      this.camera.camera,
-      width,
-      height,
-    );
+    this.effects.update(dt, this.camera.camera, width, height);
   }
 
   private pushHud(inDungeon: boolean): void {
     const p = this.progression.state;
     const maxLevel = PROGRESSION_BALANCE.evolutions[p.evolution]?.maxLevel ?? 50;
+    const frameMods = this.combat.getCombatMods();
     const model: HudModel = {
       hp: this.character.hp,
-      maxHp: Math.round(this.character.maxHp * (1 + Math.max(0, this.frameMods.maxHpMul))),
+      maxHp: Math.round(this.character.maxHp * (1 + Math.max(0, frameMods.maxHpMul))),
       mp: this.character.mp,
       maxMp: this.character.maxMp,
       xp: p.xp,
@@ -869,54 +697,6 @@ export class CityGameSession {
     if (z > -12) return "Arena 1 / 3";
     if (z > -36) return "Arena 2 / 3";
     return "Arena 3 / 3";
-  }
-
-  private grantKillXp(enemy: { id: string; archetype: string; isBoss: boolean; xpReward?: number }): void {
-    const isBoss = enemy.isBoss;
-    const key = isBoss ? "boss" : (enemy.archetype as "fixed" | "chaser" | "ranged");
-    let xp = enemy.xpReward ?? DUNGEON_BALANCE.xpPerKill[isBoss ? "boss" : enemy.archetype as "fixed" | "chaser" | "ranged"] ?? 8;
-    if (this.activeDungeonId === "dungeon-1" && !isBoss) {
-      xp = Math.round(xp * 3);
-    }
-    this.sessionXp += xp;
-    const { levelsGained } = this.progression.addXp(xp);
-    this.dungeonRun.addKill(xp);
-    this.economy.lootLevel = this.character.level;
-    const loot = this.economy.grantKillLoot(key, isBoss);
-    if (loot.droppedItem) {
-      const goldBit = loot.gold > 0 ? `+${loot.gold} Ouro · ` : "";
-      this.pushDropLog(`${goldBit}${loot.droppedItem}`, "item");
-    } else if (loot.gold > 0) {
-      this.pushDropLog(`+${loot.gold} Ouro`, "gold");
-    }
-    if (loot.lostItem) {
-      this.pushDropLog(`Bolsa cheia: ${loot.lostItem} perdido.`, "lost");
-    }
-    this.applyQuestKillProgress();
-    if (levelsGained > 0) {
-      this.skillTree.grantSkillPoints(levelsGained);
-      this.skillLoadout.refresh();
-      this.character.healFull();
-      this.effects.levelUpPulse(this.renderer.playerMesh, {
-        x: this.player.x,
-        z: this.player.z,
-      });
-      this.effects.spawnDamageNumber(
-        this.player.x,
-        2.2,
-        this.player.z,
-        this.progression.state.level,
-        "kill",
-      );
-      this.bus.emit("character:level-up", {
-        level: this.progression.state.level,
-        levelsGained,
-      });
-    }
-    this.saves.markDirty(
-      levelsGained > 0 ? ["character", "inventory", "progress", "skills"] : ["character", "inventory", "progress"],
-      "critical",
-    );
   }
 
   private lockMovement(seconds: number): void {
@@ -965,348 +745,93 @@ export class CityGameSession {
     return this.moveLock;
   }
 
-  private finishDungeon(reason: "timer" | "death" | "exit"): void {
-    if (this.worldFadeBusy) return;
-    void this.leaveDungeonWithFade(reason);
+  beginInteract(def: InteractableDef): void {
+    this.interactions.beginInteract(def);
   }
 
-  private ensureSceneFade(): SceneFadeOverlay {
-    if (!this.sceneFade) {
-      this.sceneFade = createSceneFadeOverlay(document.body);
-    }
-    return this.sceneFade;
+  closePanel(): void {
+    this.interactions.closePanel();
   }
 
-  private async withWorldFade(swap: () => void): Promise<void> {
-    if (this.worldFadeBusy) {
-      swap();
-      return;
-    }
-    this.effects.clearSkillVfx();
-    this.worldFadeBusy = true;
-    const fade = this.ensureSceneFade();
-    try {
-      await fade.fadeIn();
-      swap();
-      await fade.fadeOut();
-    } finally {
-      this.worldFadeBusy = false;
-    }
+  confirmInteraction(id: string): void {
+    this.interactions.confirmInteraction(id);
   }
 
-  private async leaveDungeonWithFade(reason: "timer" | "death" | "exit"): Promise<void> {
-    if (this.worldFadeBusy) return;
-    this.effects.clearSkillVfx();
-    this.worldFadeBusy = true;
-    this.character.isDead = false;
-    this.deathReturnTimer = 0;
-    const fade = this.ensureSceneFade();
-    try {
-      await fade.fadeIn();
-      const result = this.dungeonRun.end(reason);
-      this.enemies.clear();
-      this.effects.hideAllHpBars();
-      this.renderer.playerView.clearDeath();
-      this.bus.emit("session:result", { text: null });
-      this.resultHold = 0;
-      this.bus.emit("dungeon:completed", {
-        dungeonId: result.dungeonId,
-        reason: result.reason,
-        kills: result.kills,
-        xp: result.xpGained,
-      });
-      this.character.healFull();
-      this.enterWorld("city");
-      this.saves.markDirty("character", "deferred");
-      await fade.fadeOut();
-    } finally {
-      this.worldFadeBusy = false;
-    }
+  openInteraction(def: InteractableDef): void {
+    this.interactions.openInteraction(def);
   }
 
-  private weaponReach(): { attackRange: number; attackInterval: number } {
-    const weapon = this.equipment.equipped.weapon;
-    return {
-      attackRange: weapon?.attackRange ?? COMBAT_BALANCE.player.attackRange,
-      attackInterval: weapon?.attackInterval ?? COMBAT_BALANCE.player.attackInterval,
-    };
+  setUiToast(text: string, kind: "skill" | "attr" | "level" | "dungeon" = "skill"): void {
+    this.lootToast = text;
+    this.lootToastTimer = 2.2;
+    this.uiToastKind = kind;
   }
 
-  private updateCombat(dt: number): void {
-    this.enemies.updateRespawns(dt);
-    const targets = this.enemies.aliveTargets();
-    const reach = this.weaponReach();
-    const speedMul = Math.max(0.4, 1 + this.frameMods.attackSpeed);
-    this.attack.setReach(reach.attackRange, reach.attackInterval / speedMul);
-
-    const hitTarget = this.attack.tick(
-      dt,
-      this.player.isMoving || this.moveLock > 0,
-      targets,
-      this.player.x,
-      this.player.z,
-    );
-    if (hitTarget) {
-      const enemy = this.enemies.findById(hitTarget.id);
-      if (enemy) {
-
-        const dx = enemy.x - this.player.x;
-        const dz = enemy.z - this.player.z;
-        this.player.facing = Math.atan2(dx, dz);
-        this.effects.playAttackPulse(this.renderer.playerMesh);
-        this.renderer.playerView.playAttack();
-        this.autoAttackSwings += 1;
-        this.lockFromAnim("attack", COMBAT_BALANCE.moveLock.attackFallback);
-
-        if (enemy.alive && rollHitSimple()) {
-          let atk = this.character.attack * this.frameMods.attackMul;
-          if (this.frameMods.stealth) atk *= this.buffs.consumeStealth();
-          let dmg = calculateDamage(atk, enemy.defense);
-          if (Math.random() < this.frameMods.critChance + (this.form.active ? this.frameMods.transformedCrit : 0)) {
-            dmg = Math.max(1, Math.round(dmg * 1.5));
-          }
-          const killed = enemy.applyDamage(dmg);
-          const mesh = this.enemyView.getMesh(enemy.id);
-          this.effects.playHitFlash(mesh);
-          this.enemyView.playHit(enemy.id);
-          this.effects.spawnDamageNumber(enemy.x, 1.4, enemy.z, dmg, "enemy");
-          if (killed) {
-            this.grantKillXp(enemy);
-            this.enemyView.playDeath(enemy.id);
-            this.effects.playDeath(mesh, 1.4);
-            this.effects.hideHpBar(enemy.id);
-            this.effects.spawnDamageNumber(enemy.x, 1.7, enemy.z, 0, "kill");
-          }
-          this.bus.emit("combat:hit", { targetId: enemy.id, damage: dmg, killed });
-        } else if (enemy.alive) {
-          this.effects.spawnDamageNumber(enemy.x, 1.4, enemy.z, 0, "miss");
-          this.bus.emit("combat:miss", { targetId: enemy.id });
-          this.lastCombatMissAt = Date.now();
-        }
-      }
-    }
-
-    const manual = this.skillSlotPressed();
-    const cast = this.skill.tick(
-      dt,
-      this.player.isMoving || this.moveLock > 0,
-      manual,
-      targets,
-      this.player.x,
-      this.player.z,
-      this.player.facing,
-      (id) => this.enemies.findById(id)?.defense ?? 0,
-      (id) => {
-        const enemy = this.enemies.findById(id);
-        return { hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 1 };
-      },
-      this.buffs,
-      this.form,
-      this.summons,
-      this.renderer.playerView.getWeaponSet(),
-    );
-    if (cast) {
-      const resolved = cast.resolved;
-      const skill = cast.slot.skill;
-      const origin = new Vector3(this.player.x, 0, this.player.z);
-      const target = resolved.aim ? new Vector3(resolved.aim.x, 0, resolved.aim.z) : null;
-      const center = skill.shape === "aoe" || !target ? origin : target;
-      const profile = getSkillVfxProfile(skill.id);
-      if (profile) {
-        const request: SkillVfxRequest = {
-          profile,
-          origin,
-          target,
-          center,
-          colorHex: resolved.color,
-          facing: this.player.facing,
-          range: skill.range,
-          radius: skill.radius ?? (skill.shape === "aoe" ? skill.range : 0),
-          hits: resolved.hits.map((hit, hitIndex) => ({ ...hit, hitIndex })),
-          hasHeal: resolved.heal > 0,
-          hasBuff: resolved.buffs.length > 0,
-          hasTransform: resolved.transform != null,
-          hasSummon: resolved.summons != null,
-        };
-        this.effects.dispatchSkillVfx(request);
-      } else {
-        const aim = resolved.aim ?? { x: this.player.x, z: this.player.z + 1 };
-        this.effects.playSkillVfx(
-          resolved.vfx,
-          origin,
-          new Vector3(aim.x, 0, aim.z),
-          resolved.color,
-          skill.id,
-        );
-      }
-      this.renderer.playerView.playCast();
-      this.lockFromAnim("cast", COMBAT_BALANCE.moveLock.skillFallback);
-      const hpCap = Math.round(this.character.maxHp * (1 + Math.max(0, this.frameMods.maxHpMul)));
-      this.character.heal(resolved.heal + resolved.lifesteal, hpCap);
-      const fireBurstDeathDuration =
-        cast.slot.skill.id === "tk_fis_fire_burst" ? 0.5 : undefined;
-      const seen = new Set<string>();
-      for (const hit of resolved.hits) {
-        const enemy = this.enemies.findById(hit.id);
-        if (!enemy?.alive) continue;
-        const killed = enemy.applyDamage(hit.damage);
-        const mesh = this.enemyView.getMesh(enemy.id);
-        if (!seen.has(enemy.id)) {
-          seen.add(enemy.id);
-          this.effects.playHitFlash(mesh);
-          this.enemyView.playHit(enemy.id);
-          if (resolved.vfx === "burst") this.effects.playAttackPulse(mesh);
-        }
-        this.effects.spawnDamageNumber(enemy.x, 1.6, enemy.z, hit.damage, "skill");
-        if (killed) {
-          this.grantKillXp(enemy);
-          this.enemyView.playDeath(enemy.id);
-          this.effects.playDeath(mesh, fireBurstDeathDuration ?? 1.4);
-          this.effects.hideHpBar(enemy.id);
-          this.effects.spawnDamageNumber(enemy.x, 1.8, enemy.z, 0, "kill");
-          this.effects.cameraPunch(0.08);
-          this.hitStop = 0.04;
-        }
-        this.bus.emit("combat:hit", { targetId: enemy.id, damage: hit.damage, killed });
-      }
-      for (const plan of resolved.enemyEffects) {
-        const enemy = this.enemies.findById(plan.id);
-        if (!enemy?.alive) continue;
-        enemy.applySkillStatus(plan.effect, plan.dotDps, plan.effect.dotSec, this.player.x, this.player.z);
-      }
-      this.bus.emit("skill:used", {
-        skillId: cast.slot.skill.id,
-        targetId: resolved.hits[0]?.id ?? "self",
-      });
-    }
-
-    for (const enemy of this.enemies.enemies) {
-      if (!enemy.alive) continue;
-      const dot = enemy.tickStatus(dt);
-      if (dot > 0) {
-        const killed = enemy.applyDamage(Math.max(1, Math.round(dot)));
-        this.effects.spawnDamageNumber(enemy.x, 1.5, enemy.z, Math.max(1, Math.round(dot)), "skill");
-        if (killed) {
-          this.grantKillXp(enemy);
-          this.enemyView.playDeath(enemy.id);
-          this.effects.playDeath(this.enemyView.getMesh(enemy.id), 1.4);
-          this.effects.hideHpBar(enemy.id);
-        }
-      }
-    }
-
-    const strikes = this.summons.tick(
-      dt,
-      this.enemies.enemies.map((enemy) => ({
-        id: enemy.id,
-        x: enemy.x,
-        z: enemy.z,
-        alive: enemy.alive,
-        defense: enemy.defense,
-      })),
-    );
-    for (const strike of strikes) {
-      const enemy = this.enemies.findById(strike.id);
-      if (!enemy?.alive) continue;
-      const killed = enemy.applyDamage(strike.damage);
-      this.effects.spawnDamageNumber(enemy.x, 1.5, enemy.z, strike.damage, "skill");
-      if (killed) {
-        this.grantKillXp(enemy);
-        this.enemyView.playDeath(enemy.id);
-        this.effects.playDeath(this.enemyView.getMesh(enemy.id), 1.4);
-        this.effects.hideHpBar(enemy.id);
-      }
-      if (strike.splash > 0) {
-        for (const other of this.enemies.enemies) {
-          if (!other.alive || other.id === enemy.id) continue;
-          if (Math.hypot(other.x - enemy.x, other.z - enemy.z) > strike.splash) continue;
-          const splashDmg = Math.max(1, Math.round(strike.damage * 0.55));
-          const splashKill = other.applyDamage(splashDmg);
-          if (splashKill) {
-            this.grantKillXp(other);
-            this.enemyView.playDeath(other.id);
-            this.effects.playDeath(this.enemyView.getMesh(other.id), 1.4);
-            this.effects.hideHpBar(other.id);
-          }
-        }
-      }
-    }
-    this.summonView.sync(this.summons.actors);
-
-    for (const enemy of this.enemies.enemies) {
-      if (!enemy.alive) continue;
-      const enemyScale = enemy.modelScale > 0 ? enemy.modelScale : 1.0;
-      const enemyHpY = (enemy.isBoss ? 2.4 : 1.85) * enemyScale;
-      this.effects.spawnHpBar(
-        enemy.id,
-        enemy.x,
-        enemyHpY,
-        enemy.z,
-        enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 0,
-      );
-      const { wantsAttack } = this.enemyAi.update(enemy, {
-        playerX: this.player.x,
-        playerZ: this.player.z,
-        playerAlive: !this.character.isDead && !this.frameMods.stealth,
-        dt,
-      });
-      if (!wantsAttack) continue;
-      this.enemyView.playAttack(enemy.id);
-      const summon = this.summons.nearest(enemy.x, enemy.z, enemy.range);
-      const summonDist = summon ? Math.hypot(summon.x - enemy.x, summon.z - enemy.z) : Number.POSITIVE_INFINITY;
-      const playerDist = Math.hypot(this.player.x - enemy.x, this.player.z - enemy.z);
-      enemy.attackCooldown = enemy.attackInterval;
-      if (summon && summonDist <= playerDist) {
-        const incoming = calculateDamage(enemy.attack, summon.defense);
-        const split = this.summons.damage(summon.uid, incoming, this.frameMods.summonLink);
-        if (split.player > 0) this.hurtPlayer(split.player);
-        continue;
-      }
-      if (!rollHitSimple() || Math.random() < this.frameMods.evasion || this.frameMods.stealth) {
-        this.effects.spawnDamageNumber(this.player.x, 1.8, this.player.z, 0, "miss");
-        this.bus.emit("combat:miss", { targetId: "player" });
-        this.lastCombatMissAt = Date.now();
-        continue;
-      }
-      let dmg = calculateDamage(enemy.attack, this.character.defense * this.frameMods.defenseMul);
-      dmg = Math.max(1, Math.round(dmg * (1 - this.frameMods.damageReduction)));
-      if (enemy.archetype === "ranged") {
-        dmg = Math.max(1, Math.round(dmg * (1 - this.frameMods.magicResist)));
-      }
-      this.hurtPlayer(dmg);
-      this.lockFromAnim("hit_gut", COMBAT_BALANCE.moveLock.hitFallback);
-      if (this.character.isDead) break;
-      if (this.frameMods.reflect > 0 && enemy.alive) {
-        const reflected = Math.max(1, Math.round(dmg * this.frameMods.reflect));
-        const killed = enemy.applyDamage(reflected);
-        if (killed) {
-          this.grantKillXp(enemy);
-          this.enemyView.playDeath(enemy.id);
-          this.effects.playDeath(this.enemyView.getMesh(enemy.id), 1.4);
-          this.effects.hideHpBar(enemy.id);
-        }
-      }
-    }
+  tryCompose(recipeId: string, itemUid: string, random?: () => number): {
+    attempted: boolean;
+    success: boolean;
+    message: string;
+    recipeId: string;
+  } {
+    return this.rewards.tryCompose(recipeId, itemUid, random);
   }
 
-  private hurtPlayer(amount: number): void {
-    if (this.character.isDead || amount <= 0) return;
-    this.character.applyDamage(amount);
-    this.effects.spawnDamageNumber(this.player.x, 1.8, this.player.z, amount, "player");
-    this.effects.cameraPunch(0.1);
-    this.effects.playHitFlash(this.renderer.playerMesh);
-    this.renderer.playerView.playHit();
-    this.bus.emit("combat:damage", { amount, hp: this.character.hp });
-    if (this.character.isDead) {
-      this.renderer.playerView.playDeath();
-      this.form.clear();
-      this.summons.clear();
-      this.summonView.clear();
-      this.bus.emit("game:mode-changed", { mode: "DEAD" });
-      this.deathReturnTimer = 1.2;
-      this.bus.emit("character:death", { at: Date.now() });
-      this.deathEmitCount += 1;
+  acceptQuest(questId: string): { ok: boolean; message: string } {
+    return this.rewards.acceptQuest(questId);
+  }
+
+  tryReset(): boolean {
+    const ok = this.progression.reset();
+    if (ok) {
+      this.saves.markDirty(["character", "skills"], "critical");
+      void this.saves.checkpoint();
     }
+    return ok;
+  }
+
+  tryEvolve(): { ok: boolean; reason?: string } {
+    const blocked = this.progression.evolveUnavailableReason();
+    if (blocked) {
+      this.setUiToast(blocked, "dungeon");
+      return { ok: false, reason: blocked };
+    }
+    const ok = this.progression.evolve();
+    if (ok) {
+      this.saves.markDirty(["character", "skills", "progress"], "critical");
+      void this.saves.checkpoint();
+    }
+    return { ok };
+  }
+
+  debugSetDodgeChance(value: number): void {
+    this.debug.setDodgeChance(value);
+  }
+
+  depositGoldToVault(amount: number): number {
+    return this.vaultTransfer.depositGold(amount);
+  }
+
+  withdrawGoldFromVault(amount: number): number {
+    return this.vaultTransfer.withdrawGold(amount);
+  }
+
+  moveItemToVault(uid: string): boolean {
+    return this.vaultTransfer.moveItemToVault(uid);
+  }
+
+  moveItemFromVault(uid: string): boolean {
+    return this.vaultTransfer.moveItemFromVault(uid);
+  }
+
+  weaponReach(): { attackRange: number; attackInterval: number } {
+    if (!this.cachedWeaponReach) {
+      const weapon = this.equipment.equipped.weapon;
+      this.cachedWeaponReach = {
+        attackRange: weapon?.attackRange ?? COMBAT_BALANCE.player.attackRange,
+        attackInterval: weapon?.attackInterval ?? COMBAT_BALANCE.player.attackInterval,
+      };
+    }
+    return this.cachedWeaponReach;
   }
 
   private skillSlotPressed(): number {
@@ -1335,420 +860,6 @@ export class CityGameSession {
     this.skillLoadout.clearSlot(index);
   }
 
-  private groundPointFromNdc(ndcX: number, ndcY: number): { x: number; z: number } | null {
-    const cam = this.camera.camera;
-    const origin = cam.position.clone();
-    const vec = new Vector3(ndcX, ndcY, 0.5);
-    vec.unproject(cam).sub(origin).normalize();
-    if (Math.abs(vec.y) < 1e-5) return null;
-    const t = -origin.y / vec.y;
-    if (t < 0) return null;
-    return { x: origin.x + vec.x * t, z: origin.z + vec.z * t };
-  }
-
-  private updateNearby(list: InteractableDef[]): void {
-    let best: InteractableDef | null = null;
-    let bestDist = INTERACT_RANGE;
-    for (const item of list) {
-      const d = this.player.distanceTo(item.x, item.z);
-      if (d < bestDist) {
-        best = item;
-        bestDist = d;
-      }
-    }
-    if (best?.id !== this.nearby?.id) {
-      this.nearby = best;
-      this.bus.emit("player:near-interactable", {
-        id: best?.id ?? null,
-        label: best?.label ?? null,
-        kind: best?.kind ?? null,
-      });
-    }
-  }
-
-  private handleInteractKey(): void {
-    if (this.input.isUiOpen() || this.character.isDead) return;
-    if (!this.controller.isInteractPressed()) return;
-    if (!this.nearby || this.nearby.kind === "npc") return;
-    this.tryInteract(this.nearby);
-  }
-
-  private pickInteractableByRay(
-    ndcX: number,
-    ndcY: number,
-    list: InteractableDef[],
-  ): InteractableDef | null {
-    this.interactNdc.set(ndcX, ndcY);
-    this.interactRaycaster.setFromCamera(this.interactNdc, this.camera.camera);
-    const hits = this.interactRaycaster.intersectObjects(this.renderer.worldRoot.children, true);
-    for (const hit of hits) {
-      let obj: Object3D | null = hit.object;
-      while (obj) {
-        const id = obj.userData.interactableId as string | undefined;
-        if (id) {
-          const def = list.find((item) => item.id === id);
-          if (def) return def;
-          break;
-        }
-        obj = obj.parent;
-      }
-    }
-    return null;
-  }
-
-  private pickInteractableAt(
-    x: number,
-    z: number,
-    list: InteractableDef[],
-  ): InteractableDef | null {
-    let best: InteractableDef | null = null;
-    let bestDist = 1.1;
-    for (const item of list) {
-      const d = Math.hypot(item.x - x, item.z - z);
-      if (d < bestDist) {
-        best = item;
-        bestDist = d;
-      }
-    }
-    return best;
-  }
-
-  private clearPendingInteract(): void {
-    this.pendingInteract = null;
-  }
-
-  private approachPoint(tx: number, tz: number, stopDist: number): { x: number; z: number } {
-    const dx = tx - this.player.x;
-    const dz = tz - this.player.z;
-    const dist = Math.hypot(dx, dz);
-    if (dist <= stopDist || dist < 1e-6) return { x: this.player.x, z: this.player.z };
-    const t = (dist - stopDist) / dist;
-    return { x: this.player.x + dx * t, z: this.player.z + dz * t };
-  }
-
-  private queueOrInteract(def: InteractableDef): void {
-    if (this.character.isDead) return;
-    if (this.player.distanceTo(def.x, def.z) <= INTERACT_RANGE) {
-      this.clearPendingInteract();
-      this.tryInteract(def);
-      return;
-    }
-    this.pendingInteract = def;
-    const stopAt = Math.max(0.85, INTERACT_RANGE * 0.72);
-    const point = this.approachPoint(def.x, def.z, stopAt);
-    const world = this.worlds.getCurrent();
-    if (world) {
-      const safe = projectWalkTarget(
-        point.x,
-        point.z,
-        this.player.radius,
-        world.collision,
-        this.player.x,
-        this.player.z,
-      );
-      this.player.setMoveTarget(safe.x, safe.z);
-    } else {
-      this.player.setMoveTarget(point.x, point.z);
-    }
-  }
-
-  private resolvePendingInteract(): void {
-    const def = this.pendingInteract;
-    if (!def || this.character.isDead) return;
-    if (this.player.distanceTo(def.x, def.z) > INTERACT_RANGE) return;
-    this.clearPendingInteract();
-    this.player.clearMoveTarget();
-    this.tryInteract(def);
-  }
-
-  beginInteract(def: InteractableDef): void {
-    this.queueOrInteract(def);
-  }
-
-  private tryInteract(def: InteractableDef): void {
-    if (this.player.distanceTo(def.x, def.z) > INTERACT_RANGE) return;
-    if (this.openNpcService(def.id)) return;
-    if (def.kind === "portal-exit") {
-      this.confirmInteraction(def.id);
-      return;
-    }
-    this.openInteraction(def);
-  }
-
-  private openNpcService(id: string): boolean {
-    if (id === "vault-chest") {
-      this.openVaultBank();
-      return true;
-    }
-    if (id === "npc-composer") {
-      this.openComposer();
-      return true;
-    }
-    if (id === "npc-merchant") {
-      this.openShop("Mercador", "merchant");
-      return true;
-    }
-    if (id === "npc-blacksmith") {
-      this.openShop("Ferreiro", "blacksmith");
-      return true;
-    }
-    if (id === "npc-portal-guard") {
-      this.openNpcPanel("portal");
-      return true;
-    }
-    if (id === "npc-skill-master") {
-      this.openSkillMaster();
-      return true;
-    }
-    if (id === "npc-sage") {
-      this.openSage();
-      return true;
-    }
-    if (id === "npc-quest") {
-      this.openNpcPanel("quest");
-      return true;
-    }
-    return false;
-  }
-
-  private closeInteractionOverlay(): void {
-    this.panel.close();
-  }
-
-  private openVaultBank(): void {
-    const world = this.worlds.getCurrent();
-    const chest = world?.interactables.find((i) => i.id === "vault-chest");
-    if (!chest) return;
-    if (this.player.distanceTo(chest.x, chest.z) > INTERACT_RANGE) return;
-    this.closeInteractionOverlay();
-    this.bus.emit("ui:open-panel", { panel: "inv" });
-    this.bus.emit("ui:open-panel", { panel: "vault" });
-  }
-
-  private openShop(title: "Mercador" | "Ferreiro", shopId: "merchant" | "blacksmith"): void {
-    this.closeInteractionOverlay();
-    this.bus.emit("ui:open-panel", { panel: "inv" });
-    this.bus.emit("ui:open-panel", { panel: "shop", title, shopId });
-  }
-
-  private openSage(): void {
-    this.closeInteractionOverlay();
-    this.bus.emit("ui:open-panel", { panel: "sage" });
-  }
-
-  private openComposer(): void {
-    this.closeInteractionOverlay();
-    this.bus.emit("ui:open-panel", { panel: "composer" });
-  }
-
-  private openSkillMaster(): void {
-    this.closeInteractionOverlay();
-    this.bus.emit("ui:open-panel", { panel: "person" });
-    this.bus.emit("ui:open-panel", { panel: "skills" });
-    this.bus.emit("ui:open-panel", { panel: "skillmaster" });
-  }
-
-  private openNpcPanel(panel: "portal" | "quest"): void {
-    this.closeInteractionOverlay();
-    this.bus.emit("ui:open-panel", { panel });
-  }
-
-  openInteraction(def: InteractableDef): void {
-    if (this.openNpcService(def.id)) return;
-    this.input.setUiOpen(true);
-    let body = def.body;
-    if (def.kind === "portal") {
-      const pick = this.pickDungeonForLevel();
-      const gate = this.dungeonEntryGate(pick.id);
-      const mm = String(Math.floor(pick.durationSeconds / 60)).padStart(2, "0");
-      const ss = String(pick.durationSeconds % 60).padStart(2, "0");
-      const arenaCount = pick.arenas.length;
-      body = `${pick.name}\nNível ${pick.minLevel}–${pick.maxLevel} (${gate.ok ? "ok" : "fora"})\nDuração: ${mm}:${ss} · ${arenaCount} ${arenaCount === 1 ? "arena" : "arenas"}\nDisponíveis p/ seu nível: ${this.eligibleDungeons().map((d) => d.name).join(", ") || "—"}`;
-    }
-    this.panel.open({ id: def.id, label: def.label, body, kind: def.kind });
-    this.bus.emit("interaction:opened", { id: def.id, label: def.label, body });
-  }
-
-  confirmInteraction(id: string): void {
-    const world = this.worlds.getCurrent();
-    const def = world?.interactables.find((i) => i.id === id);
-    if (!def) return;
-    if (this.openNpcService(id)) return;
-    if (def.kind === "portal") {
-      this.closeInteractionOverlay();
-      const result = this.tryEnterDungeon(this.pickDungeonForLevel().id);
-      if (!result.ok) this.setUiToast(dungeonEnterMessage(result.reason), "dungeon");
-      return;
-    }
-    if (def.kind === "portal-exit") {
-      this.closeInteractionOverlay();
-      if (this.dungeonRun.getPhase() === "active") this.finishDungeon("exit");
-      else {
-        this.returnToCityWithFade();
-      }
-      return;
-    }
-    this.closeInteractionOverlay();
-  }
-
-  closePanel(): void {
-    this.bus.emit("interaction:closed", { id: null });
-  }
-
-  
-  setUiToast(text: string, kind: "skill" | "attr" | "level" | "dungeon" = "skill"): void {
-    this.lootToast = text;
-    this.lootToastTimer = 2.2;
-    this.uiToastKind = kind;
-  }
-
-  tryCompose(recipeId: string, itemUid: string, random?: () => number): {
-    attempted: boolean;
-    success: boolean;
-    message: string;
-    recipeId: string;
-  } {
-    const result = this.composition.compose(recipeId, itemUid, random);
-    if (result.attempted || result.message) {
-      this.setUiToast(result.message, result.attempted ? "skill" : "dungeon");
-    }
-    if (result.attempted) this.saves.markDirty(["inventory", "equipment"], "critical");
-    return result;
-  }
-
-  acceptQuest(questId: string): { ok: boolean; message: string } {
-    const result = this.quests.accept(questId);
-    this.setUiToast(result.message, result.ok ? "skill" : "dungeon");
-    if (result.ok) this.saves.markDirty("progress", "critical");
-    return result;
-  }
-
-  private applyQuestKillProgress(): void {
-    const { completedIds } = this.quests.recordKill();
-    for (const id of completedIds) {
-      const def = QUEST_BY_ID[id];
-      if (!def) continue;
-      if (def.reward.xp > 0) {
-        const { levelsGained } = this.progression.addXp(def.reward.xp);
-        if (levelsGained > 0) {
-          this.skillTree.grantSkillPoints(levelsGained);
-          this.skillLoadout.refresh();
-        }
-      }
-      if (def.reward.gold > 0) this.inventory.gold += def.reward.gold;
-      this.setUiToast(`Missão concluída: ${def.title}.`, "level");
-    }
-    if (completedIds.length) this.saves.markDirty(["character", "skills", "skillLoadout", "inventory", "progress"], "critical");
-  }
-
-  debugSetTimer(seconds: number): void {
-    this.dungeonRun.setRemaining(seconds);
-  }
-
-  debugForceDeath(): boolean {
-    const world = this.worlds.getCurrent();
-    if (!world || world.id === "city") return false;
-    if (this.character.isDead || this.worldFadeBusy) return false;
-    if (this.dungeonRun.getPhase() !== "active") return false;
-    this.character.applyDamage(this.character.maxHp + 999);
-    if (!this.character.isDead) this.character.isDead = true;
-    this.renderer.playerView.playDeath();
-    this.bus.emit("game:mode-changed", { mode: "DEAD" });
-    this.deathReturnTimer =
-      this.renderer.playerView.getAnimDurationSec("death") + DEATH_HOLD_PAD_SEC;
-    this.bus.emit("character:death", { at: Date.now() });
-    this.deathEmitCount += 1;
-    return true;
-  }
-
-  debugAddLevels(n: number): void {
-    let gained = 0;
-    for (let i = 0; i < n; i++) {
-      const before = this.progression.state.level;
-      this.progression.addXp(this.progression.state.xpToNext);
-      if (this.progression.state.level > before) {
-        const delta = this.progression.state.level - before;
-        this.skillTree.grantSkillPoints(delta);
-        gained += delta;
-      }
-    }
-    if (gained > 0) {
-      this.skillLoadout.refresh();
-      this.character.healFull();
-      this.effects.levelUpPulse(this.renderer.playerMesh, {
-        x: this.player.x,
-        z: this.player.z,
-      });
-      this.bus.emit("character:level-up", {
-        level: this.progression.state.level,
-        levelsGained: gained,
-      });
-      this.saves.markDirty(["character", "skills"], "critical");
-    }
-  }
-
-  debugSpendAll(attr: "FOR" | "DES" | "CONS" | "INT"): void {
-    const pts = this.progression.state.unspentAttributePoints;
-    if (pts > 0) this.progression.spendAttribute(attr, pts);
-  }
-
-  
-  debugLearnRandomSkill(): { learned: boolean; tree?: string; index?: number; skillId?: string; slots: number } {
-    const trees = ["controle", "magia", "fisica"] as const;
-    const options: Array<{ tree: (typeof trees)[number]; index: number }> = [];
-    for (const tree of trees) {
-      const skills = this.skillTree.getTree(tree);
-      for (let i = 0; i < skills.length; i++) {
-        if (this.skillTree.canLearn(tree, i)) options.push({ tree, index: i });
-      }
-    }
-    if (!options.length) return { learned: false, slots: this.skillLoadout.slots.length };
-    const pick = options[Math.floor(Math.random() * options.length)];
-    const skill = this.skillTree.getTree(pick.tree)[pick.index];
-    const ok = this.skillTree.learn(pick.tree, pick.index);
-    if (ok && skill.kind !== "passive") this.skillLoadout.assign(skill.id);
-    return {
-      learned: ok,
-      tree: pick.tree,
-      index: pick.index,
-      skillId: skill.id,
-      slots: this.skillLoadout.slots.length,
-    };
-  }
-
-  
-  debugSpendRandomAttributes(): { spent: number; breakdown: string; unspent: number } {
-    const attrs = ["FOR", "DES", "CONS", "INT"] as const;
-    const counts: Record<string, number> = { FOR: 0, DES: 0, CONS: 0, INT: 0 };
-    let spent = 0;
-    while (this.progression.state.unspentAttributePoints > 0) {
-      const attr = attrs[Math.floor(Math.random() * attrs.length)];
-      if (this.progression.spendAttribute(attr, 1)) {
-        counts[attr] += 1;
-        spent += 1;
-      } else break;
-    }
-    const breakdown = attrs.map((a) => `${a}+${counts[a]}`).filter((s) => !s.endsWith("+0")).join(" ");
-    return { spent, breakdown: breakdown || "—", unspent: this.progression.state.unspentAttributePoints };
-  }
-
-  debugTryReset(): boolean {
-    return this.progression.reset();
-  }
-
-  debugTryEvolve(): { ok: boolean; reason?: string } {
-    const blocked = this.progression.evolveUnavailableReason();
-    if (blocked) {
-      this.setUiToast(blocked, "dungeon");
-      return { ok: false, reason: blocked };
-    }
-    return { ok: this.progression.evolve() };
-  }
-
-  debugSetDodgeChance(value: number): void {
-    COMBAT_BALANCE.dodgeChance = value;
-  }
-
   tryUseConsumable(uid: string): boolean {
     const item = this.inventory.items.find((i) => i.uid === uid);
     if (!item || !isConsumableId(item.defId)) return false;
@@ -1772,6 +883,7 @@ export class CityGameSession {
     if (skill && skill.kind !== "passive") {
       this.skillLoadout.assign(skill.id);
     }
+    this.combat.invalidatePassives();
     this.saves.markDirty(["skills", "skillLoadout", "inventory"], "deferred");
     return true;
   }
@@ -1781,13 +893,15 @@ export class CityGameSession {
     if (isWeaponSetId(set)) {
       void this.renderer.playerView.setWeaponSet(set);
     }
+    this.cachedWeaponReach = null;
+    this.combat.invalidateMods();
+    this.effects.setRangeIndicator(0, 0, this.weaponReach().attackRange, false);
   }
 
   enemyViewMesh(id: string) {
     return this.enemyView.getMesh(id);
   }
 
-  
   allEnemyMeshStates() {
     const byId = new Map(this.enemies.enemies.map((e) => [e.id, e] as const));
     return this.enemyView.listAll().map(({ id, mesh }) => {

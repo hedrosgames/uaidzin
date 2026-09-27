@@ -111,11 +111,11 @@ Executar passos **1 → 38** na ordem. Cada linha = arquivo + entrega. Código e
 
 ## Testar
 
-- [ ] Passos 33–36 verdes.
-- [ ] Entrada em dungeon consome a vela ao usar, mesmo se o fade falhar; clique duplo não consome duas.
-- [ ] DoT igual a 30 e 144 FPS.
-- [ ] Inimigo parado até o jogador entrar no `aggroRadius`; volta ao spawn fora do leash sem curar e não atravessa cerca.
-- [ ] Combate e loot iguais ao comportamento pré-refactor (smoke/bot).
+- [x] Passos 33–36 verdes.
+- [x] Entrada em dungeon consome a vela ao usar, mesmo se o fade falhar; clique duplo não consome duas.
+- [x] DoT igual a 30 e 144 FPS.
+- [x] Inimigo parado até o jogador entrar no `aggroRadius`; volta ao spawn fora do leash sem curar e não atravessa cerca.
+- [x] Combate e loot iguais ao comportamento pré-refactor (smoke/bot).
 
 ## Pendências
 

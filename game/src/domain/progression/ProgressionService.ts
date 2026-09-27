@@ -46,6 +46,10 @@ export class ProgressionService {
   addXp(amount: number): { levelsGained: number } {
     if (amount <= 0) return { levelsGained: 0 };
     const max = PROGRESSION_BALANCE.evolutions[this.state.evolution].maxLevel;
+    if (this.state.level >= max) {
+      this.state.xp = Math.min(this.state.xp, this.state.xpToNext);
+      return { levelsGained: 0 };
+    }
     this.state.xp += amount;
     let levels = 0;
     while (this.state.level < max && this.state.xp >= this.state.xpToNext) {
@@ -54,6 +58,9 @@ export class ProgressionService {
       levels += 1;
       this.state.unspentAttributePoints += PROGRESSION_BALANCE.attributesPerLevel;
       this.state.xpToNext = PROGRESSION_BALANCE.xpToLevel(this.state.level);
+    }
+    if (this.state.level >= max) {
+      this.state.xp = Math.min(this.state.xp, this.state.xpToNext);
     }
     this.character.level = this.state.level;
     if (levels > 0) this.recomputeCombatStats();

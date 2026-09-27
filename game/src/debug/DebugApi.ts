@@ -134,7 +134,7 @@ export function installDebugApi(app: DebugHost): void {
     }),
     getDropLog: () => app.session.getDropLog(),
     clearDropLog: () => app.session.clearDropLog(),
-    forcePlayerDeath: () => app.session.debugForceDeath(),
+    forcePlayerDeath: () => app.session.debug.forceDeath(),
     setArmorAuraEnabled: (on: boolean) => {
       app.session.setArmorAuraEnabled(on);
     },
@@ -190,6 +190,7 @@ export function installDebugApi(app: DebugHost): void {
         case "level":
         case "evolution":
         case "missing":
+        case "busy":
           app.showToast(dungeonEnterMessage(result.reason), "dungeon");
           break;
         default:
@@ -224,7 +225,7 @@ export function installDebugApi(app: DebugHost): void {
     },
     getFxCount: () => app.session.effects.getCount(),
     learnFirstSkill: () => {
-      app.session.debugAddLevels(1);
+      app.session.debug.addLevels(1);
       const okLearn = app.session.skillTree.learn("fisica", 0);
       if (okLearn) {
         const skill = app.session.skillTree.getTree("fisica")[0];
@@ -236,7 +237,7 @@ export function installDebugApi(app: DebugHost): void {
       return { learned: okLearn, slots: app.session.skillLoadout.slots.length, names: app.session.skill.slotLabels() };
     },
     learnRandomSkill: () => {
-      const result = app.session.debugLearnRandomSkill();
+      const result = app.session.debug.learnRandomSkill();
       if (result.learned) {
         app.showToast(`Skill ${result.skillId} aprendida`, "skill");
         app.pulseFrame();
@@ -245,7 +246,7 @@ export function installDebugApi(app: DebugHost): void {
       return result;
     },
     spendRandomAttributes: () => {
-      const result = app.session.debugSpendRandomAttributes();
+      const result = app.session.debug.spendRandomAttributes();
       if (result.spent > 0) {
         app.showToast(`+${result.spent} pts · ${result.breakdown}`, "attr");
         app.pulseFrame();
@@ -276,8 +277,8 @@ export function installDebugApi(app: DebugHost): void {
       return true;
     },
     confirmInteraction: (id: string) => app.session.confirmInteraction(id),
-    debugSetTimer: (s: number) => app.session.debugSetTimer(s),
-    debugAddLevels: (n: number) => app.session.debugAddLevels(n),
+    debugSetTimer: (s: number) => app.session.debug.setTimer(s),
+    debugAddLevels: (n: number) => app.session.debug.addLevels(n),
     persistSave: () => saveNow([...PROFILE_SECTIONS]),
     login: (userId: string, password: string) => saveVault.login(userId, password),
     sessionUser: () => saveVault.getSession()?.user || null,
@@ -302,10 +303,10 @@ export function installDebugApi(app: DebugHost): void {
     },
     vault: {
       snapshot: () => app.session.accountVault.snapshot(),
-      depositGold: (n: number) => app.session.depositGoldToVault(n),
-      withdrawGold: (n: number) => app.session.withdrawGoldFromVault(n),
-      moveToVault: (uid: string) => app.session.moveItemToVault(uid),
-      moveFromVault: (uid: string) => app.session.moveItemFromVault(uid),
+      depositGold: (n: number) => app.session.vaultTransfer.depositGold(n),
+      withdrawGold: (n: number) => app.session.vaultTransfer.withdrawGold(n),
+      moveToVault: (uid: string) => app.session.vaultTransfer.moveItemToVault(uid),
+      moveFromVault: (uid: string) => app.session.vaultTransfer.moveItemFromVault(uid),
     },
     bags: {
       unlocked: () => app.session.bags.snapshot(),

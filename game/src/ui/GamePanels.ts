@@ -101,8 +101,8 @@ export class GamePanels {
         if (r.ok) s.equipment.onItemRefined(item);
       }
     }
-    if (action === "reset") s.debugTryReset();
-    if (action === "evolve") s.debugTryEvolve();
+    if (action === "reset") s.tryReset();
+    if (action === "evolve") s.tryEvolve();
     const save = SAVE_BY_ACTION[action];
     if (save) s.saves.markDirty(save[0], save[1]);
     this.render();
