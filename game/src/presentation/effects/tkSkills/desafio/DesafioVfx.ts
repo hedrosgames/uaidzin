@@ -30,6 +30,7 @@ import {
   disposeDesafioTextures,
   type DesafioTextureSet,
 } from "./DesafioTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface DesafioVfxConfig {
   aimDuration: number;
@@ -115,7 +116,8 @@ class DesafioCast {
   private readonly halo: Mesh<TorusGeometry, MeshBasicMaterial>;
   private readonly glow: Sprite;
   private readonly flash: Mesh<SphereGeometry, MeshBasicMaterial>;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private readonly haloEmbers: ParticleSystem;
   private readonly snapSparks: ParticleSystem;
   private readonly markDust: ParticleSystem;
@@ -139,6 +141,7 @@ class DesafioCast {
     origin: Vector3,
     target: Vector3,
     private readonly onDispose: (cast: DesafioCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.origin = origin.clone();
     this.target = target.clone();
@@ -267,9 +270,17 @@ class DesafioCast {
     this.flash.position.copy(this.target);
     this.castGroup.add(this.flash);
 
-    this.light = new PointLight(0xd4573f, 0, 7, 2);
-    this.light.position.copy(this.target);
-    this.castGroup.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xd4573f, 7);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xd4573f, 0, 7, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) {
+      this.light.position.copy(this.target);
+      this.castGroup.add(this.light);
+    }
     this.castRoot.add(this.castGroup);
 
     this.haloEmbers = createDesafioHaloEmbers(shared.particleMaterials, config);
@@ -345,6 +356,12 @@ class DesafioCast {
     this.disposed = true;
     for (const system of this.systems) system.dispose();
     this.castRoot.remove(this.castGroup);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castGroup.remove(this.light);
+      this.light.dispose();
+    }
     this.core.material.dispose();
     this.sheath.material.dispose();
     (this.ringA.children[0] as Mesh<TorusGeometry, MeshBasicMaterial>).material.dispose();
@@ -391,7 +408,7 @@ class DesafioCast {
     this.halo.scale.setScalar(1 - progress * 0.24);
     this.glow.material.opacity = 0.28 + progress * 0.3;
     this.glow.scale.setScalar(1.15 + progress * 0.55);
-    this.light.intensity = 1.1 + Math.sin(this.elapsed * 12.8) * 0.55 + progress * 0.9;
+    if (this.light) this.light.intensity = 1.1 + Math.sin(this.elapsed * 12.8) * 0.55 + progress * 0.9;
 
     if (this.phaseElapsed >= this.config.aimDuration) this.enterHold();
     void deltaTime;
@@ -415,7 +432,7 @@ class DesafioCast {
     this.halo.scale.setScalar(0.76 - progress * 0.3);
     this.glow.material.opacity = 0.58 + progress * 0.24;
     this.glow.scale.setScalar(1.7 + progress * 0.5);
-    this.light.intensity = 2 + progress * 2.4 + Math.sin(this.elapsed * 18.2) * 0.5;
+    if (this.light) this.light.intensity = 2 + progress * 2.4 + Math.sin(this.elapsed * 18.2) * 0.5;
     if (this.phaseElapsed >= this.config.holdDuration) this.enterSeal();
   }
 
@@ -428,7 +445,7 @@ class DesafioCast {
     this.flash.visible = true;
     this.flash.scale.setScalar(0.12);
     this.flash.material.opacity = 1;
-    this.light.intensity = 6.6;
+    if (this.light) this.light.intensity = 6.6;
     this.halo.visible = false;
     this.glow.visible = false;
   }
@@ -441,7 +458,7 @@ class DesafioCast {
     this.flash.scale.setScalar(0.12 + flashProgress * 0.66);
     this.flash.material.opacity = Math.pow(1 - flashProgress, 2);
     this.flash.visible = flashProgress < 1;
-    this.light.intensity = 6.6 * Math.pow(1 - progress, 2);
+    if (this.light) this.light.intensity = 6.6 * Math.pow(1 - progress, 2);
     this.markGroup.scale.setScalar(Math.max(0.001, 1 - progress * 2.6));
     this.markGroup.visible = progress < 0.4;
     if (this.phaseElapsed >= this.config.cleanupDelay) this.dispose();
@@ -461,6 +478,7 @@ export class DesafioVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<DesafioVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_DESAFIO_VFX_CONFIG, ...config };
     const finiteOr = (value: number, fallback: number, minimum: number) =>
@@ -520,12 +538,13 @@ export class DesafioVfxController {
       castOrigin,
       castTarget,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

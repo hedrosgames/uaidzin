@@ -161,9 +161,6 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-    await page.addInitScript(() => {
-      window.__UAIDZIN_DEBUG__ = true;
-    });
     await wipeSave(page, BASE);
     await page.goto(BASE, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.waitForTimeout(600);
@@ -199,9 +196,9 @@ async function main() {
     await page.evaluate(() => window.__UAIDZIN__.closePanels());
 
     const shopAudit = await page.evaluate(() => {
-      const eco = window.__UAIDZIN_ECONOMY__;
-      if (!eco?.getShopCatalog) return { ok: false, reason: "no-eco" };
-      const cat = eco.getShopCatalog();
+      const w = window.__UAIDZIN__.wire;
+      if (!w?.pullShopCatalog) return { ok: false, reason: "no-wire" };
+      const cat = w.pullShopCatalog();
       const axe = cat.shops?.blacksmith?.slots?.find((s) => s.itemId === "machado_leve");
       const pot = cat.shops?.merchant?.slots?.find((s) => s.itemId === "pocao_menor");
       return {
@@ -349,7 +346,7 @@ async function main() {
           (i) => i.defId !== "machado_leve" && i.defId !== "pocao_menor",
         );
         if (!drop) break;
-        sess.inventory.sell(drop.uid);
+        sess.sellItem(drop.uid);
       }
       let potions = 0;
       for (let n = 0; n < 15; n++) {

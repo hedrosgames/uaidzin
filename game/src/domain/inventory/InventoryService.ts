@@ -1,5 +1,13 @@
 import { ECONOMY_BALANCE } from "../../data/balance/economy";
-import type { ItemInstance } from "../items/ItemModel";
+import { isStackable } from "../../data/items/item-catalog";
+import { nextItemUid, type ItemInstance } from "../items/ItemModel";
+
+export type AddItemResult = {
+  ok: boolean;
+  added: number;
+  rejected: number;
+  reason?: "inventory_full" | "vault_full" | "invalid_item";
+};
 
 export class InventoryService {
   readonly items: ItemInstance[] = [];
@@ -11,22 +19,60 @@ export class InventoryService {
   }
 
   set gold(value: number) {
-    const n = Number.isFinite(value) ? Math.floor(value) : 0;
+    if (!Number.isFinite(value)) {
+      if (import.meta.env?.DEV) {
+        throw new Error("Invalid gold amount: " + value);
+      }
+      return;
+    }
+    const n = Math.floor(value);
     this._gold = Math.min(ECONOMY_BALANCE.goldCap, Math.max(0, n));
   }
 
-  
-  add(item: ItemInstance): boolean {
-    if (item.slot === "material" || item.defId === "pocao_menor") {
-      const stack = this.items.find((i) => i.defId === item.defId);
-      if (stack) {
-        stack.stack = Math.min(ECONOMY_BALANCE.materialStack, stack.stack + item.stack);
-        return true;
-      }
+  add(item: ItemInstance): AddItemResult {
+    if (!item || item.stack <= 0) {
+      return { ok: false, added: 0, rejected: 0, reason: "invalid_item" };
     }
-    if (this.items.length >= this.capacity) return false;
-    this.items.push(item);
-    return true;
+    if (this.items.some((i) => i.uid === item.uid)) {
+      item = { ...item, uid: nextItemUid() };
+    }
+    if (isStackable(item)) {
+      let remaining = item.stack;
+      let added = 0;
+      for (const stack of this.items) {
+        if (stack.defId !== item.defId) continue;
+        if (stack.stack >= 999) continue;
+        const space = 999 - stack.stack;
+        const take = Math.min(space, remaining);
+        stack.stack += take;
+        remaining -= take;
+        added += take;
+        if (remaining <= 0) break;
+      }
+      while (remaining > 0 && this.items.length < this.capacity) {
+        const take = Math.min(999, remaining);
+        this.items.push({
+          ...item,
+          uid: nextItemUid(),
+          stack: take,
+        });
+        remaining -= take;
+        added += take;
+      }
+      const rejected = remaining;
+      return {
+        ok: rejected === 0,
+        added,
+        rejected,
+        ...(rejected > 0 ? { reason: "inventory_full" } : {}),
+      };
+    }
+
+    if (this.items.length >= this.capacity) {
+      return { ok: false, added: 0, rejected: item.stack, reason: "inventory_full" };
+    }
+    this.items.push({ ...item });
+    return { ok: true, added: item.stack, rejected: 0 };
   }
 
   remove(uid: string): ItemInstance | null {
@@ -35,10 +81,16 @@ export class InventoryService {
     return this.items.splice(idx, 1)[0];
   }
 
-  sell(uid: string): number {
-    const item = this.remove(uid);
+  sell(uid: string, qty?: number): number {
+    const item = this.items.find((i) => i.uid === uid);
     if (!item) return 0;
-    const value = item.sellValue * item.stack;
+    const count = qty == null || qty <= 0 || qty >= item.stack ? item.stack : Math.floor(qty);
+    const value = Math.max(0, item.sellValue) * count;
+    if (count >= item.stack) {
+      this.remove(uid);
+    } else {
+      item.stack -= count;
+    }
     this.gold += value;
     return value;
   }
@@ -63,5 +115,23 @@ export class InventoryService {
 
   usedSlots(): number {
     return this.items.length;
+  }
+
+  reorder(uids: string[]): boolean {
+    const map = new Map(this.items.map((i) => [i.uid, i]));
+    const reordered: ItemInstance[] = [];
+    for (const uid of uids) {
+      const it = map.get(uid);
+      if (it) {
+        reordered.push(it);
+        map.delete(uid);
+      }
+    }
+    for (const it of map.values()) {
+      reordered.push(it);
+    }
+    this.items.length = 0;
+    this.items.push(...reordered);
+    return true;
   }
 }

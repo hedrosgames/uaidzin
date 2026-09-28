@@ -5,9 +5,7 @@ import type { SkillTreeService } from "../skills/SkillTreeService";
 export interface LoadoutSlot {
   skill: SkillDef;
   tree: TreeId;
-  level: number;
-  cooldown: number;
-  
+  readonly cooldown: number;
   cd: number;
   auto: boolean;
 }
@@ -17,161 +15,211 @@ function specFactor(raw: number): number {
   return 1 - (Math.min(spec, SKILL_BALANCE.specializationPerTreeCap) / SKILL_BALANCE.specializationPerTreeCap) * SKILL_BALANCE.specializationCooldownPenalty;
 }
 
-
-
 export class SkillLoadout {
-  slots: LoadoutSlot[] = [];
-  private preferred: Array<{ skillId: string; tree: TreeId; auto: boolean }> = [];
+  slots: Array<LoadoutSlot | null> = Array.from({ length: SKILL_BALANCE.barSize }, () => null);
+  private preferred: Array<{ skillId: string; tree: TreeId; auto: boolean; index: number }> = [];
 
   constructor(private readonly tree: SkillTreeService) {}
 
-  snapshot(): Array<{ skillId: string; tree: string; auto: boolean }> {
-    if (this.slots.length) {
-      return this.slots.map((s) => ({
-        skillId: s.skill.id,
-        tree: s.tree,
-        auto: s.auto,
-      }));
+  private createSlot(skill: SkillDef, tree: TreeId, auto: boolean, cd = 0): LoadoutSlot {
+    const treeService = this.tree;
+    return {
+      skill,
+      tree,
+      get cooldown(): number {
+        const spec = treeService.state.specialization[tree];
+        const cdScale = specFactor(spec);
+        const scaled = skill.cooldown * cdScale;
+        return Math.max(0.4, Number.isFinite(scaled) ? scaled : skill.cooldown);
+      },
+      cd: Number.isFinite(cd) ? cd : 0,
+      auto,
+    };
+  }
+
+  private syncPreferred(): void {
+    this.preferred = [];
+    for (let i = 0; i < this.slots.length; i++) {
+      const s = this.slots[i];
+      if (s) {
+        this.preferred.push({
+          skillId: s.skill.id,
+          tree: s.tree,
+          auto: s.auto,
+          index: i,
+        });
+      }
+    }
+  }
+
+  snapshot(): Array<{ skillId: string; tree: string; auto: boolean; index: number }> {
+    if (this.slots.some(Boolean)) {
+      const out: Array<{ skillId: string; tree: string; auto: boolean; index: number }> = [];
+      for (let i = 0; i < this.slots.length; i++) {
+        const s = this.slots[i];
+        if (s) {
+          out.push({
+            skillId: s.skill.id,
+            tree: s.tree,
+            auto: s.auto,
+            index: i,
+          });
+        }
+      }
+      return out;
     }
     return this.preferred.map((p) => ({ ...p }));
   }
 
-  applySaved(list: Array<{ skillId: string; tree: string; auto: boolean }> | null | undefined): void {
+  applySaved(list: Array<{ skillId: string; tree?: string; auto?: boolean; index?: number }> | null | undefined): void {
     this.preferred = [];
+    this.slots = Array.from({ length: SKILL_BALANCE.barSize }, () => null);
     if (!Array.isArray(list)) return;
-    for (const row of list.slice(0, 4)) {
+
+    const usedIndices = new Set<number>();
+    const unindexed: Array<{ skillId: string; tree: TreeId; auto: boolean }> = [];
+
+    for (const row of list) {
       if (!row?.skillId) continue;
       const tree = (row.tree as TreeId) || "fisica";
-      this.preferred.push({
-        skillId: row.skillId,
-        tree,
-        auto: row.auto !== false,
-      });
+      const auto = Boolean(row.auto);
+      if (typeof row.index === "number" && Number.isFinite(row.index) && row.index >= 0 && row.index < SKILL_BALANCE.barSize && !usedIndices.has(row.index)) {
+        usedIndices.add(row.index);
+        this.preferred.push({ skillId: row.skillId, tree, auto, index: row.index });
+      } else {
+        unindexed.push({ skillId: row.skillId, tree, auto });
+      }
+    }
+
+    let nextIdx = 0;
+    for (const row of unindexed) {
+      while (nextIdx < SKILL_BALANCE.barSize && usedIndices.has(nextIdx)) {
+        nextIdx++;
+      }
+      if (nextIdx >= SKILL_BALANCE.barSize) break;
+      usedIndices.add(nextIdx);
+      this.preferred.push({ ...row, index: nextIdx });
+      nextIdx++;
     }
   }
 
   refresh(): void {
     const st = this.tree.state;
-    const candidates: Array<{ skill: SkillDef; tree: TreeId; level: number; score: number }> = [];
-
+    const candidates: Array<{ skill: SkillDef; tree: TreeId }> = [];
     for (const tree of ["controle", "magia", "fisica"] as const) {
       const skills = CLASSES[st.classId].trees[tree];
       skills.forEach((skill) => {
-        const level = this.tree.getSkillLevel(skill.id);
-        if (level <= 0 || skill.kind === "passive") return;
-        const weight = skill.kind === "damage" ? skill.damageMultiplier : skill.kind === "heal" ? 1.2 : 0.85;
-        const score = weight * level * (1 + st.specialization[tree] / 40);
-        candidates.push({ skill, tree, level, score });
+        if (!this.tree.hasSkill(skill.id) || skill.kind === "passive") return;
+        candidates.push({ skill, tree });
       });
     }
-
-    candidates.sort((a, b) => b.score - a.score);
     const byId = new Map(candidates.map((c) => [c.skill.id, c] as const));
-    const picked: Array<{ skill: SkillDef; tree: TreeId; level: number; auto: boolean }> = [];
 
-    for (const pref of this.preferred) {
-      const hit = byId.get(pref.skillId);
-      if (!hit) continue;
-      if (picked.some((p) => p.skill.id === hit.skill.id)) continue;
-      picked.push({ skill: hit.skill, tree: hit.tree, level: hit.level, auto: pref.auto });
-      if (picked.length >= 4) break;
+    if (this.preferred.length > 0 && !this.slots.some(Boolean)) {
+      for (const pref of this.preferred) {
+        if (pref.index < 0 || pref.index >= this.slots.length) continue;
+        const hit = byId.get(pref.skillId);
+        if (!hit) continue;
+        this.slots[pref.index] = this.createSlot(hit.skill, hit.tree, pref.auto);
+      }
     }
 
-    for (const c of candidates) {
-      if (picked.length >= 4) break;
-      if (picked.some((p) => p.skill.id === c.skill.id)) continue;
-      picked.push({ skill: c.skill, tree: c.tree, level: c.level, auto: true });
+    for (let i = 0; i < this.slots.length; i++) {
+      const s = this.slots[i];
+      if (!s) continue;
+      const hit = byId.get(s.skill.id);
+      if (!hit) {
+        this.slots[i] = null;
+      } else {
+        this.slots[i] = this.createSlot(hit.skill, hit.tree, s.auto, s.cd);
+      }
     }
 
-    const prevCd = new Map(this.slots.map((s) => [s.skill.id, s.cd] as const));
-    this.slots = picked.map((c) => {
-      const cdScale = specFactor(st.specialization[c.tree]);
-      const scaled = c.skill.cooldown * cdScale;
-      const cooldown = Math.max(0.4, Number.isFinite(scaled) ? scaled : c.skill.cooldown);
-      const remaining = prevCd.get(c.skill.id);
-      return {
-        skill: c.skill,
-        tree: c.tree,
-        level: c.level,
-        cooldown,
-        cd: remaining === undefined || !Number.isFinite(remaining) ? 0 : Math.min(cooldown, remaining),
-        auto: c.auto,
-      };
-    });
-    this.preferred = this.slots.map((s) => ({
-      skillId: s.skill.id,
-      tree: s.tree,
-      auto: s.auto,
-    }));
+    this.syncPreferred();
   }
 
   tick(dt: number): void {
-    for (const s of this.slots) s.cd = Number.isFinite(s.cd) ? Math.max(0, s.cd - dt) : 0;
+    for (const s of this.slots) {
+      if (s) s.cd = Number.isFinite(s.cd) ? Math.max(0, s.cd - dt) : 0;
+    }
   }
 
   resetCooldowns(): void {
-    for (const s of this.slots) s.cd = 0;
+    for (const s of this.slots) {
+      if (s) s.cd = 0;
+    }
   }
 
-  assign(skillId: string): boolean {
+  assign(skillId: string, index?: number): boolean {
     const st = this.tree.state;
-    let found: { skill: SkillDef; tree: TreeId; level: number } | null = null;
+    let found: { skill: SkillDef; tree: TreeId } | null = null;
     for (const tree of ["controle", "magia", "fisica"] as const) {
       const skill = CLASSES[st.classId].trees[tree].find((item) => item.id === skillId);
       if (!skill || skill.kind === "passive") continue;
-      const level = this.tree.getSkillLevel(skill.id);
-      if (level <= 0) continue;
-      found = { skill, tree, level };
+      if (!this.tree.hasSkill(skill.id)) continue;
+      found = { skill, tree };
       break;
     }
     if (!found) return false;
-    const picked = found;
-    if (this.slots.some((slot) => slot.skill.id === picked.skill.id)) return true;
-    const cdScale = specFactor(st.specialization[picked.tree]);
-    const slot: LoadoutSlot = {
-      skill: picked.skill,
-      tree: picked.tree,
-      level: picked.level,
-      cooldown: Math.max(0.4, picked.skill.cooldown * cdScale),
-      cd: 0,
-      auto: true,
-    };
-    if (this.slots.length < 4) this.slots.push(slot);
-    else this.slots[3] = slot;
-    this.preferred = this.slots.map((item) => ({
-      skillId: item.skill.id,
-      tree: item.tree,
-      auto: item.auto,
-    }));
+
+    for (let i = 0; i < this.slots.length; i++) {
+      if (this.slots[i]?.skill.id === skillId) {
+        this.slots[i] = null;
+      }
+    }
+
+    let targetIndex = -1;
+    if (typeof index === "number") {
+      if (index < 0 || index >= this.slots.length) return false;
+      targetIndex = index;
+    } else {
+      for (let i = 0; i < this.slots.length; i++) {
+        if (this.slots[i] === null) {
+          targetIndex = i;
+          break;
+        }
+      }
+      if (targetIndex < 0) return false;
+    }
+
+    this.slots[targetIndex] = this.createSlot(found.skill, found.tree, false);
+    this.syncPreferred();
+    return true;
+  }
+
+  assignToSlot(index: number, skillId: string): boolean {
+    return this.assign(skillId, index);
+  }
+
+  swapSlots(fromIndex: number, toIndex: number): boolean {
+    if (fromIndex < 0 || fromIndex >= this.slots.length) return false;
+    if (toIndex < 0 || toIndex >= this.slots.length) return false;
+    const temp = this.slots[fromIndex];
+    this.slots[fromIndex] = this.slots[toIndex];
+    this.slots[toIndex] = temp;
+    this.syncPreferred();
     return true;
   }
 
   clearSlot(index: number): void {
     if (index < 0 || index >= this.slots.length) return;
-    this.slots.splice(index, 1);
-    this.preferred = this.slots.map((item) => ({
-      skillId: item.skill.id,
-      tree: item.tree,
-      auto: item.auto,
-    }));
+    this.slots[index] = null;
+    this.syncPreferred();
   }
 
   toggleAuto(index: number): void {
+    if (index < 0 || index >= this.slots.length) return;
     const slot = this.slots[index];
     if (!slot) return;
     slot.auto = !slot.auto;
-    this.preferred = this.slots.map((item) => ({
-      skillId: item.skill.id,
-      tree: item.tree,
-      auto: item.auto,
-    }));
+    this.syncPreferred();
   }
 
   bestReadyAuto(): LoadoutSlot | null {
     let best: LoadoutSlot | null = null;
     for (const s of this.slots) {
-      if (!s.auto || s.cd > 0) continue;
-      if (!best || s.level * s.skill.damageMultiplier > best.level * best.skill.damageMultiplier) {
+      if (!s || !s.auto || s.cd > 0) continue;
+      if (!best || s.skill.damageMultiplier > best.skill.damageMultiplier) {
         best = s;
       }
     }

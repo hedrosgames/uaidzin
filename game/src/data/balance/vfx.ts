@@ -24,3 +24,5 @@ export const VFX_BALANCE = {
     skill: 22,
   },
 } as const;
+
+export const TK_LIGHT_POOL_SIZE = 4;

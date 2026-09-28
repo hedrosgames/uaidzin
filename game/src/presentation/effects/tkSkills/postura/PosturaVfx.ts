@@ -29,6 +29,7 @@ import {
   disposePosturaTextures,
   type PosturaTextureSet,
 } from "./PosturaTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface PosturaVfxConfig {
   duration: number;
@@ -157,7 +158,8 @@ class PosturaCast {
   private readonly closureRings: Mesh<RingGeometry, MeshBasicMaterial>[] = [];
   private readonly flash: Sprite;
   private readonly flashMaterial: SpriteMaterial;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private phase: PosturaPhase = "activation";
   private activationElapsed = 0;
   private activeElapsed = 0;
@@ -181,6 +183,7 @@ class PosturaCast {
     private readonly config: PosturaVfxConfig,
     center: Vector3,
     private readonly onDispose: (cast: PosturaCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.seed = Math.floor(Math.random() * 2147483647) || 1;
     scene.add(this.castRoot);
@@ -218,9 +221,17 @@ class PosturaCast {
     this.flash.renderOrder = 10;
     this.castRoot.add(this.flash);
 
-    this.light = new PointLight(0xd4a017, 0, 5, 2);
-    this.light.position.set(0, 0.9, 0);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xd4a017, 5);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xd4a017, 0, 5, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) {
+      this.light.position.set(0, 0.9, 0);
+      this.castRoot.add(this.light);
+    }
 
     this.place(center);
     this.triggerActivation();
@@ -245,7 +256,7 @@ class PosturaCast {
         scale: ring.scale.x,
       })),
       flashOpacity: this.flashMaterial.opacity,
-      lightIntensity: this.light.intensity,
+      lightIntensity: this.light?.intensity ?? 0,
       position: this.castRoot.position.toArray(),
     };
   }
@@ -275,7 +286,13 @@ class PosturaCast {
     if (this.disposed) return;
     this.disposed = true;
     for (const system of this.systems) system.dispose();
-    this.castRoot.remove(this.groundRing, this.flash, this.light);
+    this.castRoot.remove(this.groundRing, this.flash);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     for (const ring of this.closureRings) this.castRoot.remove(ring);
     this.groundRing.material.dispose();
     this.flashMaterial.dispose();
@@ -337,7 +354,7 @@ class PosturaCast {
 
     this.flash.scale.setScalar(1.4 + close * 0.9);
     this.flashMaterial.opacity = Math.pow(1 - progress, 1.4) * 0.9;
-    this.light.intensity = (1 - Math.pow(1 - progress, 2)) * 2.4;
+    if (this.light) this.light.intensity = (1 - Math.pow(1 - progress, 2)) * 2.4;
 
     if (progress >= 1) {
       this.phase = "active";
@@ -358,7 +375,7 @@ class PosturaCast {
     const breath = 0.5 + 0.5 * Math.sin(this.breathTime * 1.35);
     this.groundRing.material.uniforms.uIntensity.value = 0.72 + breath * 0.2;
     this.groundRing.scale.setScalar(1 + Math.sin(this.breathTime * 0.8) * 0.025);
-    this.light.intensity = 0.55 + breath * 0.3;
+    if (this.light) this.light.intensity = 0.55 + breath * 0.3;
 
     if (this.activeElapsed >= this.nextResist) this.triggerResist();
 
@@ -376,7 +393,7 @@ class PosturaCast {
     this.sparkSystems.burst.emitter.visible = true;
     this.sparkSystems.burst.restart();
     this.sparkSystems.burst.play();
-    this.light.intensity = 1.5;
+    if (this.light) this.light.intensity = 1.5;
     this.groundRing.material.uniforms.uIntensity.value = 1;
   }
 
@@ -387,7 +404,7 @@ class PosturaCast {
     const progress = MathUtils.clamp(this.fadeElapsed / this.config.fadeDuration, 0, 1);
     const fade = Math.pow(1 - progress, 2);
     this.groundRing.material.uniforms.uIntensity.value = fade * 0.8;
-    this.light.intensity = 0.6 * fade;
+    if (this.light) this.light.intensity = 0.6 * fade;
     this.groundRing.scale.setScalar(1 + progress * 0.08);
     if (this.fadeElapsed >= this.config.fadeDuration) this.dispose();
   }
@@ -406,6 +423,7 @@ export class PosturaVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<PosturaVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_POSTURA_VFX_CONFIG, ...config };
     this.config = {
@@ -440,12 +458,13 @@ export class PosturaVfxController {
       { ...this.config, duration: stanceDuration },
       center,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime) ? MathUtils.clamp(deltaTime, 0, 0.1) : 0;
     this.accumulator = Math.min(this.accumulator + frameDelta, 0.2);
     let stepCount = 0;

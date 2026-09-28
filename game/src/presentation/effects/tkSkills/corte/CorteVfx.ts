@@ -11,6 +11,7 @@ import {
   Vector2,
   Vector3,
 } from "three";
+import type { TkLightPool } from "../../TkLightPool";
 import { BatchedRenderer, type ParticleSystem } from "three.quarks";
 import {
   createCorteParticleMaterials,
@@ -156,7 +157,8 @@ interface SlashState {
 
 class CorteCast {
   private readonly slashes: SlashState[] = [];
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private elapsed = 0;
   private disposed = false;
 
@@ -169,6 +171,7 @@ class CorteCast {
     origin: Vector3,
     private readonly target: Vector3,
     private readonly onDispose: (cast: CorteCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     const signs = [1, -1];
     for (let index = 0; index < signs.length; index += 1) {
@@ -216,9 +219,17 @@ class CorteCast {
         active: false,
       });
     }
-    this.light = new PointLight(0xf0e6d0, 0, 5.5, 2);
-    this.castRoot.add(this.light);
-    this.light.position.copy(this.target);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xf0e6d0, 5.5);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xf0e6d0, 0, 5.5, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) {
+      this.castRoot.add(this.light);
+      this.light.position.copy(this.target);
+    }
   }
 
   getPhase(): CastPhase {
@@ -279,10 +290,12 @@ class CorteCast {
       0,
       1,
     );
-    this.light.intensity = Math.max(
-      0,
-      3.2 * (1 - fadeProgress) + (fadeProgress < 1 ? 0.4 : 0),
-    );
+    if (this.light) {
+      this.light.intensity = Math.max(
+        0,
+        3.2 * (1 - fadeProgress) + (fadeProgress < 1 ? 0.4 : 0),
+      );
+    }
     if (
       this.elapsed >=
       fadeStart + this.config.fadeDuration + this.config.cleanupDelay
@@ -300,7 +313,12 @@ class CorteCast {
       slash.mesh.geometry.dispose();
       slash.mesh.material.dispose();
     }
-    this.castRoot.remove(this.light);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.onDispose(this);
   }
 
@@ -370,6 +388,7 @@ export class CorteVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<CorteVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_CORTE_VFX_CONFIG, ...config };
     this.config = {
@@ -418,12 +437,13 @@ export class CorteVfxController {
       launchOrigin,
       slashTarget,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

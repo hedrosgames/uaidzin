@@ -27,6 +27,7 @@ import {
   disposeAuraTextures,
   type AuraTextureSet,
 } from "./AuraTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface AuraVfxConfig {
   duration: number;
@@ -136,7 +137,8 @@ class AuraCast {
   private readonly haloMaterial: SpriteMaterial;
   private readonly moteMaterial: SpriteMaterial;
   private readonly motes: OrbitMote[] = [];
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private phase: AuraPhase = "activation";
   private activationElapsed = 0;
   private activeElapsed = 0;
@@ -156,6 +158,7 @@ class AuraCast {
     private readonly config: AuraVfxConfig,
     center: Vector3,
     private readonly onDispose: (cast: AuraCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     scene.add(this.castRoot);
     this.shimmerSystems = createAuraShimmerSystems(shared.particleMaterials, config);
@@ -212,8 +215,14 @@ class AuraCast {
       });
     }
 
-    this.light = new PointLight(0xd4a017, 0, 5.5, 2);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xd4a017, 5.5);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xd4a017, 0, 5.5, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) this.castRoot.add(this.light);
 
     this.place(center);
     this.triggerActivation();
@@ -234,7 +243,7 @@ class AuraCast {
       },
       haloOpacity: this.haloMaterial.opacity,
       moteOpacity: this.moteMaterial.opacity,
-      lightIntensity: this.light.intensity,
+      lightIntensity: this.light?.intensity ?? 0,
       position: this.castRoot.position.toArray(),
     };
   }
@@ -264,7 +273,13 @@ class AuraCast {
     if (this.disposed) return;
     this.disposed = true;
     for (const system of this.systems) system.dispose();
-    this.castRoot.remove(this.ring, this.halo, this.light);
+    this.castRoot.remove(this.ring, this.halo);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     for (const mote of this.motes) this.castRoot.remove(mote.sprite);
     this.ring.material.dispose();
     this.haloMaterial.dispose();
@@ -279,7 +294,7 @@ class AuraCast {
     position.y = 0.02;
     this.castRoot.position.copy(position);
     this.ring.position.set(0, 0.01, 0);
-    this.light.position.set(0, 1, 0);
+    if (this.light) this.light.position.set(0, 1, 0);
   }
 
   private triggerActivation(): void {
@@ -306,7 +321,7 @@ class AuraCast {
     this.ring.material.uniforms.uIntensity.value = ease;
     this.haloMaterial.opacity = ease * 0.5;
     this.moteMaterial.opacity = ease * 0.85;
-    this.light.intensity = ease * 1.1;
+    if (this.light) this.light.intensity = ease * 1.1;
     this.updateMotes();
     if (this.activationElapsed + 1e-9 >= this.config.activationDuration) {
       this.phase = "active";
@@ -325,7 +340,7 @@ class AuraCast {
     this.haloMaterial.opacity = 0.38 + pulse * 0.2;
     this.halo.scale.setScalar(1.7 + pulse * 0.22);
     this.moteMaterial.opacity = 0.7 + pulse * 0.25;
-    this.light.intensity = 0.95 + pulse * 0.4;
+    if (this.light) this.light.intensity = 0.95 + pulse * 0.4;
     this.updateMotes();
     if (this.activeElapsed + 1e-9 >= this.config.duration) this.triggerFade();
   }
@@ -345,7 +360,7 @@ class AuraCast {
     this.ring.material.uniforms.uIntensity.value = fade * 0.85;
     this.haloMaterial.opacity = 0.5 * fade;
     this.moteMaterial.opacity = 0.85 * fade;
-    this.light.intensity = 1.1 * fade;
+    if (this.light) this.light.intensity = 1.1 * fade;
     this.ring.scale.setScalar(1 + progress * 0.1);
     this.updateMotes();
     if (this.fadeElapsed + 1e-9 >= this.config.fadeDuration) this.dispose();
@@ -378,6 +393,7 @@ export class AuraVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<AuraVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_AURA_VFX_CONFIG, ...config };
     this.config = {
@@ -414,12 +430,13 @@ export class AuraVfxController {
       { ...this.config, duration: auraDuration },
       center,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime) ? MathUtils.clamp(deltaTime, 0, 0.1) : 0;
     this.accumulator = Math.min(this.accumulator + frameDelta, 0.2);
     let stepCount = 0;

@@ -1,7 +1,7 @@
 import { type Texture } from "three";
 import {
   createCanvasTexture as createTexture,
-  drawRadialGlow,
+  createGlowTexture,
 } from "../../vfxKit/canvasTexture";
 
 export interface CorteTextureSet {
@@ -32,14 +32,12 @@ export function createCorteTextures(): CorteTextureSet {
     context.globalCompositeOperation = "source-over";
   });
 
-  const spark = createTexture(64, 64, (context) => {
-    drawRadialGlow(context, 32, 32, [
-      [0, "rgba(255,255,248,1)"],
-      [0.22, "rgba(240,230,208,0.9)"],
-      [0.52, "rgba(212,160,23,0.62)"],
-      [1, "rgba(90,74,56,0)"],
-    ]);
-  });
+  const spark = createGlowTexture(64, [
+    [0, "rgba(255,255,248,1)"],
+    [0.22, "rgba(240,230,208,0.9)"],
+    [0.52, "rgba(212,160,23,0.62)"],
+    [1, "rgba(90,74,56,0)"],
+  ]);
 
   return { blade, spark };
 }

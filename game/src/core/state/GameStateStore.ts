@@ -1,5 +1,6 @@
 import type { GameMode } from "./GameMode";
 import type { GameState } from "./GameState";
+import type { ErrorReporter } from "../errors/ErrorReporter";
 
 export class GameStateStore {
   private state: GameState = {
@@ -8,6 +9,8 @@ export class GameStateStore {
   };
 
   private readonly listeners = new Set<(state: GameState) => void>();
+
+  constructor(private readonly errors?: ErrorReporter) {}
 
   getState(): Readonly<GameState> {
     return this.state;
@@ -36,7 +39,11 @@ export class GameStateStore {
 
   private notify(): void {
     for (const listener of this.listeners) {
-      listener(this.state);
+      try {
+        listener(this.state);
+      } catch (err) {
+        this.errors?.report(err, "GameStateStore.notify");
+      }
     }
   }
 }

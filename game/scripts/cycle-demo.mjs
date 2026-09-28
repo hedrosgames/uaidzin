@@ -6,9 +6,6 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-    await page.addInitScript(() => {
-      window.__UAIDZIN_DEBUG__ = true;
-    });
     await page.goto(`${BASE}tools/save-wipe.html?auto=all`, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(600);
     await page.goto(BASE, { waitUntil: "domcontentloaded" });

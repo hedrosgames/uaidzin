@@ -68,7 +68,6 @@ export class SkillController {
     if (!this.character.spendMp(cost)) return null;
     const resolved = resolveSkill({
       skill: slot.skill,
-      level: slot.level,
       attack: this.character.attack,
       maxHp: this.character.maxHp,
       px,
@@ -111,13 +110,23 @@ export class SkillController {
   }
 
   slotStates(): Array<{ key: number; name: string; cdRatio: number; ready: boolean; auto: boolean }> {
-    return this.loadout.slots.map((slot, index) => ({
-      key: index + 1,
-      name: slot.skill.name,
-      cdRatio: slot.cooldown > 0 ? slot.cd / slot.cooldown : 0,
-      ready: slot.cd <= 0,
-      auto: slot.auto,
-    }));
+    const list: Array<{ key: number; name: string; cdRatio: number; ready: boolean; auto: boolean }> = [];
+    for (let i = 0; i < SKILL_BALANCE.barSize; i++) {
+      const slot = this.loadout.slots[i];
+      const key = i === 9 ? 0 : i + 1;
+      if (!slot) {
+        list.push({ key, name: "", cdRatio: 0, ready: false, auto: false });
+      } else {
+        list.push({
+          key,
+          name: slot.skill.name,
+          cdRatio: slot.cooldown > 0 ? slot.cd / slot.cooldown : 0,
+          ready: slot.cd <= 0,
+          auto: slot.auto,
+        });
+      }
+    }
+    return list;
   }
 
   getCooldownRatio(index: number): number {
@@ -127,7 +136,17 @@ export class SkillController {
   }
 
   slotLabels(): string[] {
-    return this.loadout.slots.map((slot, index) => `${index + 1}·${slot.skill.name}${slot.auto ? "A" : ""}`);
+    const out: string[] = [];
+    for (let i = 0; i < SKILL_BALANCE.barSize; i++) {
+      const slot = this.loadout.slots[i];
+      const key = i === 9 ? 0 : i + 1;
+      if (!slot) {
+        out.push(`${key}·-`);
+      } else {
+        out.push(`${key}·${slot.skill.name}${slot.auto ? "A" : ""}`);
+      }
+    }
+    return out;
   }
 
   reset(): void {
@@ -135,6 +154,7 @@ export class SkillController {
   }
 
   private manualSlot(index: number, mods: CombatMods): LoadoutSlot | null {
+    if (index < 0 || index >= this.loadout.slots.length) return null;
     const slot = this.loadout.slots[index];
     if (!slot || !(slot.cd <= 0) || slot.skill.kind === "passive") return null;
     if (!this.affordable(slot, mods)) return null;
@@ -155,7 +175,7 @@ export class SkillController {
     let best: LoadoutSlot | null = null;
     let bestScore = -1;
     for (const slot of this.loadout.slots) {
-      if (!slot.auto || !(slot.cd <= 0)) continue;
+      if (!slot || !slot.auto || !(slot.cd <= 0)) continue;
       if (!this.affordable(slot, mods)) continue;
       if (!this.autoUseful(slot, hpRatio, buffs, form, summons, targets, px, pz, facing)) continue;
       const score = this.autoScore(slot, hpRatio);
@@ -199,9 +219,9 @@ export class SkillController {
 
   private autoScore(slot: LoadoutSlot, hpRatio: number): number {
     const skill = slot.skill;
-    if (skill.kind === "heal") return (1 - hpRatio) * 12 + slot.level;
-    if (skill.kind === "buff" || skill.kind === "transform") return 3 + slot.level * 0.1;
-    if (skill.kind === "summon") return 2 + slot.level * 0.1;
-    return slot.level * Math.max(0.2, skill.damageMultiplier);
+    if (skill.kind === "heal") return (1 - hpRatio) * 12 + 1;
+    if (skill.kind === "buff" || skill.kind === "transform") return 3.1;
+    if (skill.kind === "summon") return 2.1;
+    return Math.max(0.2, skill.damageMultiplier);
   }
 }

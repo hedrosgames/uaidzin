@@ -1,8 +1,9 @@
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
-import type { ItemInstance } from "../domain/items/ItemModel";
+import { nextItemUid, type ItemInstance } from "../domain/items/ItemModel";
 import type { EquipSlot } from "../domain/items/EquipmentService";
 import type { ActiveBuff } from "../domain/character/BuffService";
 import type { AccountVaultState } from "../domain/account/AccountVaultService";
+import { ECONOMY_BALANCE } from "../data/balance/economy";
 
 export const SAVE_VERSION = 4;
 export const SLOT_COUNT = 4;
@@ -54,6 +55,7 @@ export type SkillLoadoutSlotSave = {
   skillId: string;
   tree: string;
   auto: boolean;
+  index?: number;
 };
 
 export type AccountSave = {
@@ -87,7 +89,7 @@ export type SavePayload = {
   };
   skills: {
     classId: string;
-    levels: Record<string, { level: number }>;
+    learned: string[];
     eighthTree: string | null;
     specialization: Record<string, number>;
     skillPoints: number;
@@ -243,14 +245,23 @@ export function normalizeSlots(slots: unknown): Array<SlotSummary | null> {
 export function normalizeVault(raw: unknown): AccountVaultState {
   const data = (raw || {}) as Partial<AccountVaultState>;
   const items: ItemInstance[] = [];
+  const seen = new Set<string>();
   if (Array.isArray(data.items)) {
     for (const it of data.items) {
       if (!it || typeof it !== "object" || typeof (it as ItemInstance).uid !== "string") continue;
-      items.push({ ...(it as ItemInstance) });
+      let uid = String((it as ItemInstance).uid);
+      if (seen.has(uid)) {
+        uid = nextItemUid();
+      }
+      seen.add(uid);
+      items.push({ ...(it as ItemInstance), uid });
     }
   }
   return {
-    gold: Math.max(0, Math.floor(Number(data.gold) || 0)),
+    gold: Math.min(
+      ECONOMY_BALANCE.goldCap,
+      Math.max(0, Math.floor(Number(data.gold) || 0)),
+    ),
     items,
   };
 }
@@ -268,13 +279,11 @@ export function parseProfileId(profileId: string): { userId: string; slotIndex: 
 export function summaryFromPayload(payload: SavePayload): SlotSummary {
   const spec = normalizeTreeMap(payload.skills.specialization);
   const trees = emptyTreeMap();
-  const levels = payload.skills.levels || {};
-  for (const [skillId, progress] of Object.entries(levels)) {
-    const lvl = Math.max(0, Math.floor(Number(progress?.level) || 0));
-    if (lvl <= 0) continue;
-    if (skillId.includes("_ctrl") || skillId.includes("controle")) trees.controle += lvl;
-    else if (skillId.includes("_mag") || skillId.includes("magia")) trees.magia += lvl;
-    else if (skillId.includes("_fis") || skillId.includes("fisica")) trees.fisica += lvl;
+  const learned = payload.skills.learned || [];
+  for (const skillId of learned) {
+    if (skillId.includes("_ctrl") || skillId.includes("controle")) trees.controle += 1;
+    else if (skillId.includes("_mag") || skillId.includes("magia")) trees.magia += 1;
+    else if (skillId.includes("_fis") || skillId.includes("fisica")) trees.fisica += 1;
   }
   return {
     profileId: payload.meta.profileId,

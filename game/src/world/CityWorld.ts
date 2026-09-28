@@ -5,6 +5,7 @@ import {
   Group,
   Mesh,
   MeshStandardMaterial,
+  Object3D,
   PlaneGeometry,
   PointLight,
   TorusGeometry,
@@ -78,6 +79,7 @@ export interface BuiltWorld {
   spawn: { x: number; z: number };
   tickables: WorldTickable[];
   groundY: (x: number, z: number) => number;
+  occluders?: Object3D[];
 }
 
 function makeNpcMarker(def: InteractableDef): Group {
@@ -191,11 +193,14 @@ export function buildCityWorld(): BuiltWorld {
   fountainPlinth.userData.occlusionIgnore = true;
   group.add(fountainPlinth);
 
+  const occluders: Object3D[] = [];
+
   const fountainWater = new FountainWater();
   const fountainScale = cityPropScale("fountain", FOUNTAIN_HEIGHT);
-  spawnCityProp(group, { id: "fountain", x: 0, z: 0, scale: fountainScale, quarterTurns: 0 }, (root) => {
+  const fountainProp = spawnCityProp(group, { id: "fountain", x: 0, z: 0, scale: fountainScale, quarterTurns: 0 }, (root) => {
     fountainWater.attach(root);
   });
+  occluders.push(fountainProp);
   const fountainFoot = cityPropFootprint("fountain", fountainScale, 0);
   const fountainPad = 0.08;
   collision.boxes.push(
@@ -210,13 +215,15 @@ export function buildCityWorld(): BuiltWorld {
 
   for (const [id, x, z, quarterTurns] of CITY_STALLS) {
     const scale = cityPropScale(id, STALL_HEIGHT);
-    spawnCityProp(group, { id, x, z, scale, quarterTurns });
+    const stallProp = spawnCityProp(group, { id, x, z, scale, quarterTurns });
+    occluders.push(stallProp);
     const foot = cityPropFootprint(id, scale, quarterTurns);
     collision.boxes.push(boxFromCenter(x, z, foot.width, foot.depth));
   }
 
   const bulletinScale = cityPropScale("bulletin-board", BULLETIN_HEIGHT);
-  spawnCityProp(group, { id: "bulletin-board", ...BULLETIN_POS, scale: bulletinScale });
+  const bulletinProp = spawnCityProp(group, { id: "bulletin-board", ...BULLETIN_POS, scale: bulletinScale });
+  occluders.push(bulletinProp);
   const bulletinFoot = cityPropFootprint("bulletin-board", bulletinScale, BULLETIN_POS.quarterTurns);
   collision.boxes.push(boxFromCenter(BULLETIN_POS.x, BULLETIN_POS.z, bulletinFoot.width, bulletinFoot.depth));
 
@@ -237,7 +244,7 @@ export function buildCityWorld(): BuiltWorld {
     const alongX = quarterTurns % 2 === 0;
     for (let i = 0; i < segments; i++) {
       const offset = -half + segmentLength * (i + 0.5);
-      spawnCityProp(group, {
+      const wallProp = spawnCityProp(group, {
         id: "wall",
         x: alongX ? offset : cx,
         z: alongX ? cz : offset,
@@ -245,6 +252,7 @@ export function buildCityWorld(): BuiltWorld {
         scaleX: wallScaleX,
         quarterTurns,
       });
+      occluders.push(wallProp);
     }
     collision.boxes.push(
       alongX ? boxFromCenter(cx, cz, size, wallT) : boxFromCenter(cx, cz, wallT, size),
@@ -283,6 +291,7 @@ export function buildCityWorld(): BuiltWorld {
     spawn: { x: 0, z: 4 },
     tickables,
     groundY: sampleCityGroundY,
+    occluders,
   };
 }
 
@@ -297,7 +306,7 @@ const DUNGEON_BRAZIER_SPOTS: Array<[number, number]> = [
   [8.8, -48],
 ];
 
-function addCampoFence(group: Group, collision: WorldCollision, x: number, z: number, alongZ: boolean, length: number): void {
+function addCampoFence(group: Group, collision: WorldCollision, x: number, z: number, alongZ: boolean, length: number, occluders?: Object3D[]): void {
   const wood = new MeshStandardMaterial({ color: 0x5a3d22, roughness: 0.92, metalness: 0.02 });
   const postMat = new MeshStandardMaterial({ color: 0x3a2a1c, roughness: 0.95, metalness: 0 });
   const posts = Math.max(2, Math.round(length / 2.4));
@@ -310,16 +319,19 @@ function addCampoFence(group: Group, collision: WorldCollision, x: number, z: nu
     post.castShadow = true;
     post.receiveShadow = true;
     group.add(post);
+    occluders?.push(post);
   }
   const rail = new Mesh(new BoxGeometry(alongZ ? 0.12 : length, 0.1, alongZ ? length : 0.12), wood);
   rail.position.set(x, 0.95, z);
   rail.castShadow = true;
   rail.receiveShadow = true;
   group.add(rail);
+  occluders?.push(rail);
   const railLow = new Mesh(new BoxGeometry(alongZ ? 0.1 : length, 0.08, alongZ ? length : 0.1), wood);
   railLow.position.set(x, 0.45, z);
   railLow.castShadow = true;
   group.add(railLow);
+  occluders?.push(railLow);
   collision.boxes.push(alongZ ? boxFromCenter(x, z, 0.35, length) : boxFromCenter(x, z, length, 0.35));
 }
 
@@ -330,6 +342,7 @@ export function buildTestDungeonWorld(): BuiltWorld {
   group.name = "world-dungeon-test";
   const collision = emptyCollision();
   const tickables: WorldTickable[] = [];
+  const occluders: Object3D[] = [];
 
   group.add(new AmbientLight(0xd8c8a8, 0.72));
 
@@ -374,6 +387,7 @@ export function buildTestDungeonWorld(): BuiltWorld {
     wall.castShadow = true;
     wall.receiveShadow = true;
     group.add(wall);
+    occluders.push(wall);
     collision.boxes.push(boxFromCenter(x, -depth / 2 + 6, 0.55, depth));
   }
 
@@ -422,10 +436,6 @@ export function buildTestDungeonWorld(): BuiltWorld {
     fill.position.set(arena.centerX, 5.8, arena.centerZ);
     group.add(fill);
 
-    const cool = new PointLight(0xa8c8e8, 2.4, 18, 1.8);
-    cool.position.set(arena.centerX + 3.5, 4.2, arena.centerZ - 2);
-    group.add(cool);
-
     const next = DUNGEON_TEST.arenas[DUNGEON_TEST.arenas.indexOf(arena) + 1];
     if (next) {
       const midZ = (arena.centerZ + next.centerZ) / 2;
@@ -438,30 +448,36 @@ export function buildTestDungeonWorld(): BuiltWorld {
       corridor.receiveShadow = true;
       corridor.userData.occlusionIgnore = true;
       group.add(corridor);
-      addCampoFence(group, collision, -3.2, midZ, true, Math.max(len * 0.85, 2));
-      addCampoFence(group, collision, 3.2, midZ, true, Math.max(len * 0.85, 2));
+      addCampoFence(group, collision, -3.2, midZ, true, Math.max(len * 0.85, 2), occluders);
+      addCampoFence(group, collision, 3.2, midZ, true, Math.max(len * 0.85, 2), occluders);
     }
   }
 
   const rackScale = cityPropScale("weapon-rack", 2.2);
-  spawnCityProp(group, { id: "weapon-rack", x: -5.5, z: 4.5, scale: rackScale, quarterTurns: 1 });
+  const rackProp = spawnCityProp(group, { id: "weapon-rack", x: -5.5, z: 4.5, scale: rackScale, quarterTurns: 1 });
+  occluders.push(rackProp);
   const rackFoot = cityPropFootprint("weapon-rack", rackScale, 1);
   collision.boxes.push(boxFromCenter(-5.5, 4.5, rackFoot.width, rackFoot.depth));
 
   const boardScale = cityPropScale("bulletin-board", 2.1);
-  spawnCityProp(group, { id: "bulletin-board", x: 5.2, z: 4.2, scale: boardScale, quarterTurns: 3 });
+  const boardProp = spawnCityProp(group, { id: "bulletin-board", x: 5.2, z: 4.2, scale: boardScale, quarterTurns: 3 });
+  occluders.push(boardProp);
   const boardFoot = cityPropFootprint("bulletin-board", boardScale, 3);
   collision.boxes.push(boxFromCenter(5.2, 4.2, boardFoot.width, boardFoot.depth));
 
-  addCampoFence(group, collision, -10, 0, false, 8);
-  addCampoFence(group, collision, 10, 0, false, 8);
+  addCampoFence(group, collision, -10, 0, false, 8, occluders);
+  addCampoFence(group, collision, 10, 0, false, 8, occluders);
 
   DUNGEON_BRAZIER_SPOTS.forEach(([bx, bz], i) => {
-    const brazier = createBrazier(`dungeon-brazier-${i}`, bx, bz);
+    const brazier = createBrazier(`dungeon-brazier-${i}`, bx, bz, false);
     group.add(brazier.group);
     tickables.push(brazier);
     collision.circles.push({ x: bx, z: bz, r: BRAZIER_RADIUS });
   });
+
+  const portalLight = new PointLight(0x44c0ff, 4, 10, 2);
+  portalLight.position.set(0, 2, 7);
+  group.add(portalLight);
 
   const exitPortal = makePortal(
     {
@@ -505,6 +521,7 @@ export function buildTestDungeonWorld(): BuiltWorld {
     spawn: { x: 0, z: 2 },
     tickables,
     groundY: () => 0,
+    occluders,
   };
 }
 
@@ -521,12 +538,13 @@ export function buildDungeon2World(): BuiltWorld {
   group.add(ground);
   group.add(buildCityScenery(size / 2));
   const collision = emptyCollision();
-  addCemeteryEnclosure(group, collision, size);
+  const occluders: Object3D[] = [];
+  addCemeteryEnclosure(group, collision, size, occluders);
 
   const tickables: WorldTickable[] = [];
   group.add(buildCemeteryLandscape(group, collision));
   BRAZIER_SPOTS.forEach(([bx, bz], i) => {
-    const brazier = createBrazier(`d2-brazier-${i}`, bx, bz);
+    const brazier = createBrazier(`d2-brazier-${i}`, bx, bz, i < 4);
     group.add(brazier.group);
     tickables.push(brazier);
     collision.circles.push({ x: bx, z: bz, r: BRAZIER_RADIUS });
@@ -572,5 +590,6 @@ export function buildDungeon2World(): BuiltWorld {
     spawn: { x: 0, z: -10.5 },
     tickables,
     groundY: () => 0,
+    occluders,
   };
 }

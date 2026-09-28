@@ -109,7 +109,6 @@ async function main() {
     }
 
     await page.addInitScript(() => {
-      window.__UAIDZIN_DEBUG__ = true;
       window.__UAIDZIN_SKIP_BOOT__ = {
         id: "smoke:slot:0",
         name: "Smoke",

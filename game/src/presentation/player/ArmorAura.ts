@@ -1,4 +1,4 @@
-﻿import {
+import {
   BufferAttribute,
   BufferGeometry,
   Color,
@@ -19,36 +19,60 @@ type AuraUniforms = {
   uAuraColor: IUniform<Color>;
 };
 
-type Bolt = {
+type PoolBolt = {
   line: Line;
+  geometry: BufferGeometry;
+  attr: BufferAttribute;
+  positions: Float32Array;
+  material: LineBasicMaterial;
   life: number;
   maxLife: number;
+  active: boolean;
 };
 
 const CACHE_KEY = "uaidzin-weapon-aura-v2";
 const BOLT_POOL = 14;
+const MAX_VERTS = 12;
 const BOLT_SPAWN_CHANCE = 0.48;
 
 export class ArmorAura {
   private readonly uniforms: AuraUniforms[] = [];
   private readonly roots: Object3D[] = [];
-  private readonly bolts: Bolt[] = [];
+  private readonly boltPool: PoolBolt[] = [];
   private enabled = false;
   private time = 0;
   private spawnAcc = 0;
   private readonly auraColor = new Color(0xff1a1a);
-  private readonly boltMat: LineBasicMaterial;
   private readonly tmpA = new Vector3();
   private readonly tmpC = new Vector3();
 
   constructor() {
-    this.boltMat = new LineBasicMaterial({
-      color: 0xff2200,
-      transparent: true,
-      opacity: 0.95,
-      depthWrite: false,
-      toneMapped: false,
-    });
+    for (let i = 0; i < BOLT_POOL; i++) {
+      const positions = new Float32Array(MAX_VERTS * 3);
+      const attr = new BufferAttribute(positions, 3);
+      const geometry = new BufferGeometry();
+      geometry.setAttribute("position", attr);
+      const material = new LineBasicMaterial({
+        color: 0xff2200,
+        transparent: true,
+        opacity: 0.95,
+        depthWrite: false,
+        toneMapped: false,
+      });
+      const line = new Line(geometry, material);
+      line.frustumCulled = false;
+      line.renderOrder = 40;
+      this.boltPool.push({
+        line,
+        geometry,
+        attr,
+        positions,
+        material,
+        life: 0,
+        maxLife: 0,
+        active: false,
+      });
+    }
   }
 
   apply(roots: Object3D[]): void {
@@ -98,35 +122,41 @@ export class ArmorAura {
   }
 
   private clearBolts(): void {
-    for (const b of this.bolts) {
-      b.line.removeFromParent();
-      b.line.geometry.dispose();
-      const mat = b.line.material as LineBasicMaterial;
-      mat.dispose();
+    for (let i = 0; i < this.boltPool.length; i++) {
+      const b = this.boltPool[i]!;
+      if (b.active) {
+        b.line.removeFromParent();
+        b.active = false;
+      }
     }
-    this.bolts.length = 0;
   }
 
   private updateBolts(dt: number): void {
-    for (let i = this.bolts.length - 1; i >= 0; i--) {
-      const b = this.bolts[i]!;
+    for (let i = 0; i < this.boltPool.length; i++) {
+      const b = this.boltPool[i]!;
+      if (!b.active) continue;
       b.life += dt;
       const t = b.life / b.maxLife;
-      const mat = b.line.material as LineBasicMaterial;
-      mat.opacity = (1 - t) * (0.55 + 0.45 * Math.sin(this.time * 40 + i));
+      b.material.opacity = (1 - t) * (0.55 + 0.45 * Math.sin(this.time * 40 + i));
       if (b.life >= b.maxLife) {
         b.line.removeFromParent();
-        b.line.geometry.dispose();
-        mat.dispose();
-        this.bolts.splice(i, 1);
+        b.active = false;
       }
     }
   }
 
   private trySpawnBolt(): void {
-    if (this.bolts.length >= BOLT_POOL || this.roots.length === 0) return;
-    const root = this.roots[(Math.random() * this.roots.length) | 0]!;
+    if (this.roots.length === 0) return;
+    let bolt: PoolBolt | null = null;
+    for (let i = 0; i < this.boltPool.length; i++) {
+      if (!this.boltPool[i]!.active) {
+        bolt = this.boltPool[i]!;
+        break;
+      }
+    }
+    if (!bolt) return;
 
+    const root = this.roots[(Math.random() * this.roots.length) | 0]!;
     const len = 0.28 + Math.random() * 0.5;
     const dir = this.tmpC.set(
       Math.random() * 2 - 1,
@@ -140,7 +170,7 @@ export class ArmorAura {
     );
 
     const segs = 6 + ((Math.random() * 4) | 0);
-    const positions = new Float32Array((segs + 1) * 3);
+    const positions = bolt.positions;
     for (let i = 0; i <= segs; i++) {
       const t = i / segs;
       const jitter = i === 0 || i === segs ? 0 : 0.035 + Math.random() * 0.06;
@@ -149,18 +179,12 @@ export class ArmorAura {
       positions[i * 3 + 2] = origin.z + dir.z * len * t + (Math.random() * 2 - 1) * jitter;
     }
 
-    const geo = new BufferGeometry();
-    geo.setAttribute("position", new BufferAttribute(positions, 3));
-    const line = new Line(geo, this.boltMat.clone());
-    line.frustumCulled = false;
-    line.renderOrder = 40;
-    root.add(line);
-
-    this.bolts.push({
-      line,
-      life: 0,
-      maxLife: 0.07 + Math.random() * 0.11,
-    });
+    bolt.geometry.setDrawRange(0, segs + 1);
+    bolt.attr.needsUpdate = true;
+    bolt.life = 0;
+    bolt.maxLife = 0.07 + Math.random() * 0.11;
+    bolt.active = true;
+    root.add(bolt.line);
   }
 
   private hookMesh(mesh: Mesh): void {

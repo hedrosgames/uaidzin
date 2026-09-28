@@ -28,6 +28,7 @@ import {
   disposeMachadoTextures,
   type MachadoTextureSet,
 } from "./MachadoTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface MachadoVfxConfig {
   fallDuration: number;
@@ -145,7 +146,8 @@ class MachadoCast {
   private readonly shock: Mesh;
   private readonly shockMaterial: MeshBasicMaterial;
   private readonly flash: Mesh<SphereGeometry, MeshBasicMaterial>;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private readonly fallSystems: {
     trail: ParticleSystem;
     sparks: ParticleSystem;
@@ -164,6 +166,7 @@ class MachadoCast {
     private readonly config: MachadoVfxConfig,
     private readonly target: Vector3,
     private readonly onDispose: (cast: MachadoCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.axe = new Group();
     this.axe.name = "tk-machado-axe";
@@ -204,8 +207,14 @@ class MachadoCast {
     this.flash.visible = false;
     this.castRoot.add(this.flash);
 
-    this.light = new PointLight(0xff8a2a, 0, 8.5, 2);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xff8a2a, 8.5);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xff8a2a, 0, 8.5, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) this.castRoot.add(this.light);
   }
 
   getPhase(): CastPhase {
@@ -251,7 +260,13 @@ class MachadoCast {
     if (this.disposed) return;
     this.disposed = true;
     for (const system of this.systems) system.dispose();
-    this.castRoot.remove(this.axe, this.shock, this.flash, this.light);
+    this.castRoot.remove(this.axe, this.shock, this.flash);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.shockMaterial.dispose();
     this.flash.material.dispose();
     this.onDispose(this);
@@ -280,8 +295,10 @@ class MachadoCast {
     for (const system of this.fallSystems.all) {
       system.emitter.position.copy(this.axe.position);
     }
-    this.light.position.copy(this.axe.position);
-    this.light.intensity = 0.5 + progress * 1.4;
+    if (this.light) {
+      this.light.position.copy(this.axe.position);
+      this.light.intensity = 0.5 + progress * 1.4;
+    }
     if (progress >= 1) this.triggerImpact();
   }
 
@@ -304,8 +321,10 @@ class MachadoCast {
     this.flash.scale.setScalar(0.16);
     this.flash.material.opacity = 1;
     this.flash.visible = true;
-    this.light.position.set(this.target.x, this.target.y + 0.4, this.target.z);
-    this.light.intensity = this.config.lightIntensity;
+    if (this.light) {
+      this.light.position.set(this.target.x, this.target.y + 0.4, this.target.z);
+      this.light.intensity = this.config.lightIntensity;
+    }
   }
 
   private updateImpact(deltaTime: number): void {
@@ -315,7 +334,9 @@ class MachadoCast {
     const shockFade = Math.pow(1 - shockProgress, 2);
     this.shock.scale.setScalar(0.24 + shockProgress * 3.6);
     this.shockMaterial.opacity = shockFade * 0.32;
-    this.light.intensity = this.config.lightIntensity * shockFade;
+    if (this.light) {
+      this.light.intensity = this.config.lightIntensity * shockFade;
+    }
     const flashProgress = MathUtils.clamp(this.impactElapsed / 0.15, 0, 1);
     this.flash.scale.setScalar(0.16 + flashProgress * 0.66);
     this.flash.material.opacity = Math.pow(1 - flashProgress, 2);
@@ -338,6 +359,7 @@ export class MachadoVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<MachadoVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_MACHADO_VFX_CONFIG, ...config };
     this.config = {
@@ -374,12 +396,13 @@ export class MachadoVfxController {
       this.config,
       impactTarget,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

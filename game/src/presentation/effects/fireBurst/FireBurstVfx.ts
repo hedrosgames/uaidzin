@@ -34,6 +34,7 @@ import {
   disposeFireBurstTextures,
   type FireBurstTextureSet,
 } from "./FireBurstTextures";
+import type { TkLightPool } from "../TkLightPool";
 
 export interface FireBurstVfxConfig {
   flightDuration: number;
@@ -160,7 +161,8 @@ class FireBurstCast {
   private readonly shock: Mesh;
   private readonly shockMaterial: MeshBasicMaterial;
   private readonly flash: Mesh<SphereGeometry, MeshBasicMaterial>;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private phase: CastPhase = "flight";
   private flightElapsed = 0;
   private impactElapsed = 0;
@@ -175,6 +177,7 @@ class FireBurstCast {
     origin: Vector3,
     private readonly target: Vector3,
     private readonly onDispose: (cast: FireBurstCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.impactSystems = createFireBurstImpactSystems(shared.particleMaterials);
     const phase = Math.random() * Math.PI * 2;
@@ -209,8 +212,14 @@ class FireBurstCast {
     this.flash.visible = false;
     this.castRoot.add(this.flash);
 
-    this.light = new PointLight(0xff7a1a, 0, 7.5, 2);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xff7a1a, 7.5);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xff7a1a, 0, 7.5, 2);
+      this.castRoot.add(this.light);
+      this.isPooledLight = false;
+    }
     this.updateFlight(0);
   }
 
@@ -261,7 +270,13 @@ class FireBurstCast {
     this.disposed = true;
     for (const system of this.systems) system.dispose();
     for (const chain of this.chains) chain.dispose();
-    this.castRoot.remove(this.shock, this.flash, this.light);
+    this.castRoot.remove(this.shock, this.flash);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.shockMaterial.dispose();
     this.flash.material.dispose();
     this.onDispose(this);
@@ -278,8 +293,10 @@ class FireBurstCast {
       1,
     );
     for (const chain of this.chains) chain.update(linearProgress, this.flightElapsed);
-    this.light.position.copy(this.chains[0].head);
-    this.light.intensity = 0.9 + Math.sin(linearProgress * Math.PI) * 0.5;
+    if (this.light) {
+      this.light.position.copy(this.chains[0].head);
+      this.light.intensity = 0.9 + Math.sin(linearProgress * Math.PI) * 0.5;
+    }
     if (linearProgress >= 1) this.triggerImpact();
   }
 
@@ -310,8 +327,10 @@ class FireBurstCast {
     this.flash.scale.setScalar(0.14);
     this.flash.material.opacity = 1;
     this.flash.visible = true;
-    this.light.position.copy(this.target);
-    this.light.intensity = 6.2;
+    if (this.light) {
+      this.light.position.copy(this.target);
+      this.light.intensity = 6.2;
+    }
   }
 
   private updateImpact(deltaTime: number): void {
@@ -323,7 +342,9 @@ class FireBurstCast {
     const shockFade = Math.pow(1 - shockProgress, 2);
     this.shock.scale.setScalar(0.22 + shockProgress * 3.2);
     this.shockMaterial.opacity = shockFade * 0.3;
-    this.light.intensity = 6.2 * shockFade;
+    if (this.light) {
+      this.light.intensity = 6.2 * shockFade;
+    }
     const flashProgress = MathUtils.clamp(this.impactElapsed / 0.14, 0, 1);
     this.flash.scale.setScalar(0.14 + flashProgress * 0.62);
     this.flash.material.opacity = Math.pow(1 - flashProgress, 2);
@@ -346,6 +367,7 @@ export class FireBurstVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<FireBurstVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_FIRE_BURST_VFX_CONFIG, ...config };
     this.config = {
@@ -386,12 +408,13 @@ export class FireBurstVfxController {
       launchOrigin,
       impactTarget,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

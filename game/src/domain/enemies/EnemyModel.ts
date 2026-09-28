@@ -1,4 +1,4 @@
-import { COMBAT_BALANCE, type EnemyArchetype } from "../../data/balance/combat";
+import { COMBAT_BALANCE, DOT_TICK_SEC, type EnemyArchetype } from "../../data/balance/combat";
 
 export interface EnemyInit {
   id: string;
@@ -17,6 +17,7 @@ export interface EnemyInit {
   preferred?: number;
   retreatIfCloserThan?: number;
   leashRadius?: number;
+  aggroRadius?: number;
   homeX: number;
   homeZ: number;
   respawnSeconds: number;
@@ -44,6 +45,7 @@ export class EnemyModel {
   readonly preferred: number;
   readonly retreatIfCloserThan: number;
   readonly leashRadius: number;
+  readonly aggroRadius?: number;
   readonly respawnSeconds: number;
   readonly isBoss: boolean;
   readonly xpReward: number;
@@ -63,6 +65,8 @@ export class EnemyModel {
   stunTimer = 0;
   dotDps = 0;
   dotTimer = 0;
+  dotTickAcc = 0;
+  dotDamageAcc = 0;
   antiHealTimer = 0;
   tauntTimer = 0;
 
@@ -86,6 +90,7 @@ export class EnemyModel {
     this.preferred = init.preferred ?? init.range * COMBAT_BALANCE.enemy.preferredRangeFactor;
     this.retreatIfCloserThan = init.retreatIfCloserThan ?? 2;
     this.leashRadius = init.leashRadius ?? 99;
+    this.aggroRadius = init.aggroRadius;
     this.respawnSeconds = init.respawnSeconds;
     this.isBoss = !!init.isBoss;
     this.xpReward = init.xpReward ?? 8;
@@ -100,6 +105,7 @@ export class EnemyModel {
     if (this.hp <= 0) {
       this.alive = false;
       this.respawnTimer = this.respawnSeconds;
+      this.clearStatus();
       return true;
     }
     return false;
@@ -120,6 +126,8 @@ export class EnemyModel {
     this.stunTimer = 0;
     this.dotDps = 0;
     this.dotTimer = 0;
+    this.dotTickAcc = 0;
+    this.dotDamageAcc = 0;
     this.antiHealTimer = 0;
     this.tauntTimer = 0;
   }
@@ -130,11 +138,30 @@ export class EnemyModel {
     this.tauntTimer = Math.max(0, this.tauntTimer - dt);
     this.antiHealTimer = Math.max(0, this.antiHealTimer - dt);
     if (this.slowTimer <= 0) this.slowFactor = 1;
-    if (this.dotTimer <= 0 || !this.alive) return 0;
-    this.dotTimer -= dt;
-    const damage = this.dotDps * dt;
-    if (this.dotTimer <= 0) this.dotDps = 0;
-    return damage;
+    if (this.dotTimer <= 0 || !this.alive) {
+      this.dotDamageAcc = 0;
+      this.dotTickAcc = 0;
+      this.dotDps = 0;
+      return 0;
+    }
+    const elapsed = Math.min(dt, this.dotTimer);
+    this.dotTimer -= elapsed;
+    this.dotTickAcc += elapsed;
+    this.dotDamageAcc += this.dotDps * elapsed;
+    if (this.dotTickAcc >= DOT_TICK_SEC) {
+      this.dotTickAcc -= DOT_TICK_SEC;
+      const damage = this.dotDamageAcc;
+      this.dotDamageAcc = 0;
+      return damage;
+    }
+    if (this.dotTimer <= 0) {
+      const damage = this.dotDamageAcc;
+      this.dotDamageAcc = 0;
+      this.dotTickAcc = 0;
+      this.dotDps = 0;
+      return damage;
+    }
+    return 0;
   }
 
   applySkillStatus(

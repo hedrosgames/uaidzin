@@ -8,7 +8,6 @@ import type { GameStateStore } from "../core/state/GameStateStore";
 import type { SceneRenderer } from "../presentation/rendering/SceneRenderer";
 import type { WireUi } from "../ui/WireUi";
 import { createWireGameApi } from "../ui/WireGameBridge";
-import type { GamePanels } from "../ui/GamePanels";
 import { PROFILE_SECTIONS, type CharacterViewModel, type SaveTarget } from "../persistence/SaveTypes";
 
 function assertNever(value: never): never {
@@ -65,7 +64,6 @@ export type DebugHost = {
   entered: boolean;
   timeScale: number;
   wireUi: WireUi | null;
-  panels: GamePanels;
   isPanelsOpen(): boolean;
   enterGame(): void;
   showToast(text: string, kind?: "skill" | "attr" | "level" | "dungeon"): void;
@@ -74,9 +72,8 @@ export type DebugHost = {
 };
 
 export function installDebugApi(app: DebugHost): void {
-  const w = window as unknown as { __UAIDZIN__?: unknown; __UAIDZIN_DEBUG__?: boolean };
-  const isDev = !!(import.meta as { env?: { DEV?: boolean } }).env?.DEV;
-  if (!isDev && !w.__UAIDZIN_DEBUG__) return;
+  if (!import.meta.env.DEV) return;
+  const w = window as unknown as { __UAIDZIN__?: unknown };
   if (import.meta.env.DEV) {
     void import("../integrations/threejs-devtools/registerThreeDevTools").then(({ registerThreeDevTools }) => {
       registerThreeDevTools({
@@ -97,6 +94,7 @@ export function installDebugApi(app: DebugHost): void {
   };
   w.__UAIDZIN__ = {
     session: app.session,
+    renderer: app.renderer,
     getState: () => app.state.getMode(),
     getSnapshot: (): DebugSnapshot => ({
       mode: app.state.getMode(),
@@ -123,7 +121,7 @@ export function installDebugApi(app: DebugHost): void {
       fxCount: app.session.effects.getCount(),
       skillPoints: app.session.skillTree.state.skillPoints,
       unspentPoints: app.session.progression.state.unspentAttributePoints,
-      skillSlots: app.session.skillLoadout.slots.length,
+      skillSlots: app.session.skillLoadout.slots.filter(Boolean).length,
       timeScale: app.timeScale,
       hasPlayerOutline: !!app.renderer.playerOutlineMesh.parent,
       playerGhostVisible: app.renderer.playerGhostMesh.visible,
@@ -135,7 +133,7 @@ export function installDebugApi(app: DebugHost): void {
     }),
     getDropLog: () => app.session.getDropLog(),
     clearDropLog: () => app.session.clearDropLog(),
-    forcePlayerDeath: () => app.session.debugForceDeath(),
+    forcePlayerDeath: () => app.session.debug.forceDeath(),
     setArmorAuraEnabled: (on: boolean) => {
       app.session.setArmorAuraEnabled(on);
     },
@@ -145,35 +143,29 @@ export function installDebugApi(app: DebugHost): void {
       return id;
     },
     getWeaponSet: () => app.renderer.playerView.getWeaponSet(),
+    getWeaponRigSet: () => app.renderer.playerView.getWeaponRig().currentSet,
     getCombatAnimProbe: () => app.renderer.playerView.getCombatAnimProbe(),
     openPanel: (name: string, title?: string, shopId?: string) => {
-      if (app.wireUi) {
-        if (isWirePanelName(name)) {
-          app.wireUi.open(name, { title, shopId });
-        }
-        return;
+      if (app.wireUi && isWirePanelName(name)) {
+        app.wireUi.open(name, { title, shopId });
       }
-      if (name === "person" || name === "skills" || name === "inv") app.panels.open(name);
     },
     closePanels: () => {
-      if (app.wireUi) app.wireUi.close();
-      else app.panels.close();
+      app.wireUi?.close();
     },
     skipToGame: () => {
       app.session.skillTree.setClass(app.session.skillTree.state.classId || "TK");
       app.session.skillLoadout.refresh();
       app.session.progression.recomputeCombatStats();
       app.session.character.healFull();
-      if (app.wireUi) app.wireUi.close();
-      else app.panels.close();
+      app.wireUi?.close();
       app.enterGame();
     },
     setClass: (id: string) => {
       app.session.skillTree.setClass(id as never);
       app.session.progression.setClassId(id as never);
       app.session.saves.markDirty(["character", "skills", "skillLoadout"], "deferred");
-      if (app.wireUi) app.wireUi.close();
-      else app.panels.close();
+      app.wireUi?.close();
     },
     enterDungeon: () => {
       const id = app.session.pickDungeonForLevel().id;
@@ -182,8 +174,7 @@ export function installDebugApi(app: DebugHost): void {
     enterDungeonById: (id: string) => {
       const result = app.session.tryEnterDungeon(id);
       if (result.ok) {
-        if (app.wireUi) app.wireUi.close();
-        else app.panels.close();
+        app.wireUi?.close();
         return result;
       }
       switch (result.reason) {
@@ -191,6 +182,7 @@ export function installDebugApi(app: DebugHost): void {
         case "level":
         case "evolution":
         case "missing":
+        case "busy":
           app.showToast(dungeonEnterMessage(result.reason), "dungeon");
           break;
         default:
@@ -202,7 +194,7 @@ export function installDebugApi(app: DebugHost): void {
       level: app.session.character.level,
       evolution: app.session.progression.state.evolution,
       entryCounts: app.session.entryItemCounts(),
-      dungeons: app.session.eligibleDungeons().map((d) => ({
+      dungeons: app.session.allDungeons().map((d) => ({
         id: d.id,
         name: d.name,
         minLevel: d.minLevel,
@@ -225,23 +217,31 @@ export function installDebugApi(app: DebugHost): void {
     },
     getFxCount: () => app.session.effects.getCount(),
     learnFirstSkill: () => {
-      app.session.debugAddLevels(1);
+      app.session.debug.addLevels(1);
       const okLearn = app.session.skillTree.learn("fisica", 0);
-      app.session.skillLoadout.refresh();
-      app.session.saves.markDirty(["skills", "skillLoadout"], "deferred");
-      return { learned: okLearn, slots: app.session.skillLoadout.slots.length, names: app.session.skill.slotLabels() };
+      if (okLearn) {
+        app.session.onSkillLearned("fisica", 0);
+        if (import.meta.env.DEV) {
+          const s0 = app.session.skillTree.getTree("fisica")[0];
+          const slotIdx = app.session.skillLoadout.slots.findIndex((s) => s?.skill.id === s0?.id);
+          if (slotIdx >= 0 && app.session.skillLoadout.slots[slotIdx]) {
+            app.session.skillLoadout.slots[slotIdx]!.auto = true;
+          }
+        }
+      }
+      return { learned: okLearn, slots: app.session.skillLoadout.slots.filter(Boolean).length, names: app.session.skill.slotLabels() };
     },
     learnRandomSkill: () => {
-      const result = app.session.debugLearnRandomSkill();
+      const result = app.session.debug.learnRandomSkill();
       if (result.learned) {
-        app.showToast(`Skill ${result.skillId} Lv${result.level}`, "skill");
+        app.showToast(`Skill ${result.skillId} aprendida`, "skill");
         app.pulseFrame();
         app.session.saves.markDirty(["skills", "skillLoadout"], "deferred");
       }
       return result;
     },
     spendRandomAttributes: () => {
-      const result = app.session.debugSpendRandomAttributes();
+      const result = app.session.debug.spendRandomAttributes();
       if (result.spent > 0) {
         app.showToast(`+${result.spent} pts · ${result.breakdown}`, "attr");
         app.pulseFrame();
@@ -272,8 +272,8 @@ export function installDebugApi(app: DebugHost): void {
       return true;
     },
     confirmInteraction: (id: string) => app.session.confirmInteraction(id),
-    debugSetTimer: (s: number) => app.session.debugSetTimer(s),
-    debugAddLevels: (n: number) => app.session.debugAddLevels(n),
+    debugSetTimer: (s: number) => app.session.debug.setTimer(s),
+    debugAddLevels: (n: number) => app.session.debug.addLevels(n),
     persistSave: () => saveNow([...PROFILE_SECTIONS]),
     login: (userId: string, password: string) => saveVault.login(userId, password),
     sessionUser: () => saveVault.getSession()?.user || null,
@@ -298,10 +298,10 @@ export function installDebugApi(app: DebugHost): void {
     },
     vault: {
       snapshot: () => app.session.accountVault.snapshot(),
-      depositGold: (n: number) => app.session.depositGoldToVault(n),
-      withdrawGold: (n: number) => app.session.withdrawGoldFromVault(n),
-      moveToVault: (uid: string) => app.session.moveItemToVault(uid),
-      moveFromVault: (uid: string) => app.session.moveItemFromVault(uid),
+      depositGold: (n: number) => app.session.vaultTransfer.depositGold(n),
+      withdrawGold: (n: number) => app.session.vaultTransfer.withdrawGold(n),
+      moveToVault: (uid: string) => app.session.vaultTransfer.moveItemToVault(uid),
+      moveFromVault: (uid: string) => app.session.vaultTransfer.moveItemFromVault(uid),
     },
     bags: {
       unlocked: () => app.session.bags.snapshot(),
@@ -336,9 +336,6 @@ export function installDebugApi(app: DebugHost): void {
       accept: (questId: string) => {
         const result = app.session.acceptQuest(questId);
         app.wireUi?.applyCharacter(app.currentViewModel());
-        const api = (window as unknown as { __UAIDZIN_WIRE__?: { paintQuest?: () => void } })
-          .__UAIDZIN_WIRE__;
-        api?.paintQuest?.();
         return result;
       },
     },

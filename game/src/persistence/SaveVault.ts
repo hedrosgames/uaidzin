@@ -368,7 +368,7 @@ export class SaveVault {
       },
       skills: {
         classId: summary.classId,
-        levels: {},
+        learned: [],
         eighthTree: null,
         specialization: {
           controle: summary.spec?.controle || 0,

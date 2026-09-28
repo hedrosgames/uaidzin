@@ -81,9 +81,13 @@
               </div>
             </div>
             <div class="set-row">
-              <span class="k">Sombras</span>
+              <span class="k">Qualidade gráfica</span>
               <div class="ctrl">
-                <input type="checkbox" class="toggle" id="opt-shadows" checked>
+                <select id="opt-graphics-quality" class="wire-select">
+                  <option value="baixo">Baixo</option>
+                  <option value="medio">Médio</option>
+                  <option value="alto">Alto</option>
+                </select>
               </div>
             </div>
             <div class="set-row">
@@ -155,8 +159,6 @@
           </div>
         </div>
 
-        <div id="skill-bar" class="skill-bar" data-ui-block-click="true" hidden></div>
-
         <div id="interaction-hint" class="interaction-hint" hidden></div>
 
         <div
@@ -174,7 +176,6 @@
           </div>
         </div>
 
-        <div id="game-panels" class="game-panels" hidden></div>
         <div id="wire-ui" class="wire-ui" hidden></div>
 
         <div id="death-overlay" class="death-overlay" hidden>
@@ -183,10 +184,6 @@
         </div>
 
         <div id="result-overlay" class="result-overlay" hidden></div>
-
-        <div class="help-bar" hidden>
-          <kbd>C</kbd> personagem · <kbd>K</kbd> skills · <kbd>I</kbd> inventário · <kbd>B</kbd> baú
-        </div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

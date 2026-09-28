@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import { build as viteBuild, defineConfig, type Plugin } from "vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const wireRoot = path.resolve(__dirname, "../visual/telas");
 const studioRoot = path.resolve(__dirname, "../tools/studio");
 const vfxRoot = path.resolve(__dirname, "vfx");
 
@@ -19,7 +18,6 @@ const weaponMountsJsonPath = path.resolve(__dirname, "src/data/weapons/weapon-mo
 const modelsPublicRoot = path.resolve(__dirname, "public/models");
 const persistenceRoot = path.resolve(__dirname, "src/persistence");
 const bootStoreDir = path.resolve(__dirname, "public/boot/assets");
-const visualAssetsRoot = path.resolve(__dirname, "../visual/telas/assets");
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -59,21 +57,6 @@ function findModels(dir: string, baseDir: string = dir): string[] {
   return results;
 }
 
-function findSvgIcons(): string[] {
-  const icons: string[] = [];
-  const folders = ["items", "eq", "skills"];
-  for (const folder of folders) {
-    const targetDir = path.join(visualAssetsRoot, folder);
-    if (!fs.existsSync(targetDir)) continue;
-    const files = fs.readdirSync(targetDir);
-    for (const f of files) {
-      if (f.endsWith(".svg")) {
-        icons.push(`${folder}/${f}`);
-      }
-    }
-  }
-  return icons.sort();
-}
 
 function handleJsonEndpoint(
   req: { method?: string; on: (event: string, cb: (data?: unknown) => void) => void },
@@ -172,18 +155,6 @@ function devToolsPlugin(): Plugin {
           return;
         }
 
-        if (url === "/api/dev/icons" && req.method === "GET") {
-          try {
-            const icons = findSvgIcons();
-            res.statusCode = 200;
-            res.setHeader("Content-Type", "application/json; charset=utf-8");
-            res.end(JSON.stringify(icons));
-          } catch {
-            res.statusCode = 500;
-            res.end(JSON.stringify({ error: "Falha ao listar icones" }));
-          }
-          return;
-        }
 
         if (url.startsWith("/tools")) {
           try {
@@ -212,40 +183,6 @@ function devToolsPlugin(): Plugin {
   };
 }
 
-function wireUiPlugin(): Plugin {
-  return {
-    name: "uaidzin-wire-ui",
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        if (!req.url?.startsWith("/wire")) return next();
-        try {
-          const raw = req.url.split("?")[0] || "/wire";
-          let rel = decodeURIComponent(raw.replace(/^\/wire\/?/, "/"));
-          if (rel === "/" || rel === "") rel = "/03-wire-paineis-cidade.html";
-          const file = path.normalize(path.join(wireRoot, rel));
-          if (!file.startsWith(wireRoot) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
-            return next();
-          }
-          const ext = path.extname(file).toLowerCase();
-          res.statusCode = 200;
-          res.setHeader("Content-Type", MIME[ext] || "application/octet-stream");
-          fs.createReadStream(file).pipe(res);
-        } catch {
-          next();
-        }
-      });
-    },
-    closeBundle() {
-      const out = path.resolve(__dirname, "dist/wire");
-      if (!fs.existsSync(wireRoot)) {
-        throw new Error(
-          `UI não encontrada em ${wireRoot}. Essa pasta contém a interface do jogo (visual/telas) e o build não pode publicá-lo sem ela.`,
-        );
-      }
-      copyDir(wireRoot, out);
-    },
-  };
-}
 
 function buildBootStore(): Promise<unknown> {
   return viteBuild({
@@ -382,5 +319,5 @@ export default defineConfig({
       ],
     },
   },
-  plugins: [bootStorePlugin(), devToolsPlugin(), wireUiPlugin(), vfxStudioPlugin()],
+  plugins: [bootStorePlugin(), devToolsPlugin(), vfxStudioPlugin()],
 });

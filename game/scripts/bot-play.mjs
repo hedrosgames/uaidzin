@@ -11,7 +11,7 @@ function arg(name, fallback) {
   return fallback;
 }
 
-const BASE = arg("base", "http://127.0.0.1:5173/");
+const BASE = process.env.UAIDZIN_BASE || arg("base", "http://127.0.0.1:5173/");
 const MAX_LEVEL = Number(arg("max-level", "150"));
 const TIMEOUT_MIN = Number(arg("timeout-min", "120"));
 const SPEED_RAW = Number(arg("speed", "10"));
@@ -30,7 +30,8 @@ function log(...args) {
   console.log(`[bot ${t}m]`, ...args);
 }
 
-const browser = await chromium.launch({ headless: false });
+const HEADLESS = process.argv.includes("--headless") || process.env.HEADLESS === "1";
+const browser = await chromium.launch({ headless: HEADLESS });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 page.on("pageerror", (err) => {
   pageErrors += 1;
@@ -38,14 +39,14 @@ page.on("pageerror", (err) => {
 });
 
 async function snap() {
-  return page.evaluate(() => window.__UAIDZIN__.getSnapshot());
+  return page.evaluate(() => (window.__UAIDZIN__ ? window.__UAIDZIN__.getSnapshot() : null));
 }
 
 async function waitSnap(pred, timeoutMs = 8000, label = "snap") {
   const t0 = Date.now();
   while (Date.now() - t0 < timeoutMs) {
     const s = await snap();
-    if (pred(s)) return s;
+    if (s && pred(s)) return s;
     await page.waitForTimeout(80);
   }
   throw new Error(`timeout esperando: ${label}`);
@@ -196,12 +197,12 @@ while (elapsedMin() < TIMEOUT_MIN) {
     log("run", runs, "→", s.mode, "lv", s.level, "kills", s.kills, "slots", s.skillSlots);
     if (s.mode === "RESULT") {
       await page.waitForTimeout(2800);
-      await page.evaluate(() => window.__UAIDZIN__.toCity());
+      await page.evaluate(() => window.__UAIDZIN__?.toCity?.());
       await page.waitForTimeout(200);
     }
     if (s.mode === "DEAD") {
       await page.waitForTimeout(1500);
-      await page.evaluate(() => window.__UAIDZIN__.toCity());
+      await page.evaluate(() => window.__UAIDZIN__?.toCity?.());
       await page.waitForTimeout(200);
     }
     await spendAndLearn();
@@ -210,7 +211,7 @@ while (elapsedMin() < TIMEOUT_MIN) {
 
   if (s.mode === "RESULT") {
     await page.waitForTimeout(2800);
-    await page.evaluate(() => window.__UAIDZIN__.toCity());
+    await page.evaluate(() => window.__UAIDZIN__?.toCity?.());
     await page.waitForTimeout(200);
     continue;
   }

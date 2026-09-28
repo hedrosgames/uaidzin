@@ -944,14 +944,15 @@ input[type="range"]::-webkit-slider-thumb{
 <script type="importmap">
 {
   "imports": {
-    "three": "/vendor/three/three.module.js",
+    "three": "/vendor/three/three.module.min.js",
     "three/addons/": "/vendor/three/addons/"
   }
 }
 </script>
 <script type="module">
-import { mountCharPreview } from "./assets/char-preview.mjs";
+import { mountCharPreview, teardownCharPreviews } from "./assets/char-preview.mjs";
 window.__mountCharPreview = mountCharPreview;
+window.__teardownCharPreviews = teardownCharPreviews;
 </script>
 <script>
 (function () {
@@ -1525,6 +1526,9 @@ window.__mountCharPreview = mountCharPreview;
     toast(slot.name + " entra em Aurelion.");
 
     setTimeout(() => {
+      try {
+        if (window.__teardownCharPreviews) window.__teardownCharPreviews();
+      } catch (_) {}
       if (inBootFrame) {
         window.parent.postMessage({ type: "uaidzin-boot-enter", character: character }, window.location.origin);
         return;

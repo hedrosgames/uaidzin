@@ -1,6 +1,7 @@
 import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, InstancedMesh, MeshStandardMaterial, Object3D } from "three";
 import type { WorldCollision } from "./collision";
 import type { InteractableDef } from "./definitions";
+import { isCheapShaders } from "../presentation/rendering/GraphicsQuality";
 
 export const CITY_GARDEN_BEDS = [
   [-14.6, -13.6, 2.4, 2.2], [-5.0, -15.3, 2.8, 1.35],
@@ -21,6 +22,16 @@ float cityGarden(vec2 p) {
   return 1.0 - smoothstep(0.5, 1.65, distanceToBed + (cityFbm(p * 1.4) - 0.5) * 0.55);
 }
 `;
+
+export const CITY_GARDEN_CHEAP_GLSL = `
+float cityGarden(vec2 p) {
+  return 0.0;
+}
+`;
+
+export function getCityGardenGlsl(): string {
+  return isCheapShaders() ? CITY_GARDEN_CHEAP_GLSL : CITY_GARDEN_GLSL;
+}
 
 function makeGrassGeometry(): BufferGeometry {
   const positions: number[] = [];

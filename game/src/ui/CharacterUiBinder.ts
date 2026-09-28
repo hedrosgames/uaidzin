@@ -161,15 +161,4 @@ export function bindWirePanels(root: HTMLElement, view: CharacterViewModel): voi
   if (view.specPts !== undefined) {
     setText(root, "#spec-pts, [data-bind='specPts']", String(view.specPts));
   }
-
-  const api = (
-    window as unknown as {
-      __UAIDZIN_WIRE__?: {
-        setCharacter?: (v: CharacterViewModel) => void;
-        syncFromGame?: () => void;
-      };
-    }
-  ).__UAIDZIN_WIRE__;
-  api?.setCharacter?.(view);
-  api?.syncFromGame?.();
 }

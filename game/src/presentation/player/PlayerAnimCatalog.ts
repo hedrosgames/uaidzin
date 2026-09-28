@@ -1,5 +1,6 @@
 export const HUMAN_ANIM_ROOT = "/models/anims/human";
 export const LEGACY_SHARED_ANIM_ROOT = "/models/player/shared/anims";
+export const SHARED_IDLE_URL = `${LEGACY_SHARED_ANIM_ROOT}/idle.glb`;
 
 export type HumanCombatClip = "run" | "cast" | "hit_gut" | "hit_right" | "death";
 

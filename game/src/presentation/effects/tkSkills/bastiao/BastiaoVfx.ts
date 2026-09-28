@@ -37,6 +37,7 @@ import {
   disposeBastiaoTextures,
   type BastiaoTextureSet,
 } from "./BastiaoTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export const BASTIAO_STAKE_COUNT = 4;
 
@@ -209,7 +210,8 @@ class BastiaoCast {
   private readonly ringMaterials: MeshBasicMaterial[] = [];
   private readonly flash: Mesh;
   private readonly flashMaterial: MeshBasicMaterial;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private readonly riseEnd: number;
   private readonly closeTime: number;
   private readonly holdEnd: number;
@@ -226,6 +228,7 @@ class BastiaoCast {
     private readonly config: BastiaoVfxConfig,
     private readonly origin: Vector3,
     private readonly onDispose: (cast: BastiaoCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.riseEnd = config.riseDuration;
     this.closeTime = this.riseEnd + (BASTIAO_STAKE_COUNT - 1) * config.chainDelay + config.chainTravel;
@@ -260,9 +263,17 @@ class BastiaoCast {
     this.flash.visible = false;
     this.castRoot.add(this.flash);
 
-    this.light = new PointLight(0xffc84a, 0, 11, 2);
-    this.light.position.set(origin.x, origin.y + 1.3, origin.z);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xffc84a, 11);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xffc84a, 0, 11, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) {
+      this.light.position.set(origin.x, origin.y + 1.3, origin.z);
+      this.castRoot.add(this.light);
+    }
 
     for (const stake of this.stakes) {
       for (const system of stake.joint.all) system.play();
@@ -407,7 +418,7 @@ class BastiaoCast {
         1,
       ),
       target: this.origin.toArray(),
-      lightIntensity: this.light.intensity,
+      lightIntensity: this.light?.intensity ?? 0,
       stakes: this.stakes.map((stake) => ({
         position: stake.position.toArray(),
         top: stake.top.toArray(),
@@ -465,7 +476,13 @@ class BastiaoCast {
       this.castRoot.remove(this.rings[index]);
       this.ringMaterials[index].dispose();
     }
-    this.castRoot.remove(this.flash, this.light);
+    this.castRoot.remove(this.flash);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.flashMaterial.dispose();
     this.onDispose(this);
   }
@@ -522,7 +539,7 @@ class BastiaoCast {
       system.restart();
       system.play();
     }
-    this.light.position.set(this.origin.x, this.origin.y + 1.3, this.origin.z);
+    if (this.light) this.light.position.set(this.origin.x, this.origin.y + 1.3, this.origin.z);
   }
 
   private updateRings(deltaTime: number): void {
@@ -565,7 +582,7 @@ class BastiaoCast {
       rise * this.config.lightRise * 0.5 + chainGlow * this.config.lightRise * 0.5,
       this.elapsed >= this.closeTime ? peak + holdLevel * (1 - descend) : 0,
     );
-    this.light.intensity = descend >= 1 ? 0 : level;
+    if (this.light) this.light.intensity = descend >= 1 ? 0 : level;
   }
 }
 
@@ -582,6 +599,7 @@ export class BastiaoVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<BastiaoVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_BASTIAO_VFX_CONFIG, ...config };
     const numeric = (
@@ -635,12 +653,13 @@ export class BastiaoVfxController {
       this.config,
       castOrigin,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;

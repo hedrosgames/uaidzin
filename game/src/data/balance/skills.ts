@@ -1,12 +1,11 @@
 export const SKILL_BALANCE = {
+  barSize: 10,
   pointsPerLevel: 1,
-  skillLevelCap: 10,
   specializationTotal: 60,
   specializationPerTreeCap: 40,
   exclusiveEighth: true,
   mpCost: 8,
   specializationCooldownPenalty: 0.25,
-  skillLevelDamageBonus: 0.05,
   healAutoHpRatio: 0.62,
   critMultiplier: 1.5,
   tierMp: [6, 8, 8, 10, 10, 12, 12, 18],

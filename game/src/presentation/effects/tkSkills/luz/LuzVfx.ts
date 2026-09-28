@@ -32,6 +32,7 @@ import {
   disposeLuzTextures,
   type LuzTextureSet,
 } from "./LuzTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface LuzVfxConfig {
   chargeDuration: number;
@@ -150,7 +151,8 @@ class LuzCast {
   private readonly flashMaterial: MeshBasicMaterial;
   private readonly shockRing: Mesh;
   private readonly shockMaterial: MeshBasicMaterial;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private readonly direction = new Vector3();
   private readonly beamLength: number;
   private readonly fireDuration: number;
@@ -169,6 +171,7 @@ class LuzCast {
     origin: Vector3,
     private readonly target: Vector3,
     private readonly onDispose: (cast: LuzCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.direction.copy(target).sub(origin);
     this.beamLength = Math.max(this.direction.length(), 0.0001);
@@ -245,9 +248,17 @@ class LuzCast {
     this.shockRing.renderOrder = 12;
     this.castRoot.add(this.shockRing);
 
-    this.light = new PointLight(0xffd873, 0, 9, 2);
-    this.light.position.copy(origin);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xffd873, 9);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xffd873, 0, 9, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) {
+      this.light.position.copy(origin);
+      this.castRoot.add(this.light);
+    }
   }
 
   getPhase(): CastPhase {
@@ -264,7 +275,7 @@ class LuzCast {
       target: this.target.toArray(),
       beamLength: this.beamLength,
       fireDuration: this.fireDuration,
-      lightIntensity: this.light.intensity,
+      lightIntensity: this.light?.intensity ?? 0,
     };
   }
 
@@ -299,8 +310,13 @@ class LuzCast {
       this.chargeGlow,
       this.flash,
       this.shockRing,
-      this.light,
     );
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     this.chargeGlowMaterial.dispose();
     this.flashMaterial.dispose();
     this.shockMaterial.dispose();
@@ -319,7 +335,7 @@ class LuzCast {
     this.chargeGlow.visible = true;
     this.chargeGlow.scale.setScalar(0.1 + progress * 0.34 * pulse);
     this.chargeGlowMaterial.opacity = progress * 0.85;
-    this.light.intensity = progress * 1.6;
+    if (this.light) this.light.intensity = progress * 1.6;
     this.chargeSystems.chargeMotes.emitter.position.copy(this.castOrigin());
     if (this.phaseElapsed >= this.config.chargeDuration) this.triggerFire();
     void deltaTime;
@@ -364,13 +380,15 @@ class LuzCast {
     for (const system of this.beamSystems.all) {
       system.emitter.position.copy(this.head);
     }
-    this.light.position.copy(this.head);
-    const lightRamp = Math.sin(progress * Math.PI * 0.5);
-    this.light.intensity = MathUtils.clamp(
-      this.light.intensity + (this.config.lightPeak * lightRamp - this.light.intensity) * 0.35,
-      0,
-      this.config.lightPeak,
-    );
+    if (this.light) {
+      this.light.position.copy(this.head);
+      const lightRamp = Math.sin(progress * Math.PI * 0.5);
+      this.light.intensity = MathUtils.clamp(
+        this.light.intensity + (this.config.lightPeak * lightRamp - this.light.intensity) * 0.35,
+        0,
+        this.config.lightPeak,
+      );
+    }
     if (this.phaseElapsed >= this.fireDuration) this.triggerImpact();
   }
 
@@ -390,8 +408,10 @@ class LuzCast {
     this.head.copy(this.target);
     this.flash.visible = true;
     this.shockRing.visible = true;
-    this.light.position.copy(this.target);
-    this.light.intensity = this.config.lightPeak;
+    if (this.light) {
+      this.light.position.copy(this.target);
+      this.light.intensity = this.config.lightPeak;
+    }
   }
 
   private updateImpact(deltaTime: number): void {
@@ -403,7 +423,7 @@ class LuzCast {
     this.shockRing.scale.setScalar(0.4 + progress * 3.4);
     this.shockMaterial.opacity = fade * 0.7;
     this.shockRing.visible = progress < 1;
-    this.light.intensity = this.config.lightPeak * fade;
+    if (this.light) this.light.intensity = this.config.lightPeak * fade;
     if (this.phaseElapsed >= this.config.impactDuration) this.dispose();
     void deltaTime;
   }
@@ -422,6 +442,7 @@ export class LuzVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<LuzVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_LUZ_VFX_CONFIG, ...config };
     this.config = {
@@ -466,12 +487,13 @@ export class LuzVfxController {
       launchOrigin,
       beamTarget,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime) ? MathUtils.clamp(deltaTime, 0, 0.1) : 0;
     this.accumulator = Math.min(this.accumulator + frameDelta, 0.2);
     let stepCount = 0;

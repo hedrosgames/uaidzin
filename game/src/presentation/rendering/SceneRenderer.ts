@@ -30,9 +30,16 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { PlayerView } from "../player/PlayerView";
+import {
+  DEFAULT_GRAPHICS_QUALITY,
+  GRAPHICS_PRESETS,
+  type GraphicsQualityLevel,
+  setActiveQuality,
+} from "./GraphicsQuality";
 
 export interface SceneRendererOptions {
   canvas: HTMLCanvasElement;
+  quality?: GraphicsQualityLevel;
 }
 
 const SKY_ZENITH = 0x0b1020;
@@ -61,6 +68,11 @@ export class SceneRenderer {
   private readonly composer: EffectComposer;
   private readonly bloomPass: UnrealBloomPass;
   private readonly skyDome: Mesh;
+  private occluders: Object3D[] = [];
+  private quality: GraphicsQualityLevel;
+  private lastWidth = 1;
+  private lastHeight = 1;
+  private readonly lastLightPos = new Vector3(-9999, -9999, -9999);
 
   constructor(options: SceneRendererOptions) {
     this.scene.name = "UAIDZIN_Scene";
@@ -72,21 +84,29 @@ export class SceneRenderer {
     const { clientWidth, clientHeight } = options.canvas;
     const width = Math.max(clientWidth, 1);
     const height = Math.max(clientHeight, 1);
+    this.lastWidth = width;
+    this.lastHeight = height;
+
+    this.quality = options.quality ?? DEFAULT_GRAPHICS_QUALITY;
+    setActiveQuality(this.quality);
+    const profile = GRAPHICS_PRESETS[this.quality];
 
     this.renderer = new WebGLRenderer({
       canvas: options.canvas,
-      antialias: true,
+      antialias: false,
       alpha: false,
       powerPreference: "high-performance",
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, profile.maxDpr));
     this.renderer.setSize(width, height, false);
     this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = profile.shadows;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.shadowMap.autoUpdate = false;
+    this.renderer.shadowMap.needsUpdate = profile.shadows;
 
-    this.keyLight = this.setupLights();
+    this.keyLight = this.setupLights(profile.shadows, profile.shadowMapSize);
     this.skyDome = this.createSkyDome();
     this.scene.add(this.skyDome);
 
@@ -98,19 +118,27 @@ export class SceneRenderer {
     this.playerView.root.add(this.playerOutlineMesh);
     this.playerView.root.add(this.playerGhostMesh);
     this.playerBlobShadow = this.createPlayerBlobShadow();
+    this.playerBlobShadow.visible = profile.shadows;
     this.playerView.root.add(this.playerBlobShadow);
     this.scene.add(this.playerView.root);
 
-    const target = new WebGLRenderTarget(width, height, { samples: 4, type: HalfFloatType });
+    const target = new WebGLRenderTarget(width, height, {
+      samples: profile.samples,
+      type: HalfFloatType,
+    });
     this.composer = new EffectComposer(this.renderer, target);
     this.composer.setPixelRatio(this.renderer.getPixelRatio());
     this.composer.setSize(width, height);
     this.bloomPass = new UnrealBloomPass(
-      new Vector2(width, height),
+      new Vector2(
+        Math.round(width * (profile.bloomHalfRes ? 0.5 : 1)),
+        Math.round(height * (profile.bloomHalfRes ? 0.5 : 1)),
+      ),
       BLOOM.strength,
       BLOOM.radius,
       BLOOM.threshold,
     );
+    this.bloomPass.enabled = profile.bloom;
     this.composer.addPass(new RenderPass(this.scene, new PerspectiveCamera()));
     this.composer.addPass(this.bloomPass);
     this.composer.addPass(new OutputPass());
@@ -124,13 +152,13 @@ export class SceneRenderer {
     return this.composer;
   }
 
-  private setupLights(): DirectionalLight {
+  private setupLights(shadows: boolean, shadowMapSize: number): DirectionalLight {
     this.scene.add(new HemisphereLight(0x8090c0, 0x3a2a1c, 0.55));
 
     const key = new DirectionalLight(0xffdcb0, 2.1);
     key.position.copy(KEY_LIGHT_OFFSET);
-    key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048);
+    key.castShadow = shadows;
+    key.shadow.mapSize.set(shadowMapSize, shadowMapSize);
     key.shadow.camera.near = 1;
     key.shadow.camera.far = 80;
     key.shadow.camera.left = -SHADOW_HALF_EXTENT;
@@ -262,16 +290,66 @@ export class SceneRenderer {
     return blob;
   }
 
+  setQuality(quality: GraphicsQualityLevel): void {
+    if (this.quality === quality) return;
+    const previousProfile = GRAPHICS_PRESETS[this.quality];
+    this.quality = quality;
+    setActiveQuality(quality);
+    const profile = GRAPHICS_PRESETS[quality];
+
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, profile.maxDpr));
+    this.renderer.setSize(this.lastWidth, this.lastHeight, false);
+
+    this.composer.setPixelRatio(this.renderer.getPixelRatio());
+    this.composer.setSize(this.lastWidth, this.lastHeight);
+    this.composer.renderTarget1.samples = profile.samples;
+    this.composer.renderTarget2.samples = profile.samples;
+    this.composer.renderTarget1.dispose();
+    this.composer.renderTarget2.dispose();
+
+    this.bloomPass.enabled = profile.bloom;
+    this.bloomPass.setSize(
+      Math.round(this.lastWidth * (profile.bloomHalfRes ? 0.5 : 1)),
+      Math.round(this.lastHeight * (profile.bloomHalfRes ? 0.5 : 1)),
+    );
+
+    this.applyShadowsPreset(profile.shadows, profile.shadowMapSize);
+
+    if (profile.cheapShaders !== previousProfile.cheapShaders) {
+      this.worldRoot.traverse((obj) => {
+        const mesh = obj as Mesh;
+        if (!mesh.isMesh || !mesh.material) return;
+        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        for (const mat of mats) {
+          if (typeof mat.customProgramCacheKey === "function") {
+            mat.needsUpdate = true;
+          }
+        }
+      });
+    }
+  }
+
+  getQuality(): GraphicsQualityLevel {
+    return this.quality;
+  }
+
   setShadowsEnabled(enabled: boolean): void {
+    this.applyShadowsPreset(enabled, enabled ? 1024 : 512);
+  }
+
+  private applyShadowsPreset(enabled: boolean, mapSize: number): void {
+    if (this.renderer.shadowMap.enabled === enabled && this.keyLight.castShadow === enabled) return;
     this.renderer.shadowMap.enabled = enabled;
     this.keyLight.castShadow = enabled;
     this.playerBlobShadow.visible = enabled;
-    this.scene.traverse((obj) => {
-      const mat = (obj as Mesh).material;
-      if (!mat) return;
-      const mats = Array.isArray(mat) ? mat : [mat];
-      for (const m of mats) m.needsUpdate = true;
-    });
+    if (enabled) {
+      this.keyLight.shadow.mapSize.set(mapSize, mapSize);
+      if (this.keyLight.shadow.map) {
+        this.keyLight.shadow.map.dispose();
+        this.keyLight.shadow.map = null as never;
+      }
+      this.renderer.shadowMap.needsUpdate = true;
+    }
   }
 
   setWorldLook(kind: "city" | "dungeon"): void {
@@ -314,9 +392,19 @@ export class SceneRenderer {
   resize(width: number, height: number): void {
     const w = Math.max(width, 1);
     const h = Math.max(height, 1);
+    this.lastWidth = w;
+    this.lastHeight = h;
     this.renderer.setSize(w, h, false);
     this.composer.setSize(w, h);
-    this.bloomPass.setSize(w, h);
+    const profile = GRAPHICS_PRESETS[this.quality];
+    this.bloomPass.setSize(
+      Math.round(w * (profile.bloomHalfRes ? 0.5 : 1)),
+      Math.round(h * (profile.bloomHalfRes ? 0.5 : 1)),
+    );
+  }
+
+  setOccluders(occluders: Object3D[]): void {
+    this.occluders = occluders;
   }
 
   private isFixedOccluder(obj: Object3D): boolean {
@@ -337,22 +425,30 @@ export class SceneRenderer {
     this.toPlayer.subVectors(this.playerCenter, camera.position);
     const dist = this.toPlayer.length();
     this.playerGhostMesh.visible = false;
-    if (dist < 0.2 || !this.playerView.ready) {
+    if (dist < 0.2 || !this.playerView.ready || this.occluders.length === 0) {
       this.playerView.setOcclusionGhostVisible(false);
       return;
     }
     this.raycaster.set(camera.position, this.toPlayer.normalize());
     this.raycaster.far = dist - 0.2;
-    const hits = this.raycaster.intersectObject(this.worldRoot, true);
+    const hits = this.raycaster.intersectObjects(this.occluders, true);
     const occluded = hits.some((hit) => this.isFixedOccluder(hit.object));
     this.playerView.setOcclusionGhostVisible(occluded);
   }
 
   private followKeyLight(): void {
     const p = this.playerMesh.position;
-    this.keyLight.target.position.set(p.x, 0, p.z);
-    this.keyLight.position.set(p.x + KEY_LIGHT_OFFSET.x, KEY_LIGHT_OFFSET.y, p.z + KEY_LIGHT_OFFSET.z);
-    this.skyDome.position.set(p.x, 0, p.z);
+    const dx = Math.abs(p.x - this.lastLightPos.x);
+    const dz = Math.abs(p.z - this.lastLightPos.z);
+    if (dx > 0.05 || dz > 0.05) {
+      this.lastLightPos.copy(p);
+      this.keyLight.target.position.set(p.x, 0, p.z);
+      this.keyLight.position.set(p.x + KEY_LIGHT_OFFSET.x, KEY_LIGHT_OFFSET.y, p.z + KEY_LIGHT_OFFSET.z);
+      this.skyDome.position.set(p.x, 0, p.z);
+      if (this.renderer.shadowMap.enabled) {
+        this.renderer.shadowMap.needsUpdate = true;
+      }
+    }
   }
 
   render(camera: PerspectiveCamera): void {

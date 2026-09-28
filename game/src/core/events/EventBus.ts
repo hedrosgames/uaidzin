@@ -1,7 +1,10 @@
 import type { GameEventHandler, GameEventMap, GameEventName } from "./GameEventMap";
+import type { ErrorReporter } from "../errors/ErrorReporter";
 
 export class EventBus {
   private readonly handlers = new Map<GameEventName, Set<GameEventHandler<GameEventName>>>();
+
+  constructor(private readonly errors?: ErrorReporter) {}
 
   on<K extends GameEventName>(name: K, handler: GameEventHandler<K>): () => void {
     let set = this.handlers.get(name);
@@ -21,7 +24,11 @@ export class EventBus {
     const set = this.handlers.get(name);
     if (!set) return;
     for (const handler of set) {
-      (handler as GameEventHandler<K>)(payload);
+      try {
+        (handler as GameEventHandler<K>)(payload);
+      } catch (err) {
+        this.errors?.report(err, `EventBus.${name}`);
+      }
     }
   }
 }

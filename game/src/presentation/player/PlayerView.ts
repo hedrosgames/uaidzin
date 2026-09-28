@@ -20,6 +20,7 @@ import {
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
 import {
+  SHARED_IDLE_URL,
   humanAnimUrl,
   humanCombatUrl,
   idleAnimUrl,
@@ -100,9 +101,13 @@ const ONE_SHOT: ReadonlySet<PlayerAnim> = new Set([
 
 const TARGET_HEIGHT = 1.72 * 1.1;
 
+export interface PlayerGltfLoader {
+  loadAsync(url: string): Promise<{ scene: Object3D; animations: AnimationClip[] }>;
+}
+
 export class PlayerView {
   readonly root = new Group();
-  private readonly loader = new GLTFLoader();
+  private readonly loader: PlayerGltfLoader;
   private mixer: AnimationMixer | null = null;
   private readonly actions = new Map<PlayerAnim, AnimationAction>();
   private model: Object3D | null = null;
@@ -114,44 +119,75 @@ export class PlayerView {
   private classId: PlayerClassId = "TK";
   private readonly armorAura = new ArmorAura();
   private readonly ghosts: Mesh[] = [];
-  private readonly weaponRig = new WeaponRig();
+  private readonly weaponRig: WeaponRig;
   private weaponSet: WeaponSetId | null = null;
   private attackClip: HumanAttackClip = "attack";
   private idleClip: WeaponIdleId = "class";
   private classIdleClip: AnimationClip | null = null;
   private attackBindGen = 0;
   private idleBindGen = 0;
+  private loadGen = 0;
+  private weaponSetGen = 0;
   private moveSpeed = COMBAT_BALANCE.player.speed;
   private hipsRest: Vector3 | null = null;
   ready = false;
 
-  constructor() {
+  constructor(loader?: PlayerGltfLoader) {
     this.root.name = "PlayerRoot";
+    this.loader = loader ?? new GLTFLoader();
+    this.weaponRig = new WeaponRig(this.loader);
   }
 
   async load(classId: string = "TK"): Promise<void> {
     const id: PlayerClassId = isPlayerClassId(classId) ? classId : "TK";
+    const loadToken = ++this.loadGen;
     this.classId = id;
     this.ready = false;
     this.dead = false;
     this.current = "";
     this.busyUntil = 0;
     this.actions.clear();
+    if (this.model) {
+      this.disposeObject(this.model);
+      this.root.remove(this.model);
+      this.model = null;
+    }
     this.mixer = null;
     this.hipsRest = null;
     this.classIdleClip = null;
     this.idleClip = "class";
     this.clearGhosts();
 
-    const base = await this.loader.loadAsync(CLASS_MODEL[id]);
+    const animEntries = Object.entries(FIXED_ANIM_URLS) as Array<
+      [Exclude<PlayerAnim, "idle" | "attack">, string]
+    >;
+
+    const [base, sharedIdleGltf, loadedAnims] = await Promise.all([
+      this.loader.loadAsync(CLASS_MODEL[id]),
+      id === "TK"
+        ? this.loader.loadAsync(SHARED_IDLE_URL).catch(() => null)
+        : Promise.resolve(null),
+      Promise.all(
+        animEntries.map(async ([name, url]) => {
+          const gltf = await this.loader.loadAsync(url);
+          return [name, gltf] as const;
+        }),
+      ),
+    ]);
+
+    if (loadToken !== this.loadGen) {
+      this.disposeObject(base.scene);
+      if (sharedIdleGltf) this.disposeObject(sharedIdleGltf.scene);
+      for (const [, gltf] of loadedAnims) {
+        this.disposeObject(gltf.scene);
+      }
+      return;
+    }
+
     const model = base.scene;
     model.name = id;
     this.hardenMaterials(model);
 
-    if (this.model) {
-      this.disposeObject(this.model);
-      this.root.remove(this.model);
-    }
     this.model = model;
     this.root.add(model);
 
@@ -164,38 +200,19 @@ export class PlayerView {
       this.hipsRest = hipsRestFromClip(embeddedIdle);
     }
 
-    if (id === "TK") {
-      try {
-        const donor = await this.loader.loadAsync(CLASS_MODEL.BM);
-        const donorIdle = donor.animations[0] ?? null;
-        this.disposeObject(donor.scene);
-        if (donorIdle) {
-          this.classIdleClip = this.adaptExternalClip(donorIdle);
-          this.classIdleClip.name = "idle";
-        }
-      } catch {
+    if (id === "TK" && sharedIdleGltf) {
+      const donorIdle = sharedIdleGltf.animations[0] ?? null;
+      this.disposeObject(sharedIdleGltf.scene);
+      if (donorIdle) {
+        this.classIdleClip = this.adaptExternalClip(donorIdle);
+        this.classIdleClip.name = "idle";
       }
     }
 
-    const defaultSet = this.weaponSet ?? CLASS_WEAPON_SET[id];
-    this.attackClip = attackClipForWeapon(defaultSet);
-    await this.bindIdleForWeapon(defaultSet);
-    await this.bindAttackClipSafe(this.attackClip);
-
-    const entries = Object.entries(FIXED_ANIM_URLS) as Array<
-      [Exclude<PlayerAnim, "idle" | "attack">, string]
-    >;
-    const loaded = await Promise.all(
-      entries.map(async ([name, url]) => {
-        const gltf = await this.loader.loadAsync(url);
-        const raw = gltf.animations[0] ?? null;
-        const clip = raw ? this.adaptExternalClip(raw) : null;
-        this.disposeObject(gltf.scene);
-        return [name, clip] as const;
-      }),
-    );
-
-    for (const [name, clip] of loaded) {
+    for (const [name, gltf] of loadedAnims) {
+      const raw = gltf.animations[0] ?? null;
+      const clip = raw ? this.adaptExternalClip(raw) : null;
+      this.disposeObject(gltf.scene);
       if (!clip || !this.mixer) continue;
       clip.name = name;
       this.actions.set(name, this.mixer.clipAction(clip));
@@ -206,24 +223,40 @@ export class PlayerView {
     this.fitStandingHeight(model);
     this.buildGhosts(model);
     this.weaponRig.bindModel(model);
-    await this.weaponRig.equip(this.root, this.weaponSet ?? CLASS_WEAPON_SET[id]);
-    this.armorAura.apply(this.weaponRig.getVisualRoots());
+
+    const targetSet = this.weaponSet ?? CLASS_WEAPON_SET[id];
+    const weaponToken = ++this.weaponSetGen;
+    await this.applyWeaponSet(targetSet, weaponToken, loadToken);
+    if (loadToken !== this.loadGen) return;
     this.ready = true;
   }
 
   async setWeaponSet(set: WeaponSetId): Promise<void> {
     this.weaponSet = set;
-    if (!this.model) return;
+    const weaponToken = ++this.weaponSetGen;
+    const loadToken = this.loadGen;
+    if (!this.model || !this.mixer) return;
+    await this.applyWeaponSet(set, weaponToken, loadToken);
+  }
+
+  private async applyWeaponSet(
+    set: WeaponSetId,
+    weaponToken: number,
+    loadToken: number,
+  ): Promise<void> {
     const nextAttack = attackClipForWeapon(set);
     if (nextAttack !== this.attackClip) {
       this.attackClip = nextAttack;
-      await this.bindAttackClipSafe(nextAttack);
+      await this.bindAttackClipSafe(nextAttack, weaponToken, loadToken);
+      if (weaponToken !== this.weaponSetGen || loadToken !== this.loadGen) return;
     }
-    await this.bindIdleForWeapon(set);
+    await this.bindIdleForWeapon(set, weaponToken, loadToken);
+    if (weaponToken !== this.weaponSetGen || loadToken !== this.loadGen) return;
     if (this.mixer) {
       for (let i = 0; i < 12; i++) this.mixer.update(1 / 30);
     }
     await this.weaponRig.equip(this.root, set);
+    if (weaponToken !== this.weaponSetGen || loadToken !== this.loadGen) return;
     this.armorAura.apply(this.weaponRig.getVisualRoots());
   }
 
@@ -231,7 +264,12 @@ export class PlayerView {
     return this.weaponRig.getSet();
   }
 
+  getWeaponRig(): WeaponRig {
+    return this.weaponRig;
+  }
+
   setArmorAuraEnabled(on: boolean): void {
+    if (this.armorAura.isEnabled() === on) return;
     this.armorAura.setEnabled(on);
   }
 
@@ -509,18 +547,32 @@ export class PlayerView {
     });
   }
 
-  private async bindIdleForWeapon(set: WeaponSetId): Promise<void> {
+  private async bindIdleForWeapon(
+    set: WeaponSetId,
+    weaponToken?: number,
+    loadToken?: number,
+  ): Promise<void> {
     const want = idleClipForWeapon(set);
     if (want === this.idleClip && this.actions.has("idle")) return;
     try {
-      await this.bindIdleClip(want);
+      await this.bindIdleClip(want, weaponToken, loadToken);
     } catch {
+      if (
+        (weaponToken !== undefined && weaponToken !== this.weaponSetGen) ||
+        (loadToken !== undefined && loadToken !== this.loadGen)
+      ) {
+        return;
+      }
       if (want === "class") return;
-      await this.bindIdleClip("class");
+      await this.bindIdleClip("class", weaponToken, loadToken);
     }
   }
 
-  private async bindIdleClip(clipId: WeaponIdleId): Promise<void> {
+  private async bindIdleClip(
+    clipId: WeaponIdleId,
+    weaponToken?: number,
+    loadToken?: number,
+  ): Promise<void> {
     if (!this.mixer) return;
     const gen = ++this.idleBindGen;
     let next: AnimationClip | null = null;
@@ -528,7 +580,12 @@ export class PlayerView {
       next = this.classIdleClip;
     } else {
       const gltf = await this.loader.loadAsync(idleAnimUrl(clipId));
-      if (!this.mixer || gen !== this.idleBindGen) {
+      if (
+        !this.mixer ||
+        gen !== this.idleBindGen ||
+        (weaponToken !== undefined && weaponToken !== this.weaponSetGen) ||
+        (loadToken !== undefined && loadToken !== this.loadGen)
+      ) {
         this.disposeObject(gltf.scene);
         return;
       }
@@ -537,7 +594,15 @@ export class PlayerView {
       if (!raw) throw new Error("idle clip missing");
       next = this.adaptExternalClip(raw);
     }
-    if (!next || !this.mixer || gen !== this.idleBindGen) return;
+    if (
+      !next ||
+      !this.mixer ||
+      gen !== this.idleBindGen ||
+      (weaponToken !== undefined && weaponToken !== this.weaponSetGen) ||
+      (loadToken !== undefined && loadToken !== this.loadGen)
+    ) {
+      return;
+    }
     const prev = this.actions.get("idle");
     const wasIdle = this.current === "idle";
     if (prev) {
@@ -551,21 +616,40 @@ export class PlayerView {
     if (wasIdle || this.current === "") this.play("idle", true);
   }
 
-  private async bindAttackClipSafe(clipId: HumanAttackClip): Promise<void> {
+  private async bindAttackClipSafe(
+    clipId: HumanAttackClip,
+    weaponToken?: number,
+    loadToken?: number,
+  ): Promise<void> {
     try {
-      await this.bindAttackClip(clipId);
+      await this.bindAttackClip(clipId, weaponToken, loadToken);
     } catch {
+      if (
+        (weaponToken !== undefined && weaponToken !== this.weaponSetGen) ||
+        (loadToken !== undefined && loadToken !== this.loadGen)
+      ) {
+        return;
+      }
       if (clipId === "attack") return;
       this.attackClip = "attack";
-      await this.bindAttackClip("attack");
+      await this.bindAttackClip("attack", weaponToken, loadToken);
     }
   }
 
-  private async bindAttackClip(clipId: HumanAttackClip): Promise<void> {
+  private async bindAttackClip(
+    clipId: HumanAttackClip,
+    weaponToken?: number,
+    loadToken?: number,
+  ): Promise<void> {
     if (!this.mixer) return;
     const gen = ++this.attackBindGen;
     const gltf = await this.loader.loadAsync(humanAnimUrl(clipId));
-    if (!this.mixer || gen !== this.attackBindGen) {
+    if (
+      !this.mixer ||
+      gen !== this.attackBindGen ||
+      (weaponToken !== undefined && weaponToken !== this.weaponSetGen) ||
+      (loadToken !== undefined && loadToken !== this.loadGen)
+    ) {
       this.disposeObject(gltf.scene);
       return;
     }
@@ -573,12 +657,21 @@ export class PlayerView {
     this.disposeObject(gltf.scene);
     if (!raw) throw new Error("attack clip missing");
     const clip = this.adaptExternalClip(raw);
+    if (
+      !this.mixer ||
+      gen !== this.attackBindGen ||
+      (weaponToken !== undefined && weaponToken !== this.weaponSetGen) ||
+      (loadToken !== undefined && loadToken !== this.loadGen)
+    ) {
+      return;
+    }
     const prev = this.actions.get("attack");
     if (prev) {
       prev.stop();
       this.mixer.uncacheClip(prev.getClip());
     }
     clip.name = "attack";
+    this.attackClip = clipId;
     this.actions.set("attack", this.mixer.clipAction(clip));
     if (this.current === "attack") this.play("attack", false);
   }

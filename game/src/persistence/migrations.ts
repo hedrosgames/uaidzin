@@ -1,5 +1,5 @@
 import type { BootCharacter } from "../app/BootFlow";
-import type { ItemInstance } from "../domain/items/ItemModel";
+import { nextItemUid, type ItemInstance } from "../domain/items/ItemModel";
 import type { EquipSlot } from "../domain/items/EquipmentService";
 import type { ActiveBuff } from "../domain/character/BuffService";
 import { CLASSES } from "../data/classes/class-definitions";
@@ -42,9 +42,10 @@ function asLoadoutSlots(raw: unknown): SkillLoadoutSlotSave[] {
       skillId: String(s.skillId),
       tree: String(s.tree || "fisica"),
       auto: s.auto !== false,
+      ...(typeof s.index === "number" && Number.isFinite(s.index) ? { index: Math.floor(s.index) } : {}),
     });
   }
-  return out.slice(0, 4);
+  return out;
 }
 
 function asBuffs(raw: unknown): ActiveBuff[] {
@@ -78,16 +79,41 @@ function asBags(raw: unknown): SavePayload["bags"] {
 function normalizeBase(data: SavePayload, profileIdHint: string): SavePayload {
   const classId = data.character?.classId || data.skills?.classId || "TK";
   const parsed = parseProfileId(data.meta?.profileId || profileIdHint);
+  const seenUids = new Set<string>();
   const equipped: Partial<Record<EquipSlot, ItemInstance>> = {};
   const src = data.equipment?.equipped || {};
   for (const key of Object.keys(src) as EquipSlot[]) {
     const item = asItem(src[key] as unknown as Record<string, unknown>);
-    if (item) equipped[key] = item;
+    if (item) {
+      if (seenUids.has(item.uid)) {
+        item.uid = nextItemUid();
+      }
+      seenUids.add(item.uid);
+      equipped[key] = item;
+    }
   }
   const items: ItemInstance[] = [];
   for (const raw of data.inventory?.items || []) {
     const item = asItem(raw as unknown as Record<string, unknown>);
-    if (item) items.push(item);
+    if (item) {
+      if (seenUids.has(item.uid)) {
+        item.uid = nextItemUid();
+      }
+      seenUids.add(item.uid);
+      items.push(item);
+    }
+  }
+  const rawVault = (data as { vault?: { items?: unknown[] } }).vault;
+  if (Array.isArray(rawVault?.items)) {
+    for (const raw of rawVault.items) {
+      const it = asItem(raw as unknown as Record<string, unknown>);
+      if (it) {
+        if (seenUids.has(it.uid)) {
+          it.uid = nextItemUid();
+        }
+        seenUids.add(it.uid);
+      }
+    }
   }
   return {
     saveVersion: data.saveVersion || 2,
@@ -117,7 +143,9 @@ function normalizeBase(data: SavePayload, profileIdHint: string): SavePayload {
     },
     skills: {
       classId,
-      levels: data.skills?.levels || {},
+      learned: Array.isArray(data.skills?.learned)
+        ? data.skills.learned.map(String)
+        : Object.keys((data.skills as { levels?: Record<string, unknown> } | undefined)?.levels || {}),
       eighthTree: data.skills?.eighthTree ?? null,
       specialization: normalizeTreeMap(data.skills?.specialization),
       skillPoints: Number(data.skills?.skillPoints) || 0,
@@ -246,13 +274,11 @@ export function migrateAccount(raw: unknown): Record<string, unknown> | null {
 }
 
 function remapLearnedSkills(payload: SavePayload): void {
-  const levels: SavePayload["skills"]["levels"] = {};
-  for (const [id, row] of Object.entries(payload.skills.levels || {})) {
-    const next = remapSkillId(id);
-    const level = Number(row?.level) || 0;
-    if (!levels[next] || level > levels[next].level) levels[next] = { level };
+  const seen = new Set<string>();
+  for (const id of payload.skills.learned || []) {
+    seen.add(remapSkillId(id));
   }
-  payload.skills.levels = levels;
+  payload.skills.learned = Array.from(seen);
   payload.skillLoadout.slots = (payload.skillLoadout.slots || []).map((slot) => ({
     ...slot,
     skillId: remapSkillId(slot.skillId),

@@ -30,6 +30,8 @@ export const BRAZIER_RADIUS = 0.4;
 const LIGHT_COLOR = 0xff8a3c;
 const LIGHT_INTENSITY = 16;
 const LIGHT_DISTANCE = 12;
+const MAX_BRAZIER_LIGHTS = 4;
+let activeBrazierLights = 0;
 let flameAtlas: ReturnType<typeof createFireBurstFlameTexture> | null = null;
 
 const ironGeo = {
@@ -39,7 +41,12 @@ const ironGeo = {
   coals: new IcosahedronGeometry(0.085, 0),
 };
 
-export function createBrazier(id: string, x: number, z: number): BrazierHandle {
+export function createBrazier(
+  id: string,
+  x: number,
+  z: number,
+  withLight?: boolean,
+): BrazierHandle {
   const group = new Group();
   group.name = id;
   group.position.set(x, 0, z);
@@ -134,9 +141,14 @@ totalEmissiveRadiance += vec3(0.35, 0.025, 0.002) * fissure;`);
   sparks.userData.occlusionIgnore = true;
   group.add(sparks);
 
-  const light = new PointLight(LIGHT_COLOR, LIGHT_INTENSITY, LIGHT_DISTANCE, 2);
-  light.position.y = 1.95;
-  group.add(light);
+  const attachLight = withLight ?? (activeBrazierLights < MAX_BRAZIER_LIGHTS);
+  let light: PointLight | null = null;
+  if (attachLight) {
+    activeBrazierLights++;
+    light = new PointLight(LIGHT_COLOR, LIGHT_INTENSITY, LIGHT_DISTANCE, 2);
+    light.position.y = 1.95;
+    group.add(light);
+  }
 
   let time = Math.random() * 100;
 
@@ -148,7 +160,9 @@ totalEmissiveRadiance += vec3(0.35, 0.025, 0.002) * fissure;`);
         Math.sin(time * 11.3) * 0.5 +
         Math.sin(time * 17.7 + 1.3) * 0.3 +
         Math.sin(time * 29.1 + 2.1) * 0.2;
-      light.intensity = LIGHT_INTENSITY * (1 + n * 0.22);
+      if (light) {
+        light.intensity = LIGHT_INTENSITY * (1 + n * 0.22);
+      }
       const frame = Math.floor(time * 19) % 16;
       flameTexture.offset.set((frame % 4) * 0.25, (3 - Math.floor(frame / 4)) * 0.25);
       flameMesh.scale.set(0.8 + n * 0.07, 1.05 + n * 0.1, 1);
@@ -178,7 +192,10 @@ totalEmissiveRadiance += vec3(0.35, 0.025, 0.002) * fissure;`);
       }
       sparkGeometry.dispose();
       sparkMaterial.dispose();
-      light.dispose();
+      if (light) {
+        activeBrazierLights = Math.max(0, activeBrazierLights - 1);
+        light.dispose();
+      }
     },
   };
 }

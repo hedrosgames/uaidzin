@@ -29,6 +29,7 @@ import {
   disposePurificarTextures,
   type PurificarTextureSet,
 } from "./PurificarTextures";
+import type { TkLightPool } from "../../TkLightPool";
 
 export interface PurificarVfxConfig {
   convergeDuration: number;
@@ -156,7 +157,8 @@ class PurificarCast {
   private readonly flash: Mesh<SphereGeometry, MeshBasicMaterial>;
   private readonly ring: Mesh;
   private readonly ringMaterial: MeshBasicMaterial;
-  private readonly light: PointLight;
+  private readonly light: PointLight | null;
+  private readonly isPooledLight: boolean;
   private readonly textures: PurificarTextureSet;
   private phase: PurificarCastPhase = "converge";
   private elapsed = 0;
@@ -173,6 +175,7 @@ class PurificarCast {
     private readonly target: Vector3,
     castSeed: number,
     private readonly onDispose: (cast: PurificarCast) => void,
+    private readonly lightPool?: TkLightPool,
   ) {
     this.textures = shared.textures;
     this.ascendSystems = createPurificarAscendSystems(shared.particleMaterials);
@@ -200,12 +203,20 @@ class PurificarCast {
     this.ring.renderOrder = 10;
     this.castRoot.add(this.ring);
 
-    this.light = new PointLight(0xf5e3ac, 0, 7, 2);
-    this.castRoot.add(this.light);
+    if (this.lightPool) {
+      this.light = this.lightPool.acquire(0xf5e3ac, 7);
+      this.isPooledLight = true;
+    } else {
+      this.light = new PointLight(0xf5e3ac, 0, 7, 2);
+      this.isPooledLight = false;
+    }
+    if (this.light) {
+      this.castRoot.add(this.light);
+      this.light.position.copy(target);
+    }
 
     this.flash.position.copy(target);
     this.ring.position.set(target.x, target.y, target.z);
-    this.light.position.copy(target);
   }
 
   getPhase(): PurificarCastPhase {
@@ -261,7 +272,13 @@ class PurificarCast {
     if (this.disposed) return;
     this.disposed = true;
     for (const system of this.systems) system.dispose();
-    this.castRoot.remove(this.motes, this.flash, this.ring, this.light);
+    this.castRoot.remove(this.motes, this.flash, this.ring);
+    if (this.isPooledLight) {
+      this.lightPool?.release(this.light);
+    } else if (this.light) {
+      this.castRoot.remove(this.light);
+      this.light.dispose();
+    }
     for (const material of this.moteMaterials) material.dispose();
     this.motes.clear();
     this.flash.material.dispose();
@@ -310,7 +327,7 @@ class PurificarCast {
     const progress = MathUtils.clamp(this.elapsed / this.config.convergeDuration, 0, 1);
     const ease = 1 - Math.pow(1 - progress, 3);
     this.applySpiral(ease, ease, 0.55 + progress * 0.45);
-    this.light.intensity = 0.4 + ease * 2.2;
+    if (this.light) this.light.intensity = 0.4 + ease * 2.2;
     if (progress >= 1) {
       this.phase = "bloom";
       this.elapsed = 0;
@@ -324,7 +341,7 @@ class PurificarCast {
     this.flash.visible = true;
     this.flash.scale.setScalar(0.08 + progress * 0.62);
     this.flash.material.opacity = 0.92 * fade;
-    this.light.intensity = 2.6 + 2.8 * (1 - progress) + progress * 0.6;
+    if (this.light) this.light.intensity = 2.6 + 2.8 * (1 - progress) + progress * 0.6;
     if (progress >= 1) {
       this.phase = "ascend";
       this.elapsed = 0;
@@ -360,7 +377,7 @@ class PurificarCast {
     );
     this.ring.scale.setScalar(0.3 + ringProgress * 2.2);
     this.ringMaterial.opacity = Math.pow(1 - ringProgress, 1.6) * 0.5;
-    this.light.intensity = 3.2 * Math.pow(1 - progress, 1.8);
+    if (this.light) this.light.intensity = 3.2 * Math.pow(1 - progress, 1.8);
   }
 
   private applySpiral(radiusEase: number, heightEase: number, opacityGain: number): void {
@@ -422,6 +439,7 @@ export class PurificarVfxController {
   constructor(
     private readonly scene: Scene,
     config: Partial<PurificarVfxConfig> = {},
+    private readonly lightPool?: TkLightPool,
   ) {
     const merged = { ...DEFAULT_PURIFICAR_VFX_CONFIG, ...config };
     this.config = {
@@ -461,13 +479,14 @@ export class PurificarVfxController {
       castTarget,
       this.castSequence,
       (finishedCast) => this.casts.delete(finishedCast),
+      this.lightPool,
     );
     this.castSequence += 1;
     this.casts.add(cast);
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime) ? MathUtils.clamp(deltaTime, 0, 0.1) : 0;
     this.accumulator = Math.min(this.accumulator + frameDelta, 0.2);
     let stepCount = 0;

@@ -10,9 +10,15 @@ const MODEL = {
   HT: "/models/player/HT/HT.glb",
 };
 
-const IDLE_FROM = {
-  TK: "BM",
-};
+const SHARED_IDLE_URL = "/models/player/shared/anims/idle.glb";
+let sharedIdlePromise = null;
+function loadSharedIdle() {
+  if (!sharedIdlePromise) {
+    const loader = new GLTFLoader();
+    sharedIdlePromise = loader.loadAsync(SHARED_IDLE_URL).catch(() => null);
+  }
+  return sharedIdlePromise;
+}
 
 const TARGET_HEIGHT = 1.72 * 1.1;
 const gltfCache = new Map();
@@ -129,12 +135,125 @@ async function loadGltf(classId) {
 }
 
 async function resolveIdleClip(classId, classGltf) {
-  const fromId = IDLE_FROM[classId];
-  if (fromId) {
-    const donor = await loadGltf(fromId);
-    if (donor.animations[0]) return donor.animations[0];
+  if (classId === "TK") {
+    const donor = await loadSharedIdle();
+    if (donor?.animations?.[0]) return donor.animations[0];
   }
   return classGltf.animations[0] || null;
+}
+
+let sharedRenderer = null;
+let sharedCanvas = null;
+const mountedCards = new Set();
+let rafId = 0;
+const clock = new THREE.Clock();
+
+function getSharedRenderer() {
+  if (!sharedRenderer) {
+    sharedCanvas = document.createElement("canvas");
+    sharedRenderer = new THREE.WebGLRenderer({
+      canvas: sharedCanvas,
+      antialias: true,
+      alpha: true,
+      powerPreference: "high-performance",
+    });
+    sharedRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    sharedRenderer.setClearColor(0x000000, 0);
+    sharedRenderer.outputColorSpace = THREE.SRGBColorSpace;
+  }
+  return sharedRenderer;
+}
+
+function isCardVisible(card) {
+  if (!card.alive || !card.container || !card.container.isConnected) return false;
+  return card.container.offsetParent !== null && card.container.clientWidth > 0 && card.container.clientHeight > 0;
+}
+
+function tick() {
+  if (document.hidden || mountedCards.size === 0) {
+    rafId = 0;
+    return;
+  }
+  const dt = clock.getDelta();
+  const renderer = getSharedRenderer();
+
+  for (const card of mountedCards) {
+    if (!isCardVisible(card)) continue;
+    if (card.mixer) card.mixer.update(dt);
+    if (card.pivot && card.model) alignPivotToCamera(card.pivot, card.model, card.shoulders);
+
+    const w = Math.max(card.container.clientWidth || 180, 120);
+    const h = Math.max(card.container.clientHeight || 280, 180);
+    if (card.canvas.width !== w || card.canvas.height !== h) {
+      card.canvas.width = w;
+      card.canvas.height = h;
+      card.camera.aspect = w / h;
+      card.camera.updateProjectionMatrix();
+    }
+
+    if (sharedCanvas.width !== w || sharedCanvas.height !== h) {
+      renderer.setSize(w, h, false);
+      renderer.setViewport(0, 0, w, h);
+    }
+    renderer.render(card.scene, card.camera);
+
+    const ctx = card.ctx;
+    if (ctx) {
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(sharedCanvas, 0, 0);
+    }
+  }
+
+  rafId = requestAnimationFrame(tick);
+}
+
+function startLoop() {
+  if (rafId === 0 && !document.hidden && mountedCards.size > 0) {
+    clock.getDelta();
+    rafId = requestAnimationFrame(tick);
+  }
+}
+
+function stopLoop() {
+  if (rafId !== 0) {
+    cancelAnimationFrame(rafId);
+    rafId = 0;
+  }
+}
+
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      stopLoop();
+    } else {
+      startLoop();
+    }
+  });
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", () => {
+    teardownCharPreviews();
+  });
+}
+
+export function teardownCharPreviews() {
+  stopLoop();
+  for (const card of mountedCards) {
+    card.alive = false;
+    if (card.mixer) {
+      card.mixer.stopAllAction();
+      card.mixer.uncacheRoot(card.model);
+    }
+    if (card.container) card.container.innerHTML = "";
+  }
+  mountedCards.clear();
+  if (sharedRenderer) {
+    sharedRenderer.dispose();
+    sharedRenderer.forceContextLoss();
+    sharedRenderer = null;
+    sharedCanvas = null;
+  }
 }
 
 export function mountCharPreview(container, classId) {
@@ -147,17 +266,7 @@ export function mountCharPreview(container, classId) {
   const h = Math.max(container.clientHeight || 280, 180);
   canvas.width = w;
   canvas.height = h;
-
-  const renderer = new THREE.WebGLRenderer({
-    canvas,
-    antialias: true,
-    alpha: true,
-    powerPreference: "high-performance",
-  });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setSize(w, h, false);
-  renderer.setClearColor(0x000000, 0);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  const ctx = canvas.getContext("2d");
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(28, w / h, 0.05, 50);
@@ -173,48 +282,58 @@ export function mountCharPreview(container, classId) {
   rim.position.set(0.5, 2.0, -3.0);
   scene.add(rim);
 
-  let mixer = null;
-  let alive = true;
-  let raf = 0;
-  let pivot = null;
-  let model = null;
-  let shoulders = { left: null, right: null };
-  const clock = new THREE.Clock();
+  const card = {
+    alive: true,
+    container,
+    canvas,
+    ctx,
+    scene,
+    camera,
+    mixer: null,
+    pivot: null,
+    model: null,
+    shoulders: { left: null, right: null },
+  };
+
+  mountedCards.add(card);
+  startLoop();
 
   loadGltf(classId)
     .then(async (gltf) => {
-      if (!alive) return;
+      if (!card.alive) return;
       const clip = await resolveIdleClip(classId, gltf);
-      if (!alive) return;
-      pivot = new THREE.Group();
-      model = cloneSkinned(gltf.scene);
-      shoulders = findShoulders(model);
-      pivot.add(model);
-      scene.add(pivot);
-      mixer = new THREE.AnimationMixer(model);
-      if (clip) mixer.clipAction(clip).play();
-      fitAndFrame(pivot, model, mixer, camera, shoulders);
+      if (!card.alive) return;
+      card.pivot = new THREE.Group();
+      card.model = cloneSkinned(gltf.scene);
+      card.shoulders = findShoulders(card.model);
+      card.pivot.add(card.model);
+      scene.add(card.pivot);
+      card.mixer = new THREE.AnimationMixer(card.model);
+      if (clip) card.mixer.clipAction(clip).play();
+      fitAndFrame(card.pivot, card.model, card.mixer, camera, card.shoulders);
       if (clip) {
-        mixer.stopAllAction();
-        mixer.clipAction(clip).reset().play();
+        card.mixer.stopAllAction();
+        card.mixer.clipAction(clip).reset().play();
       }
     })
     .catch(() => {});
 
-  function tick() {
-    if (!alive) return;
-    const dt = clock.getDelta();
-    if (mixer) mixer.update(dt);
-    if (pivot && model) alignPivotToCamera(pivot, model, shoulders);
-    renderer.render(scene, camera);
-    raf = requestAnimationFrame(tick);
-  }
-  tick();
-
   return () => {
-    alive = false;
-    cancelAnimationFrame(raf);
-    renderer.dispose();
+    card.alive = false;
+    mountedCards.delete(card);
+    if (card.mixer) {
+      card.mixer.stopAllAction();
+      card.mixer.uncacheRoot(card.model);
+    }
     container.innerHTML = "";
+    if (mountedCards.size === 0) {
+      stopLoop();
+      if (sharedRenderer) {
+        sharedRenderer.dispose();
+        sharedRenderer.forceContextLoss();
+        sharedRenderer = null;
+        sharedCanvas = null;
+      }
+    }
   };
 }

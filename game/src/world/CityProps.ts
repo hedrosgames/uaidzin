@@ -94,7 +94,6 @@ export function spawnCityProp(
       const mesh = obj as Mesh;
       if (!mesh.isMesh) return;
       mesh.visible = true;
-      mesh.frustumCulled = false;
     });
     anchor.add(clone);
     onReady?.(clone);

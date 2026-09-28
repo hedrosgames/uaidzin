@@ -13,35 +13,15 @@ import {
   Vector3,
 } from "three";
 import { VFX_BALANCE } from "../../data/balance/vfx";
-import { AncoraVfxController } from "./tkSkills/ancora/AncoraVfx";
-import { AvalancheVfxController } from "./tkSkills/avalanche/AvalancheVfx";
-import { AuraVfxController } from "./tkSkills/aura/AuraVfx";
-import { BastiaoVfxController } from "./tkSkills/bastiao/BastiaoVfx";
-import { BencaoVfxController } from "./tkSkills/bencao/BencaoVfx";
-import { CorteVfxController } from "./tkSkills/corte/CorteVfx";
-import { DesafioVfxController } from "./tkSkills/desafio/DesafioVfx";
-import { EscudoSagradoVfxController } from "./tkSkills/escudo-sagrado/EscudoSagradoVfx";
-import { FuriaVfxController } from "./tkSkills/furia/FuriaVfx";
-import { GolpeVfxController } from "./tkSkills/golpe/GolpeVfx";
-import { GuardaVfxController } from "./tkSkills/guarda/GuardaVfx";
-import { InvestidaVfxController } from "./tkSkills/investida/InvestidaVfx";
-import { JulgamentoVfxController } from "./tkSkills/julgamento/JulgamentoVfx";
-import { LuzVfxController } from "./tkSkills/luz/LuzVfx";
-import { MachadoVfxController } from "./tkSkills/machado/MachadoVfx";
-import { MuralhaVfxController } from "./tkSkills/muralha/MuralhaVfx";
-import { PosturaVfxController } from "./tkSkills/postura/PosturaVfx";
-import { ProvocacaoVfxController } from "./tkSkills/provocacao/ProvocacaoVfx";
-import { PurificarVfxController } from "./tkSkills/purificar/PurificarVfx";
-import { QuebraVfxController } from "./tkSkills/quebra/QuebraVfx";
-import { RugidoVfxController } from "./tkSkills/rugido/RugidoVfx";
-import { SeloVfxController } from "./tkSkills/selo/SeloVfx";
-import { TribunalVfxController } from "./tkSkills/tribunal/TribunalVfx";
 import { EsferaIgneaVfxController } from "./fmSkills/esfera-ignea/EsferaIgneaVfx";
 import { LancaGlacialVfxController } from "./fmSkills/lanca-glacial/LancaGlacialVfx";
 import { ChoqueVitalVfxController } from "./fmSkills/choque-vital/ChoqueVitalVfx";
+import { DEFAULT_GOLPE_VFX_CONFIG } from "./tkSkills/golpe/GolpeVfx";
 import { FireBurstVfxController } from "./fireBurst/FireBurstVfx";
 import { getSkillVfxProfile } from "./skill/SkillVfxCatalog";
 import { SkillVfxDirector } from "./skill/SkillVfxRuntime";
+import { TkLightPool } from "./TkLightPool";
+import { TkVfxRegistry } from "./TkVfxRegistry";
 import type { SkillDef } from "../../data/classes/skill-types";
 import type { SkillVfxRequest } from "./skill/SkillVfxTypes";
 
@@ -60,6 +40,7 @@ interface FlashEntry {
   t: number;
   restore: Color;
   token: number;
+  root: Object3D;
 }
 
 
@@ -68,46 +49,40 @@ export class EffectManager {
   private readonly overlay: HTMLDivElement;
   private readonly floating: FloatingText[] = [];
   private readonly flashes = new Map<Mesh, FlashEntry>();
+  private readonly flashingRoots = new Map<Object3D, number>();
   private readonly pulses: Array<{ mesh: Object3D; t: number }> = [];
   private readonly slashes: Array<{ line: Line; t: number; max: number }> = [];
   private readonly deaths = new Map<
     Mesh,
     { t: number; max: number; baseScale: Vector3 }
   >();
+  private readonly dyingRoots = new Set<Object3D>();
   private rangeRing: Mesh | null = null;
   private count = 0;
   private readonly hpBars = new Map<string, HTMLDivElement>();
+  private readonly hpBarEntries = new Map<
+    string,
+    {
+      el: HTMLDivElement;
+      inner: HTMLElement;
+      world: Vector3;
+      ratio: number;
+      lastX: number;
+      lastY: number;
+      lastVisible: boolean;
+    }
+  >();
+  private readonly scratchVec = new Vector3();
   private readonly nameplates = new Map<string, HTMLDivElement>();
   private readonly skillFx: Array<{ mesh: Mesh; t: number; max: number; kind: string }> = [];
   private shake = 0;
   private shakeAmp = 0;
   private frame = 0;
   private tokenSeq = 1;
+  private readonly lightPool: TkLightPool;
   private readonly fireBurst: FireBurstVfxController;
   private readonly skillVfx: SkillVfxDirector;
-  private readonly tkGolpe: GolpeVfxController;
-  private readonly tkInvestida: InvestidaVfxController;
-  private readonly tkCorte: CorteVfxController;
-  private readonly tkMachado: MachadoVfxController;
-  private readonly tkQuebra: QuebraVfxController;
-  private readonly tkFuria: FuriaVfxController;
-  private readonly tkAvalanche: AvalancheVfxController;
-  private readonly tkBencao: BencaoVfxController;
-  private readonly tkSelo: SeloVfxController;
-  private readonly tkAura: AuraVfxController;
-  private readonly tkEscudoSagrado: EscudoSagradoVfxController;
-  private readonly tkJulgamento: JulgamentoVfxController;
-  private readonly tkLuz: LuzVfxController;
-  private readonly tkPurificar: PurificarVfxController;
-  private readonly tkTribunal: TribunalVfxController;
-  private readonly tkProvocacao: ProvocacaoVfxController;
-  private readonly tkPostura: PosturaVfxController;
-  private readonly tkRugido: RugidoVfxController;
-  private readonly tkMuralha: MuralhaVfxController;
-  private readonly tkAncora: AncoraVfxController;
-  private readonly tkDesafio: DesafioVfxController;
-  private readonly tkGuarda: GuardaVfxController;
-  private readonly tkBastiao: BastiaoVfxController;
+  private readonly tkRegistry: TkVfxRegistry;
   private readonly fmEsferaIgnea: EsferaIgneaVfxController;
   private readonly fmLancaGlacial: LancaGlacialVfxController;
   private readonly fmChoqueVital: ChoqueVitalVfxController;
@@ -116,31 +91,10 @@ export class EffectManager {
     parent: HTMLElement,
     private readonly sceneRoot: Scene,
   ) {
-    this.fireBurst = new FireBurstVfxController(sceneRoot);
-    this.skillVfx = new SkillVfxDirector(sceneRoot);
-    this.tkGolpe = new GolpeVfxController(sceneRoot);
-    this.tkInvestida = new InvestidaVfxController(sceneRoot);
-    this.tkCorte = new CorteVfxController(sceneRoot);
-    this.tkMachado = new MachadoVfxController(sceneRoot);
-    this.tkQuebra = new QuebraVfxController(sceneRoot);
-    this.tkFuria = new FuriaVfxController(sceneRoot);
-    this.tkAvalanche = new AvalancheVfxController(sceneRoot);
-    this.tkBencao = new BencaoVfxController(sceneRoot);
-    this.tkSelo = new SeloVfxController(sceneRoot);
-    this.tkAura = new AuraVfxController(sceneRoot);
-    this.tkEscudoSagrado = new EscudoSagradoVfxController(sceneRoot);
-    this.tkJulgamento = new JulgamentoVfxController(sceneRoot);
-    this.tkLuz = new LuzVfxController(sceneRoot);
-    this.tkPurificar = new PurificarVfxController(sceneRoot);
-    this.tkTribunal = new TribunalVfxController(sceneRoot);
-    this.tkProvocacao = new ProvocacaoVfxController(sceneRoot);
-    this.tkPostura = new PosturaVfxController(sceneRoot);
-    this.tkRugido = new RugidoVfxController(sceneRoot);
-    this.tkMuralha = new MuralhaVfxController(sceneRoot);
-    this.tkAncora = new AncoraVfxController(sceneRoot);
-    this.tkDesafio = new DesafioVfxController(sceneRoot);
-    this.tkGuarda = new GuardaVfxController(sceneRoot);
-    this.tkBastiao = new BastiaoVfxController(sceneRoot);
+    this.lightPool = new TkLightPool(sceneRoot);
+    this.fireBurst = new FireBurstVfxController(sceneRoot, {}, this.lightPool);
+    this.skillVfx = new SkillVfxDirector(sceneRoot, this.lightPool);
+    this.tkRegistry = new TkVfxRegistry(sceneRoot, this.lightPool);
     this.fmEsferaIgnea = new EsferaIgneaVfxController(sceneRoot);
     this.fmLancaGlacial = new LancaGlacialVfxController(sceneRoot);
     this.fmChoqueVital = new ChoqueVitalVfxController(sceneRoot);
@@ -159,24 +113,18 @@ export class EffectManager {
     return this.frame;
   }
 
+  getTkRegistry(): TkVfxRegistry {
+    return this.tkRegistry;
+  }
+
   isFlashing(mesh: Object3D | null | undefined): boolean {
     if (!mesh) return false;
-    if (this.flashes.has(mesh as Mesh)) return true;
-    let hit = false;
-    mesh.traverse((o) => {
-      if (this.flashes.has(o as Mesh)) hit = true;
-    });
-    return hit;
+    return this.flashingRoots.has(mesh) || this.flashes.has(mesh as Mesh);
   }
 
   isDying(mesh: Object3D | null | undefined): boolean {
     if (!mesh) return false;
-    if (this.deaths.has(mesh as Mesh)) return true;
-    let hit = false;
-    mesh.traverse((o) => {
-      if (this.deaths.has(o as Mesh)) hit = true;
-    });
-    return hit;
+    return this.dyingRoots.has(mesh) || this.deaths.has(mesh as Mesh);
   }
 
   spawnDamageNumber(x: number, y: number, z: number, amount: number, kind: DmgKind): void {
@@ -197,18 +145,24 @@ export class EffectManager {
 
   playHitFlash(mesh: Object3D | null | undefined): void {
     if (!mesh) return;
+    const root = mesh;
+    let flashCount = 0;
     const apply = (obj: Object3D): void => {
       const m = (obj as Mesh).material as unknown as { emissive?: Color; emissiveIntensity?: number } | undefined;
       if (!m?.emissive) return;
       const existing = this.flashes.get(obj as Mesh);
       const restore = existing ? existing.restore : m.emissive.clone();
       const token = this.tokenSeq++;
-      this.flashes.set(obj as Mesh, { mesh: obj as Mesh, t: VFX_BALANCE.hitFlashSeconds, restore, token });
+      this.flashes.set(obj as Mesh, { mesh: obj as Mesh, t: VFX_BALANCE.hitFlashSeconds, restore, token, root });
       m.emissive.setHex(0xff2200);
       m.emissiveIntensity = 0.9;
+      flashCount++;
     };
     if (mesh instanceof Group || mesh.type === "Group") mesh.traverse(apply);
     else apply(mesh);
+    if (flashCount > 0) {
+      this.flashingRoots.set(root, (this.flashingRoots.get(root) ?? 0) + flashCount);
+    }
   }
 
   playAttackPulse(mesh: Object3D | null | undefined): void {
@@ -230,6 +184,7 @@ export class EffectManager {
     duration: number = VFX_BALANCE.deathSeconds,
   ): void {
     if (!mesh) return;
+    this.dyingRoots.add(mesh);
     const previousDeath = this.deaths.get(mesh);
     this.deaths.set(mesh, {
       t: duration,
@@ -261,29 +216,10 @@ export class EffectManager {
   clearSkillVfx(): void {
     this.fireBurst.clear();
     this.skillVfx.clear();
-    this.tkGolpe.clear();
-    this.tkInvestida.clear();
-    this.tkCorte.clear();
-    this.tkMachado.clear();
-    this.tkQuebra.clear();
-    this.tkFuria.clear();
-    this.tkAvalanche.clear();
-    this.tkBencao.clear();
-    this.tkSelo.clear();
-    this.tkAura.clear();
-    this.tkEscudoSagrado.clear();
-    this.tkJulgamento.clear();
-    this.tkLuz.clear();
-    this.tkPurificar.clear();
-    this.tkTribunal.clear();
-    this.tkProvocacao.clear();
-    this.tkPostura.clear();
-    this.tkRugido.clear();
-    this.tkMuralha.clear();
-    this.tkAncora.clear();
-    this.tkDesafio.clear();
-    this.tkGuarda.clear();
-    this.tkBastiao.clear();
+    this.tkRegistry.clear();
+    this.fmEsferaIgnea.clear();
+    this.fmLancaGlacial.clear();
+    this.fmChoqueVital.clear();
   }
 
   clearFireBurst(): void {
@@ -305,73 +241,97 @@ export class EffectManager {
     const target = input.target ?? input.center;
     switch (input.profile.dedicatedVfx) {
       case "golpe":
-        this.tkGolpe.castGolpe(input.origin, target.clone().sub(input.origin));
+        this.tkRegistry.get("golpe").castGolpe(input.origin, target.clone().sub(input.origin));
+        if (input.origin.distanceTo(target) > DEFAULT_GOLPE_VFX_CONFIG.arcRadius) {
+          this.tkRegistry.get("quebra").castQuebra(target);
+        }
         return;
-      case "investida":
-        this.tkInvestida.castInvestida(input.origin, target);
+      case "investida": {
+        let endTarget = target;
+        if (input.hits.length > 0) {
+          let maxDistSq = -1;
+          let farthestHit: { x: number; z: number } | null = null;
+          for (const hit of input.hits) {
+            const dx = hit.x - input.origin.x;
+            const dz = hit.z - input.origin.z;
+            const distSq = dx * dx + dz * dz;
+            if (distSq > maxDistSq) {
+              maxDistSq = distSq;
+              farthestHit = hit;
+            }
+          }
+          if (farthestHit) {
+            endTarget = new Vector3(farthestHit.x, target.y, farthestHit.z);
+          }
+        }
+        this.tkRegistry.get("investida").castInvestida(input.origin, endTarget);
         return;
+      }
       case "corte":
-        this.tkCorte.castCorte(input.origin, target);
+        this.tkRegistry.get("corte").castCorte(input.origin, target);
         return;
       case "machado":
-        this.tkMachado.castMachado(target);
+        this.tkRegistry.get("machado").castMachado(target);
         return;
       case "quebra":
-        this.tkQuebra.castQuebra(target);
+        this.tkRegistry.get("quebra").castQuebra(target);
         return;
       case "furia":
-        this.tkFuria.castFuria(input.center);
+        this.tkRegistry.get("furia").castFuria(input.center);
+        return;
+      case "descuidado":
+        this.tkRegistry.get("descuidado").castFuria(input.center);
         return;
       case "avalanche":
-        this.tkAvalanche.castAvalanche(input.origin, target);
+        this.tkRegistry.get("avalanche").castAvalanche(input.origin, target);
         return;
       case "bencao":
-        this.tkBencao.castBencao(input.center);
+        this.tkRegistry.get("bencao").castBencao(input.center);
         return;
       case "selo":
-        this.tkSelo.castSelo(input.center);
+        this.tkRegistry.get("selo").castSelo(input.center);
         return;
       case "aura":
-        this.tkAura.castAura(input.center);
+        this.tkRegistry.get("aura").castAura(input.center);
         return;
       case "escudo-sagrado":
-        this.tkEscudoSagrado.castEscudo(input.origin, target.clone().sub(input.origin));
+        this.tkRegistry.get("escudo-sagrado").castEscudo(input.origin, target.clone().sub(input.origin));
         return;
       case "julgamento":
-        this.tkJulgamento.castJulgamento(target);
+        this.tkRegistry.get("julgamento").castJulgamento(target);
         return;
       case "luz":
-        this.tkLuz.castLuz(input.origin, target);
+        this.tkRegistry.get("luz").castLuz(input.origin, target);
         return;
       case "purificar":
-        this.tkPurificar.castPurificar(target);
+        this.tkRegistry.get("purificar").castPurificar(target);
         return;
       case "tribunal":
-        this.tkTribunal.castTribunal(target);
+        this.tkRegistry.get("tribunal").castTribunal(target);
         return;
       case "provocacao":
-        this.tkProvocacao.castProvocacao(input.center);
+        this.tkRegistry.get("provocacao").castProvocacao(input.center);
         return;
       case "postura":
-        this.tkPostura.castPostura(input.center);
+        this.tkRegistry.get("postura").castPostura(input.center);
         return;
       case "rugido":
-        this.tkRugido.castRugido(input.origin);
+        this.tkRegistry.get("rugido").castRugido(input.origin);
         return;
       case "muralha":
-        this.tkMuralha.castMuralha(input.origin, target.clone().sub(input.origin));
+        this.tkRegistry.get("muralha").castMuralha(input.origin, target.clone().sub(input.origin));
         return;
       case "ancora":
-        this.tkAncora.castAncora(input.origin, target);
+        this.tkRegistry.get("ancora").castAncora(input.origin, target);
         return;
       case "desafio":
-        this.tkDesafio.castDesafio(input.origin, target);
+        this.tkRegistry.get("desafio").castDesafio(input.origin, target);
         return;
       case "guarda":
-        this.tkGuarda.castGuarda(input.origin, target.clone().sub(input.origin));
+        this.tkRegistry.get("guarda").castGuarda(input.origin, target.clone().sub(input.origin));
         return;
       case "bastiao":
-        this.tkBastiao.castBastiao(input.origin);
+        this.tkRegistry.get("bastiao").castBastiao(input.origin);
         return;
       case "esfera-ignea":
         this.fmEsferaIgnea.castEsferaIgnea(input.origin, target);
@@ -389,66 +349,21 @@ export class EffectManager {
   }
 
   getSkillVfxState(): { active: number; particles: number } {
-    return {
-      active:
-        this.skillVfx.getActiveCastCount() +
-        this.fireBurst.getActiveCastCount() +
-        this.tkGolpe.getActiveCastCount() +
-        this.tkInvestida.getActiveCastCount() +
-        this.tkCorte.getActiveCastCount() +
-        this.tkMachado.getActiveCastCount() +
-        this.tkQuebra.getActiveCastCount() +
-        this.tkFuria.getActiveCastCount() +
-        this.tkAvalanche.getActiveCastCount() +
-        this.tkBencao.getActiveCastCount() +
-        this.tkSelo.getActiveCastCount() +
-        this.tkAura.getActiveCastCount() +
-        this.tkEscudoSagrado.getActiveCastCount() +
-        this.tkJulgamento.getActiveCastCount() +
-        this.tkLuz.getActiveCastCount() +
-        this.tkPurificar.getActiveCastCount() +
-        this.tkTribunal.getActiveCastCount() +
-        this.tkProvocacao.getActiveCastCount() +
-        this.tkPostura.getActiveCastCount() +
-        this.tkRugido.getActiveCastCount() +
-        this.tkMuralha.getActiveCastCount() +
-        this.tkAncora.getActiveCastCount() +
-        this.tkDesafio.getActiveCastCount() +
-        this.tkGuarda.getActiveCastCount() +
-        this.tkBastiao.getActiveCastCount() +
-        this.fmEsferaIgnea.getActiveCastCount() +
-        this.fmLancaGlacial.getActiveCastCount() +
-        this.fmChoqueVital.getActiveCastCount(),
-      particles:
-        this.skillVfx.getParticleCount() +
-        this.fireBurst.getParticleCount() +
-        this.tkGolpe.getParticleCount() +
-        this.tkInvestida.getParticleCount() +
-        this.tkCorte.getParticleCount() +
-        this.tkMachado.getParticleCount() +
-        this.tkQuebra.getParticleCount() +
-        this.tkFuria.getParticleCount() +
-        this.tkAvalanche.getParticleCount() +
-        this.tkBencao.getParticleCount() +
-        this.tkSelo.getParticleCount() +
-        this.tkAura.getParticleCount() +
-        this.tkEscudoSagrado.getParticleCount() +
-        this.tkJulgamento.getParticleCount() +
-        this.tkLuz.getParticleCount() +
-        this.tkPurificar.getParticleCount() +
-        this.tkTribunal.getParticleCount() +
-        this.tkProvocacao.getParticleCount() +
-        this.tkPostura.getParticleCount() +
-        this.tkRugido.getParticleCount() +
-        this.tkMuralha.getParticleCount() +
-        this.tkAncora.getParticleCount() +
-        this.tkDesafio.getParticleCount() +
-        this.tkGuarda.getParticleCount() +
-        this.tkBastiao.getParticleCount() +
-        this.fmEsferaIgnea.getParticleCount() +
-        this.fmLancaGlacial.getParticleCount() +
-        this.fmChoqueVital.getParticleCount(),
-    };
+    const active =
+      this.skillVfx.getActiveCastCount() +
+      this.fireBurst.getActiveCastCount() +
+      this.tkRegistry.getActiveCastCount() +
+      this.fmEsferaIgnea.getActiveCastCount() +
+      this.fmLancaGlacial.getActiveCastCount() +
+      this.fmChoqueVital.getActiveCastCount();
+    const particles =
+      this.skillVfx.getParticleCount() +
+      this.fireBurst.getParticleCount() +
+      this.tkRegistry.getParticleCount() +
+      this.fmEsferaIgnea.getParticleCount() +
+      this.fmLancaGlacial.getParticleCount() +
+      this.fmChoqueVital.getParticleCount();
+    return { active, particles };
   }
 
   playSkillVfx(
@@ -544,37 +459,48 @@ export class EffectManager {
   }
 
   spawnHpBar(id: string, x: number, y: number, z: number, ratio: number): void {
-    let el = this.hpBars.get(id);
-    if (!el) {
-      el = document.createElement("div");
+    let entry = this.hpBarEntries.get(id);
+    if (!entry) {
+      const el = document.createElement("div");
       el.className = id === "player" ? "hp-bar-enemy hp-bar-player" : "hp-bar-enemy";
-      el.innerHTML = '<i></i>';
+      const inner = document.createElement("i");
+      el.appendChild(inner);
       this.overlay.appendChild(el);
+      entry = {
+        el,
+        inner,
+        world: new Vector3(x, y, z),
+        ratio: -1,
+        lastX: -9999,
+        lastY: -9999,
+        lastVisible: false,
+      };
+      this.hpBarEntries.set(id, entry);
       this.hpBars.set(id, el);
     }
-    el.hidden = false;
-    const inner = el.querySelector("i") as HTMLElement;
+    if (entry.el.hidden) entry.el.hidden = false;
+    entry.world.set(x, y, z);
     const r = Math.max(0, Math.min(1, ratio));
-    inner.style.width = `${r * 100}%`;
-    if (id === "player") {
-      el.classList.toggle("low", r < 0.4);
-      inner.style.background =
-        r < 0.4
+    if (Math.abs(entry.ratio - r) > 0.005) {
+      entry.ratio = r;
+      entry.inner.style.width = `${r * 100}%`;
+      if (id === "player") {
+        const low = r < 0.4;
+        entry.el.classList.toggle("low", low);
+        entry.inner.style.background = low
           ? "linear-gradient(90deg, #a33b3b, #d45555)"
           : "linear-gradient(90deg, #3d9a6a, #5ecf8f)";
+      }
     }
-    const p = new Vector3(x, y, z);
-
-    (el as HTMLElement & { _w?: Vector3 })._w = p;
   }
 
   hideAllHpBars(): void {
-    for (const el of this.hpBars.values()) el.hidden = true;
+    for (const entry of this.hpBarEntries.values()) entry.el.hidden = true;
   }
 
   hideHpBar(id: string): void {
-    const el = this.hpBars.get(id);
-    if (el) el.hidden = true;
+    const entry = this.hpBarEntries.get(id);
+    if (entry) entry.el.hidden = true;
   }
 
   setNpcNameplates(
@@ -610,30 +536,39 @@ export class EffectManager {
   }
 
   private updateHpBars(camera: PerspectiveCamera, width: number, height: number): void {
-    for (const el of this.hpBars.values()) {
-      const w = (el as HTMLElement & { _w?: Vector3 })._w;
-      if (!w || el.hidden) continue;
-      const p = w.clone().project(camera);
-      if (p.z > 1) {
-        el.style.visibility = "hidden";
+    for (const entry of this.hpBarEntries.values()) {
+      if (entry.el.hidden) continue;
+      this.scratchVec.copy(entry.world).project(camera);
+      if (this.scratchVec.z > 1) {
+        if (entry.lastVisible) {
+          entry.lastVisible = false;
+          entry.el.style.visibility = "hidden";
+        }
         continue;
       }
-      el.style.visibility = "visible";
-      const x = (p.x * 0.5 + 0.5) * width;
-      const y = (-p.y * 0.5 + 0.5) * height;
-      el.style.transform = `translate(-50%,-100%) translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      if (!entry.lastVisible) {
+        entry.lastVisible = true;
+        entry.el.style.visibility = "visible";
+      }
+      const x = Math.round(((this.scratchVec.x * 0.5 + 0.5) * width) * 10) / 10;
+      const y = Math.round(((-this.scratchVec.y * 0.5 + 0.5) * height) * 10) / 10;
+      if (x !== entry.lastX || y !== entry.lastY) {
+        entry.lastX = x;
+        entry.lastY = y;
+        entry.el.style.transform = `translate(-50%,-100%) translate(${x}px, ${y}px)`;
+      }
     }
     for (const el of this.nameplates.values()) {
       const w = (el as HTMLElement & { _w?: Vector3 })._w;
       if (!w || el.hidden) continue;
-      const p = w.clone().project(camera);
-      if (p.z > 1) {
+      this.scratchVec.copy(w).project(camera);
+      if (this.scratchVec.z > 1) {
         el.style.visibility = "hidden";
         continue;
       }
       el.style.visibility = "visible";
-      const x = (p.x * 0.5 + 0.5) * width;
-      const y = (-p.y * 0.5 + 0.5) * height;
+      const x = (this.scratchVec.x * 0.5 + 0.5) * width;
+      const y = (-this.scratchVec.y * 0.5 + 0.5) * height;
       el.style.transform = `translate(-50%,-100%) translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
     }
   }
@@ -641,29 +576,10 @@ export class EffectManager {
   update(dt: number, camera: PerspectiveCamera, width: number, height: number): void {
     this.fireBurst.update(dt, width, height);
     this.skillVfx.update(dt, width, height);
-    this.tkGolpe.update(dt, width, height);
-    this.tkInvestida.update(dt, width, height);
-    this.tkCorte.update(dt, width, height);
-    this.tkMachado.update(dt, width, height);
-    this.tkQuebra.update(dt, width, height);
-    this.tkFuria.update(dt, width, height);
-    this.tkAvalanche.update(dt, width, height);
-    this.tkBencao.update(dt, width, height);
-    this.tkSelo.update(dt, width, height);
-    this.tkAura.update(dt, width, height);
-    this.tkEscudoSagrado.update(dt, width, height);
-    this.tkJulgamento.update(dt, width, height);
-    this.tkLuz.update(dt, width, height);
-    this.tkPurificar.update(dt, width, height);
-    this.tkTribunal.update(dt, width, height);
-    this.tkProvocacao.update(dt, width, height);
-    this.tkPostura.update(dt, width, height);
-    this.tkRugido.update(dt, width, height);
-    this.tkMuralha.update(dt, width, height);
-    this.tkAncora.update(dt, width, height);
-    this.tkDesafio.update(dt, width, height);
-    this.tkGuarda.update(dt, width, height);
-    this.tkBastiao.update(dt, width, height);
+    this.tkRegistry.update(dt, width, height);
+    this.fmEsferaIgnea.update(dt, width, height);
+    this.fmLancaGlacial.update(dt, width, height);
+    this.fmChoqueVital.update(dt, width, height);
     for (let i = this.floating.length - 1; i >= 0; i--) {
       const f = this.floating[i];
       f.life -= dt;
@@ -689,6 +605,9 @@ export class EffectManager {
           m.emissiveIntensity = 0;
         }
         this.flashes.delete(mesh);
+        const cur = (this.flashingRoots.get(flash.root) ?? 1) - 1;
+        if (cur <= 0) this.flashingRoots.delete(flash.root);
+        else this.flashingRoots.set(flash.root, cur);
       }
     }
 
@@ -737,6 +656,7 @@ export class EffectManager {
       if (death.t <= 0) {
         mesh.scale.set(0, 0, 0);
         this.deaths.delete(mesh);
+        this.dyingRoots.delete(mesh);
       }
     }
   }
@@ -750,6 +670,7 @@ export class EffectManager {
       }
     }
     this.flashes.clear();
+    this.flashingRoots.clear();
     for (const p of this.pulses) p.mesh.scale.set(1, 1, 1);
     this.pulses.length = 0;
     for (const s of this.slashes) {
@@ -769,37 +690,21 @@ export class EffectManager {
       mesh.scale.copy(death.baseScale);
     }
     this.deaths.clear();
+    this.dyingRoots.clear();
   }
 
   dispose(): void {
     this.fireBurst.dispose();
     this.skillVfx.dispose();
-    this.tkGolpe.dispose();
-    this.tkInvestida.dispose();
-    this.tkCorte.dispose();
-    this.tkMachado.dispose();
-    this.tkQuebra.dispose();
-    this.tkFuria.dispose();
-    this.tkAvalanche.dispose();
-    this.tkBencao.dispose();
-    this.tkSelo.dispose();
-    this.tkAura.dispose();
-    this.tkEscudoSagrado.dispose();
-    this.tkJulgamento.dispose();
-    this.tkLuz.dispose();
-    this.tkPurificar.dispose();
-    this.tkTribunal.dispose();
-    this.tkProvocacao.dispose();
-    this.tkPostura.dispose();
-    this.tkRugido.dispose();
-    this.tkMuralha.dispose();
-    this.tkAncora.dispose();
-    this.tkDesafio.dispose();
-    this.tkGuarda.dispose();
-    this.tkBastiao.dispose();
+    this.tkRegistry.dispose();
+    this.fmEsferaIgnea.dispose();
+    this.fmLancaGlacial.dispose();
+    this.fmChoqueVital.dispose();
+    this.lightPool.dispose();
     this.drainMeshFx();
     for (const el of this.hpBars.values()) el.remove();
     this.hpBars.clear();
+    this.hpBarEntries.clear();
     for (const el of this.nameplates.values()) el.remove();
     this.nameplates.clear();
     for (const s of this.skillFx) {
