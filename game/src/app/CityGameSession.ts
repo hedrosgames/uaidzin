@@ -750,6 +750,18 @@ export class CityGameSession {
     return this.moveLock;
   }
 
+  get pendingInteract(): InteractableDef | null {
+    return this.interactions.pendingInteract;
+  }
+
+  set pendingInteract(def: InteractableDef | null) {
+    this.interactions.pendingInteract = def;
+  }
+
+  resolvePendingInteract(): void {
+    this.interactions.resolvePendingInteract();
+  }
+
   beginInteract(def: InteractableDef): void {
     this.interactions.beginInteract(def);
   }

@@ -245,7 +245,7 @@ export class PlayerView {
     loadToken: number,
   ): Promise<void> {
     const nextAttack = attackClipForWeapon(set);
-    if (nextAttack !== this.attackClip) {
+    if (nextAttack !== this.attackClip || !this.actions.has("attack")) {
       this.attackClip = nextAttack;
       await this.bindAttackClipSafe(nextAttack, weaponToken, loadToken);
       if (weaponToken !== this.weaponSetGen || loadToken !== this.loadGen) return;
