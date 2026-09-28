@@ -62,7 +62,7 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
       </div>
 
       <div class="tool-row" style="display:flex;gap:4px;margin-top:6px;align-items:center">
-        <button type="button" class="inv-tool trash" id="btn-trash" aria-label="Lixeira" title="Lixeira / Descartar" style="width:28px;height:28px;padding:0">🗑</button>
+        <button type="button" class="inv-tool trash" id="btn-trash" aria-label="Lixeira" title="Lixeira / Descartar" style="width:28px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg></button>
         <button type="button" class="inv-tool sort" id="btn-sort-bag" style="flex:1">Organizar</button>
         <button type="button" class="inv-tool best" id="btn-equip-best" style="flex:1">Equipar</button>
         <div class="inv-tool-wrap is-vault-only" id="wrap-store-vault" hidden>
