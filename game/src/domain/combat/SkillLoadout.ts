@@ -10,11 +10,6 @@ export interface LoadoutSlot {
   auto: boolean;
 }
 
-function specFactor(raw: number): number {
-  const spec = Number.isFinite(raw) ? raw : 0;
-  return 1 - (Math.min(spec, SKILL_BALANCE.specializationPerTreeCap) / SKILL_BALANCE.specializationPerTreeCap) * SKILL_BALANCE.specializationCooldownPenalty;
-}
-
 export class SkillLoadout {
   slots: Array<LoadoutSlot | null> = Array.from({ length: SKILL_BALANCE.barSize }, () => null);
   private preferred: Array<{ skillId: string; tree: TreeId; auto: boolean; index: number }> = [];
@@ -22,15 +17,12 @@ export class SkillLoadout {
   constructor(private readonly tree: SkillTreeService) {}
 
   private createSlot(skill: SkillDef, tree: TreeId, auto: boolean, cd = 0): LoadoutSlot {
-    const treeService = this.tree;
     return {
       skill,
       tree,
       get cooldown(): number {
-        const spec = tree === "livro" ? 0 : treeService.state.specialization[tree];
-        const cdScale = specFactor(spec);
-        const scaled = skill.cooldown * cdScale;
-        return Math.max(0.4, Number.isFinite(scaled) ? scaled : skill.cooldown);
+        const base = skill.cooldown;
+        return Math.max(0.4, Number.isFinite(base) ? base : 0.4);
       },
       cd: Number.isFinite(cd) ? cd : 0,
       auto,

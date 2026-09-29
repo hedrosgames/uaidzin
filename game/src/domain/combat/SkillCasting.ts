@@ -105,7 +105,11 @@ export function resolveSkill(input: {
   mods: CombatMods;
   transformed: boolean;
   treeColor: number;
+  specEffectiveness: number;
 }): ResolvedSkill | null {
+  const specMul = Number.isFinite(input.specEffectiveness) && input.specEffectiveness > 0
+    ? input.specEffectiveness
+    : 1;
   const skill = input.skill;
   const picked = selectSkillTargets(skill, input.targets, input.px, input.pz, input.facing);
   const needsFoe = skill.kind === "damage" || (skill.enemy != null && skill.shape !== "self");
@@ -133,6 +137,7 @@ export function resolveSkill(input: {
       }
       if (crit) damage = Math.round(damage * SKILL_BALANCE.critMultiplier);
       damage += input.mods.damageFlat;
+      damage = Math.max(COMBAT_BALANCE.minDamage, Math.round(damage * specMul));
       const per = damage;
       for (let n = 0; n < hitCount; n++) {
         hits.push({ id: target.id, damage: per, x: target.x, z: target.z });
@@ -146,7 +151,10 @@ export function resolveSkill(input: {
 
   const heal =
     (skill.healRatio ?? 0) > 0
-      ? Math.max(1, Math.round(input.maxHp * (skill.healRatio ?? 0) * (1 + input.mods.healPower)))
+      ? Math.max(
+          1,
+          Math.round(input.maxHp * (skill.healRatio ?? 0) * (1 + input.mods.healPower) * specMul),
+        )
       : 0;
   const dealt = hits.reduce((sum, hit) => sum + hit.damage, 0);
   const lifesteal = skill.lifesteal ? Math.round(dealt * skill.lifesteal) : 0;
@@ -156,10 +164,10 @@ export function resolveSkill(input: {
       id: spec.id,
       remainingSec: spec.sec,
       stacks: 1,
-      magnitude: spec.magnitude,
+      magnitude: spec.magnitude * specMul,
       stat: spec.stat,
       harmful: spec.magnitude < 0,
-      nextHitMul: spec.nextHitMul,
+      nextHitMul: spec.nextHitMul != null ? spec.nextHitMul * specMul : undefined,
     });
   };
   if (skill.buff) pushBuff(skill.buff);

@@ -8,6 +8,7 @@ import type { AttackTarget } from "./AttackController";
 import { buildCombatMods, type CombatMods } from "./CombatMods";
 import type { FormState } from "./FormState";
 import type { LoadoutSlot, SkillLoadout } from "./SkillLoadout";
+import { specializationEffectivenessForTree } from "../skills/specialization-power";
 import { resolveSkill, selectSkillTargets, type ResolvedSkill } from "./SkillCasting";
 import type { SummonRuntime } from "./SummonRuntime";
 
@@ -67,6 +68,10 @@ export class SkillController {
     if (!slot) return null;
     const cost = Math.max(0, Math.round(slot.skill.mp * mods.mpCostMul));
     if (!this.character.spendMp(cost)) return null;
+    const specEffectiveness = specializationEffectivenessForTree(
+      slot.tree,
+      this.tree.state.specialization,
+    );
     const resolved = resolveSkill({
       skill: slot.skill,
       attack: this.character.attack,
@@ -81,6 +86,7 @@ export class SkillController {
       mods,
       transformed: form.active,
       treeColor: TREE_COLOR[slot.tree],
+      specEffectiveness,
     });
     if (!resolved) {
       this.character.regenMp(cost);
@@ -100,7 +106,7 @@ export class SkillController {
         const angle = (Math.PI * 2 * index) / specs.length;
         summons.spawn(
           spec,
-          this.character!.attack * mods.attackMul,
+          this.character!.attack * mods.attackMul * specEffectiveness,
           px + Math.sin(angle) * 1.4,
           pz + Math.cos(angle) * 1.4,
           mods.summonPower,

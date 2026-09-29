@@ -62,7 +62,7 @@ describe("SkillTreeService and SkillLoadout", () => {
     expect(tree.canLearn("livro", 0)).toBe(false);
   });
 
-  it("cooldown muda dinamicamente apos spendSpec", () => {
+  it("cooldown da skill não muda com especialização", () => {
     const tree = new SkillTreeService();
     tree.grantSkillPoints(5);
     tree.learn("fisica", 0);
@@ -73,8 +73,8 @@ describe("SkillTreeService and SkillLoadout", () => {
     const initialCd = loadout.slots[0]?.cooldown ?? 0;
 
     tree.spendSpec("fisica", 40);
-    const reducedCd = loadout.slots[0]?.cooldown ?? 0;
+    const afterSpecCd = loadout.slots[0]?.cooldown ?? 0;
 
-    expect(reducedCd).toBeLessThan(initialCd);
+    expect(afterSpecCd).toBe(initialCd);
   });
 });
