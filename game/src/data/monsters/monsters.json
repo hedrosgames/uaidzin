@@ -157,7 +157,7 @@
     "name": "Esqueleto do Campo",
     "archetype": "chaser",
     "maxHp": 15,
-    "attack": 13,
+    "attack": 11,
     "defense": 2,
     "range": 1.6,
     "attackInterval": 1.1,

@@ -1,5 +1,6 @@
 import { SKILL_BALANCE } from "../../data/balance/skills";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
+import { mitigatedDamage } from "./DamageCalculator";
 import type { AttackTarget } from "./AttackController";
 import type { CombatMods } from "./CombatMods";
 import type { SkillDef, SkillEnemySpec, SummonSpec, TransformSpec } from "../../data/classes/skill-types";
@@ -131,7 +132,7 @@ export function resolveSkill(input: {
       if (skill.power === "magic") atk *= 1 + input.mods.magicPower;
       if (alone) atk *= 1 + input.mods.isolatedBonus;
       const defense = Math.max(0, input.defenseOf(target.id) * (1 - (skill.pierce ?? 0)));
-      let damage = Math.max(COMBAT_BALANCE.minDamage, Math.round((atk - defense) * skill.damageMultiplier));
+      let damage = mitigatedDamage(atk * skill.damageMultiplier, defense);
       if (skill.executeBelow != null && ratio <= skill.executeBelow) {
         damage = Math.round(damage * (1 + (skill.executeBonus ?? 0.5)));
       }

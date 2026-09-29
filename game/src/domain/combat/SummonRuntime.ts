@@ -1,4 +1,5 @@
 import type { SummonSpec } from "../../data/classes/skill-types";
+import { calculateDamage } from "./DamageCalculator";
 
 export interface SummonActor {
   uid: string;
@@ -127,7 +128,7 @@ export class SummonRuntime {
       }
       if (actor.cd > 0 || dist > actor.range) continue;
       actor.cd = actor.interval;
-      const damage = Math.max(1, Math.round(actor.attack - target.defense));
+      const damage = calculateDamage(actor.attack, target.defense);
       strikes.push({
         id: target.id,
         damage,
