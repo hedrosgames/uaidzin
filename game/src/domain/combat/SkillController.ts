@@ -70,6 +70,7 @@ export class SkillController {
     const resolved = resolveSkill({
       skill: slot.skill,
       attack: this.character.attack,
+      magicAttack: this.character.magicAttack,
       maxHp: this.character.maxHp,
       px,
       pz,

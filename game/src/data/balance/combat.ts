@@ -42,12 +42,6 @@ export const COMBAT_BALANCE = {
       "Arco Curto": { attackRange: 5.5, attackInterval: 1.15 },
     },
   },
-  primary: {
-    FOR: { attackPerPoint: 0.5, hpPerPoint: 0 },
-    DES: { attackPerPoint: 0.35, hpPerPoint: 0 },
-    CONS: { attackPerPoint: 0, hpPerPoint: 2 },
-    INT: { attackPerPoint: 0.25, hpPerPoint: 0 },
-  },
 };
 
 export type EnemyArchetype = "fixed" | "chaser" | "ranged";

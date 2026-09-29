@@ -42,10 +42,10 @@ export function lifeBonusesForItem(item: ItemInstance): LifeCombatBonuses {
   const step = rarityLifeStep(item.rarity);
   const slot = item.slot;
   if (slot === "weapon") {
-    return { attack: life * step * 2, defense: 0, hp: 0, crit: 0, speed: 0 };
+    return { attack: life * step, defense: 0, hp: 0, crit: 0, speed: 0 };
   }
   if (slot === "armor" || slot === "head") {
-    return { attack: 0, defense: life * step * 2, hp: 0, crit: 0, speed: 0 };
+    return { attack: 0, defense: life * step, hp: 0, crit: 0, speed: 0 };
   }
   if (slot === "ring1" || slot === "ring2" || slot === "neck" || slot === "ear") {
     const b = accessoryLifeBase(item);

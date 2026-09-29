@@ -100,6 +100,7 @@ export class CombatOrchestrator {
         this.deps.form,
       );
       mods.critChance += Math.max(0, this.deps.character.equipCrit || 0) * 0.01;
+      mods.attackSpeed += Math.max(0, this.deps.character.baseAttackSpeed);
       mods.attackSpeed += Math.max(0, this.deps.character.equipSpeed || 0) * 0.01;
       this.cachedMods = mods;
     }

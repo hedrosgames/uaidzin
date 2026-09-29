@@ -94,6 +94,7 @@ function rollCrit(mods: CombatMods, transformed: boolean): boolean {
 export function resolveSkill(input: {
   skill: SkillDef;
   attack: number;
+  magicAttack: number;
   maxHp: number;
   px: number;
   pz: number;
@@ -121,7 +122,8 @@ export function resolveSkill(input: {
       const hp = input.hpOf(target.id);
       const ratio = hp.maxHp > 0 ? hp.hp / hp.maxHp : 1;
       const alone = input.mods.isolatedBonus > 0 && (isolated(target, input.targets) || ratio <= 0.4);
-      let atk = input.attack * input.mods.attackMul;
+      const power = skill.power === "magic" ? input.magicAttack : input.attack;
+      let atk = power * input.mods.attackMul;
       if (skill.power === "magic") atk *= 1 + input.mods.magicPower;
       if (alone) atk *= 1 + input.mods.isolatedBonus;
       const defense = Math.max(0, input.defenseOf(target.id) * (1 - (skill.pierce ?? 0)));

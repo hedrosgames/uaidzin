@@ -112,7 +112,7 @@
     "desc": "Ataque +4",
     "icon": "/assets/icons/items/espada_curta.png",
     "weaponSet": "sword-shield",
-    "attackBonus": 4,
+    "attackBonus": 2,
     "defenseBonus": 0,
     "sellValue": 20,
     "available": true
@@ -125,7 +125,7 @@
     "desc": "Ataque +5",
     "icon": "/assets/icons/items/machado_leve.png",
     "weaponSet": "axe-shield",
-    "attackBonus": 5,
+    "attackBonus": 3,
     "defenseBonus": 0,
     "sellValue": 0,
     "available": true
@@ -138,7 +138,7 @@
     "desc": "Defesa +3",
     "icon": "/assets/icons/items/armadura_leve.png",
     "attackBonus": 0,
-    "defenseBonus": 3,
+    "defenseBonus": 2,
     "sellValue": 18,
     "available": true
   },
@@ -150,7 +150,7 @@
     "desc": "Defesa +2",
     "icon": "/assets/icons/items/capacete.png",
     "attackBonus": 0,
-    "defenseBonus": 2,
+    "defenseBonus": 1,
     "sellValue": 14,
     "available": true
   },
@@ -173,8 +173,8 @@
     "rarity": "Incomum",
     "desc": "Ataque +2 · Defesa +2",
     "icon": "/assets/icons/items/anel_ferro.png",
-    "attackBonus": 2,
-    "defenseBonus": 2,
+    "attackBonus": 1,
+    "defenseBonus": 1,
     "sellValue": 40,
     "available": true
   },
@@ -212,7 +212,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 10,
+    "defenseBonus": 5,
     "classId": "TK",
     "available": true
   },
@@ -226,7 +226,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 16,
+    "defenseBonus": 8,
     "classId": "TK",
     "available": true
   },
@@ -240,7 +240,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 23,
+    "defenseBonus": 12,
     "classId": "TK",
     "available": true
   },
@@ -254,7 +254,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 10,
+    "defenseBonus": 5,
     "classId": "FM",
     "available": true
   },
@@ -268,7 +268,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 16,
+    "defenseBonus": 8,
     "classId": "FM",
     "available": true
   },
@@ -282,7 +282,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 23,
+    "defenseBonus": 12,
     "classId": "FM",
     "available": true
   },
@@ -296,7 +296,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 10,
+    "defenseBonus": 5,
     "classId": "BM",
     "available": true
   },
@@ -310,7 +310,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 16,
+    "defenseBonus": 8,
     "classId": "BM",
     "available": true
   },
@@ -324,7 +324,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 23,
+    "defenseBonus": 12,
     "classId": "BM",
     "available": true
   },
@@ -338,7 +338,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 10,
+    "defenseBonus": 5,
     "classId": "HT",
     "available": true
   },
@@ -352,7 +352,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 16,
+    "defenseBonus": 8,
     "classId": "HT",
     "available": true
   },
@@ -366,7 +366,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 23,
+    "defenseBonus": 12,
     "classId": "HT",
     "available": true
   },
@@ -979,8 +979,8 @@
     "icon": "/assets/icons/items/ring_01.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 2,
-    "defenseBonus": 3,
+    "attackBonus": 1,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -992,7 +992,7 @@
     "icon": "/assets/icons/items/ring_02.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 3,
+    "attackBonus": 2,
     "defenseBonus": 1,
     "available": true
   },
@@ -1006,7 +1006,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 1,
-    "defenseBonus": 2,
+    "defenseBonus": 1,
     "available": true
   },
   {
@@ -1018,8 +1018,8 @@
     "icon": "/assets/icons/items/ring_04.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 2,
-    "defenseBonus": 3,
+    "attackBonus": 1,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -1031,7 +1031,7 @@
     "icon": "/assets/icons/items/ring_05.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 3,
+    "attackBonus": 2,
     "defenseBonus": 1,
     "available": true
   },
@@ -1045,7 +1045,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 1,
-    "defenseBonus": 2,
+    "defenseBonus": 1,
     "available": true
   },
   {
@@ -1057,8 +1057,8 @@
     "icon": "/assets/icons/items/ring_07.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 2,
-    "defenseBonus": 3,
+    "attackBonus": 1,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -1070,7 +1070,7 @@
     "icon": "/assets/icons/items/ring_08.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 3,
+    "attackBonus": 2,
     "defenseBonus": 1,
     "available": true
   },
@@ -1084,7 +1084,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 1,
-    "defenseBonus": 3,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -1096,8 +1096,8 @@
     "icon": "/assets/icons/items/earring_02.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 2,
-    "defenseBonus": 2,
+    "attackBonus": 1,
+    "defenseBonus": 1,
     "available": true
   },
   {
@@ -1109,7 +1109,7 @@
     "icon": "/assets/icons/items/earring_03.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 3,
+    "attackBonus": 2,
     "defenseBonus": 1,
     "available": true
   },
@@ -1122,7 +1122,7 @@
     "icon": "/assets/icons/items/earring_04.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 4,
+    "attackBonus": 2,
     "defenseBonus": 0,
     "available": true
   },
@@ -1136,7 +1136,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 1,
-    "defenseBonus": 4,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -1148,8 +1148,8 @@
     "icon": "/assets/icons/items/necklace_02.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 2,
-    "defenseBonus": 3,
+    "attackBonus": 1,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -1161,8 +1161,8 @@
     "icon": "/assets/icons/items/necklace_03.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 3,
-    "defenseBonus": 2,
+    "attackBonus": 2,
+    "defenseBonus": 1,
     "available": true
   },
   {
@@ -1174,7 +1174,7 @@
     "icon": "/assets/icons/items/necklace_04.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 4,
+    "attackBonus": 2,
     "defenseBonus": 1,
     "available": true
   },
@@ -1774,7 +1774,7 @@
     "desc": "Peça individual Espada. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_sword.png",
     "sellValue": 10,
-    "attackBonus": 6,
+    "attackBonus": 3,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1789,7 +1789,7 @@
     "icon": "/assets/icons/items/weapon_shield.png",
     "sellValue": 10,
     "attackBonus": 0,
-    "defenseBonus": 5,
+    "defenseBonus": 3,
     "stackable": false,
     "available": true
   },
@@ -1801,7 +1801,7 @@
     "desc": "Peça individual Machado. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_axe.png",
     "sellValue": 10,
-    "attackBonus": 7,
+    "attackBonus": 4,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1815,7 +1815,7 @@
     "desc": "Peça individual Espadão. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_greatsword.png",
     "sellValue": 10,
-    "attackBonus": 9,
+    "attackBonus": 5,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1829,7 +1829,7 @@
     "desc": "Peça individual Cajado. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_staff.png",
     "sellValue": 10,
-    "attackBonus": 6,
+    "attackBonus": 3,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1843,7 +1843,7 @@
     "desc": "Peça individual Cajadão. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_greatstaff.png",
     "sellValue": 10,
-    "attackBonus": 8,
+    "attackBonus": 4,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1857,7 +1857,7 @@
     "desc": "Peça individual Arco. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_bow.png",
     "sellValue": 10,
-    "attackBonus": 7,
+    "attackBonus": 4,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1871,7 +1871,7 @@
     "desc": "Peça individual Manopla de Garras. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_glove.png",
     "sellValue": 10,
-    "attackBonus": 7,
+    "attackBonus": 4,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1885,7 +1885,7 @@
     "desc": "Ataque +4",
     "icon": "/assets/icons/items/cajado_rustico.png",
     "weaponSet": "staff-shield",
-    "attackBonus": 4,
+    "attackBonus": 2,
     "defenseBonus": 0,
     "sellValue": 18,
     "available": true
@@ -1898,7 +1898,7 @@
     "desc": "Ataque +4",
     "icon": "/assets/icons/items/arco_curto.png",
     "weaponSet": "bow",
-    "attackBonus": 4,
+    "attackBonus": 2,
     "defenseBonus": 0,
     "sellValue": 18,
     "available": true
@@ -1911,7 +1911,7 @@
     "desc": "Defesa +2",
     "icon": "/assets/icons/items/touca_couro.png",
     "attackBonus": 0,
-    "defenseBonus": 2,
+    "defenseBonus": 1,
     "sellValue": 12,
     "available": true
   },
@@ -1923,7 +1923,7 @@
     "desc": "Defesa +3",
     "icon": "/assets/icons/items/tunica.png",
     "attackBonus": 0,
-    "defenseBonus": 3,
+    "defenseBonus": 2,
     "sellValue": 16,
     "available": true
   },

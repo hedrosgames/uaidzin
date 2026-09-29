@@ -20,7 +20,10 @@ export class CharacterModel {
   
   baseAttack: number;
   baseDefense: number;
+  baseMagicAttack = 0;
+  baseAttackSpeed = 0;
   equipAttack = 0;
+  equipMagicAttack = 0;
   equipDefense = 0;
   equipMaxHp = 0;
   equipCrit = 0;
@@ -28,6 +31,10 @@ export class CharacterModel {
 
   get attack(): number {
     return this.baseAttack + this.equipAttack;
+  }
+
+  get magicAttack(): number {
+    return this.baseMagicAttack + this.equipMagicAttack;
   }
 
   get defense(): number {
