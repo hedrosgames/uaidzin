@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { totalSkillPurchaseCostForTree, skillPurchasePointCost } from "../../data/balance/skill-purchase";
 import { SkillTreeService } from "./SkillTreeService";
 import { SkillLoadout } from "../combat/SkillLoadout";
 
@@ -8,10 +9,34 @@ describe("SkillTreeService and SkillLoadout", () => {
     tree.grantSkillPoints(5);
     expect(tree.canLearn("fisica", 0)).toBe(true);
     expect(tree.learn("fisica", 0)).toBe(true);
+    expect(tree.state.skillPoints).toBe(4);
     expect(tree.hasSkill(tree.getTree("fisica")[0].id)).toBe(true);
 
     expect(tree.canLearn("fisica", 0)).toBe(false);
     expect(tree.learn("fisica", 0)).toBe(false);
+  });
+
+  it("custa pontos progressivos por slot", () => {
+    const tree = new SkillTreeService();
+    tree.grantSkillPoints(totalSkillPurchaseCostForTree());
+    for (let i = 0; i < 8; i++) {
+      expect(tree.learn("fisica", i)).toBe(true);
+    }
+    expect(tree.state.skillPoints).toBe(0);
+    expect(tree.state.eighthTree).toBe("fisica");
+  });
+
+  it("oitava skill bloqueada com skill em outra arvore", () => {
+    const tree = new SkillTreeService();
+    tree.grantSkillPoints(totalSkillPurchaseCostForTree());
+    for (let i = 0; i < 7; i++) {
+      expect(tree.learn("fisica", i)).toBe(true);
+    }
+    expect(tree.learn("magia", 0)).toBe(true);
+    expect(tree.canLearn("fisica", 7)).toBe(false);
+    const eighthCost = skillPurchasePointCost(7);
+    tree.state.skillPoints += eighthCost;
+    expect(tree.canLearn("fisica", 7)).toBe(false);
   });
 
   it("loadout mantem slot limpo apos refresh", () => {

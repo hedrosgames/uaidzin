@@ -211,7 +211,7 @@ export interface WireApi {
   loadSlot(slotIndex: number): Promise<boolean>;
 
   resolveItemIcon(defId: string, slot?: string, name?: string): string | null;
-  skillPointsCost(): number;
+  skillPointsCost(index: number): number;
   skillGoldCost(index: number): number;
   canAffordSkill(skillPoints: number, gold: number, pointsCost: number, goldCost: number): boolean;
 

@@ -130,7 +130,6 @@ export function catalogDef(id: string): ItemCatalogDef | undefined {
 export { resolveItemIcon };
 
 export const SKILL_TRAINING = {
-  pointsCost: 1,
   goldPerTier: 28,
   goldCost(index: number): number {
     return (index + 1) * SKILL_TRAINING.goldPerTier;

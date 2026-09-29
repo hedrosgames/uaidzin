@@ -52,10 +52,17 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
     const catalog = ctx.api.pullSkillCatalog();
     const goldCost = ctx.api.skillGoldCost(sk.idx);
     const gold = ctx.api.snapshotInventory().gold;
-    const pointsCost = ctx.api.skillPointsCost();
+    const pointsCost = ctx.api.skillPointsCost(sk.idx);
     const hasPoints = (catalog.skillPoints ?? 0) >= pointsCost;
     const canAffordGold = gold >= goldCost;
-    const eighthLocked = sk.idx === 7 && Boolean(catalog.eighthTree && catalog.eighthTree !== sk.tree);
+    const otherTreeLearned =
+      sk.idx === 7 &&
+      (["fisica", "controle", "magia"] as const).some((t) => {
+        if (t === sk.tree) return false;
+        return Object.values(catalog.skills).some((row) => row.tree === t && row.learned);
+      });
+    const eighthLocked =
+      sk.idx === 7 && (Boolean(catalog.eighthTree && catalog.eighthTree !== sk.tree) || otherTreeLearned);
     const prereqLearned = sk.idx === 0 || Boolean(catalog.skills[`${sk.tree}-${sk.idx}`]?.learned);
     const isLivro = sk.tree === "livro";
     const canBuy = !isLivro && !sk.learned && hasPoints && canAffordGold && prereqLearned && !eighthLocked;
