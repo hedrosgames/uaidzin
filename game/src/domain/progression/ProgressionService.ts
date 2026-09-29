@@ -1,3 +1,4 @@
+import { capMaxHp } from "../../data/balance/damage-caps";
 import { PROGRESSION_BALANCE, type EvolutionId } from "../../data/balance/progression";
 import type { ClassId } from "../../data/classes/class-definitions";
 import { DUNGEONS_MORTAL } from "../../data/dungeons/dungeons-mortal";
@@ -160,7 +161,9 @@ export class ProgressionService {
     this.character.baseDefense = PROGRESSION_BALANCE.defenseFromAttributes(a.DES);
     this.character.baseMagicAttack = Math.floor(PROGRESSION_BALANCE.magicAttackFromInt(a.INT) * growth);
     this.character.baseAttackSpeed = PROGRESSION_BALANCE.attackSpeedFromDes(a.DES);
-    const maxHp = Math.floor(PROGRESSION_BALANCE.maxHpFromCons(a.CONS) * growth) + (this.character.equipMaxHp || 0);
+    const maxHp = capMaxHp(
+      Math.floor(PROGRESSION_BALANCE.maxHpFromCons(a.CONS) * growth) + (this.character.equipMaxHp || 0),
+    );
     const ratio = this.character.maxHp > 0 ? this.character.hp / this.character.maxHp : 1;
     this.character.maxHp = maxHp;
     this.character.hp = this.character.isDead ? 0 : Math.max(1, Math.round(maxHp * Math.min(1, ratio)));
