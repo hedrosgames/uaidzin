@@ -31,6 +31,7 @@ import {
   basicAttackAnimTimeScale,
   basicAttackHitCount,
 } from "../../domain/combat/BasicAttackSpeed";
+import { rollCritStrike } from "../../domain/combat/crit-strike";
 import { rollEnemyStrikeDamage } from "../../domain/combat/enemy-strike";
 import { canEngageEnemy } from "../../domain/combat/CombatSpace";
 import { dungeon1ArenaFromZ } from "../../data/balance/xp-progression";
@@ -168,14 +169,18 @@ export class CombatOrchestrator {
           let totalDamage = 0;
           for (let i = 0; i < hitCount; i++) {
             let dmg = calculateDamage(atk, enemy.defense);
-            if (Math.random() < critChance) {
-              dmg = Math.max(1, Math.round(dmg * 1.5));
-            }
-            dmg += frameMods.damageFlat;
+            const struck = rollCritStrike(dmg, critChance);
+            dmg = struck.damage + frameMods.damageFlat;
             totalDamage += dmg;
             killed = enemy.applyDamage(dmg);
             const floatY = 1.4 + i * 0.18;
-            this.deps.effects.spawnDamageNumber(enemy.x, floatY, enemy.z, dmg, "enemy");
+            this.deps.effects.spawnDamageNumber(
+              enemy.x,
+              floatY,
+              enemy.z,
+              dmg,
+              struck.crit ? "enemyCrit" : "enemy",
+            );
             if (killed) break;
           }
           this.deps.effects.playHitFlash(mesh);

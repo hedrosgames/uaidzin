@@ -8,7 +8,7 @@ describe("rollEnemyStrikeDamage", () => {
     const random = () => (i++ === 0 ? 0 : 1);
     const hit = rollEnemyStrikeDamage(10, 0.5, random);
     expect(hit.crit).toBe(true);
-    expect(hit.damage).toBe(10 * COMBAT_BALANCE.enemyCritMultiplier);
+    expect(hit.damage).toBe(10 * COMBAT_BALANCE.critMultiplier);
   });
 
   it("sem crítico mantém o dano base", () => {

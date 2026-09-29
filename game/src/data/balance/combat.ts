@@ -1,6 +1,6 @@
 export const COMBAT_BALANCE = {
   dodgeChance: 0.05,
-  enemyCritMultiplier: 2,
+  critMultiplier: 2,
   minDamage: 1,
   attackAnimSpeedMax: 1.5,
   basicAttackBonusHitChance: 0.2,
