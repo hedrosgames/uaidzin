@@ -11,6 +11,7 @@ export interface EnemyInit {
   attack: number;
   defense: number;
   evasion?: number;
+  critChance?: number;
   range: number;
   attackInterval: number;
   speed?: number;
@@ -41,6 +42,7 @@ export class EnemyModel {
   readonly attack: number;
   readonly defense: number;
   readonly evasion: number;
+  readonly critChance: number;
   readonly range: number;
   readonly attackInterval: number;
   readonly speed: number;
@@ -88,6 +90,7 @@ export class EnemyModel {
     this.attack = init.attack;
     this.defense = init.defense;
     this.evasion = init.evasion ?? 0;
+    this.critChance = init.critChance ?? 0;
     this.range = init.range;
     this.attackInterval = init.attackInterval;
     this.speed = init.speed ?? 0;

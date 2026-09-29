@@ -5,6 +5,8 @@ import {
   FULL_DES_AT_MAX_LEVEL,
   applyPlayerCombatRatings,
   clampEnemyEvasion,
+  clampEnemyCritChance,
+  ENEMY_DEFAULT_CRIT_CHANCE,
   critChanceFromDes,
   evasionFromDes,
 } from "./combat-ratings";
@@ -38,6 +40,12 @@ describe("combat-ratings", () => {
     applyPlayerCombatRatings(mods, { des: FULL_DES_AT_MAX_LEVEL, equipCritPercent: 30 });
     expect(mods.critChance).toBe(COMBAT_RATING_CAPS.critChance);
     expect(mods.evasion).toBe(COMBAT_RATING_CAPS.evasion);
+  });
+
+  it("crítico de monstro padrão 10% e teto 50%", () => {
+    expect(clampEnemyCritChance()).toBe(ENEMY_DEFAULT_CRIT_CHANCE);
+    expect(clampEnemyCritChance(0.1)).toBe(0.1);
+    expect(clampEnemyCritChance(0.9)).toBe(COMBAT_RATING_CAPS.enemyCrit);
   });
 
   it("evasão de monstro limita em 10%", () => {

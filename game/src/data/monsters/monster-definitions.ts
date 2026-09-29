@@ -9,6 +9,7 @@ export interface MonsterDef {
   attack: number;
   defense: number;
   evasion?: number;
+  critChance?: number;
   range: number;
   attackInterval: number;
   speed: number;

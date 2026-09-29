@@ -31,6 +31,7 @@ import {
   basicAttackAnimTimeScale,
   basicAttackHitCount,
 } from "../../domain/combat/BasicAttackSpeed";
+import { rollEnemyStrikeDamage } from "../../domain/combat/enemy-strike";
 import { canEngageEnemy } from "../../domain/combat/CombatSpace";
 import { dungeon1ArenaFromZ } from "../../data/balance/xp-progression";
 import type { AttackTarget } from "../../domain/combat/AttackController";
@@ -403,8 +404,9 @@ export class CombatOrchestrator {
       enemy.attackCooldown = enemy.attackInterval;
       if (summon && summonDist <= playerDist) {
         const incoming = calculateDamage(enemy.attack, summon.defense);
-        const split = this.deps.summons.damage(summon.uid, incoming, frameMods.summonLink);
-        if (split.player > 0) this.hurtPlayer(split.player);
+        const struck = rollEnemyStrikeDamage(incoming, enemy.critChance);
+        const split = this.deps.summons.damage(summon.uid, struck.damage, frameMods.summonLink);
+        if (split.player > 0) this.hurtPlayer(split.player, struck.crit);
         continue;
       }
       if (!rollHitSimple() || Math.random() < frameMods.evasion || frameMods.stealth) {
@@ -418,11 +420,12 @@ export class CombatOrchestrator {
       if (enemy.archetype === "ranged") {
         dmg = Math.max(1, Math.round(dmg * (1 - frameMods.magicResist)));
       }
-      this.hurtPlayer(dmg);
+      const struck = rollEnemyStrikeDamage(dmg, enemy.critChance);
+      this.hurtPlayer(struck.damage, struck.crit);
       this.deps.lockFromAnim("hit_gut", COMBAT_BALANCE.moveLock.hitFallback);
       if (this.deps.character.isDead) break;
       if (frameMods.reflect > 0 && enemy.alive) {
-        const reflected = Math.max(1, Math.round(dmg * frameMods.reflect));
+        const reflected = Math.max(1, Math.round(struck.damage * frameMods.reflect));
         const killed = enemy.applyDamage(reflected);
         if (killed) {
           this.deps.rewards.grantKillXp(enemy);
@@ -437,10 +440,16 @@ export class CombatOrchestrator {
     this.deps.rewards.flushFrameCheckpoint();
   }
 
-  hurtPlayer(amount: number): void {
+  hurtPlayer(amount: number, crit = false): void {
     if (this.deps.character.isDead || amount <= 0) return;
     this.deps.character.applyDamage(amount);
-    this.deps.effects.spawnDamageNumber(this.deps.player.x, 1.8, this.deps.player.z, amount, "player");
+    this.deps.effects.spawnDamageNumber(
+      this.deps.player.x,
+      1.8,
+      this.deps.player.z,
+      amount,
+      crit ? "playerCrit" : "player",
+    );
     this.deps.effects.cameraPunch(0.1);
     this.deps.effects.playHitFlash(this.deps.renderer.playerMesh);
     this.deps.renderer.playerView.playHit();

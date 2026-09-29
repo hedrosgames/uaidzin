@@ -10,10 +10,18 @@ export const COMBAT_RATING_CAPS = {
   critFromDes: 0.4,
   evasionFromDes: 0.1,
   enemyEvasion: 0.1,
+  enemyCrit: 0.5,
 } as const;
+
+export const ENEMY_DEFAULT_CRIT_CHANCE = 0.1;
 
 export function clampEnemyEvasion(value: number): number {
   return Math.min(COMBAT_RATING_CAPS.enemyEvasion, Math.max(0, value));
+}
+
+export function clampEnemyCritChance(value?: number): number {
+  const raw = value ?? ENEMY_DEFAULT_CRIT_CHANCE;
+  return Math.min(COMBAT_RATING_CAPS.enemyCrit, Math.max(0, raw));
 }
 
 export const FULL_DES_AT_MAX_LEVEL =

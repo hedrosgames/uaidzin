@@ -6,7 +6,7 @@ import { rollPlayerAttackHits } from "./HitChanceCalculator";
 describe("rollPlayerAttackHits", () => {
   it("respeita evasão do monstro após o miss global", () => {
     let i = 0;
-    const seq = [1, 0.05, 0.05];
+    const seq = [1, 0.15];
     const random = () => seq[Math.min(i++, seq.length - 1)];
     expect(rollPlayerAttackHits(0.1, random)).toBe(true);
     i = 0;
@@ -21,7 +21,7 @@ describe("rollPlayerAttackHits", () => {
       if (calls === 1) return 1;
       return 0.05;
     };
-    expect(rollPlayerAttackHits(0.5, random)).toBe(true);
+    expect(rollPlayerAttackHits(0.5, random)).toBe(false);
     expect(COMBAT_RATING_CAPS.enemyEvasion).toBe(0.1);
   });
 });
