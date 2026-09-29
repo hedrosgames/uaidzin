@@ -61,6 +61,7 @@ import type { InteractableDef } from "../world/definitions";
 import { DungeonFlow, type LeaveReason } from "./session/DungeonFlow";
 import { InteractionController, INTERACT_RANGE } from "./session/InteractionController";
 import { CombatOrchestrator } from "./session/CombatOrchestrator";
+import { cycleCombatAttackMode, type CombatAttackMode } from "../domain/combat/combat-attack-mode";
 import { GlobalKillGoldModifier } from "../domain/progression/GlobalKillGoldModifier";
 import { GlobalKillXpModifier } from "../domain/progression/GlobalKillXpModifier";
 import { RewardService } from "./session/RewardService";
@@ -155,7 +156,7 @@ export class CityGameSession {
   autoAttackSwings = 0;
   progressState: SavePayload["progress"] = emptyProgress();
   potionSlots: [string | null, string | null, string | null] = [null, null, null];
-  autoAttack = true;
+  attackMode: CombatAttackMode = "physical";
   autoMove = false;
   autoPotion = false;
   penaReviveCooldownSec = 0;
@@ -316,7 +317,8 @@ export class CityGameSession {
       onAutoAttackSwing: () => {
         this.autoAttackSwings += 1;
       },
-      isAutoAttackEnabled: () => this.autoAttack,
+      isAutoAttackEnabled: () => this.attackMode === "physical",
+      isAutoSkillBarEnabled: () => this.attackMode === "magic",
     });
 
     this.vaultTransfer = new VaultTransfer({
@@ -351,14 +353,14 @@ export class CityGameSession {
       refreshWeaponSetFromGear: () => this.refreshWeaponSetFromGear(),
       getHudOptions: () => ({
         potionSlots: [...this.potionSlots] as [string | null, string | null, string | null],
-        autoAttack: this.autoAttack,
+        attackMode: this.attackMode,
         autoMove: this.autoMove,
         autoPotion: this.autoPotion,
         penaReviveCooldownSec: this.penaReviveCooldownSec,
       }),
       setHudOptions: (opts) => {
         this.potionSlots = [...opts.potionSlots] as [string | null, string | null, string | null];
-        this.autoAttack = opts.autoAttack;
+        this.attackMode = opts.attackMode;
         this.autoMove = opts.autoMove;
         this.autoPotion = opts.autoPotion;
         this.penaReviveCooldownSec = Math.max(0, opts.penaReviveCooldownSec || 0);
@@ -756,7 +758,7 @@ export class CityGameSession {
       arenaHint: inDungeon ? this.currentArenaLabel() : null,
       skills: this.skill.slotStates(),
       potionSlots: this.buildPotionHudSlots(),
-      autoAttack: this.autoAttack,
+      attackMode: this.attackMode,
       autoMove: this.autoMove,
       autoPotion: this.autoPotion,
       drops: this.visibleDropLog(),
@@ -1167,15 +1169,15 @@ export class CityGameSession {
   }
 
   toggleCombatAuto(kind: "attack" | "move" | "potion"): boolean {
-    if (kind === "attack") this.autoAttack = !this.autoAttack;
+    if (kind === "attack") this.attackMode = cycleCombatAttackMode(this.attackMode);
     else if (kind === "move") this.autoMove = !this.autoMove;
     else this.autoPotion = !this.autoPotion;
     this.saves.markDirty("options", "deferred");
     return true;
   }
 
-  getCombatAutos(): { attack: boolean; move: boolean; potion: boolean } {
-    return { attack: this.autoAttack, move: this.autoMove, potion: this.autoPotion };
+  getCombatAutos(): { attackMode: CombatAttackMode; move: boolean; potion: boolean } {
+    return { attackMode: this.attackMode, move: this.autoMove, potion: this.autoPotion };
   }
 
   getPotionBar(): Array<HudPotionSlot | null> {

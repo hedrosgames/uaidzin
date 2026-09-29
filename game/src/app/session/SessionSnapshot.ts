@@ -20,12 +20,13 @@ import {
   type LoadSaveResult,
   type SavePayload,
 } from "../../persistence/SaveTypes";
+import { parseCombatAttackMode } from "../../domain/combat/combat-attack-mode";
 import { normalizeSavePayload } from "../../persistence/migrations";
 import { saveVault } from "../../persistence/SaveVault";
 
 export type SessionHudOptions = {
   potionSlots: [string | null, string | null, string | null];
-  autoAttack: boolean;
+  attackMode: import("../../domain/combat/combat-attack-mode").CombatAttackMode;
   autoMove: boolean;
   autoPotion: boolean;
   penaReviveCooldownSec: number;
@@ -188,7 +189,7 @@ export class SessionSnapshot {
     this.deps.setHudOptions({
       potionSlots: [null, null, null],
       penaReviveCooldownSec: 0,
-      autoAttack: true,
+      attackMode: "physical",
       autoMove: false,
       autoPotion: false,
     });
@@ -260,7 +261,10 @@ export class SessionSnapshot {
     ];
     this.deps.setHudOptions({
       potionSlots,
-      autoAttack: opts.autoAttack !== false,
+      attackMode: parseCombatAttackMode(
+        (opts as { attackMode?: unknown }).attackMode,
+        (opts as { autoAttack?: boolean }).autoAttack !== false,
+      ),
       autoMove: opts.autoMove === true,
       autoPotion: opts.autoPotion === true,
       penaReviveCooldownSec: Math.max(0, Number(opts.penaReviveCooldownSec) || 0),

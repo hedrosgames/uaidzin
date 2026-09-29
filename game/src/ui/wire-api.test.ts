@@ -170,7 +170,7 @@ function createMockSession(): CityGameSession {
     getPotionBar: vi.fn().mockReturnValue([null, null, null]),
     setPotionSlot: vi.fn().mockReturnValue(true),
     usePotionSlot: vi.fn().mockReturnValue(true),
-    getCombatAutos: vi.fn().mockReturnValue({ attack: true, move: false, potion: false }),
+    getCombatAutos: vi.fn().mockReturnValue({ attackMode: "physical", move: false, potion: false }),
     toggleCombatAuto: vi.fn().mockReturnValue(true),
     sellItem: vi.fn().mockReturnValue({ ok: true, goldEarned: 50 }),
     tryCompose: vi.fn().mockReturnValue({ attempted: true, success: true, message: "OK", recipeId: "r1" }),

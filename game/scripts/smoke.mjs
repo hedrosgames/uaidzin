@@ -204,6 +204,7 @@ async function main() {
         0,
         false,
         0,
+        false,
         dummy,
         sess.player.x,
         sess.player.z,

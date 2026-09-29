@@ -1,3 +1,4 @@
+import type { CombatAttackMode } from "../domain/combat/combat-attack-mode";
 import type { WeaponSetId } from "../presentation/player/WeaponRig";
 
 export type DropLogKind = "gold" | "item" | "lost" | "info";
@@ -41,7 +42,7 @@ export interface HudModel {
   arenaHint: string | null;
   skills: HudSkillSlot[];
   potionSlots: Array<HudPotionSlot | null>;
-  autoAttack: boolean;
+  attackMode: CombatAttackMode;
   autoMove: boolean;
   autoPotion: boolean;
   drops: DropLogEntry[];

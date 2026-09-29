@@ -67,6 +67,7 @@ export interface CombatOrchestratorDeps {
   triggerHitStop: (duration: number) => void;
   onAutoAttackSwing: () => void;
   isAutoAttackEnabled: () => boolean;
+  isAutoSkillBarEnabled: () => boolean;
 }
 
 export class CombatOrchestrator {
@@ -207,6 +208,7 @@ export class CombatOrchestrator {
       dt,
       this.deps.player.isMoving || this.deps.getMoveLock() > 0,
       manual,
+      this.deps.isAutoSkillBarEnabled(),
       targets,
       this.deps.player.x,
       this.deps.player.z,

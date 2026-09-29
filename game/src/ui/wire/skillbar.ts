@@ -1,3 +1,4 @@
+import { combatAttackModeLabel, combatAttackModeTitle } from "../../domain/combat/combat-attack-mode";
 import type { WireContext } from "./types";
 
 export interface SkillBarHud {
@@ -163,7 +164,7 @@ export function createSkillBarHud(container: HTMLElement, ctx: WireContext): Ski
       <div class="hud-pots" aria-label="Poções rápidas">${potsHtml}</div>
       <div class="hud-skills">${skillsHtml}</div>
       <div class="hud-autos" aria-label="Automação">
-        <button type="button" class="hud-auto-btn${autos.attack ? " is-on" : ""}" data-auto="attack" title="Ataque automático">ATK</button>
+        <button type="button" class="hud-auto-btn hud-auto-atk mode-${autos.attackMode}${autos.attackMode !== "off" ? " is-on" : ""}" data-auto="attack" title="${combatAttackModeTitle(autos.attackMode)}">${combatAttackModeLabel(autos.attackMode)}</button>
         <button type="button" class="hud-auto-btn${autos.move ? " is-on" : ""}" data-auto="move" title="Movimento automático">MOV</button>
         <button type="button" class="hud-auto-btn${autos.potion ? " is-on" : ""}" data-auto="potion" title="Poção automática">POT</button>
       </div>
