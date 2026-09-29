@@ -9,8 +9,8 @@ describe("ShopService", () => {
   it("compra sem estoque permite comprar multiplas vezes", () => {
     const inv = new InventoryService();
     inv.gold = 100000;
-    const res1 = buyFromShop(inv, "merchant", "pocao_menor");
-    const res2 = buyFromShop(inv, "merchant", "pocao_menor");
+    const res1 = buyFromShop(inv, "merchant", "mat_ori");
+    const res2 = buyFromShop(inv, "merchant", "mat_ori");
     expect(res1).toEqual({ ok: true });
     expect(res2).toEqual({ ok: true });
     expect(inv.items.length).toBeGreaterThan(0);

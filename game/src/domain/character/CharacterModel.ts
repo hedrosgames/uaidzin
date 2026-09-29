@@ -22,6 +22,9 @@ export class CharacterModel {
   baseDefense: number;
   equipAttack = 0;
   equipDefense = 0;
+  equipMaxHp = 0;
+  equipCrit = 0;
+  equipSpeed = 0;
 
   get attack(): number {
     return this.baseAttack + this.equipAttack;

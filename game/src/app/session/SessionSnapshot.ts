@@ -28,6 +28,7 @@ export type SessionHudOptions = {
   autoAttack: boolean;
   autoMove: boolean;
   autoPotion: boolean;
+  penaReviveCooldownSec: number;
 };
 
 export interface SessionSnapshotDeps {
@@ -186,6 +187,7 @@ export class SessionSnapshot {
     this.deps.refreshWeaponSetFromGear();
     this.deps.setHudOptions({
       potionSlots: [null, null, null],
+      penaReviveCooldownSec: 0,
       autoAttack: true,
       autoMove: false,
       autoPotion: false,
@@ -261,6 +263,7 @@ export class SessionSnapshot {
       autoAttack: opts.autoAttack !== false,
       autoMove: opts.autoMove === true,
       autoPotion: opts.autoPotion === true,
+      penaReviveCooldownSec: Math.max(0, Number(opts.penaReviveCooldownSec) || 0),
     });
   }
 }

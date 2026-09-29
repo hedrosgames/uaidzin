@@ -23,6 +23,16 @@ function asItem(raw: Record<string, unknown>): ItemInstance | null {
     rarity: (raw.rarity as ItemInstance["rarity"]) || "Comum",
     slot: (raw.slot as ItemInstance["slot"]) || "misc",
     refine: Number(raw.refine) || 0,
+    life: Number(raw.life) || 0,
+    lifeAccessoryBase:
+      raw.lifeAccessoryBase && typeof raw.lifeAccessoryBase === "object"
+        ? {
+            hp: Number((raw.lifeAccessoryBase as { hp?: number }).hp) || 0,
+            crit: Number((raw.lifeAccessoryBase as { crit?: number }).crit) || 0,
+            damage: Number((raw.lifeAccessoryBase as { damage?: number }).damage) || 0,
+            speed: Number((raw.lifeAccessoryBase as { speed?: number }).speed) || 0,
+          }
+        : undefined,
     attackBonus: Number(raw.attackBonus) || 0,
     defenseBonus: Number(raw.defenseBonus) || 0,
     stack: Number(raw.stack) || 1,

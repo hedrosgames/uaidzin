@@ -55,6 +55,7 @@ function toWireItem(it: ItemInstance): WireItem {
     slot: it.slot,
     rarity: it.rarity,
     refine: it.refine,
+    life: it.life || 0,
     attackBonus: it.attackBonus,
     defenseBonus: it.defenseBonus,
     stack: it.stack,
@@ -485,6 +486,11 @@ export function createWireGameApi(
       }
       return { ...r, newRefine: item.refine };
     },
+    applyEnhancementMaterial: (materialUid: string, targetUid: string) => {
+      const r = session.tryApplyEnhancementMaterial(materialUid, targetUid);
+      if (r.ok || r.kind) notifyChanged();
+      return r;
+    },
 
     listEligible: (recipeId: string): WireComposerItem[] =>
       session.composition.listEligible(recipeId).map((it) => ({
@@ -492,6 +498,7 @@ export function createWireGameApi(
         defId: it.defId,
         name: it.name,
         refine: it.refine,
+    life: it.life || 0,
         rarity: it.rarity,
         slot: it.slot,
         attackBonus: it.attackBonus,

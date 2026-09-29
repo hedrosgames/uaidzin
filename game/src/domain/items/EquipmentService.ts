@@ -2,6 +2,7 @@ import {
   ECONOMY_BALANCE,
   WEAPON_SET_BY_ITEM,
 } from "../../data/balance/economy";
+import { lifeBonusesForItem } from "./item-life";
 import type { ItemInstance } from "./ItemModel";
 import type { InventoryService } from "../inventory/InventoryService";
 import type { CharacterModel } from "../character/CharacterModel";
@@ -89,6 +90,9 @@ export class EquipmentService {
   recalcEquipBonus(classId?: string): void {
     let attack = 0;
     let defense = 0;
+    let equipMaxHp = 0;
+    let equipCrit = 0;
+    let equipSpeed = 0;
     const rules = ECONOMY_BALANCE.refine.bonusBySlot;
     for (const slot of Object.keys(this.equipped) as EquipSlot[]) {
       const item = this.equipped[slot];
@@ -103,9 +107,18 @@ export class EquipmentService {
           defense += item.refine * rule.perLevel;
         }
       }
+      const life = lifeBonusesForItem(item);
+      attack += life.attack;
+      defense += life.defense;
+      equipMaxHp += life.hp;
+      equipCrit += life.crit;
+      equipSpeed += life.speed;
     }
     this.character.equipAttack = attack;
     this.character.equipDefense = defense;
+    this.character.equipMaxHp = equipMaxHp;
+    this.character.equipCrit = equipCrit;
+    this.character.equipSpeed = equipSpeed;
     this.weaponSet = this.getWeaponSet(classId);
   }
 

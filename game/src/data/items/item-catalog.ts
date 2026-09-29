@@ -23,7 +23,8 @@ export type ItemEffectDef =
   | { type: "attack_flat"; magnitude: number; durationSec: number }
   | { type: "grant_xp"; amount: number }
   | { type: "composition_component" }
-  | { type: "currency" };
+  | { type: "currency" }
+  | { type: "revive"; cooldownSec: number };
 
 export type ItemCatalogDef = {
   id: string;

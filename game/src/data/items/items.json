@@ -8,14 +8,14 @@
     "icon": "/assets/icons/items/pocao_menor.png",
     "sellValue": 4,
     "stackable": true,
-    "available": true
+    "available": false
   },
   {
     "id": "mat_ori",
     "name": "Poeira de Ori",
     "slot": "material",
     "rarity": "Comum",
-    "desc": "Material de reforço até +5.",
+    "desc": "Refina equipamento até +6. Arraste sobre a peça no inventário ou equipada.",
     "icon": "/assets/icons/items/mat_ori.png",
     "sellValue": 2,
     "stackable": true,
@@ -26,7 +26,7 @@
     "name": "Poeira de Lac",
     "slot": "material",
     "rarity": "Comum",
-    "desc": "Material de reforço de +6 a +10.",
+    "desc": "Refina equipamento de +7 até +9. Arraste sobre a peça no inventário ou equipada.",
     "icon": "/assets/icons/items/mat_lac.png",
     "sellValue": 8,
     "stackable": true,
@@ -445,7 +445,7 @@
     "name": "Ouro",
     "slot": "currency",
     "rarity": "Comum",
-    "desc": "Moeda do reino.",
+    "desc": "Crédito direto na reserva de ouro; não ocupa slot da bolsa.",
     "icon": "/assets/icons/items/ouro.png",
     "sellValue": 1,
     "stackable": true,
@@ -503,7 +503,7 @@
     "stackable": true,
     "attackBonus": 0,
     "defenseBonus": 0,
-    "available": true
+    "available": false
   },
   {
     "id": "entry_d3",
@@ -907,7 +907,7 @@
     "name": "Gema Bless",
     "slot": "material",
     "rarity": "Comum",
-    "desc": "Gema Bless, referência visual de MMORPG; usos em composição/refino sem receita nova.",
+    "desc": "Refina equipamento de +10 até +12. Arraste sobre a peça no inventário ou equipada.",
     "icon": "/assets/icons/items/gema_bless.png",
     "sellValue": 1,
     "stackable": true,
@@ -923,7 +923,7 @@
     "name": "Gema Soul",
     "slot": "material",
     "rarity": "Comum",
-    "desc": "Gema Soul, referência visual de MMORPG; usos em composição/refino sem receita nova.",
+    "desc": "Refina equipamento de +13 até +15. Arraste sobre a peça no inventário ou equipada.",
     "icon": "/assets/icons/items/gema_soul.png",
     "sellValue": 1,
     "stackable": true,
@@ -939,7 +939,7 @@
     "name": "Gema Life",
     "slot": "material",
     "rarity": "Comum",
-    "desc": "Gema Life, referência visual de MMORPG; usos em composição/refino sem receita nova.",
+    "desc": "Aumenta o adicional da peça (até 10 níveis). Arraste sobre arma, armadura ou acessório.",
     "icon": "/assets/icons/items/gema_life.png",
     "sellValue": 1,
     "stackable": true,
@@ -1926,9 +1926,9 @@
   {
     "id": "vela",
     "name": "Vela",
-    "slot": "misc",
+    "slot": "entry",
     "rarity": "Comum",
-    "desc": "Utilitário de exploração. Provisório.",
+    "desc": "Entrada da Dungeon 2. Consome ao entrar.",
     "icon": "/assets/icons/items/vela.png",
     "sellValue": 25,
     "stackable": true,
@@ -1937,12 +1937,16 @@
   {
     "id": "pena_fenix",
     "name": "Pena da Fênix",
-    "slot": "material",
+    "slot": "consumable",
     "rarity": "Raro",
-    "desc": "Material raro. Provisório.",
+    "desc": "Revive o personagem uma vez. Reutilizável após 10 minutos.",
     "icon": "/assets/icons/items/pena_fenix.png",
-    "sellValue": 40,
     "stackable": true,
-    "available": true
+    "available": true,
+    "effect": {
+      "type": "revive",
+      "cooldownSec": 600
+    },
+    "sellValue": 40
   }
 ]

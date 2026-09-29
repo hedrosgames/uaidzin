@@ -16,6 +16,7 @@ export interface WireItem {
   slot: string;
   rarity: string;
   refine: number;
+  life?: number;
   attackBonus: number;
   defenseBonus: number;
   stack: number;
@@ -93,6 +94,7 @@ export interface WireComposerItem {
   defId: string;
   name: string;
   refine: number;
+  life?: number;
   rarity: string;
   slot: string;
   attackBonus: number;
@@ -188,6 +190,7 @@ export interface WireApi {
   discardVaultItem(uid: string): boolean;
 
   refineItem(uid: string): { ok: boolean; costGold: number; mat: string; newRefine?: number; reason?: string };
+  applyEnhancementMaterial(materialUid: string, targetUid: string): { ok: boolean; kind?: string };
 
   listEligible(recipeId: string): WireComposerItem[];
   canAttempt(recipeId: string, itemUid: string): { ok: boolean; message: string };

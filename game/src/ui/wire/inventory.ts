@@ -2,6 +2,8 @@ import type { CharacterViewModel } from "../../persistence/SaveTypes";
 import type { EquipSlot } from "../WireApi";
 import type { WireContext } from "./types";
 
+const ENHANCE_MATERIALS = new Set(["mat_ori", "mat_lac", "gema_bless", "gema_soul", "gema_life"]);
+
 const CLASS_PORTRAIT: Record<string, string> = {
   TK: "/assets/class/char-tk.png",
   FM: "/assets/class/char-fm.png",
@@ -135,6 +137,44 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
     win.addEventListener("mouseleave", () => {
       ctx.hideItemTip();
     });
+
+    win.addEventListener("dragover", (e) => {
+      const target = (e.target as HTMLElement).closest<HTMLElement>(".cell.has[data-uid], .eq.has[data-slot]");
+      if (!target) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      target.classList.add("is-drop");
+    });
+
+    win.addEventListener("dragleave", (e) => {
+      const target = (e.target as HTMLElement).closest<HTMLElement>(".cell.has[data-uid], .eq.has[data-slot]");
+      target?.classList.remove("is-drop");
+    });
+
+    win.addEventListener("drop", (e) => {
+      const target = (e.target as HTMLElement).closest<HTMLElement>(".cell.has[data-uid], .eq.has[data-slot]");
+      if (!target) return;
+      e.preventDefault();
+      target.classList.remove("is-drop");
+      try {
+        const raw = e.dataTransfer?.getData("text/plain");
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data.kind !== "enhance-mat" || !data.uid) return;
+        const targetUid = target.dataset.uid;
+        const slot = target.dataset.slot as EquipSlot | undefined;
+        let resolvedTargetUid = targetUid;
+        if (!resolvedTargetUid && slot) {
+          const eq = ctx.api.equippedSnapshot();
+          resolvedTargetUid = eq[slot]?.uid;
+        }
+        if (!resolvedTargetUid) return;
+        ctx.api.applyEnhancementMaterial(data.uid, resolvedTargetUid);
+        ctx.syncFromGame();
+      } catch {
+        return;
+      }
+    });
   }
 
   function setVaultOpen(open: boolean): void {
@@ -197,6 +237,30 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
       el.onmouseleave = () => {
         ctx.hideItemTip();
       };
+
+      el.dataset.uid = item.uid;
+
+      el.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        el.classList.add("is-drop");
+      });
+      el.addEventListener("dragleave", () => {
+        el.classList.remove("is-drop");
+      });
+      el.addEventListener("drop", (e) => {
+        e.preventDefault();
+        el.classList.remove("is-drop");
+        try {
+          const raw = e.dataTransfer?.getData("text/plain");
+          if (!raw) return;
+          const data = JSON.parse(raw);
+          if (data.kind !== "enhance-mat" || !data.uid) return;
+          ctx.api.applyEnhancementMaterial(data.uid, item.uid);
+          ctx.syncFromGame();
+        } catch {
+          return;
+        }
+      });
 
       el.onclick = () => {
         if (trashModeActive) {
@@ -295,6 +359,16 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
           if (e.dataTransfer) e.dataTransfer.effectAllowed = "copy";
         });
       }
+      if (ENHANCE_MATERIALS.has(it.defId)) {
+        cell.draggable = true;
+        cell.addEventListener("dragstart", (e) => {
+          e.dataTransfer?.setData(
+            "text/plain",
+            JSON.stringify({ kind: "enhance-mat", defId: it.defId, uid: it.uid }),
+          );
+          if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+        });
+      }
 
       cell.addEventListener("click", () => {
         if (trashModeActive) {
@@ -317,14 +391,13 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
           return;
         }
 
-        if (
-          it.slot === "material" ||
-          it.slot === "misc" ||
-          it.slot === "entry" ||
-          it.slot === "consumable"
-        ) {
+        if (it.slot === "consumable" || (it.slot === "misc" && it.defId === "pena_fenix")) {
           ctx.api.useConsumable(it.uid);
           ctx.syncFromGame();
+        } else if (it.slot === "entry") {
+          return;
+        } else if (it.slot === "material" || it.slot === "misc") {
+          return;
         } else {
           ctx.api.equipUid(it.uid);
           ctx.syncFromGame();

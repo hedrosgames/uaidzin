@@ -59,6 +59,7 @@ import { RewardService } from "./session/RewardService";
 import { VaultTransfer } from "./session/VaultTransfer";
 import { SessionSnapshot } from "./session/SessionSnapshot";
 import { SessionDebug } from "../debug/SessionDebug";
+import type { ItemInstance } from "../domain/items/ItemModel";
 import type { DungeonEnterReason, DungeonEnterResult } from "./session/types";
 import { dungeonEnterMessage } from "./session/types";
 import { projectWalkTarget } from "../world/collision";
@@ -147,6 +148,7 @@ export class CityGameSession {
   autoAttack = true;
   autoMove = false;
   autoPotion = false;
+  penaReviveCooldownSec = 0;
   private potionAutoCooldown = 0;
 
   private cachedWeaponReach: { attackRange: number; attackInterval: number } | null = null;
@@ -182,7 +184,13 @@ export class CityGameSession {
     );
     this.enemyView.bindEffects(this.effects);
     this.summonView = new SummonView(renderer.scene);
-    this.itemUse = new ItemUseService(this.inventory, this.character, this.buffs, (amount) => this.grantItemXp(amount));
+    this.itemUse = new ItemUseService(this.inventory, this.character, this.buffs, (amount) => this.grantItemXp(amount), {
+      remainingSec: () => this.penaReviveCooldownSec,
+      start: (sec) => {
+        this.penaReviveCooldownSec = Math.max(0, sec);
+        this.saves.markDirty("options", "deferred");
+      },
+    });
 
     this.dungeonFlow = new DungeonFlow({
       inventory: this.inventory,
@@ -327,12 +335,14 @@ export class CityGameSession {
         autoAttack: this.autoAttack,
         autoMove: this.autoMove,
         autoPotion: this.autoPotion,
+        penaReviveCooldownSec: this.penaReviveCooldownSec,
       }),
       setHudOptions: (opts) => {
         this.potionSlots = [...opts.potionSlots] as [string | null, string | null, string | null];
         this.autoAttack = opts.autoAttack;
         this.autoMove = opts.autoMove;
         this.autoPotion = opts.autoPotion;
+        this.penaReviveCooldownSec = Math.max(0, opts.penaReviveCooldownSec || 0);
       },
     });
 
@@ -627,6 +637,7 @@ export class CityGameSession {
 
     this.interactions.resolvePendingInteract();
     this.potionAutoCooldown = Math.max(0, this.potionAutoCooldown - dt);
+    this.penaReviveCooldownSec = Math.max(0, this.penaReviveCooldownSec - dt);
     if (this.autoPotion && !this.character.isDead) {
       this.tickAutoPotion();
     }
@@ -1023,6 +1034,25 @@ export class CityGameSession {
 
   clearSkillSlot(index: number): void {
     this.skillLoadout.clearSlot(index);
+  }
+
+  tryApplyEnhancementMaterial(materialUid: string, targetUid: string): { ok: boolean; kind?: string } {
+    const mat = this.inventory.items.find((i) => i.uid === materialUid);
+    if (!mat) return { ok: false };
+    const target =
+      this.inventory.items.find((i) => i.uid === targetUid) ||
+      (Object.values(this.equipment.equipped).find((i) => i?.uid === targetUid) as ItemInstance | undefined);
+    if (!target) return { ok: false };
+    const res = this.refinement.refineWithMaterial(target, mat.defId, Math.random, { skipGold: true });
+    if (!res.ok && res.kind === "none") return { ok: false };
+    if (res.kind === "refine" || res.kind === "life") {
+      this.equipment.onItemRefined(target);
+      this.progression.recomputeCombatStats();
+      this.saves.markDirty(["inventory", "equipment"], "critical");
+      void this.saves.checkpoint();
+      return { ok: res.ok, kind: res.kind };
+    }
+    return { ok: false };
   }
 
   tryUseConsumable(uid: string): boolean {

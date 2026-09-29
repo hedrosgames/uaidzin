@@ -20,6 +20,16 @@ export function effectiveStats(it: WireItem): Record<string, number> {
   if (it.attackBonus) stats.atk = it.attackBonus;
   if (it.defenseBonus) stats.def = it.defenseBonus;
   const refine = Number(it.refine) || 0;
+  const life = Number((it as { life?: number }).life) || 0;
+  if (life > 0) {
+    const slot = String(it.slot || "").toLowerCase();
+    if (slot === "weapon") stats.atk = (stats.atk || 0) + life * 4;
+    else if (slot === "armor" || slot === "head") stats.def = (stats.def || 0) + life * 4;
+    else {
+      stats.hp = (stats.hp || 0) + life * 100;
+      stats.atk = (stats.atk || 0) + life * 4;
+    }
+  }
   if (refine > 0) {
     const slot = String(it.slot || "").toLowerCase();
     if (slot === "weapon") {
@@ -118,13 +128,14 @@ export function createTooltipManager(container: HTMLElement): TooltipManager {
     const tip = container.querySelector<HTMLElement>("#itemTip");
     if (!tip) return;
     const refine = item.refine > 0 ? ` +${item.refine}` : "";
+    const life = (item.life || 0) > 0 ? ` L${item.life}` : "";
     const stats = effectiveStats(item);
     const sHtml = statsHtml(stats);
     tip.innerHTML = `
       <div class="th">
         ${item.icon ? `<img src="${item.icon}" alt="">` : ""}
         <div>
-          <div class="nm r-${item.rarity}">${item.name}${refine}</div>
+          <div class="nm r-${item.rarity}">${item.name}${refine}${life}</div>
           <div class="subline">${item.rarity} · ${item.slot}</div>
         </div>
       </div>

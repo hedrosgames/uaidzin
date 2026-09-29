@@ -123,7 +123,7 @@
     "name": "Dungeon 2",
     "minLevel": 35,
     "maxLevel": 90,
-    "entryItemId": "entry_d2",
+    "entryItemId": "vela",
     "durationSeconds": 600,
     "arenas": [
       {

@@ -7,6 +7,8 @@ export interface ItemInstance {
   rarity: Rarity;
   slot: "weapon" | "head" | "armor" | "ring1" | "ring2" | "neck" | "ear" | "material" | "misc";
   refine: number;
+  life?: number;
+  lifeAccessoryBase?: { hp: number; crit: number; damage: number; speed: number };
   attackBonus: number;
   defenseBonus: number;
   stack: number;

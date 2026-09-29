@@ -41,17 +41,33 @@ describe("catalog items and item use", () => {
     expect(inventory.items[0].stack).toBe(2);
   });
 
-  it("credits and consumes a currency stack once", () => {
+  it("credits gold stacks without using bag slots", () => {
+    const inventory = new InventoryService();
+    const gold = createFromCatalog("ouro", 50)!;
+    inventory.add(gold);
+    expect(inventory.gold).toBe(50);
+    expect(inventory.items).toHaveLength(0);
+  });
+
+  it("revives a dead character and starts cooldown", () => {
     const inventory = new InventoryService();
     const character = new CharacterModel({ maxHp: 100, attack: 10, defense: 5 });
     const buffs = new BuffService();
-    const gold = createFromCatalog("ouro", 50)!;
-    inventory.add(gold);
-    const use = new ItemUseService(inventory, character, buffs, () => {});
-
+    let cooldown = 0;
+    character.isDead = true;
+    character.hp = 0;
+    const feather = createFromCatalog("pena_fenix")!;
+    inventory.add(feather);
+    const use = new ItemUseService(inventory, character, buffs, () => {}, {
+      remainingSec: () => cooldown,
+      start: (sec) => {
+        cooldown = sec;
+      },
+    });
     expect(use.use(inventory.items[0]!.uid).ok).toBe(true);
-    expect(inventory.gold).toBe(50);
-    expect(inventory.items).toHaveLength(0);
+    expect(character.isDead).toBe(false);
+    expect(character.hp).toBe(character.maxHp);
+    expect(cooldown).toBe(600);
   });
 
   it("applies persistent duration buffs and only doubles kill XP once", () => {

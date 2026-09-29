@@ -33,6 +33,11 @@ export class InventoryService {
     if (!item || item.stack <= 0) {
       return { ok: false, added: 0, rejected: 0, reason: "invalid_item" };
     }
+    if (item.defId === "ouro") {
+      const qty = Math.max(1, Math.floor(item.stack));
+      this.gold += qty;
+      return { ok: true, added: qty, rejected: 0 };
+    }
     if (this.items.some((i) => i.uid === item.uid)) {
       item = { ...item, uid: nextItemUid() };
     }

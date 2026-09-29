@@ -90,12 +90,15 @@ export class CombatOrchestrator {
       this.cachedMods = null;
     }
     if (!this.cachedMods) {
-      this.cachedMods = buildCombatMods(
+      const mods = buildCombatMods(
         this.deps.buffs.active,
         this.getLearnedPassives(),
         this.deps.equipment.getWeaponSet(this.deps.progression.state.classId),
         this.deps.form,
       );
+      mods.critChance += Math.max(0, this.deps.character.equipCrit || 0) * 0.01;
+      mods.attackSpeed += Math.max(0, this.deps.character.equipSpeed || 0) * 0.01;
+      this.cachedMods = mods;
     }
     return this.cachedMods;
   }
