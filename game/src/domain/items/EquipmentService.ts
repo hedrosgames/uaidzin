@@ -1,4 +1,5 @@
 import { WEAPON_SET_BY_ITEM } from "../../data/balance/economy";
+import { ITEM_CATALOG } from "../../data/items/item-catalog";
 import { lifeBonusesForItem } from "./item-life";
 import {
   itemPrimaryBonuses,
@@ -86,7 +87,7 @@ export class EquipmentService {
     const weapon = this.equipped.weapon;
     if (!weapon) return null;
     if (weapon.weaponSet) return weapon.weaponSet;
-    return WEAPON_SET_BY_ITEM[weapon.defId] ?? null;
+    return ITEM_CATALOG[weapon.defId]?.weaponSet ?? WEAPON_SET_BY_ITEM[weapon.defId] ?? null;
   }
 
   recalcEquipBonus(classId?: string): void {

@@ -33,7 +33,3 @@ export function weaponPrimaryAttack(powerTier: number): number {
 export function armorPrimaryDefense(powerTier: number): number {
   return 3 + powerTier * 2;
 }
-
-export function accessoryPrimaryHp(powerTier: number): number {
-  return 10 + powerTier * 5;
-}

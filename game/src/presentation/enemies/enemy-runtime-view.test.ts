@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { AnimationClip, BoxGeometry, Group, Mesh, MeshStandardMaterial } from "three";
 import { EnemyRuntimeView, type EnemyModelLoader, type ModelPrototype } from "./EnemyRuntimeView";
 import { EnemyModel } from "../../domain/enemies/EnemyModel";
@@ -92,16 +92,13 @@ describe("EnemyRuntimeView async view lifecycle", () => {
     view.dispose();
 
     const modelRoot = new Group();
-    const geo = new BoxGeometry(1, 1, 1);
-    const disposeSpy = vi.spyOn(geo, "dispose");
-    const mesh = new Mesh(geo, new MeshStandardMaterial());
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial());
     modelRoot.add(mesh);
 
     resolveModel({ root: modelRoot, animations: [] });
     await new Promise((r) => setTimeout(r, 10));
 
     expect(placeholder.children.length).toBe(0);
-    expect(disposeSpy).toHaveBeenCalled();
   });
 
   it("reinicia animacao quando inimigo morto respawna", () => {

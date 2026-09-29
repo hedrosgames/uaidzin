@@ -248,8 +248,8 @@ export class SessionSnapshot {
       ? Math.max(0, Math.min(this.deps.character.maxHp, savedHp))
       : this.deps.character.maxHp;
     this.deps.character.mp = Number.isFinite(savedMp)
-      ? Math.max(0, Math.min(this.deps.character.maxHp, savedMp))
-      : this.deps.character.maxHp;
+      ? Math.max(0, Math.min(this.deps.character.maxMp, savedMp))
+      : this.deps.character.maxMp;
     this.deps.character.isDead = this.deps.character.hp <= 0;
     this.deps.skillLoadout.refresh();
     this.deps.refreshWeaponSetFromGear();

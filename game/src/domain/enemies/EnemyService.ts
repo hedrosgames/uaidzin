@@ -86,7 +86,7 @@ export class EnemyService {
       respawnSeconds: respawnTime,
       isBoss,
       arenaIndex,
-      xpReward: isBoss ? Math.round(def.xpReward * 3) : def.xpReward,
+      xpReward: def.xpReward,
       color: def.color,
       modelUrl: def.modelUrl,
       modelScale: def.modelScale,

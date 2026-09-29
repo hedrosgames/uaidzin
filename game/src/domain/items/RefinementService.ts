@@ -5,8 +5,6 @@ import { lifeSuccessChance } from "./item-life";
 import type { InventoryService } from "../inventory/InventoryService";
 import type { ItemInstance } from "./ItemModel";
 
-const REFINE_MATERIALS = new Set(["mat_ori", "mat_lac", "gema_bless", "gema_soul"]);
-
 export class RefinementService {
   constructor(private readonly inventory: InventoryService) {}
 
@@ -20,10 +18,6 @@ export class RefinementService {
     if (nextLevel <= 9) return "mat_lac";
     if (nextLevel <= 12) return "gema_bless";
     return "gema_soul";
-  }
-
-  isRefineMaterial(defId: string): boolean {
-    return REFINE_MATERIALS.has(defId) || defId === ECONOMY_BALANCE.life.materialId;
   }
 
   canRefine(item: ItemInstance): boolean {

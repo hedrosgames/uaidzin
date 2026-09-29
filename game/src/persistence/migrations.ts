@@ -39,6 +39,13 @@ function asItem(raw: Record<string, unknown>): ItemInstance | null {
     sellValue: Number(raw.sellValue) || 0,
     attackRange: Number(raw.attackRange) || undefined,
     attackInterval: Number(raw.attackInterval) || undefined,
+    weaponSet: typeof raw.weaponSet === "string" ? raw.weaponSet : undefined,
+    gearSet: raw.gearSet === 1 || raw.gearSet === 2 || raw.gearSet === 3 ? raw.gearSet : undefined,
+    hpBonus: Number.isFinite(Number(raw.hpBonus)) ? Number(raw.hpBonus) : undefined,
+    critBonus: Number.isFinite(Number(raw.critBonus)) ? Number(raw.critBonus) : undefined,
+    speedBonus: Number.isFinite(Number(raw.speedBonus)) ? Number(raw.speedBonus) : undefined,
+    secondaryAttack: Number.isFinite(Number(raw.secondaryAttack)) ? Number(raw.secondaryAttack) : undefined,
+    secondaryDefense: Number.isFinite(Number(raw.secondaryDefense)) ? Number(raw.secondaryDefense) : undefined,
   };
 }
 

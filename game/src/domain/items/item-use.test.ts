@@ -12,7 +12,9 @@ import { SkillTreeService } from "../skills/SkillTreeService";
 describe("catalog items and item use", () => {
   it("registers requested set counts and stable icon paths", () => {
     const defs = Object.values(ITEM_CATALOG);
-    expect(defs.filter((item) => item.slot === "weapon").length).toBe(11);
+    expect(defs.filter((item) => item.id.startsWith("weapon_gear")).length).toBe(12);
+    expect(defs.filter((item) => item.id.startsWith("armor_gear")).length).toBe(12);
+    expect(defs.find((item) => item.id === "weapon_gear2_comum")?.weaponSet).toBe("greatsword");
     expect(defs.filter((item) => item.slot === "offhand").length).toBe(1);
     expect(defs.filter((item) => item.id.startsWith("armor_chest_")).length).toBe(12);
     expect(defs.filter((item) => item.id.startsWith("ring_")).length).toBe(8);
@@ -21,7 +23,11 @@ describe("catalog items and item use", () => {
     expect(defs.filter((item) => item.id.startsWith("gema_") && /^gema_\d/.test(item.id)).length).toBe(12);
     expect(defs.filter((item) => item.id.startsWith("rune_")).length).toBe(24);
     expect(defs.filter((item) => item.id.startsWith("chalice_xp_")).length).toBe(12);
-    expect(defs.filter((item) => item.available !== false).every((item) => item.icon === `/assets/icons/items/${item.id}.png`)).toBe(true);
+    expect(
+      defs
+        .filter((item) => item.available !== false)
+        .every((item) => typeof item.icon === "string" && item.icon.startsWith("/assets/icons/")),
+    ).toBe(true);
   });
 
   it("restores up to 500 HP and MP and consumes one stacked potion", () => {

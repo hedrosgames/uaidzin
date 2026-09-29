@@ -25,9 +25,8 @@ export function accessoryLifeBase(item: ItemInstance): { hp: number; crit: numbe
   const base = item.lifeAccessoryBase;
   if (base) return base;
   const atk = Math.max(0, item.attackBonus || 0);
-  const def = Math.max(0, item.defenseBonus || 0);
   return {
-    hp: atk + def > 0 ? 100 : 100,
+    hp: 100,
     crit: 4,
     damage: atk > 0 ? atk : 4,
     speed: 4,

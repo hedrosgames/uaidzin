@@ -411,6 +411,7 @@ export class CityGameSession {
   }
 
   async enterWorld(id: WorldId): Promise<void> {
+    this.autoMoveAnchor = null;
     this.effects.clearSkillVfx();
     const world = this.worlds.switchTo(id);
     this.renderer.setWorldLook(id === "dungeon-test" ? "dungeon" : "city");
@@ -827,9 +828,15 @@ export class CityGameSession {
     return { x: anchor.x, z: anchor.z };
   }
 
+  private steerTo(x: number, z: number): void {
+    const cur = this.player.moveTarget;
+    if (cur && Math.hypot(cur.x - x, cur.z - z) < 0.2) return;
+    this.player.setMoveTarget(x, z);
+  }
+
   private applyAutoMoveAnchor(): void {
     const world = this.worlds.getCurrent();
-    if (!world) return;
+    if (!world || this.interactions.pendingInteract) return;
     if (!this.autoMoveAnchor) this.beginAutoMoveAnchor();
     const anchor = this.autoMoveAnchor!;
     const goal = this.autoMoveAnchorGoal(anchor);
@@ -841,10 +848,11 @@ export class CityGameSession {
       return;
     }
     const safe = projectWalkTarget(goal.x, goal.z, this.player.radius, world.collision, px, pz);
-    this.player.setMoveTarget(safe.x, safe.z);
+    this.steerTo(safe.x, safe.z);
   }
 
   private applyAutoMoveHunt(): void {
+    if (this.interactions.pendingInteract) return;
     const world = this.worlds.getCurrent();
     const worldId = world?.id ?? "";
     const collision = world?.collision;
@@ -877,6 +885,8 @@ export class CityGameSession {
       return;
     }
     if (!world) return;
+    const cur = this.player.moveTarget;
+    if (cur && Math.hypot(cur.x - px, cur.z - pz) > 0.45) return;
     const step = Math.min(AUTO_MOVE_HUNT_STEP_METERS, Math.max(0, bestDist - reach));
     const tx = px + ((best.x - px) / bestDist) * step;
     const tz = pz + ((best.z - pz) / bestDist) * step;
@@ -1061,7 +1071,9 @@ export class CityGameSession {
   tryReset(): boolean {
     const ok = this.progression.reset();
     if (ok) {
-      this.saves.markDirty(["character", "skills"], "critical");
+      this.skillLoadout.refresh();
+      this.combat.invalidatePassives();
+      this.saves.markDirty(["character", "skills", "skillLoadout"], "critical");
       void this.saves.checkpoint();
     }
     return ok;

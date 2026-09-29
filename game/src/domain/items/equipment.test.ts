@@ -109,4 +109,14 @@ describe("EquipmentService and CompositionService", () => {
     expect(eq.getWeaponSet("TK")).toBeNull();
     expect(eq.weaponSet).toBeNull();
   });
+
+  it("arma de conjunto sem weaponSet na instancia usa o catalogo", () => {
+    const inv = new InventoryService();
+    const character = new CharacterModel({ maxHp: 100, attack: 10, defense: 5 });
+    const eq = new EquipmentService(inv, character);
+    const weapon = createItem({ uid: "g1", defId: "weapon_gear2_comum", weaponSet: undefined });
+    inv.add(weapon);
+    eq.equip("g1");
+    expect(eq.getWeaponSet("TK")).toBe("greatsword");
+  });
 });

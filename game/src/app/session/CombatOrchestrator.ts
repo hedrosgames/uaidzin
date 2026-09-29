@@ -34,7 +34,6 @@ import {
 import { totalElementalResist } from "../../data/balance/elemental-resistance";
 import type { SkillElement } from "../../data/classes/skill-types";
 import { rollCritStrike } from "../../domain/combat/crit-strike";
-import { rollEnemyStrikeDamage } from "../../domain/combat/enemy-strike";
 import { canEngageEnemy } from "../../domain/combat/CombatSpace";
 import { dungeon1ArenaFromZ } from "../../data/balance/xp-progression";
 import type { AttackTarget } from "../../domain/combat/AttackController";
@@ -75,7 +74,7 @@ export interface CombatOrchestratorDeps {
 export class CombatOrchestrator {
   private cachedMods: CombatMods | null = null;
   private cachedPassives: ReturnType<typeof learnedPassives> | null = null;
-  private lastBuffCount = -1;
+  private modsStamp = "";
   private readonly vOrigin = new Vector3();
   private readonly vTarget = new Vector3();
   private readonly vAim = new Vector3();
@@ -99,8 +98,10 @@ export class CombatOrchestrator {
   }
 
   getCombatMods(): CombatMods {
-    if (this.deps.buffs.active.length !== this.lastBuffCount) {
-      this.lastBuffCount = this.deps.buffs.active.length;
+    const character = this.deps.character;
+    const stamp = `${this.deps.buffs.active.length}|${character.attributes.DES}|${character.equipCrit}|${character.equipSpeed}|${character.baseAttackSpeed}`;
+    if (stamp !== this.modsStamp) {
+      this.modsStamp = stamp;
       this.cachedMods = null;
     }
     if (!this.cachedMods) {
@@ -139,7 +140,7 @@ export class CombatOrchestrator {
     const targets = this.combatTargets(worldId);
     const reach = this.deps.getWeaponReach();
     const frameMods = this.getCombatMods();
-    const speedMul = Math.max(0.4, 1 + frameMods.attackSpeed);
+    const speedMul = Math.max(COMBAT_BALANCE.basicAttackSpeedFloor, 1 + frameMods.attackSpeed);
     this.deps.attack.setReach(reach.attackRange, reach.attackInterval / speedMul);
 
     const hitTarget = this.deps.attack.tick(
@@ -417,7 +418,7 @@ export class CombatOrchestrator {
       enemy.attackCooldown = enemy.attackInterval;
       if (summon && summonDist <= playerDist) {
         const incoming = calculateDamage(enemy.attack, summon.defense);
-        const struck = rollEnemyStrikeDamage(incoming, enemy.critChance);
+        const struck = rollCritStrike(incoming, enemy.critChance);
         const split = this.deps.summons.damage(summon.uid, struck.damage, frameMods.summonLink);
         if (split.player > 0) this.hurtPlayer(split.player, struck.crit);
         continue;
@@ -430,7 +431,7 @@ export class CombatOrchestrator {
       }
       let dmg = calculateDamage(enemy.attack, this.deps.character.defense * frameMods.defenseMul);
       dmg = Math.max(1, Math.round(dmg * (1 - frameMods.damageReduction)));
-      const struck = rollEnemyStrikeDamage(dmg, enemy.critChance);
+      const struck = rollCritStrike(dmg, enemy.critChance);
       this.hurtPlayer(struck.damage, struck.crit);
       if (this.deps.character.isDead) break;
       if (frameMods.reflect > 0 && enemy.alive) {

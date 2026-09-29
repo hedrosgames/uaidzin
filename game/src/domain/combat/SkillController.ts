@@ -73,7 +73,7 @@ export class SkillController {
     const slot = manualSlotIndex >= 0
       ? this.manualSlot(manualSlotIndex, mods)
       : autoSkillsFromBar
-        ? this.autoSlot(mods, buffs, form, summons, targets, px, pz, facing, false)
+        ? this.autoSlot(mods, buffs, form, summons, targets, px, pz, facing)
         : null;
     if (!slot) return null;
     const cost = Math.max(0, Math.round(slot.skill.mp * mods.mpCostMul));
@@ -191,14 +191,12 @@ export class SkillController {
     px: number,
     pz: number,
     facing: number,
-    requireSlotAuto: boolean,
   ): LoadoutSlot | null {
     const hpRatio = this.character && this.character.maxHp > 0 ? this.character.hp / this.character.maxHp : 1;
     let best: LoadoutSlot | null = null;
     let bestScore = -1;
     for (const slot of this.loadout.slots) {
       if (!slot || !(slot.cd <= 0)) continue;
-      if (requireSlotAuto && !slot.auto) continue;
       if (!this.affordable(slot, mods)) continue;
       if (!this.autoUseful(slot, hpRatio, buffs, form, summons, targets, px, pz, facing)) continue;
       const score = this.autoScore(slot, hpRatio);

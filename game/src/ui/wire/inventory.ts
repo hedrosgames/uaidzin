@@ -1,3 +1,4 @@
+import { ITEM_CATALOG } from "../../data/items/item-catalog";
 import type { CharacterViewModel } from "../../persistence/SaveTypes";
 import type { EquipSlot } from "../WireApi";
 import type { WireContext } from "./types";
@@ -240,28 +241,6 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
 
       el.dataset.uid = item.uid;
 
-      el.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        el.classList.add("is-drop");
-      });
-      el.addEventListener("dragleave", () => {
-        el.classList.remove("is-drop");
-      });
-      el.addEventListener("drop", (e) => {
-        e.preventDefault();
-        el.classList.remove("is-drop");
-        try {
-          const raw = e.dataTransfer?.getData("text/plain");
-          if (!raw) return;
-          const data = JSON.parse(raw);
-          if (data.kind !== "enhance-mat" || !data.uid) return;
-          ctx.api.applyEnhancementMaterial(data.uid, item.uid);
-          ctx.syncFromGame();
-        } catch {
-          return;
-        }
-      });
-
       el.onclick = () => {
         if (trashModeActive) {
           ctx.openConfirm({
@@ -391,7 +370,13 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
           return;
         }
 
-        if (it.slot === "consumable" || (it.slot === "misc" && it.defId === "pena_fenix")) {
+        const effectType = ITEM_CATALOG[it.defId]?.effect?.type;
+        if (
+          it.slot === "consumable" ||
+          effectType === "learn_book" ||
+          effectType === "revive" ||
+          effectType === "currency"
+        ) {
           ctx.api.useConsumable(it.uid);
           ctx.syncFromGame();
         } else if (it.slot === "entry") {

@@ -96,7 +96,10 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
         <div class="desc">${sk.desc || ""}</div>
       </div>
       <div class="sm-detail-bottom">
-        <div class="cost-rows">
+        ${
+          isLivro
+            ? ""
+            : `<div class="cost-rows">
           <div class="cost-row ${!hasPoints && !sk.learned ? "is-bad" : ""}">
             <span class="lab">Pontos de Skill</span>
             <span class="val">${pointsCost}</span>
@@ -105,7 +108,8 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
             <span class="lab">Custo em Ouro</span>
             <span class="val">${goldCost.toLocaleString("pt-BR")}</span>
           </div>
-        </div>
+        </div>`
+        }
         ${btnHtml}
       </div>
     `;

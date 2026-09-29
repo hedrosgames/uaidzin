@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AnimationClip, BoxGeometry, Group, Mesh, MeshStandardMaterial, Object3D } from "three";
 import { PlayerView, type PlayerGltfLoader } from "./PlayerView";
+import { CLASS_WEAPON_SET } from "./WeaponSetCatalog";
 
 function makeFakeModel(): { scene: Object3D; animations: AnimationClip[] } {
   const scene = new Group();
@@ -25,7 +26,7 @@ describe("PlayerView weapon set async racing", () => {
   it("load sem arma deixa as maos vazias", async () => {
     const view = new PlayerView(makeMockPlayerLoader(0));
     await view.load("TK");
-    expect(view.getWeaponSet()).toBe("sword-shield");
+    expect(view.getWeaponSet()).toBe(CLASS_WEAPON_SET.TK);
   });
 
   it("tres setWeaponSet rapidos: vence o ultimo", async () => {

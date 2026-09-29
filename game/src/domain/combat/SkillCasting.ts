@@ -152,11 +152,13 @@ export function resolveSkill(input: {
       damage += input.mods.damageFlat;
       damage = Math.max(COMBAT_BALANCE.minDamage, Math.round(damage * specMul));
       const per = damage;
+      let landed = 0;
       for (let n = 0; n < hitCount; n++) {
         if (!rollPlayerAttackHits(input.evasionOf(target.id))) continue;
+        landed += 1;
         hits.push({ id: target.id, damage: per, x: target.x, z: target.z });
       }
-      if (skill.enemy) {
+      if (skill.enemy && landed > 0) {
         const dotDps = skill.enemy.dotRatio ? Math.max(1, damage * skill.enemy.dotRatio) : 0;
         enemyEffects.push({ id: target.id, effect: skill.enemy, dotDps });
       }

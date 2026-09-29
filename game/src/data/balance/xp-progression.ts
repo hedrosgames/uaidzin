@@ -18,12 +18,6 @@ export function d1KillsForLevelUp(level: number): number {
   return D1_KILLS_BASE * 2 ** d1BandOffset(level);
 }
 
-export function d1OptimalArenaForLevel(level: number): number {
-  if (level < 10) return 0;
-  if (level < 20) return 1;
-  return 2;
-}
-
 export function dungeon1ArenaFromZ(z: number): number {
   if (z > -8) return 0;
   if (z > -26) return 1;

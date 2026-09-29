@@ -169,6 +169,7 @@ export class LoadingScreen {
 let sharedLoading: LoadingScreen | null = null;
 
 export function showGameLoading(msg = "Carregando o jogo…"): void {
+  if (typeof document === "undefined") return;
   if (!sharedLoading) sharedLoading = new LoadingScreen();
   sharedLoading.show(msg);
 }
