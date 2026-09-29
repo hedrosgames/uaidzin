@@ -4,7 +4,7 @@ import { applyPlayerCombatRatings } from "../../data/balance/combat-ratings";
 import { buildCombatMods, type CombatMods } from "../../domain/combat/CombatMods";
 import { learnedPassives, type SkillController } from "../../domain/combat/SkillController";
 import { calculateDamage } from "../../domain/combat/DamageCalculator";
-import { rollHitSimple } from "../../domain/combat/HitChanceCalculator";
+import { rollHitSimple, rollPlayerAttackHits } from "../../domain/combat/HitChanceCalculator";
 import { getSkillVfxProfile } from "../../presentation/effects/skill/SkillVfxCatalog";
 import type { SkillVfxRequest } from "../../presentation/effects/skill/SkillVfxTypes";
 import type { EnemyService } from "../../domain/enemies/EnemyService";
@@ -157,7 +157,7 @@ export class CombatOrchestrator {
         this.deps.onAutoAttackSwing();
         this.deps.lockFromAnim(atkAnim, COMBAT_BALANCE.moveLock.attackFallback);
 
-        if (enemy.alive && rollHitSimple()) {
+        if (enemy.alive && rollPlayerAttackHits(enemy.evasion)) {
           let atk = this.deps.character.attack * frameMods.attackMul;
           if (frameMods.stealth) atk *= this.deps.buffs.consumeStealth();
           const critChance = frameMods.critChance + (this.deps.form.active ? frameMods.transformedCrit : 0);
@@ -206,6 +206,7 @@ export class CombatOrchestrator {
       this.deps.player.z,
       this.deps.player.facing,
       (id) => this.deps.enemies.findById(id)?.defense ?? 0,
+      (id) => this.deps.enemies.findById(id)?.evasion ?? 0,
       (id) => {
         const enemy = this.deps.enemies.findById(id);
         return { hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 1 };
@@ -306,6 +307,10 @@ export class CombatOrchestrator {
     for (const strike of strikes) {
       const enemy = this.deps.enemies.findById(strike.id);
       if (!enemy?.alive) continue;
+      if (!rollPlayerAttackHits(enemy.evasion)) {
+        this.deps.effects.spawnDamageNumber(enemy.x, 1.5, enemy.z, 0, "miss");
+        continue;
+      }
       const killed = enemy.applyDamage(strike.damage);
       this.deps.effects.spawnDamageNumber(enemy.x, 1.5, enemy.z, strike.damage, "skill");
       if (killed) {
@@ -320,6 +325,10 @@ export class CombatOrchestrator {
           if (!other.alive || other.id === enemy.id) continue;
           if (Math.hypot(other.x - enemy.x, other.z - enemy.z) > strike.splash) continue;
           const splashDmg = Math.max(1, Math.round(strike.damage * 0.55));
+          if (!rollPlayerAttackHits(other.evasion)) {
+            this.deps.effects.spawnDamageNumber(other.x, 1.5, other.z, 0, "miss");
+            continue;
+          }
           const splashKill = other.applyDamage(splashDmg);
           if (splashKill) {
             this.deps.rewards.grantKillXp(other);

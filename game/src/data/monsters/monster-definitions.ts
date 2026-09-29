@@ -8,6 +8,7 @@ export interface MonsterDef {
   maxHp: number;
   attack: number;
   defense: number;
+  evasion?: number;
   range: number;
   attackInterval: number;
   speed: number;

@@ -10,6 +10,7 @@ export interface EnemyInit {
   maxHp: number;
   attack: number;
   defense: number;
+  evasion?: number;
   range: number;
   attackInterval: number;
   speed?: number;
@@ -39,6 +40,7 @@ export class EnemyModel {
   readonly maxHp: number;
   readonly attack: number;
   readonly defense: number;
+  readonly evasion: number;
   readonly range: number;
   readonly attackInterval: number;
   readonly speed: number;
@@ -85,6 +87,7 @@ export class EnemyModel {
     this.hp = init.maxHp;
     this.attack = init.attack;
     this.defense = init.defense;
+    this.evasion = init.evasion ?? 0;
     this.range = init.range;
     this.attackInterval = init.attackInterval;
     this.speed = init.speed ?? 0;

@@ -1,6 +1,7 @@
 import { type EnemyArchetype } from "../../data/balance/combat";
 import { DUNGEON_BALANCE, dungeonArenaScale } from "../../data/balance/dungeon";
 import { DUNGEON_TEST, type DungeonDef } from "../../data/dungeons/dungeon-definitions";
+import { clampEnemyEvasion } from "../../data/balance/combat-ratings";
 import { getMonsterDef } from "../../data/monsters/monster-definitions";
 import { EnemyModel } from "./EnemyModel";
 
@@ -71,6 +72,7 @@ export class EnemyService {
       maxHp,
       attack,
       defense,
+      evasion: clampEnemyEvasion(def.evasion ?? 0),
       range: def.range,
       attackInterval: def.attackInterval,
       speed: def.speed,

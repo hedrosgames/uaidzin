@@ -4,6 +4,7 @@ import {
   COMBAT_RATING_CAPS,
   FULL_DES_AT_MAX_LEVEL,
   applyPlayerCombatRatings,
+  clampEnemyEvasion,
   critChanceFromDes,
   evasionFromDes,
 } from "./combat-ratings";
@@ -37,6 +38,12 @@ describe("combat-ratings", () => {
     applyPlayerCombatRatings(mods, { des: FULL_DES_AT_MAX_LEVEL, equipCritPercent: 30 });
     expect(mods.critChance).toBe(COMBAT_RATING_CAPS.critChance);
     expect(mods.evasion).toBe(COMBAT_RATING_CAPS.evasion);
+  });
+
+  it("evasão de monstro limita em 10%", () => {
+    expect(clampEnemyEvasion(0)).toBe(0);
+    expect(clampEnemyEvasion(0.1)).toBe(0.1);
+    expect(clampEnemyEvasion(0.25)).toBe(COMBAT_RATING_CAPS.enemyEvasion);
   });
 
   it("equip crítico soma antes do cap", () => {

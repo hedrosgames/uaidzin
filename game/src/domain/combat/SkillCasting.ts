@@ -1,5 +1,6 @@
 import { SKILL_BALANCE } from "../../data/balance/skills";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
+import { rollPlayerAttackHits } from "./HitChanceCalculator";
 import { mitigatedDamage } from "./DamageCalculator";
 import type { AttackTarget } from "./AttackController";
 import type { CombatMods } from "./CombatMods";
@@ -102,6 +103,7 @@ export function resolveSkill(input: {
   facing: number;
   targets: AttackTarget[];
   defenseOf: (id: string) => number;
+  evasionOf: (id: string) => number;
   hpOf: (id: string) => { hp: number; maxHp: number };
   mods: CombatMods;
   transformed: boolean;
@@ -141,6 +143,7 @@ export function resolveSkill(input: {
       damage = Math.max(COMBAT_BALANCE.minDamage, Math.round(damage * specMul));
       const per = damage;
       for (let n = 0; n < hitCount; n++) {
+        if (!rollPlayerAttackHits(input.evasionOf(target.id))) continue;
         hits.push({ id: target.id, damage: per, x: target.x, z: target.z });
       }
       if (skill.enemy) {

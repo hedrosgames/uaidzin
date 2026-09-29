@@ -9,7 +9,12 @@ export const COMBAT_RATING_CAPS = {
   evasion: 0.4,
   critFromDes: 0.4,
   evasionFromDes: 0.1,
+  enemyEvasion: 0.1,
 } as const;
+
+export function clampEnemyEvasion(value: number): number {
+  return Math.min(COMBAT_RATING_CAPS.enemyEvasion, Math.max(0, value));
+}
 
 export const FULL_DES_AT_MAX_LEVEL =
   BASE_DES + (MORTAL_MAX_LEVEL - 1) * PROGRESSION_BALANCE.attributesPerLevel;
