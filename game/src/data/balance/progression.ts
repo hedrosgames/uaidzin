@@ -1,3 +1,4 @@
+import { xpToLevel as computeXpToLevel } from "./xp-progression";
 
 export const PROGRESSION_BALANCE = {
   attributesPerLevel: 5,
@@ -10,8 +11,7 @@ export const PROGRESSION_BALANCE = {
   },
   
   xpToLevel(level: number): number {
-    if (level < 20) return 28 + level * 14;
-    return 40 + level * 18;
+    return computeXpToLevel(level);
   },
   
   attackFromFor(for_: number): number {

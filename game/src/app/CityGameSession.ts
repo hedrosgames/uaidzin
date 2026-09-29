@@ -39,6 +39,12 @@ import { ITEM_CATALOG, resolveItemIcon } from "../data/items/item-catalog";
 import { SettingsPanel } from "../ui/SettingsPanel";
 import { isWeaponSetId } from "../presentation/player/WeaponRig";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
+import {
+  D1_GATE_Z,
+  D2_LEVEL_START,
+  d2ChaliceGrantXp,
+} from "../data/balance/xp-progression";
+import { canEngageEnemy } from "../domain/combat/CombatSpace";
 import type { BootCharacter } from "./BootFlow";
 import { PlayerController } from "../gameplay/PlayerController";
 import type { InputService } from "../gameplay/InputService";
@@ -136,7 +142,7 @@ export class CityGameSession {
   moveLock = 0;
   private dropLog: DropLogEntry[] = [];
   private dropLogSeq = 0;
-  private gateKills: number[] = [];
+  private gateKeys: boolean[] = [];
   pendingSkillSlot = -1;
   hadSave = false;
   saveUnreadable = false;
@@ -188,7 +194,7 @@ export class CityGameSession {
       this.inventory,
       this.character,
       this.buffs,
-      (amount) => this.grantItemXp(amount),
+      (amount, defId) => this.grantItemXp(amount, defId),
       {
         remainingSec: () => this.penaReviveCooldownSec,
         start: (sec) => {
@@ -444,7 +450,7 @@ export class CityGameSession {
       this.dungeonRun.start(def, duration);
       this.enemies.spawnFromDungeon(def);
       world.gates?.reset();
-      this.gateKills = [];
+      this.gateKeys = [];
       this.skillLoadout.refresh();
       this.skill.reset();
       this.sessionXp = 0;
@@ -678,6 +684,7 @@ export class CityGameSession {
         return;
       }
       this.combat.updateCombat(dt);
+      this.tickDungeon1Gates();
     }
 
     const groundY = world.groundY(this.player.x, this.player.z);
@@ -774,13 +781,22 @@ export class CityGameSession {
   }
 
   private applyAutoMove(): void {
-    const targets = this.enemies.aliveTargets();
+    const world = this.worlds.getCurrent();
+    const worldId = world?.id ?? "";
+    const collision = world?.collision;
+    const px = this.player.x;
+    const pz = this.player.z;
+    const targets = this.enemies.aliveTargets().filter((t) => {
+      const enemy = this.enemies.findById(t.id);
+      if (!enemy) return false;
+      return canEngageEnemy(worldId, px, pz, enemy.x, enemy.z, enemy.arenaIndex, collision);
+    });
     if (!targets.length) return;
     let best = targets[0]!;
-    let bestDist = Math.hypot(best.x - this.player.x, best.z - this.player.z);
+    let bestDist = Math.hypot(best.x - px, best.z - pz);
     for (let i = 1; i < targets.length; i++) {
       const t = targets[i]!;
-      const d = Math.hypot(t.x - this.player.x, t.z - this.player.z);
+      const d = Math.hypot(t.x - px, t.z - pz);
       if (d < bestDist) {
         best = t;
         bestDist = d;
@@ -791,7 +807,6 @@ export class CityGameSession {
       this.player.clearMoveTarget();
       return;
     }
-    const world = this.worlds.getCurrent();
     if (!world) return;
     const safe = projectWalkTarget(
       best.x,
@@ -828,16 +843,31 @@ export class CityGameSession {
   }
 
   private rollGateKey(enemyId: string): void {
+    if (this.activeDungeonId !== "dungeon-1") return;
     const gates = this.worlds.getCurrent()?.gates;
     const arenas = this.dungeonRun.getDef()?.arenas;
     if (!gates || !arenas) return;
     const zone = arenas.findIndex((arena) => arena.spawns.some((spawn) => spawn.id === enemyId));
     if (zone < 0 || zone >= gates.count || gates.isOpen(zone)) return;
-    this.gateKills[zone] = (this.gateKills[zone] ?? 0) + 1;
-    const guaranteed = this.gateKills[zone]! >= arenas[zone]!.spawns.length;
-    if (!guaranteed && Math.random() >= DUNGEON_BALANCE.gateKey.dropChance) return;
-    gates.open(zone);
-    this.pushDropLog(`Chave do Portão ${zone + 1} · portão aberto`, "item");
+    if (this.gateKeys[zone]) return;
+    if (Math.random() >= DUNGEON_BALANCE.gateKey.dropChance) return;
+    this.gateKeys[zone] = true;
+    this.pushDropLog(`Chave do Portão ${zone + 1}`, "item");
+  }
+
+  private tickDungeon1Gates(): void {
+    if (this.activeDungeonId !== "dungeon-1") return;
+    const gates = this.worlds.getCurrent()?.gates;
+    if (!gates) return;
+    const { openRadiusZ, openRadiusX } = DUNGEON_BALANCE.gateKey;
+    for (let i = 0; i < D1_GATE_Z.length; i++) {
+      if (!this.gateKeys[i] || gates.isOpen(i)) continue;
+      const gateZ = D1_GATE_Z[i]!;
+      if (Math.abs(this.player.z - gateZ) > openRadiusZ) continue;
+      if (Math.abs(this.player.x) > openRadiusX) continue;
+      gates.open(i);
+      this.pushDropLog(`Portão ${i + 1} aberto`, "item");
+    }
   }
 
   private currentArenaLabel(): string | null {
@@ -1096,9 +1126,17 @@ export class CityGameSession {
     return true;
   }
 
-  private grantItemXp(amount: number): void {
-    const { levelsGained } = this.progression.addXp(amount);
-    this.sessionXp += amount;
+  private grantItemXp(amount: number, defId?: string): void {
+    let grant = amount;
+    if (defId?.startsWith("chalice_xp_")) {
+      const lv = this.progression.state.level;
+      grant =
+        lv >= D2_LEVEL_START
+          ? d2ChaliceGrantXp(lv)
+          : Math.max(1, Math.round(PROGRESSION_BALANCE.xpToLevel(lv) / 5));
+    }
+    const { levelsGained } = this.progression.addXp(grant);
+    this.sessionXp += grant;
     if (levelsGained <= 0) return;
     this.skillTree.grantSkillPoints(levelsGained);
     this.skillLoadout.refresh();

@@ -25,6 +25,9 @@ import type { PlayerRuntime } from "../../gameplay/PlayerRuntime";
 import type { RewardService } from "./RewardService";
 import type { EnemyAI } from "../../domain/enemies/EnemyAI";
 import type { WorldManager } from "../../world/WorldManager";
+import { canEngageEnemy } from "../../domain/combat/CombatSpace";
+import { dungeon1ArenaFromZ } from "../../data/balance/xp-progression";
+import type { AttackTarget } from "../../domain/combat/AttackController";
 
 export interface CombatOrchestratorDeps {
   enemies: EnemyService;
@@ -103,9 +106,22 @@ export class CombatOrchestrator {
     return this.cachedMods;
   }
 
+  private combatTargets(worldId: string): AttackTarget[] {
+    const collision = this.deps.worlds.getCurrent()?.collision;
+    const playerZ = this.deps.player.z;
+    const playerX = this.deps.player.x;
+    return this.deps.enemies.aliveTargets().filter((t) => {
+      const enemy = this.deps.enemies.findById(t.id);
+      if (!enemy) return false;
+      return canEngageEnemy(worldId, playerX, playerZ, enemy.x, enemy.z, enemy.arenaIndex, collision);
+    });
+  }
+
   updateCombat(dt: number): void {
     this.deps.enemies.updateRespawns(dt);
-    const targets = this.deps.enemies.aliveTargets();
+    const worldId = this.deps.worlds.getCurrent()?.id ?? "";
+    const playerArena = worldId === "dungeon-1" ? dungeon1ArenaFromZ(this.deps.player.z) : undefined;
+    const targets = this.combatTargets(worldId);
     const reach = this.deps.getWeaponReach();
     const frameMods = this.getCombatMods();
     const speedMul = Math.max(0.4, 1 + frameMods.attackSpeed);
@@ -331,8 +347,23 @@ export class CombatOrchestrator {
         playerAlive: !this.deps.character.isDead && !frameMods.stealth,
         dt,
         collision,
+        playerArena,
+        enemyArena: enemy.arenaIndex,
       });
       if (!wantsAttack) continue;
+      if (
+        !canEngageEnemy(
+          worldId,
+          this.deps.player.x,
+          this.deps.player.z,
+          enemy.x,
+          enemy.z,
+          enemy.arenaIndex,
+          collision,
+        )
+      ) {
+        continue;
+      }
       this.deps.enemyView.playAttack(enemy.id);
       if (enemy.archetype === "ranged" && enemy.modelUrl?.includes("skeleton-special")) {
         this.deps.effects.enemyFireball(enemy.x, enemy.z, this.deps.player.x, this.deps.player.z);

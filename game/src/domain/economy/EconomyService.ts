@@ -22,7 +22,11 @@ export class EconomyService {
     this.dungeonIndex = match ? Number(match[1]) : 1;
   }
 
-  grantKillLoot(archetype: "fixed" | "chaser" | "ranged" | "boss", isBoss: boolean): KillLootResult {
+  grantKillLoot(
+    archetype: "fixed" | "chaser" | "ranged" | "boss",
+    isBoss: boolean,
+    monsterId?: string,
+  ): KillLootResult {
     const key = isBoss ? "boss" : archetype;
     let gold = Number.isFinite(ECONOMY_BALANCE.goldPerKill[key]) ? ECONOMY_BALANCE.goldPerKill[key] : 2;
     if (this.dungeonIndex === 1) gold *= 10;
@@ -41,6 +45,17 @@ export class EconomyService {
       } else {
         if (res.added > 0) dropped = item.name;
         lost = item.name;
+      }
+    } else if (this.dungeonIndex === 2 && monsterId && (monsterId === "caveira_normal" || monsterId === "caveira_especial")) {
+      const chaliceChance = monsterId === "caveira_especial" ? 1 : 0.1;
+      if (this.random() < chaliceChance) {
+        const colorIndex = Math.floor(this.random() * 12) + 1;
+        const item = createFromCatalog(`chalice_xp_${String(colorIndex).padStart(2, "0")}`);
+        if (item) {
+          const res = this.inventory.add(item);
+          if (res.ok || res.added > 0) dropped = item.name;
+          if (!res.ok) lost = item.name;
+        }
       }
     } else if (this.dungeonIndex > 1 && this.random() < ECONOMY_BALANCE.xpChaliceDropChance) {
       const colorIndex = Math.floor(this.random() * 12) + 1;

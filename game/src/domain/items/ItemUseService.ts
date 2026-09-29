@@ -17,7 +17,7 @@ export class ItemUseService {
     private readonly inventory: InventoryService,
     private readonly character: CharacterModel,
     private readonly buffs: BuffService,
-    private readonly grantXp: (amount: number) => void,
+    private readonly grantXp: (amount: number, defId?: string) => void,
     private readonly reviveCooldown?: ReviveCooldownGate,
     private readonly learnBookSkill?: (skillId: string) => boolean,
   ) {}
@@ -66,7 +66,7 @@ export class ItemUseService {
     } else if (effect.type === "attack_flat") {
       this.buffs.add({ id: item.defId, stat: "damageFlat", magnitude: effect.magnitude, remainingSec: effect.durationSec, stacks: 1 });
     } else if (effect.type === "grant_xp") {
-      this.grantXp(effect.amount);
+      this.grantXp(effect.amount, item.defId);
     } else if (effect.type === "currency") {
       this.inventory.gold += item.stack;
       this.inventory.remove(uid);

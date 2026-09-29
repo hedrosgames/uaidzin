@@ -22,6 +22,7 @@ export interface EnemyInit {
   homeZ: number;
   respawnSeconds: number;
   isBoss?: boolean;
+  arenaIndex?: number;
   xpReward?: number;
   color?: string;
   modelUrl?: string;
@@ -48,6 +49,7 @@ export class EnemyModel {
   readonly aggroRadius?: number;
   readonly respawnSeconds: number;
   readonly isBoss: boolean;
+  readonly arenaIndex: number;
   readonly xpReward: number;
   readonly color: string;
   readonly modelUrl?: string;
@@ -93,6 +95,7 @@ export class EnemyModel {
     this.aggroRadius = init.aggroRadius;
     this.respawnSeconds = init.respawnSeconds;
     this.isBoss = !!init.isBoss;
+    this.arenaIndex = init.arenaIndex ?? 0;
     this.xpReward = init.xpReward ?? 8;
     this.color = init.color ?? "#c45c26";
     this.modelUrl = init.modelUrl;

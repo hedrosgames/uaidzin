@@ -28,7 +28,7 @@ export class EnemyService {
       const arena = def.arenas[arenaIndex];
       const scale = dungeonArenaScale(def.id, arenaIndex);
       for (const sp of arena.spawns) {
-        const enemy = this.makeEnemy(sp, scale);
+        const enemy = this.makeEnemy(sp, scale, arenaIndex);
         this.enemies.push(enemy);
         this.byId.set(enemy.id, enemy);
         if (enemy.alive) this.aliveList.push(enemy);
@@ -39,6 +39,7 @@ export class EnemyService {
   private makeEnemy(
     sp: SpawnPointDef,
     scale: { hpMultiplier: number; attackMultiplier: number; defenseMultiplier: number },
+    arenaIndex: number,
   ): EnemyModel {
     const lookupKey = sp.monsterId ?? sp.archetype ?? "fixed";
     const def = getMonsterDef(lookupKey);
@@ -80,6 +81,7 @@ export class EnemyService {
       aggroRadius: def.aggroRadius,
       respawnSeconds: respawnTime,
       isBoss,
+      arenaIndex,
       xpReward: isBoss ? Math.round(def.xpReward * 3) : def.xpReward,
       color: def.color,
       modelUrl: def.modelUrl,
