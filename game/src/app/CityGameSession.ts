@@ -32,7 +32,7 @@ import { sellItem } from "../domain/economy/ShopService";
 import type { DungeonDef } from "../data/dungeons/dungeon-definitions";
 import { DUNGEON_TEST } from "../data/dungeons/dungeon-definitions";
 import { findDungeon } from "../data/dungeons/dungeons-mortal";
-import { type TreeId } from "../data/classes/class-definitions";
+import { CLASSES, type TreeId } from "../data/classes/class-definitions";
 import { SKILL_TRAINING } from "../data/balance/economy";
 import { isPotionDefId, resolveConsumableRestore } from "../data/balance/consumables";
 import { ITEM_CATALOG, resolveItemIcon } from "../data/items/item-catalog";
@@ -184,13 +184,20 @@ export class CityGameSession {
     );
     this.enemyView.bindEffects(this.effects);
     this.summonView = new SummonView(renderer.scene);
-    this.itemUse = new ItemUseService(this.inventory, this.character, this.buffs, (amount) => this.grantItemXp(amount), {
-      remainingSec: () => this.penaReviveCooldownSec,
-      start: (sec) => {
-        this.penaReviveCooldownSec = Math.max(0, sec);
-        this.saves.markDirty("options", "deferred");
+    this.itemUse = new ItemUseService(
+      this.inventory,
+      this.character,
+      this.buffs,
+      (amount) => this.grantItemXp(amount),
+      {
+        remainingSec: () => this.penaReviveCooldownSec,
+        start: (sec) => {
+          this.penaReviveCooldownSec = Math.max(0, sec);
+          this.saves.markDirty("options", "deferred");
+        },
       },
-    });
+      (skillId) => this.learnBookFromItem(skillId),
+    );
 
     this.dungeonFlow = new DungeonFlow({
       inventory: this.inventory,
@@ -1034,6 +1041,17 @@ export class CityGameSession {
 
   clearSkillSlot(index: number): void {
     this.skillLoadout.clearSlot(index);
+  }
+
+  learnBookFromItem(skillId: string): boolean {
+    if (!this.skillTree.learnBookSkill(skillId)) return false;
+    const idx = CLASSES[this.skillTree.state.classId].trees.livro.findIndex((s) => s.id === skillId);
+    if (idx >= 0) this.onSkillLearned("livro", idx);
+    else {
+      this.combat.invalidatePassives();
+      this.saves.markDirty("skills", "deferred");
+    }
+    return true;
   }
 
   tryApplyEnhancementMaterial(materialUid: string, targetUid: string): { ok: boolean; kind?: string } {

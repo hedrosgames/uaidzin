@@ -27,7 +27,7 @@ export class SkillLoadout {
       skill,
       tree,
       get cooldown(): number {
-        const spec = treeService.state.specialization[tree];
+        const spec = tree === "livro" ? 0 : treeService.state.specialization[tree];
         const cdScale = specFactor(spec);
         const scaled = skill.cooldown * cdScale;
         return Math.max(0.4, Number.isFinite(scaled) ? scaled : skill.cooldown);

@@ -1,11 +1,12 @@
 import { CLASSES, type ClassId, type SkillDef, type TreeId } from "../../data/classes/class-definitions";
+import { BOOK_SKILL_IDS } from "../../data/items/book-skills";
 import { SKILL_BALANCE } from "../../data/balance/skills";
 
 export interface SkillTreeState {
   classId: ClassId;
   learned: Set<string>;
   eighthTree: TreeId | null;
-  specialization: Record<TreeId, number>;
+  specialization: Record<"controle" | "magia" | "fisica", number>;
   skillPoints: number;
   specPoints: number;
 }
@@ -37,6 +38,7 @@ export class SkillTreeService {
   }
 
   canLearn(tree: TreeId, index: number): boolean {
+    if (tree === "livro") return false;
     if (this.state.skillPoints <= 0) return false;
     const skills = this.getTree(tree);
     const skill = skills[index];
@@ -68,7 +70,17 @@ export class SkillTreeService {
     this.state.skillPoints += Math.floor(n);
   }
 
+  learnBookSkill(skillId: string): boolean {
+    if (!BOOK_SKILL_IDS.has(skillId)) return false;
+    if (this.hasSkill(skillId)) return false;
+    const livro = CLASSES[this.state.classId].trees.livro;
+    if (!livro.some((s) => s.id === skillId)) return false;
+    this.state.learned.add(skillId);
+    return true;
+  }
+
   spendSpec(tree: TreeId, points = 1): boolean {
+    if (tree === "livro") return false;
     if (!Number.isFinite(this.state.specPoints) || !Number.isFinite(this.state.specialization[tree])) return false;
     if (!Number.isFinite(points)) return false;
     if (this.state.specPoints <= 0) return false;

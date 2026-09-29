@@ -24,7 +24,8 @@ export type ItemEffectDef =
   | { type: "grant_xp"; amount: number }
   | { type: "composition_component" }
   | { type: "currency" }
-  | { type: "revive"; cooldownSec: number };
+  | { type: "revive"; cooldownSec: number }
+  | { type: "learn_book"; skillId: string };
 
 export type ItemCatalogDef = {
   id: string;

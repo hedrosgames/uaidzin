@@ -41,7 +41,8 @@ export type PassiveId =
   | "damageReduction"
   | "transformedCrit"
   | "summonLink"
-  | "isolated";
+  | "isolated"
+  | "bookStub";
 
 export interface SkillBuffSpec {
   id: string;

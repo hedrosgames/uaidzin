@@ -15,6 +15,7 @@ const TREE_COLOR: Record<TreeId, number> = {
   fisica: 0xc45c26,
   controle: 0x6b7cff,
   magia: 0xb07cff,
+  livro: 0xd4a017,
 };
 
 export interface SkillCast {
@@ -26,7 +27,7 @@ export interface SkillCast {
 export function learnedPassives(tree: SkillTreeService): SkillDef[] {
   const out: SkillDef[] = [];
   const st = tree.state;
-  for (const id of ["controle", "magia", "fisica"] as const) {
+  for (const id of ["controle", "magia", "fisica", "livro"] as const) {
     for (const skill of CLASSES[st.classId].trees[id]) {
       if (skill.kind !== "passive") continue;
       if (tree.getSkillLevel(skill.id) > 0) out.push(skill);

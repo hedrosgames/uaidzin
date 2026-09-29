@@ -1,4 +1,4 @@
-import type { TreeId, WireSkillRow } from "../WireApi";
+import type { WireSkillRow } from "../WireApi";
 import type { WireContext } from "./types";
 
 export interface SkillsPanel {
@@ -50,10 +50,11 @@ export function createSkillsPanel(container: HTMLElement, ctx: WireContext): Ski
     const treesContainer = win.querySelector<HTMLElement>("#skillsTrees");
     if (!treesContainer) return;
 
-    const treeNames: Record<TreeId, string> = {
+    const treeNames: Record<string, string> = {
       fisica: catalog.treeLabels?.fisica || "Física",
       controle: catalog.treeLabels?.controle || "Controle",
       magia: catalog.treeLabels?.magia || "Magia",
+      livro: catalog.treeLabels?.livro || "Livros",
     };
 
     const eighthVal = win.querySelector<HTMLElement>("#eighthTreeVal");
@@ -63,7 +64,7 @@ export function createSkillsPanel(container: HTMLElement, ctx: WireContext): Ski
     if (ptsVal) ptsVal.textContent = String(catalog.skillPoints || 0);
 
     let html = "";
-    for (const treeId of ["fisica", "controle", "magia"] as const) {
+    for (const treeId of catalog.trees ?? (["fisica", "controle", "magia"] as const)) {
       const skillsInTree: WireSkillRow[] = [];
       for (let i = 0; i < 12; i++) {
         const id = `${treeId}-${i + 1}`;

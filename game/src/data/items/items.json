@@ -649,64 +649,68 @@
   {
     "id": "book_01",
     "name": "Livro de Guerra",
-    "slot": "misc",
+    "slot": "consumable",
     "rarity": "Comum",
-    "desc": "Livro de Guerra; efeito aguardando definição.",
+    "desc": "Ensina a passiva Vida na linhagem Livros.",
     "icon": "/assets/icons/items/book_01.png",
     "sellValue": 1,
     "stackable": true,
     "attackBonus": 0,
     "defenseBonus": 0,
     "effect": {
-      "type": "composition_component"
+      "type": "learn_book",
+      "skillId": "book_hp"
     },
     "available": true
   },
   {
     "id": "book_02",
     "name": "Livro de Sabedoria",
-    "slot": "misc",
+    "slot": "consumable",
     "rarity": "Comum",
-    "desc": "Livro de Sabedoria; efeito aguardando definição.",
+    "desc": "Ensina a passiva Ouro na linhagem Livros.",
     "icon": "/assets/icons/items/book_02.png",
     "sellValue": 1,
     "stackable": true,
     "attackBonus": 0,
     "defenseBonus": 0,
     "effect": {
-      "type": "composition_component"
+      "type": "learn_book",
+      "skillId": "book_gold"
     },
     "available": true
   },
   {
     "id": "book_03",
     "name": "Livro de Bestiário",
-    "slot": "misc",
+    "slot": "consumable",
     "rarity": "Comum",
-    "desc": "Livro de Bestiário; efeito aguardando definição.",
+    "desc": "Ensina a passiva Experiência na linhagem Livros.",
     "icon": "/assets/icons/items/book_03.png",
     "sellValue": 1,
     "stackable": true,
     "attackBonus": 0,
     "defenseBonus": 0,
     "effect": {
-      "type": "composition_component"
+      "type": "learn_book",
+      "skillId": "book_xp"
     },
     "available": true
   },
   {
     "id": "book_04",
     "name": "Livro de Runas",
-    "slot": "misc",
+    "slot": "consumable",
     "rarity": "Comum",
-    "desc": "Livro de Runas; efeito aguardando definição.",
+    "desc": "Ensina a passiva Cooldown na linhagem Livros.",
     "icon": "/assets/icons/items/book_04.png",
     "sellValue": 1,
     "stackable": true,
     "attackBonus": 0,
     "defenseBonus": 0,
     "effect": {
-      "type": "composition_component"
+      "type": "learn_book",
+      "skillId": "book_cd"
     },
     "available": true
   },

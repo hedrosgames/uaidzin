@@ -9,6 +9,7 @@ import type {
 
 const CLASS_IDS: ClassId[] = ["TK", "FM", "BM", "HT"];
 const TREE_COLORS: Record<TreeId, number> = {
+  livro: 0xd4a017,
   fisica: 0xc45c26,
   controle: 0x6b7cff,
   magia: 0xb07cff,

@@ -1,4 +1,4 @@
-import type { TreeId, WireSkillRow } from "../WireApi";
+import type { WireSkillRow } from "../WireApi";
 import type { WireContext } from "./types";
 
 export interface SkillMasterPanel {
@@ -57,11 +57,14 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
     const canAffordGold = gold >= goldCost;
     const eighthLocked = sk.idx === 7 && Boolean(catalog.eighthTree && catalog.eighthTree !== sk.tree);
     const prereqLearned = sk.idx === 0 || Boolean(catalog.skills[`${sk.tree}-${sk.idx}`]?.learned);
-    const canBuy = !sk.learned && hasPoints && canAffordGold && prereqLearned && !eighthLocked;
+    const isLivro = sk.tree === "livro";
+    const canBuy = !isLivro && !sk.learned && hasPoints && canAffordGold && prereqLearned && !eighthLocked;
 
     let btnHtml = "";
     if (sk.learned) {
       btnHtml = `<button type="button" class="inv-tool" disabled style="width:100%;margin-top:6px">Aprendida</button>`;
+    } else if (isLivro) {
+      btnHtml = `<button type="button" class="inv-tool" disabled style="width:100%;margin-top:6px">Use o livro no inventário</button>`;
     } else {
       btnHtml = `<button type="button" class="inv-tool sort" id="btnBuySkill" ${canBuy ? "" : "disabled"} style="width:100%;margin-top:6px">Comprar</button>`;
     }
@@ -116,14 +119,15 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
     const treesContainer = win.querySelector<HTMLElement>("#smTrees");
     if (!treesContainer) return;
 
-    const treeNames: Record<TreeId, string> = {
+    const treeNames: Record<string, string> = {
       fisica: catalog.treeLabels?.fisica || "Física",
       controle: catalog.treeLabels?.controle || "Controle",
       magia: catalog.treeLabels?.magia || "Magia",
+      livro: catalog.treeLabels?.livro || "Livros",
     };
 
     let html = "";
-    for (const treeId of ["fisica", "controle", "magia"] as const) {
+    for (const treeId of catalog.trees ?? (["fisica", "controle", "magia"] as const)) {
       html += `<div class="tree-block" data-tree="${treeId}">`;
       html += `<div class="tree-h"><span>${treeNames[treeId]}</span></div>`;
       html += `<div class="sm-slots">`;

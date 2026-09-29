@@ -19,6 +19,7 @@ export class ItemUseService {
     private readonly buffs: BuffService,
     private readonly grantXp: (amount: number) => void,
     private readonly reviveCooldown?: ReviveCooldownGate,
+    private readonly learnBookSkill?: (skillId: string) => boolean,
   ) {}
 
   use(uid: string): ItemUseResult {
@@ -29,6 +30,12 @@ export class ItemUseService {
     const effect = def?.effect;
     if (!effect) return { ok: false, reason: "unsupported" };
     if (effect.type === "composition_component") return { ok: false, reason: "unsupported" };
+
+    if (effect.type === "learn_book") {
+      if (!this.learnBookSkill?.(effect.skillId)) return { ok: false, reason: "invalid" };
+      this.consumeOne(uid);
+      return { ok: true, itemId: item.defId };
+    }
 
     if (effect.type === "revive") {
       if (!this.character.isDead) return { ok: false, reason: "invalid" };

@@ -7,6 +7,7 @@ import { ItemUseService } from "./ItemUseService";
 import { ITEM_CATALOG } from "../../data/items/item-catalog";
 import { ECONOMY_BALANCE } from "../../data/balance/economy";
 import { RefinementService } from "./RefinementService";
+import { SkillTreeService } from "../skills/SkillTreeService";
 
 describe("catalog items and item use", () => {
   it("registers requested set counts and stable icon paths", () => {
@@ -46,6 +47,19 @@ describe("catalog items and item use", () => {
     const gold = createFromCatalog("ouro", 50)!;
     inventory.add(gold);
     expect(inventory.gold).toBe(50);
+    expect(inventory.items).toHaveLength(0);
+  });
+
+  it("learns a book passive and consumes the book", () => {
+    const inventory = new InventoryService();
+    const character = new CharacterModel({ maxHp: 100, attack: 10, defense: 5 });
+    const buffs = new BuffService();
+    const tree = new SkillTreeService();
+    const book = createFromCatalog("book_01")!;
+    inventory.add(book);
+    const use = new ItemUseService(inventory, character, buffs, () => {}, undefined, (id) => tree.learnBookSkill(id));
+    expect(use.use(inventory.items[0]!.uid).ok).toBe(true);
+    expect(tree.hasSkill("book_hp")).toBe(true);
     expect(inventory.items).toHaveLength(0);
   });
 

@@ -54,6 +54,14 @@ describe("SkillTreeService and SkillLoadout", () => {
     expect(loadout.slots[1]?.skill.id).toBe(s1.id);
   });
 
+  it("livro ensina passiva sem gastar ponto de skill", () => {
+    const tree = new SkillTreeService();
+    expect(tree.learnBookSkill("book_hp")).toBe(true);
+    expect(tree.hasSkill("book_hp")).toBe(true);
+    expect(tree.learnBookSkill("book_hp")).toBe(false);
+    expect(tree.canLearn("livro", 0)).toBe(false);
+  });
+
   it("cooldown muda dinamicamente apos spendSpec", () => {
     const tree = new SkillTreeService();
     tree.grantSkillPoints(5);
