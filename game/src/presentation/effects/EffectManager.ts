@@ -26,7 +26,7 @@ import { TkVfxRegistry } from "./TkVfxRegistry";
 import type { SkillDef } from "../../data/classes/skill-types";
 import type { SkillVfxRequest } from "./skill/SkillVfxTypes";
 
-type DmgKind = "enemy" | "player" | "skill" | "kill" | "miss";
+type DmgKind = "enemy" | "enemyCrit" | "player" | "playerCrit" | "skill" | "kill" | "miss";
 
 interface FloatingText {
   el: HTMLDivElement;

@@ -20,14 +20,17 @@ import {
   type LoadSaveResult,
   type SavePayload,
 } from "../../persistence/SaveTypes";
+import { parseCombatAttackMode } from "../../domain/combat/combat-attack-mode";
+import { parseCombatMoveMode } from "../../domain/combat/combat-move-mode";
 import { normalizeSavePayload } from "../../persistence/migrations";
 import { saveVault } from "../../persistence/SaveVault";
 
 export type SessionHudOptions = {
   potionSlots: [string | null, string | null, string | null];
-  autoAttack: boolean;
-  autoMove: boolean;
+  attackMode: import("../../domain/combat/combat-attack-mode").CombatAttackMode;
+  moveMode: import("../../domain/combat/combat-move-mode").CombatMoveMode;
   autoPotion: boolean;
+  penaReviveCooldownSec: number;
 };
 
 export interface SessionSnapshotDeps {
@@ -186,8 +189,9 @@ export class SessionSnapshot {
     this.deps.refreshWeaponSetFromGear();
     this.deps.setHudOptions({
       potionSlots: [null, null, null],
-      autoAttack: true,
-      autoMove: false,
+      penaReviveCooldownSec: 0,
+      attackMode: "physical",
+      moveMode: "off",
       autoPotion: false,
     });
     this.deps.setHadSave(false);
@@ -244,8 +248,8 @@ export class SessionSnapshot {
       ? Math.max(0, Math.min(this.deps.character.maxHp, savedHp))
       : this.deps.character.maxHp;
     this.deps.character.mp = Number.isFinite(savedMp)
-      ? Math.max(0, Math.min(this.deps.character.maxHp, savedMp))
-      : this.deps.character.maxHp;
+      ? Math.max(0, Math.min(this.deps.character.maxMp, savedMp))
+      : this.deps.character.maxMp;
     this.deps.character.isDead = this.deps.character.hp <= 0;
     this.deps.skillLoadout.refresh();
     this.deps.refreshWeaponSetFromGear();
@@ -258,9 +262,16 @@ export class SessionSnapshot {
     ];
     this.deps.setHudOptions({
       potionSlots,
-      autoAttack: opts.autoAttack !== false,
-      autoMove: opts.autoMove === true,
+      attackMode: parseCombatAttackMode(
+        (opts as { attackMode?: unknown }).attackMode,
+        (opts as { autoAttack?: boolean }).autoAttack !== false,
+      ),
+      moveMode: parseCombatMoveMode(
+        (opts as { moveMode?: unknown }).moveMode,
+        (opts as { autoMove?: boolean }).autoMove === true,
+      ),
       autoPotion: opts.autoPotion === true,
+      penaReviveCooldownSec: Math.max(0, Number(opts.penaReviveCooldownSec) || 0),
     });
   }
 }

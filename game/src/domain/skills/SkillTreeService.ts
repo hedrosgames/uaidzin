@@ -1,11 +1,15 @@
 import { CLASSES, type ClassId, type SkillDef, type TreeId } from "../../data/classes/class-definitions";
+import { BOOK_SKILL_IDS } from "../../data/items/book-skills";
+import { skillPurchasePointCost } from "../../data/balance/skill-purchase";
 import { SKILL_BALANCE } from "../../data/balance/skills";
+
+const COMBAT_SKILL_TREES: TreeId[] = ["fisica", "controle", "magia"];
 
 export interface SkillTreeState {
   classId: ClassId;
   learned: Set<string>;
   eighthTree: TreeId | null;
-  specialization: Record<TreeId, number>;
+  specialization: Record<"controle" | "magia" | "fisica", number>;
   skillPoints: number;
   specPoints: number;
 }
@@ -36,8 +40,24 @@ export class SkillTreeService {
     return this.hasSkill(skillId) ? 1 : 0;
   }
 
+  treeHasAnyLearnedSkill(tree: TreeId): boolean {
+    if (tree === "livro") return false;
+    return this.getTree(tree).some((s) => this.hasSkill(s.id));
+  }
+
+  canLearnEighthInTree(tree: TreeId): boolean {
+    if (this.state.eighthTree && this.state.eighthTree !== tree) return false;
+    for (const other of COMBAT_SKILL_TREES) {
+      if (other === tree) continue;
+      if (this.treeHasAnyLearnedSkill(other)) return false;
+    }
+    return true;
+  }
+
   canLearn(tree: TreeId, index: number): boolean {
-    if (this.state.skillPoints <= 0) return false;
+    if (tree === "livro") return false;
+    const cost = skillPurchasePointCost(index);
+    if (this.state.skillPoints < cost) return false;
     const skills = this.getTree(tree);
     const skill = skills[index];
     if (!skill) return false;
@@ -48,17 +68,16 @@ export class SkillTreeService {
       if (!this.hasSkill(prev.id)) return false;
     }
 
-    if (index === 7) {
-      if (this.state.eighthTree && this.state.eighthTree !== tree) return false;
-    }
+    if (index === 7 && !this.canLearnEighthInTree(tree)) return false;
     return true;
   }
 
   learn(tree: TreeId, index: number): boolean {
     if (!this.canLearn(tree, index)) return false;
+    const cost = skillPurchasePointCost(index);
     const skill = this.getTree(tree)[index];
     this.state.learned.add(skill.id);
-    this.state.skillPoints -= 1;
+    this.state.skillPoints -= cost;
     if (index === 7) this.state.eighthTree = tree;
     return true;
   }
@@ -68,7 +87,17 @@ export class SkillTreeService {
     this.state.skillPoints += Math.floor(n);
   }
 
+  learnBookSkill(skillId: string): boolean {
+    if (!BOOK_SKILL_IDS.has(skillId)) return false;
+    if (this.hasSkill(skillId)) return false;
+    const livro = CLASSES[this.state.classId].trees.livro;
+    if (!livro.some((s) => s.id === skillId)) return false;
+    this.state.learned.add(skillId);
+    return true;
+  }
+
   spendSpec(tree: TreeId, points = 1): boolean {
+    if (tree === "livro") return false;
     if (!Number.isFinite(this.state.specPoints) || !Number.isFinite(this.state.specialization[tree])) return false;
     if (!Number.isFinite(points)) return false;
     if (this.state.specPoints <= 0) return false;

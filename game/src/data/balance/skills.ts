@@ -5,7 +5,7 @@ export const SKILL_BALANCE = {
   specializationPerTreeCap: 40,
   exclusiveEighth: true,
   mpCost: 8,
-  specializationCooldownPenalty: 0.25,
+  specializationEffectivenessMaxBonus: 3,
   healAutoHpRatio: 0.62,
   critMultiplier: 1.5,
   tierMp: [6, 8, 8, 10, 10, 12, 12, 18],

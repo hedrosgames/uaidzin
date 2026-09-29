@@ -1,3 +1,11 @@
+import {
+  attackFromAttributes,
+  defenseFromAttributes,
+  magicAttackFromInt,
+  attackSpeedFromDes,
+  maxHpFromCons,
+} from "./attribute-stats";
+import { xpToLevel as computeXpToLevel } from "./xp-progression";
 
 export const PROGRESSION_BALANCE = {
   attributesPerLevel: 5,
@@ -10,18 +18,23 @@ export const PROGRESSION_BALANCE = {
   },
   
   xpToLevel(level: number): number {
-    if (level < 20) return 28 + level * 14;
-    return 40 + level * 18;
+    return computeXpToLevel(level);
   },
   
-  attackFromFor(for_: number): number {
-    return 8 + for_;
+  attackFromAttributes(for_: number, des: number): number {
+    return attackFromAttributes(for_, des);
   },
   maxHpFromCons(cons: number): number {
-    return 80 + cons * 4;
+    return maxHpFromCons(cons);
   },
-  defenseFromDes(des: number): number {
-    return 2 + Math.floor(des / 4);
+  defenseFromAttributes(des: number): number {
+    return defenseFromAttributes(des);
+  },
+  magicAttackFromInt(int: number): number {
+    return magicAttackFromInt(int);
+  },
+  attackSpeedFromDes(des: number): number {
+    return attackSpeedFromDes(des);
   },
   levelGrowthBands: [
     [50, 0.03],

@@ -5,9 +5,11 @@ import type { BuffService } from "../character/BuffService";
 import type { CharacterModel } from "../character/CharacterModel";
 import type { SkillTreeService } from "../skills/SkillTreeService";
 import type { AttackTarget } from "./AttackController";
+import { applyPlayerCombatRatings } from "../../data/balance/combat-ratings";
 import { buildCombatMods, type CombatMods } from "./CombatMods";
 import type { FormState } from "./FormState";
 import type { LoadoutSlot, SkillLoadout } from "./SkillLoadout";
+import { specializationEffectivenessForTree } from "../skills/specialization-power";
 import { resolveSkill, selectSkillTargets, type ResolvedSkill } from "./SkillCasting";
 import type { SummonRuntime } from "./SummonRuntime";
 
@@ -15,6 +17,7 @@ const TREE_COLOR: Record<TreeId, number> = {
   fisica: 0xc45c26,
   controle: 0x6b7cff,
   magia: 0xb07cff,
+  livro: 0xd4a017,
 };
 
 export interface SkillCast {
@@ -26,7 +29,7 @@ export interface SkillCast {
 export function learnedPassives(tree: SkillTreeService): SkillDef[] {
   const out: SkillDef[] = [];
   const st = tree.state;
-  for (const id of ["controle", "magia", "fisica"] as const) {
+  for (const id of ["controle", "magia", "fisica", "livro"] as const) {
     for (const skill of CLASSES[st.classId].trees[id]) {
       if (skill.kind !== "passive") continue;
       if (tree.getSkillLevel(skill.id) > 0) out.push(skill);
@@ -46,11 +49,14 @@ export class SkillController {
     dt: number,
     moving: boolean,
     manualSlotIndex: number,
+    autoSkillsFromBar: boolean,
     targets: AttackTarget[],
     px: number,
     pz: number,
     facing: number,
     defenseOf: (id: string) => number,
+    evasionOf: (id: string) => number,
+    elementResistOf: (id: string, element?: import("../../data/classes/skill-types").SkillElement) => number,
     hpOf: (id: string) => { hp: number; maxHp: number },
     buffs: BuffService,
     form: FormState,
@@ -60,25 +66,39 @@ export class SkillController {
     this.loadout.tick(dt);
     if (moving || !this.character || !this.tree) return null;
     const mods = buildCombatMods(buffs.active, learnedPassives(this.tree), weaponSet, form);
+    applyPlayerCombatRatings(mods, {
+      des: this.character.attributes.DES,
+      equipCritPercent: this.character.equipCrit,
+    });
     const slot = manualSlotIndex >= 0
       ? this.manualSlot(manualSlotIndex, mods)
-      : this.autoSlot(mods, buffs, form, summons, targets, px, pz, facing);
+      : autoSkillsFromBar
+        ? this.autoSlot(mods, buffs, form, summons, targets, px, pz, facing)
+        : null;
     if (!slot) return null;
     const cost = Math.max(0, Math.round(slot.skill.mp * mods.mpCostMul));
     if (!this.character.spendMp(cost)) return null;
+    const specEffectiveness = specializationEffectivenessForTree(
+      slot.tree,
+      this.tree.state.specialization,
+    );
     const resolved = resolveSkill({
       skill: slot.skill,
       attack: this.character.attack,
+      magicAttack: this.character.magicAttack,
       maxHp: this.character.maxHp,
       px,
       pz,
       facing,
       targets,
       defenseOf,
+      evasionOf,
+      elementResistOf,
       hpOf,
       mods,
       transformed: form.active,
       treeColor: TREE_COLOR[slot.tree],
+      specEffectiveness,
     });
     if (!resolved) {
       this.character.regenMp(cost);
@@ -98,7 +118,7 @@ export class SkillController {
         const angle = (Math.PI * 2 * index) / specs.length;
         summons.spawn(
           spec,
-          this.character!.attack * mods.attackMul,
+          this.character!.attack * mods.attackMul * specEffectiveness,
           px + Math.sin(angle) * 1.4,
           pz + Math.cos(angle) * 1.4,
           mods.summonPower,
@@ -176,7 +196,7 @@ export class SkillController {
     let best: LoadoutSlot | null = null;
     let bestScore = -1;
     for (const slot of this.loadout.slots) {
-      if (!slot || !slot.auto || !(slot.cd <= 0)) continue;
+      if (!slot || !(slot.cd <= 0)) continue;
       if (!this.affordable(slot, mods)) continue;
       if (!this.autoUseful(slot, hpRatio, buffs, form, summons, targets, px, pz, facing)) continue;
       const score = this.autoScore(slot, hpRatio);

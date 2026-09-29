@@ -9,7 +9,9 @@ export const DUNGEON_BALANCE = {
   },
   xpPerKill: { fixed: 8, chaser: 12, ranged: 10, boss: 40 },
   gateKey: {
-    dropChance: 0.3,
+    dropChance: 0.2,
+    openRadiusZ: 2.6,
+    openRadiusX: 3.2,
   },
 } as const;
 

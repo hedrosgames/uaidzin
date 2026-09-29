@@ -1,6 +1,10 @@
 export const COMBAT_BALANCE = {
   dodgeChance: 0.05,
+  critMultiplier: 2,
   minDamage: 1,
+  attackAnimSpeedMax: 1.5,
+  basicAttackBonusHitChance: 0.2,
+  basicAttackSpeedFloor: 0.4,
   moveLock: {
     attackFallback: 0.4,
     hitFallback: 0.28,
@@ -41,12 +45,6 @@ export const COMBAT_BALANCE = {
       "Cajado Rústico": { attackRange: 2.8, attackInterval: 1.05 },
       "Arco Curto": { attackRange: 5.5, attackInterval: 1.15 },
     },
-  },
-  primary: {
-    FOR: { attackPerPoint: 0.5, hpPerPoint: 0 },
-    DES: { attackPerPoint: 0.35, hpPerPoint: 0 },
-    CONS: { attackPerPoint: 0, hpPerPoint: 2 },
-    INT: { attackPerPoint: 0.25, hpPerPoint: 0 },
   },
 };
 

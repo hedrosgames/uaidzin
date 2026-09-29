@@ -15,12 +15,12 @@ export const ECONOMY_BALANCE = {
   oriShare: 0.75,
   oriUntilDungeon: 4,
   equipStatLevelDivisor: 8,
-  weaponAttackMultiplier: 2,
+  weaponAttackMultiplier: 1,
   rarities: ["Comum", "Incomum", "Raro", "Épico", "Lendário"] as const,
   rarityWeights: [50, 28, 14, 6, 2] as const,
   refine: {
     maxLevel: 15,
-    successByLevel: [1, 1, 0.95, 0.9, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1],
+    successByLevel: [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.5, 0.25, 0.1, 0.2, 0.15, 0.1, 0.1, 0.05, 0.01],
     goldCost: [10, 20, 40, 70, 110, 160, 230, 320, 430, 560, 700, 900, 1200, 1600, 2200],
     bonusBySlot: {
       weapon: { stat: "attack" as const, perLevel: 2 },
@@ -31,6 +31,12 @@ export const ECONOMY_BALANCE = {
       neck: { stat: "defense" as const, perLevel: 1 },
       ear: { stat: "defense" as const, perLevel: 1 },
     },
+  },
+  life: {
+    maxTier: 10,
+    materialId: "gema_life",
+    stepByRarity: [2, 4, 6, 8, 10],
+    successByTier: [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1],
   },
   sellValueByRarity: [5, 12, 28, 60, 120],
   equipBaseStat(level: number, rarityIndex: number): number {
@@ -124,7 +130,6 @@ export function catalogDef(id: string): ItemCatalogDef | undefined {
 export { resolveItemIcon };
 
 export const SKILL_TRAINING = {
-  pointsCost: 1,
   goldPerTier: 28,
   goldCost(index: number): number {
     return (index + 1) * SKILL_TRAINING.goldPerTier;

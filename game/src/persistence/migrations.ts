@@ -23,12 +23,29 @@ function asItem(raw: Record<string, unknown>): ItemInstance | null {
     rarity: (raw.rarity as ItemInstance["rarity"]) || "Comum",
     slot: (raw.slot as ItemInstance["slot"]) || "misc",
     refine: Number(raw.refine) || 0,
+    life: Number(raw.life) || 0,
+    lifeAccessoryBase:
+      raw.lifeAccessoryBase && typeof raw.lifeAccessoryBase === "object"
+        ? {
+            hp: Number((raw.lifeAccessoryBase as { hp?: number }).hp) || 0,
+            crit: Number((raw.lifeAccessoryBase as { crit?: number }).crit) || 0,
+            damage: Number((raw.lifeAccessoryBase as { damage?: number }).damage) || 0,
+            speed: Number((raw.lifeAccessoryBase as { speed?: number }).speed) || 0,
+          }
+        : undefined,
     attackBonus: Number(raw.attackBonus) || 0,
     defenseBonus: Number(raw.defenseBonus) || 0,
     stack: Number(raw.stack) || 1,
     sellValue: Number(raw.sellValue) || 0,
     attackRange: Number(raw.attackRange) || undefined,
     attackInterval: Number(raw.attackInterval) || undefined,
+    weaponSet: typeof raw.weaponSet === "string" ? raw.weaponSet : undefined,
+    gearSet: raw.gearSet === 1 || raw.gearSet === 2 || raw.gearSet === 3 ? raw.gearSet : undefined,
+    hpBonus: Number.isFinite(Number(raw.hpBonus)) ? Number(raw.hpBonus) : undefined,
+    critBonus: Number.isFinite(Number(raw.critBonus)) ? Number(raw.critBonus) : undefined,
+    speedBonus: Number.isFinite(Number(raw.speedBonus)) ? Number(raw.speedBonus) : undefined,
+    secondaryAttack: Number.isFinite(Number(raw.secondaryAttack)) ? Number(raw.secondaryAttack) : undefined,
+    secondaryDefense: Number.isFinite(Number(raw.secondaryDefense)) ? Number(raw.secondaryDefense) : undefined,
   };
 }
 

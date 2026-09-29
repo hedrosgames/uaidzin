@@ -8,6 +8,8 @@ export interface AiContext {
   playerAlive: boolean;
   dt: number;
   collision?: WorldCollision;
+  playerArena?: number;
+  enemyArena?: number;
 }
 
 function tryMove(
@@ -36,6 +38,13 @@ function tryMove(
 export class EnemyAI {
   update(enemy: EnemyModel, ctx: AiContext): { wantsAttack: boolean } {
     if (!enemy.alive) return { wantsAttack: false };
+    if (
+      ctx.playerArena != null &&
+      ctx.enemyArena != null &&
+      ctx.playerArena !== ctx.enemyArena
+    ) {
+      return { wantsAttack: false };
+    }
     enemy.attackCooldown = Math.max(0, enemy.attackCooldown - ctx.dt);
 
     const dx = ctx.playerX - enemy.x;

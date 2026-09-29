@@ -1,9 +1,10 @@
 import { Vector3 } from "three";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
+import { applyPlayerCombatRatings } from "../../data/balance/combat-ratings";
 import { buildCombatMods, type CombatMods } from "../../domain/combat/CombatMods";
 import { learnedPassives, type SkillController } from "../../domain/combat/SkillController";
 import { calculateDamage } from "../../domain/combat/DamageCalculator";
-import { rollHitSimple } from "../../domain/combat/HitChanceCalculator";
+import { rollHitSimple, rollPlayerAttackHits } from "../../domain/combat/HitChanceCalculator";
 import { getSkillVfxProfile } from "../../presentation/effects/skill/SkillVfxCatalog";
 import type { SkillVfxRequest } from "../../presentation/effects/skill/SkillVfxTypes";
 import type { EnemyService } from "../../domain/enemies/EnemyService";
@@ -25,6 +26,17 @@ import type { PlayerRuntime } from "../../gameplay/PlayerRuntime";
 import type { RewardService } from "./RewardService";
 import type { EnemyAI } from "../../domain/enemies/EnemyAI";
 import type { WorldManager } from "../../world/WorldManager";
+import {
+  attackSpeedMultiplierToPercent,
+  basicAttackAnimTimeScale,
+  basicAttackHitCount,
+} from "../../domain/combat/BasicAttackSpeed";
+import { totalElementalResist } from "../../data/balance/elemental-resistance";
+import type { SkillElement } from "../../data/classes/skill-types";
+import { rollCritStrike } from "../../domain/combat/crit-strike";
+import { canEngageEnemy } from "../../domain/combat/CombatSpace";
+import { dungeon1ArenaFromZ } from "../../data/balance/xp-progression";
+import type { AttackTarget } from "../../domain/combat/AttackController";
 
 export interface CombatOrchestratorDeps {
   enemies: EnemyService;
@@ -56,12 +68,13 @@ export interface CombatOrchestratorDeps {
   triggerHitStop: (duration: number) => void;
   onAutoAttackSwing: () => void;
   isAutoAttackEnabled: () => boolean;
+  isAutoSkillBarEnabled: () => boolean;
 }
 
 export class CombatOrchestrator {
   private cachedMods: CombatMods | null = null;
   private cachedPassives: ReturnType<typeof learnedPassives> | null = null;
-  private lastBuffCount = -1;
+  private modsStamp = "";
   private readonly vOrigin = new Vector3();
   private readonly vTarget = new Vector3();
   private readonly vAim = new Vector3();
@@ -85,27 +98,49 @@ export class CombatOrchestrator {
   }
 
   getCombatMods(): CombatMods {
-    if (this.deps.buffs.active.length !== this.lastBuffCount) {
-      this.lastBuffCount = this.deps.buffs.active.length;
+    const character = this.deps.character;
+    const stamp = `${this.deps.buffs.active.length}|${character.attributes.DES}|${character.equipCrit}|${character.equipSpeed}|${character.baseAttackSpeed}`;
+    if (stamp !== this.modsStamp) {
+      this.modsStamp = stamp;
       this.cachedMods = null;
     }
     if (!this.cachedMods) {
-      this.cachedMods = buildCombatMods(
+      const mods = buildCombatMods(
         this.deps.buffs.active,
         this.getLearnedPassives(),
         this.deps.equipment.getWeaponSet(this.deps.progression.state.classId),
         this.deps.form,
       );
+      applyPlayerCombatRatings(mods, {
+        des: this.deps.character.attributes.DES,
+        equipCritPercent: this.deps.character.equipCrit,
+      });
+      mods.attackSpeed += Math.max(0, this.deps.character.baseAttackSpeed);
+      mods.attackSpeed += Math.max(0, this.deps.character.equipSpeed || 0) * 0.01;
+      this.cachedMods = mods;
     }
     return this.cachedMods;
   }
 
+  private combatTargets(worldId: string): AttackTarget[] {
+    const collision = this.deps.worlds.getCurrent()?.collision;
+    const playerZ = this.deps.player.z;
+    const playerX = this.deps.player.x;
+    return this.deps.enemies.aliveTargets().filter((t) => {
+      const enemy = this.deps.enemies.findById(t.id);
+      if (!enemy) return false;
+      return canEngageEnemy(worldId, playerX, playerZ, enemy.x, enemy.z, enemy.arenaIndex, collision);
+    });
+  }
+
   updateCombat(dt: number): void {
     this.deps.enemies.updateRespawns(dt);
-    const targets = this.deps.enemies.aliveTargets();
+    const worldId = this.deps.worlds.getCurrent()?.id ?? "";
+    const playerArena = worldId === "dungeon-1" ? dungeon1ArenaFromZ(this.deps.player.z) : undefined;
+    const targets = this.combatTargets(worldId);
     const reach = this.deps.getWeaponReach();
     const frameMods = this.getCombatMods();
-    const speedMul = Math.max(0.4, 1 + frameMods.attackSpeed);
+    const speedMul = Math.max(COMBAT_BALANCE.basicAttackSpeedFloor, 1 + frameMods.attackSpeed);
     this.deps.attack.setReach(reach.attackRange, reach.attackInterval / speedMul);
 
     const hitTarget = this.deps.attack.tick(
@@ -123,23 +158,37 @@ export class CombatOrchestrator {
         const dz = enemy.z - this.deps.player.z;
         this.deps.player.facing = Math.atan2(dx, dz);
         this.deps.effects.playAttackPulse(this.deps.renderer.playerMesh);
-        const atkAnim = this.deps.renderer.playerView.playAttack();
+        const animSpeed = basicAttackAnimTimeScale(speedMul);
+        const atkAnim = this.deps.renderer.playerView.playAttack(animSpeed);
         this.deps.onAutoAttackSwing();
         this.deps.lockFromAnim(atkAnim, COMBAT_BALANCE.moveLock.attackFallback);
 
-        if (enemy.alive && rollHitSimple()) {
+        if (enemy.alive && rollPlayerAttackHits(enemy.evasion)) {
           let atk = this.deps.character.attack * frameMods.attackMul;
           if (frameMods.stealth) atk *= this.deps.buffs.consumeStealth();
-          let dmg = calculateDamage(atk, enemy.defense);
-          if (Math.random() < frameMods.critChance + (this.deps.form.active ? frameMods.transformedCrit : 0)) {
-            dmg = Math.max(1, Math.round(dmg * 1.5));
-          }
-          dmg += frameMods.damageFlat;
-          const killed = enemy.applyDamage(dmg);
+          const critChance = frameMods.critChance + (this.deps.form.active ? frameMods.transformedCrit : 0);
+          const hitCount = basicAttackHitCount(attackSpeedMultiplierToPercent(speedMul));
           const mesh = this.deps.enemyView.getMesh(enemy.id);
+          let killed = false;
+          let totalDamage = 0;
+          for (let i = 0; i < hitCount; i++) {
+            let dmg = calculateDamage(atk, enemy.defense);
+            const struck = rollCritStrike(dmg, critChance);
+            dmg = struck.damage + frameMods.damageFlat;
+            totalDamage += dmg;
+            killed = enemy.applyDamage(dmg);
+            const floatY = 1.4 + i * 0.18;
+            this.deps.effects.spawnDamageNumber(
+              enemy.x,
+              floatY,
+              enemy.z,
+              dmg,
+              struck.crit ? "enemyCrit" : "enemy",
+            );
+            if (killed) break;
+          }
           this.deps.effects.playHitFlash(mesh);
           this.deps.enemyView.playHit(enemy.id);
-          this.deps.effects.spawnDamageNumber(enemy.x, 1.4, enemy.z, dmg, "enemy");
           if (killed) {
             this.deps.rewards.grantKillXp(enemy);
             this.deps.enemyView.playDeath(enemy.id);
@@ -148,7 +197,7 @@ export class CombatOrchestrator {
             this.deps.effects.spawnDamageNumber(enemy.x, 1.7, enemy.z, 0, "kill");
             this.deps.enemies.onEnemyDeath(enemy);
           }
-          this.deps.bus.emit("combat:hit", { targetId: enemy.id, damage: dmg, killed });
+          this.deps.bus.emit("combat:hit", { targetId: enemy.id, damage: totalDamage, killed });
         } else if (enemy.alive) {
           this.deps.effects.spawnDamageNumber(enemy.x, 1.4, enemy.z, 0, "miss");
           this.deps.bus.emit("combat:miss", { targetId: enemy.id });
@@ -162,11 +211,17 @@ export class CombatOrchestrator {
       dt,
       this.deps.player.isMoving || this.deps.getMoveLock() > 0,
       manual,
+      this.deps.isAutoSkillBarEnabled(),
       targets,
       this.deps.player.x,
       this.deps.player.z,
       this.deps.player.facing,
       (id) => this.deps.enemies.findById(id)?.defense ?? 0,
+      (id) => this.deps.enemies.findById(id)?.evasion ?? 0,
+      (id, element?: SkillElement) => {
+        const enemy = this.deps.enemies.findById(id);
+        return totalElementalResist(element, enemy?.elementResists);
+      },
       (id) => {
         const enemy = this.deps.enemies.findById(id);
         return { hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 1 };
@@ -267,6 +322,10 @@ export class CombatOrchestrator {
     for (const strike of strikes) {
       const enemy = this.deps.enemies.findById(strike.id);
       if (!enemy?.alive) continue;
+      if (!rollPlayerAttackHits(enemy.evasion)) {
+        this.deps.effects.spawnDamageNumber(enemy.x, 1.5, enemy.z, 0, "miss");
+        continue;
+      }
       const killed = enemy.applyDamage(strike.damage);
       this.deps.effects.spawnDamageNumber(enemy.x, 1.5, enemy.z, strike.damage, "skill");
       if (killed) {
@@ -281,6 +340,10 @@ export class CombatOrchestrator {
           if (!other.alive || other.id === enemy.id) continue;
           if (Math.hypot(other.x - enemy.x, other.z - enemy.z) > strike.splash) continue;
           const splashDmg = Math.max(1, Math.round(strike.damage * 0.55));
+          if (!rollPlayerAttackHits(other.evasion)) {
+            this.deps.effects.spawnDamageNumber(other.x, 1.5, other.z, 0, "miss");
+            continue;
+          }
           const splashKill = other.applyDamage(splashDmg);
           if (splashKill) {
             this.deps.rewards.grantKillXp(other);
@@ -328,8 +391,23 @@ export class CombatOrchestrator {
         playerAlive: !this.deps.character.isDead && !frameMods.stealth,
         dt,
         collision,
+        playerArena,
+        enemyArena: enemy.arenaIndex,
       });
       if (!wantsAttack) continue;
+      if (
+        !canEngageEnemy(
+          worldId,
+          this.deps.player.x,
+          this.deps.player.z,
+          enemy.x,
+          enemy.z,
+          enemy.arenaIndex,
+          collision,
+        )
+      ) {
+        continue;
+      }
       this.deps.enemyView.playAttack(enemy.id);
       if (enemy.archetype === "ranged" && enemy.modelUrl?.includes("skeleton-special")) {
         this.deps.effects.enemyFireball(enemy.x, enemy.z, this.deps.player.x, this.deps.player.z);
@@ -340,8 +418,9 @@ export class CombatOrchestrator {
       enemy.attackCooldown = enemy.attackInterval;
       if (summon && summonDist <= playerDist) {
         const incoming = calculateDamage(enemy.attack, summon.defense);
-        const split = this.deps.summons.damage(summon.uid, incoming, frameMods.summonLink);
-        if (split.player > 0) this.hurtPlayer(split.player);
+        const struck = rollCritStrike(incoming, enemy.critChance);
+        const split = this.deps.summons.damage(summon.uid, struck.damage, frameMods.summonLink);
+        if (split.player > 0) this.hurtPlayer(split.player, struck.crit);
         continue;
       }
       if (!rollHitSimple() || Math.random() < frameMods.evasion || frameMods.stealth) {
@@ -352,14 +431,11 @@ export class CombatOrchestrator {
       }
       let dmg = calculateDamage(enemy.attack, this.deps.character.defense * frameMods.defenseMul);
       dmg = Math.max(1, Math.round(dmg * (1 - frameMods.damageReduction)));
-      if (enemy.archetype === "ranged") {
-        dmg = Math.max(1, Math.round(dmg * (1 - frameMods.magicResist)));
-      }
-      this.hurtPlayer(dmg);
-      this.deps.lockFromAnim("hit_gut", COMBAT_BALANCE.moveLock.hitFallback);
+      const struck = rollCritStrike(dmg, enemy.critChance);
+      this.hurtPlayer(struck.damage, struck.crit);
       if (this.deps.character.isDead) break;
       if (frameMods.reflect > 0 && enemy.alive) {
-        const reflected = Math.max(1, Math.round(dmg * frameMods.reflect));
+        const reflected = Math.max(1, Math.round(struck.damage * frameMods.reflect));
         const killed = enemy.applyDamage(reflected);
         if (killed) {
           this.deps.rewards.grantKillXp(enemy);
@@ -374,13 +450,17 @@ export class CombatOrchestrator {
     this.deps.rewards.flushFrameCheckpoint();
   }
 
-  hurtPlayer(amount: number): void {
+  hurtPlayer(amount: number, crit = false): void {
     if (this.deps.character.isDead || amount <= 0) return;
     this.deps.character.applyDamage(amount);
-    this.deps.effects.spawnDamageNumber(this.deps.player.x, 1.8, this.deps.player.z, amount, "player");
-    this.deps.effects.cameraPunch(0.1);
+    this.deps.effects.spawnDamageNumber(
+      this.deps.player.x,
+      1.8,
+      this.deps.player.z,
+      amount,
+      crit ? "playerCrit" : "player",
+    );
     this.deps.effects.playHitFlash(this.deps.renderer.playerMesh);
-    this.deps.renderer.playerView.playHit();
     this.deps.bus.emit("combat:damage", { amount, hp: this.deps.character.hp });
     if (this.deps.character.isDead) {
       this.deps.onPlayerDeath();

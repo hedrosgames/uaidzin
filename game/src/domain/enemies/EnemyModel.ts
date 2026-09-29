@@ -1,3 +1,4 @@
+import type { ElementalResistProfile } from "../../data/balance/elemental-resistance";
 import { COMBAT_BALANCE, DOT_TICK_SEC, type EnemyArchetype } from "../../data/balance/combat";
 
 export interface EnemyInit {
@@ -10,6 +11,9 @@ export interface EnemyInit {
   maxHp: number;
   attack: number;
   defense: number;
+  evasion?: number;
+  critChance?: number;
+  elementResists?: ElementalResistProfile;
   range: number;
   attackInterval: number;
   speed?: number;
@@ -22,6 +26,7 @@ export interface EnemyInit {
   homeZ: number;
   respawnSeconds: number;
   isBoss?: boolean;
+  arenaIndex?: number;
   xpReward?: number;
   color?: string;
   modelUrl?: string;
@@ -38,6 +43,9 @@ export class EnemyModel {
   readonly maxHp: number;
   readonly attack: number;
   readonly defense: number;
+  readonly evasion: number;
+  readonly critChance: number;
+  readonly elementResists: ElementalResistProfile;
   readonly range: number;
   readonly attackInterval: number;
   readonly speed: number;
@@ -48,6 +56,7 @@ export class EnemyModel {
   readonly aggroRadius?: number;
   readonly respawnSeconds: number;
   readonly isBoss: boolean;
+  readonly arenaIndex: number;
   readonly xpReward: number;
   readonly color: string;
   readonly modelUrl?: string;
@@ -83,6 +92,9 @@ export class EnemyModel {
     this.hp = init.maxHp;
     this.attack = init.attack;
     this.defense = init.defense;
+    this.evasion = init.evasion ?? 0;
+    this.critChance = init.critChance ?? 0;
+    this.elementResists = init.elementResists ?? {};
     this.range = init.range;
     this.attackInterval = init.attackInterval;
     this.speed = init.speed ?? 0;
@@ -93,6 +105,7 @@ export class EnemyModel {
     this.aggroRadius = init.aggroRadius;
     this.respawnSeconds = init.respawnSeconds;
     this.isBoss = !!init.isBoss;
+    this.arenaIndex = init.arenaIndex ?? 0;
     this.xpReward = init.xpReward ?? 8;
     this.color = init.color ?? "#c45c26";
     this.modelUrl = init.modelUrl;

@@ -7,11 +7,14 @@ import { ItemUseService } from "./ItemUseService";
 import { ITEM_CATALOG } from "../../data/items/item-catalog";
 import { ECONOMY_BALANCE } from "../../data/balance/economy";
 import { RefinementService } from "./RefinementService";
+import { SkillTreeService } from "../skills/SkillTreeService";
 
 describe("catalog items and item use", () => {
   it("registers requested set counts and stable icon paths", () => {
     const defs = Object.values(ITEM_CATALOG);
-    expect(defs.filter((item) => item.slot === "weapon").length).toBe(11);
+    expect(defs.filter((item) => item.id.startsWith("weapon_gear")).length).toBe(12);
+    expect(defs.filter((item) => item.id.startsWith("armor_gear")).length).toBe(12);
+    expect(defs.find((item) => item.id === "weapon_gear2_comum")?.weaponSet).toBe("greatsword");
     expect(defs.filter((item) => item.slot === "offhand").length).toBe(1);
     expect(defs.filter((item) => item.id.startsWith("armor_chest_")).length).toBe(12);
     expect(defs.filter((item) => item.id.startsWith("ring_")).length).toBe(8);
@@ -20,7 +23,11 @@ describe("catalog items and item use", () => {
     expect(defs.filter((item) => item.id.startsWith("gema_") && /^gema_\d/.test(item.id)).length).toBe(12);
     expect(defs.filter((item) => item.id.startsWith("rune_")).length).toBe(24);
     expect(defs.filter((item) => item.id.startsWith("chalice_xp_")).length).toBe(12);
-    expect(defs.filter((item) => item.available !== false).every((item) => item.icon === `/assets/icons/items/${item.id}.png`)).toBe(true);
+    expect(
+      defs
+        .filter((item) => item.available !== false)
+        .every((item) => typeof item.icon === "string" && item.icon.startsWith("/assets/icons/")),
+    ).toBe(true);
   });
 
   it("restores up to 500 HP and MP and consumes one stacked potion", () => {
@@ -41,17 +48,46 @@ describe("catalog items and item use", () => {
     expect(inventory.items[0].stack).toBe(2);
   });
 
-  it("credits and consumes a currency stack once", () => {
+  it("credits gold stacks without using bag slots", () => {
+    const inventory = new InventoryService();
+    const gold = createFromCatalog("ouro", 50)!;
+    inventory.add(gold);
+    expect(inventory.gold).toBe(50);
+    expect(inventory.items).toHaveLength(0);
+  });
+
+  it("learns a book passive and consumes the book", () => {
     const inventory = new InventoryService();
     const character = new CharacterModel({ maxHp: 100, attack: 10, defense: 5 });
     const buffs = new BuffService();
-    const gold = createFromCatalog("ouro", 50)!;
-    inventory.add(gold);
-    const use = new ItemUseService(inventory, character, buffs, () => {});
-
+    const tree = new SkillTreeService();
+    const book = createFromCatalog("book_01")!;
+    inventory.add(book);
+    const use = new ItemUseService(inventory, character, buffs, () => {}, undefined, (id) => tree.learnBookSkill(id));
     expect(use.use(inventory.items[0]!.uid).ok).toBe(true);
-    expect(inventory.gold).toBe(50);
+    expect(tree.hasSkill("book_hp")).toBe(true);
     expect(inventory.items).toHaveLength(0);
+  });
+
+  it("revives a dead character and starts cooldown", () => {
+    const inventory = new InventoryService();
+    const character = new CharacterModel({ maxHp: 100, attack: 10, defense: 5 });
+    const buffs = new BuffService();
+    let cooldown = 0;
+    character.isDead = true;
+    character.hp = 0;
+    const feather = createFromCatalog("pena_fenix")!;
+    inventory.add(feather);
+    const use = new ItemUseService(inventory, character, buffs, () => {}, {
+      remainingSec: () => cooldown,
+      start: (sec) => {
+        cooldown = sec;
+      },
+    });
+    expect(use.use(inventory.items[0]!.uid).ok).toBe(true);
+    expect(character.isDead).toBe(false);
+    expect(character.hp).toBe(character.maxHp);
+    expect(cooldown).toBe(600);
   });
 
   it("applies persistent duration buffs and only doubles kill XP once", () => {

@@ -46,6 +46,26 @@ export function circleHitsCircle(
   return dx * dx + dz * dz < rr * rr;
 }
 
+export function segmentBlocked(
+  ax: number,
+  az: number,
+  bx: number,
+  bz: number,
+  collision: WorldCollision,
+  sampleRadius = 0.35,
+): boolean {
+  const dist = Math.hypot(bx - ax, bz - az);
+  if (dist < 1e-5) return positionBlocked(ax, az, sampleRadius, collision);
+  const steps = Math.max(2, Math.ceil(dist / 0.45));
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const x = ax + (bx - ax) * t;
+    const z = az + (bz - az) * t;
+    if (positionBlocked(x, z, sampleRadius, collision)) return true;
+  }
+  return false;
+}
+
 export function positionBlocked(
   x: number,
   z: number,

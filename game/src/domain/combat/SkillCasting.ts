@@ -1,5 +1,8 @@
 import { SKILL_BALANCE } from "../../data/balance/skills";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
+import { rollPlayerAttackHits } from "./HitChanceCalculator";
+import { mitigatedSkillDamage } from "./DamageCalculator";
+import type { SkillElement } from "../../data/classes/skill-types";
 import type { AttackTarget } from "./AttackController";
 import type { CombatMods } from "./CombatMods";
 import type { SkillDef, SkillEnemySpec, SummonSpec, TransformSpec } from "../../data/classes/skill-types";
@@ -94,17 +97,24 @@ function rollCrit(mods: CombatMods, transformed: boolean): boolean {
 export function resolveSkill(input: {
   skill: SkillDef;
   attack: number;
+  magicAttack: number;
   maxHp: number;
   px: number;
   pz: number;
   facing: number;
   targets: AttackTarget[];
   defenseOf: (id: string) => number;
+  evasionOf: (id: string) => number;
+  elementResistOf: (id: string, element?: SkillElement) => number;
   hpOf: (id: string) => { hp: number; maxHp: number };
   mods: CombatMods;
   transformed: boolean;
   treeColor: number;
+  specEffectiveness: number;
 }): ResolvedSkill | null {
+  const specMul = Number.isFinite(input.specEffectiveness) && input.specEffectiveness > 0
+    ? input.specEffectiveness
+    : 1;
   const skill = input.skill;
   const picked = selectSkillTargets(skill, input.targets, input.px, input.pz, input.facing);
   const needsFoe = skill.kind === "damage" || (skill.enemy != null && skill.shape !== "self");
@@ -121,21 +131,34 @@ export function resolveSkill(input: {
       const hp = input.hpOf(target.id);
       const ratio = hp.maxHp > 0 ? hp.hp / hp.maxHp : 1;
       const alone = input.mods.isolatedBonus > 0 && (isolated(target, input.targets) || ratio <= 0.4);
-      let atk = input.attack * input.mods.attackMul;
+      const power = skill.power === "magic" ? input.magicAttack : input.attack;
+      let atk = power * input.mods.attackMul;
       if (skill.power === "magic") atk *= 1 + input.mods.magicPower;
       if (alone) atk *= 1 + input.mods.isolatedBonus;
-      const defense = Math.max(0, input.defenseOf(target.id) * (1 - (skill.pierce ?? 0)));
-      let damage = Math.max(COMBAT_BALANCE.minDamage, Math.round((atk - defense) * skill.damageMultiplier));
+      const isMagic = skill.power === "magic";
+      const defense = input.defenseOf(target.id);
+      let damage = mitigatedSkillDamage({
+        rawDamage: atk * skill.damageMultiplier,
+        defense,
+        defensePierce: skill.pierce ?? 0,
+        isMagic,
+        element: skill.element,
+        elementResist: isMagic ? input.elementResistOf(target.id, skill.element) : 0,
+      });
       if (skill.executeBelow != null && ratio <= skill.executeBelow) {
         damage = Math.round(damage * (1 + (skill.executeBonus ?? 0.5)));
       }
       if (crit) damage = Math.round(damage * SKILL_BALANCE.critMultiplier);
       damage += input.mods.damageFlat;
+      damage = Math.max(COMBAT_BALANCE.minDamage, Math.round(damage * specMul));
       const per = damage;
+      let landed = 0;
       for (let n = 0; n < hitCount; n++) {
+        if (!rollPlayerAttackHits(input.evasionOf(target.id))) continue;
+        landed += 1;
         hits.push({ id: target.id, damage: per, x: target.x, z: target.z });
       }
-      if (skill.enemy) {
+      if (skill.enemy && landed > 0) {
         const dotDps = skill.enemy.dotRatio ? Math.max(1, damage * skill.enemy.dotRatio) : 0;
         enemyEffects.push({ id: target.id, effect: skill.enemy, dotDps });
       }
@@ -144,7 +167,10 @@ export function resolveSkill(input: {
 
   const heal =
     (skill.healRatio ?? 0) > 0
-      ? Math.max(1, Math.round(input.maxHp * (skill.healRatio ?? 0) * (1 + input.mods.healPower)))
+      ? Math.max(
+          1,
+          Math.round(input.maxHp * (skill.healRatio ?? 0) * (1 + input.mods.healPower) * specMul),
+        )
       : 0;
   const dealt = hits.reduce((sum, hit) => sum + hit.damage, 0);
   const lifesteal = skill.lifesteal ? Math.round(dealt * skill.lifesteal) : 0;
@@ -154,10 +180,10 @@ export function resolveSkill(input: {
       id: spec.id,
       remainingSec: spec.sec,
       stacks: 1,
-      magnitude: spec.magnitude,
+      magnitude: spec.magnitude * specMul,
       stat: spec.stat,
       harmful: spec.magnitude < 0,
-      nextHitMul: spec.nextHitMul,
+      nextHitMul: spec.nextHitMul != null ? spec.nextHitMul * specMul : undefined,
     });
   };
   if (skill.buff) pushBuff(skill.buff);
