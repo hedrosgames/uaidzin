@@ -427,7 +427,6 @@ export class CombatOrchestrator {
       }
       const struck = rollEnemyStrikeDamage(dmg, enemy.critChance);
       this.hurtPlayer(struck.damage, struck.crit);
-      this.deps.lockFromAnim("hit_gut", COMBAT_BALANCE.moveLock.hitFallback);
       if (this.deps.character.isDead) break;
       if (frameMods.reflect > 0 && enemy.alive) {
         const reflected = Math.max(1, Math.round(struck.damage * frameMods.reflect));
@@ -455,9 +454,7 @@ export class CombatOrchestrator {
       amount,
       crit ? "playerCrit" : "player",
     );
-    this.deps.effects.cameraPunch(0.1);
     this.deps.effects.playHitFlash(this.deps.renderer.playerMesh);
-    this.deps.renderer.playerView.playHit();
     this.deps.bus.emit("combat:damage", { amount, hp: this.deps.character.hp });
     if (this.deps.character.isDead) {
       this.deps.onPlayerDeath();
