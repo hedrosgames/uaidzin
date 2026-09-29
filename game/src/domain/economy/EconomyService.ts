@@ -1,4 +1,5 @@
 import { ECONOMY_BALANCE } from "../../data/balance/economy";
+import { applyGlobalKillGoldMultiplier } from "../../data/balance/gold-modifiers";
 import type { InventoryService } from "../inventory/InventoryService";
 import { createEquipDrop, createFromCatalog, createMaterial } from "../items/ItemFactory";
 
@@ -26,11 +27,13 @@ export class EconomyService {
     archetype: "fixed" | "chaser" | "ranged" | "boss",
     isBoss: boolean,
     monsterId?: string,
+    globalGoldMultiplier = 1,
   ): KillLootResult {
     const key = isBoss ? "boss" : archetype;
     let gold = Number.isFinite(ECONOMY_BALANCE.goldPerKill[key]) ? ECONOMY_BALANCE.goldPerKill[key] : 2;
     if (this.dungeonIndex === 1) gold *= 10;
     if (!Number.isFinite(gold) || gold < 0) gold = 0;
+    gold = applyGlobalKillGoldMultiplier(gold, globalGoldMultiplier);
     this.inventory.gold += gold;
 
     let dropped: string | null = null;

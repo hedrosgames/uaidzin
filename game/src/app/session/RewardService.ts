@@ -39,6 +39,7 @@ export interface RewardServiceDeps {
   showToast: (text: string, kind?: "skill" | "attr" | "level" | "dungeon") => void;
   addSessionXp: (amount: number) => void;
   globalKillXpMultiplier?: () => number;
+  globalKillGoldMultiplier?: () => number;
   onKill?: (enemyId: string) => void;
 }
 
@@ -68,7 +69,12 @@ export class RewardService {
     this.deps.dungeonRun.addKill(xp);
     this.deps.onKill?.(enemy.id);
     this.deps.economy.lootLevel = this.deps.character.level;
-    const loot = this.deps.economy.grantKillLoot(key, isBoss, enemy.monsterId);
+    const loot = this.deps.economy.grantKillLoot(
+      key,
+      isBoss,
+      enemy.monsterId,
+      this.deps.globalKillGoldMultiplier?.() ?? 1,
+    );
     if (loot.droppedItem) {
       const goldBit = loot.gold > 0 ? `+${loot.gold} Ouro · ` : "";
       this.deps.pushDropLog(`${goldBit}${loot.droppedItem}`, "item");
