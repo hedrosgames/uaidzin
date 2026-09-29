@@ -14,7 +14,15 @@ export class SaveCoordinator {
     private readonly buildPayload: () => SavePayload | null,
     private readonly buildVault: () => AccountVaultState,
   ) {
-    vault.onCancel(() => this.reset());
+    vault.onCancel((reason) => {
+      if (reason === "slot") {
+        for (const key of [...this.dirty.keys()]) {
+          if (key !== "vault") this.dirty.delete(key);
+        }
+        return;
+      }
+      this.reset();
+    });
   }
 
   markDirty(targets: SaveTarget | SaveTarget[], kind: SaveEventKind): void {
