@@ -1,4 +1,4 @@
-import { capMagicAttack, capPhysicalAttack } from "../../data/balance/damage-caps";
+import { capMagicAttack, capMaxMp, capPhysicalAttack } from "../../data/balance/damage-caps";
 import { PROGRESSION_BALANCE } from "../../data/balance/progression";
 
 export interface CharacterAttributes {
@@ -52,7 +52,7 @@ export class CharacterModel {
   }
 
   computeMaxMp(level: number, int: number): number {
-    return PROGRESSION_BALANCE.maxMpFromLevelInt(level, int);
+    return capMaxMp(PROGRESSION_BALANCE.maxMpFromLevelInt(level, int));
   }
 
   syncMaxMp(): void {
