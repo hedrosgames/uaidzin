@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
+import { applyPlayerCombatRatings } from "../../data/balance/combat-ratings";
 import { buildCombatMods, type CombatMods } from "../../domain/combat/CombatMods";
 import { learnedPassives, type SkillController } from "../../domain/combat/SkillController";
 import { calculateDamage } from "../../domain/combat/DamageCalculator";
@@ -104,7 +105,10 @@ export class CombatOrchestrator {
         this.deps.equipment.getWeaponSet(this.deps.progression.state.classId),
         this.deps.form,
       );
-      mods.critChance += Math.max(0, this.deps.character.equipCrit || 0) * 0.01;
+      applyPlayerCombatRatings(mods, {
+        des: this.deps.character.attributes.DES,
+        equipCritPercent: this.deps.character.equipCrit,
+      });
       mods.attackSpeed += Math.max(0, this.deps.character.baseAttackSpeed);
       mods.attackSpeed += Math.max(0, this.deps.character.equipSpeed || 0) * 0.01;
       this.cachedMods = mods;

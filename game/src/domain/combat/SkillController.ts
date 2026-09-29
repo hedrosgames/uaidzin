@@ -5,6 +5,7 @@ import type { BuffService } from "../character/BuffService";
 import type { CharacterModel } from "../character/CharacterModel";
 import type { SkillTreeService } from "../skills/SkillTreeService";
 import type { AttackTarget } from "./AttackController";
+import { applyPlayerCombatRatings } from "../../data/balance/combat-ratings";
 import { buildCombatMods, type CombatMods } from "./CombatMods";
 import type { FormState } from "./FormState";
 import type { LoadoutSlot, SkillLoadout } from "./SkillLoadout";
@@ -62,6 +63,10 @@ export class SkillController {
     this.loadout.tick(dt);
     if (moving || !this.character || !this.tree) return null;
     const mods = buildCombatMods(buffs.active, learnedPassives(this.tree), weaponSet, form);
+    applyPlayerCombatRatings(mods, {
+      des: this.character.attributes.DES,
+      equipCritPercent: this.character.equipCrit,
+    });
     const slot = manualSlotIndex >= 0
       ? this.manualSlot(manualSlotIndex, mods)
       : this.autoSlot(mods, buffs, form, summons, targets, px, pz, facing);
