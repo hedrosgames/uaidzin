@@ -1,6 +1,9 @@
 export const COMBAT_BALANCE = {
   dodgeChance: 0.05,
   minDamage: 1,
+  attackAnimSpeedMax: 1.5,
+  basicAttackBonusHitChance: 0.2,
+  basicAttackSpeedFloor: 0.4,
   moveLock: {
     attackFallback: 0.4,
     hitFallback: 0.28,
