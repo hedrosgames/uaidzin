@@ -26,7 +26,11 @@ import {
 } from "./SaveTypes";
 import type { AccountVaultState } from "../domain/account/AccountVaultService";
 
+type CancelReason = "full" | "slot";
+
 type StatusListener = (status: SaveStatus, error?: string | null) => void;
+
+type CancelListener = (reason: CancelReason) => void;
 
 export type CharacterLoadResult =
   | { status: "ok"; payload: SavePayload; fromMirror: boolean }
@@ -50,10 +54,18 @@ type PendingWrite = {
 
 export const RETRY_DELAYS_MS = [1000, 3000, 10000];
 
+function profileOf(write: PendingWrite): string | null {
+  return write.payload?.meta.profileId ?? null;
+}
+
+function canMerge(older: PendingWrite, newer: PendingWrite): boolean {
+  const olderId = profileOf(older);
+  const newerId = profileOf(newer);
+  if (!olderId || !newerId) return true;
+  return olderId === newerId;
+}
+
 function mergeWrites(older: PendingWrite, newer: PendingWrite): PendingWrite {
-  const olderId = older.payload?.meta.profileId;
-  const newerId = newer.payload?.meta.profileId;
-  if (olderId && newerId && olderId !== newerId) return newer;
   return {
     payload: newer.payload ?? older.payload,
     sections: new Set([...older.sections, ...newer.sections]),
@@ -88,12 +100,13 @@ export class SaveVault {
   private profileId = "default";
   private status: SaveStatus = "idle";
   private lastError: string | null = null;
-  private pending: PendingWrite | null = null;
+  private queue: PendingWrite[] = [];
+  private cacheEpoch = 0;
   private flushChain: Promise<void> = Promise.resolve();
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private savedUiTimer: ReturnType<typeof setTimeout> | null = null;
   private listeners = new Set<StatusListener>();
-  private cancelHooks = new Set<() => void>();
+  private cancelHooks = new Set<CancelListener>();
   private writeCount = 0;
   private lastStamp = 0;
   private codec: { key: string; mode: AuthSession["mode"]; codec: Promise<CodecKey> } | null = null;
@@ -109,7 +122,7 @@ export class SaveVault {
     return () => this.listeners.delete(cb);
   }
 
-  onCancel(cb: () => void): () => void {
+  onCancel(cb: CancelListener): () => void {
     this.cancelHooks.add(cb);
     return () => this.cancelHooks.delete(cb);
   }
@@ -127,7 +140,7 @@ export class SaveVault {
   }
 
   hasPendingCritical(): boolean {
-    return !!this.pending?.critical;
+    return this.queue.some((write) => write.critical);
   }
 
   setProfileId(id: string): void {
@@ -158,6 +171,7 @@ export class SaveVault {
     await this.flushChain;
     this.codec = null;
     this.vaultEnvelope = null;
+    this.cacheEpoch += 1;
     this.accountCache = null;
     this.encrypted = null;
   }
@@ -185,12 +199,30 @@ export class SaveVault {
     return next;
   }
 
-  private cancelPending(): void {
-    if (this.retryTimer) clearTimeout(this.retryTimer);
-    this.retryTimer = null;
-    this.pending = null;
-    for (const cb of this.cancelHooks) cb();
-    if (this.status !== "idle") this.setStatus("idle");
+  private cancelPending(reason: CancelReason = "full"): void {
+    if (reason === "slot") this.keepVaultFor(this.profileId);
+    else this.queue = [];
+    if (!this.queue.length) {
+      if (this.retryTimer) clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+      if (this.status !== "idle") this.setStatus("idle");
+    }
+    for (const cb of this.cancelHooks) cb(reason);
+  }
+
+  private keepVaultFor(profileId: string): void {
+    this.queue = this.queue.flatMap((write) => {
+      const id = profileOf(write);
+      if (id && id !== profileId) return [write];
+      if (!write.vault) return [];
+      return [{ ...write, payload: null, sections: new Set<ProfileSection>() }];
+    });
+  }
+
+  private enqueueWrite(next: PendingWrite): void {
+    const last = this.queue[this.queue.length - 1];
+    if (last && canMerge(last, next)) this.queue[this.queue.length - 1] = mergeWrites(last, next);
+    else this.queue.push(next);
   }
 
   private codecFor(session: AuthSession): Promise<CodecKey> {
@@ -213,7 +245,12 @@ export class SaveVault {
   async loadAccount(session: AuthSession, fresh = false): Promise<AccountSave> {
     const cached = this.accountCache;
     if (!fresh && cached?.user === session.user) return structuredClone(cached.account);
+    const epoch = this.cacheEpoch;
     const account = await this.readAccount(session);
+    if (epoch !== this.cacheEpoch) {
+      if (this.accountCache?.user === session.user) return structuredClone(this.accountCache.account);
+      return structuredClone(account);
+    }
     this.lastStamp = Math.max(this.lastStamp, account.updatedAt);
     this.accountCache = { user: session.user, account };
     return structuredClone(account);
@@ -257,6 +294,7 @@ export class SaveVault {
   }
 
   private remember(session: AuthSession, account: AccountSave): void {
+    this.cacheEpoch += 1;
     this.accountCache = { user: session.user, account: structuredClone(account) };
   }
 
@@ -273,6 +311,7 @@ export class SaveVault {
       const blobs: AccountBlobs = {};
       if (patch.slots !== undefined) blobs.slots = await this.encryptAccountPart(codec, session, { slots: normalizeSlots(patch.slots) });
       if (patch.vault !== undefined) blobs.vault = await this.encryptAccountPart(codec, session, { vault: normalizeVault(patch.vault) });
+      this.cacheEpoch += 1;
       this.accountCache = null;
       await this.store.writeMany(null, {}, { userId: session.user, ...blobs });
     });
@@ -404,7 +443,7 @@ export class SaveVault {
   deleteSlot(slotIndex: number): Promise<void> {
     const session = this.requireSessionOrThrow();
     const current = parseProfileId(this.profileId);
-    if (current && current.userId === session.user && current.slotIndex === slotIndex) this.cancelPending();
+    if (current && current.userId === session.user && current.slotIndex === slotIndex) this.cancelPending("slot");
     return this.enqueue(async () => {
       const account = await this.loadAccount(session);
       if (slotIndex < 0 || slotIndex >= SLOT_COUNT) throw new Error("bad_slot");
@@ -429,7 +468,7 @@ export class SaveVault {
         critical: write.critical,
         attempts: 0,
       };
-      this.pending = this.pending ? mergeWrites(this.pending, next) : next;
+      this.enqueueWrite(next);
     }
     return this.flush();
   }
@@ -444,9 +483,9 @@ export class SaveVault {
   }
 
   private async runPending(session: AuthSession | null): Promise<void> {
-    const write = this.pending;
+    const write = this.queue[0];
     if (!write || !session) return;
-    this.pending = null;
+    this.queue.shift();
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.retryTimer = null;
     this.setStatus("saving");
@@ -457,6 +496,10 @@ export class SaveVault {
       return;
     }
     this.writeCount += 1;
+    if (this.queue.length) {
+      await this.runPending(session);
+      return;
+    }
     this.setStatus("saved");
     if (this.savedUiTimer) clearTimeout(this.savedUiTimer);
     this.savedUiTimer = setTimeout(() => {
@@ -466,18 +509,20 @@ export class SaveVault {
 
   private failWrite(write: PendingWrite, err: unknown): void {
     const failed: PendingWrite = { ...write, attempts: write.attempts + 1 };
-    const merged = this.pending ? mergeWrites(failed, this.pending) : failed;
-    if (!merged.critical && merged.attempts >= RETRY_DELAYS_MS.length) {
-      this.pending = null;
-    } else {
-      this.pending = merged;
-      const delay = RETRY_DELAYS_MS[merged.attempts - 1];
+    const giveUp = !failed.critical && failed.attempts >= RETRY_DELAYS_MS.length;
+    if (!giveUp) {
+      const head = this.queue[0];
+      if (head && canMerge(failed, head)) this.queue[0] = mergeWrites(failed, head);
+      else this.queue.unshift(failed);
+      const delay = RETRY_DELAYS_MS[failed.attempts - 1];
       if (delay !== undefined) {
         this.retryTimer = setTimeout(() => {
           this.retryTimer = null;
           void this.flush();
         }, delay);
       }
+    } else if (this.queue.length) {
+      void this.flush();
     }
     this.setStatus("error", err instanceof Error ? err.message : "save_failed");
   }
@@ -653,7 +698,10 @@ export class SaveVault {
       for (let i = 0; i < SLOT_COUNT; i++) await this.clearProfileNow(profileIdFor(userId, i));
       await this.store.clearAccount(userId);
       if (this.vaultEnvelope?.user === userId) this.vaultEnvelope = null;
-      if (this.accountCache?.user === userId) this.accountCache = null;
+      if (this.accountCache?.user === userId) {
+        this.cacheEpoch += 1;
+        this.accountCache = null;
+      }
     });
     if (this.getSession()?.user === userId) await this.logout();
     try {
