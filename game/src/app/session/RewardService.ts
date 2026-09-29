@@ -15,6 +15,7 @@ import type { SaveCoordinator } from "../../persistence/SaveCoordinator";
 import type { EffectManager } from "../../presentation/effects/EffectManager";
 import type { EventBus } from "../../core/events/EventBus";
 import type { PlayerRuntime } from "../../gameplay/PlayerRuntime";
+import { applyGlobalKillXpMultiplier } from "../../data/balance/exp-modifiers";
 import type { DropLogKind } from "../../ui/HudModel";
 
 export interface RewardServiceDeps {
@@ -37,6 +38,7 @@ export interface RewardServiceDeps {
   pushDropLog: (text: string, kind: DropLogKind) => void;
   showToast: (text: string, kind?: "skill" | "attr" | "level" | "dungeon") => void;
   addSessionXp: (amount: number) => void;
+  globalKillXpMultiplier?: () => number;
   onKill?: (enemyId: string) => void;
 }
 
@@ -54,10 +56,11 @@ export class RewardService {
   }): void {
     const isBoss = enemy.isBoss;
     const key = isBoss ? "boss" : (enemy.archetype as "fixed" | "chaser" | "ranged");
-    let xp =
+    const baseXp =
       enemy.xpReward ??
       DUNGEON_BALANCE.xpPerKill[isBoss ? "boss" : enemy.archetype as "fixed" | "chaser" | "ranged"] ??
       8;
+    let xp = applyGlobalKillXpMultiplier(baseXp, this.deps.globalKillXpMultiplier?.() ?? 1);
     const xpBuff = this.deps.buffs?.active.find((buff) => buff.stat === "xpMultiplier");
     if (xpBuff) xp = Math.round(xp * (1 + (xpBuff.magnitude ?? 0)));
     this.deps.addSessionXp(xp);

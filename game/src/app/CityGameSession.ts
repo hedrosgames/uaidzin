@@ -61,6 +61,7 @@ import type { InteractableDef } from "../world/definitions";
 import { DungeonFlow, type LeaveReason } from "./session/DungeonFlow";
 import { InteractionController, INTERACT_RANGE } from "./session/InteractionController";
 import { CombatOrchestrator } from "./session/CombatOrchestrator";
+import { GlobalKillXpModifier } from "../domain/progression/GlobalKillXpModifier";
 import { RewardService } from "./session/RewardService";
 import { VaultTransfer } from "./session/VaultTransfer";
 import { SessionSnapshot } from "./session/SessionSnapshot";
@@ -120,6 +121,7 @@ export class CityGameSession {
   readonly summons = new SummonRuntime();
   readonly enemyAi = new EnemyAI();
   readonly dungeonRun = new DungeonRun();
+  readonly globalKillXp = new GlobalKillXpModifier();
   readonly effects: EffectManager;
   readonly enemyView: EnemyRuntimeView;
   private readonly summonView: SummonView;
@@ -263,6 +265,7 @@ export class CityGameSession {
       addSessionXp: (amount) => {
         this.sessionXp += amount;
       },
+      globalKillXpMultiplier: () => this.globalKillXp.get(),
       onKill: (enemyId) => this.rollGateKey(enemyId),
     });
 
