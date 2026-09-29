@@ -1,3 +1,4 @@
+import { capMagicAttack, capPhysicalAttack } from "../../data/balance/damage-caps";
 import { PROGRESSION_BALANCE } from "../../data/balance/progression";
 
 export interface CharacterAttributes {
@@ -30,11 +31,11 @@ export class CharacterModel {
   equipSpeed = 0;
 
   get attack(): number {
-    return this.baseAttack + this.equipAttack;
+    return capPhysicalAttack(this.baseAttack + this.equipAttack);
   }
 
   get magicAttack(): number {
-    return this.baseMagicAttack + this.equipMagicAttack;
+    return capMagicAttack(this.baseMagicAttack + this.equipMagicAttack);
   }
 
   get defense(): number {
