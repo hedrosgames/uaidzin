@@ -1,6 +1,5 @@
 import type { Object3D } from "three";
 import { DUNGEON_BALANCE } from "../../data/balance/dungeon";
-import { d1KillXp, d2KillXp } from "../../data/balance/xp-progression";
 import { QUEST_BY_ID } from "../../data/quests/quest-definitions";
 import type { ProgressionService } from "../../domain/progression/ProgressionService";
 import type { CharacterModel } from "../../domain/character/CharacterModel";
@@ -55,19 +54,10 @@ export class RewardService {
   }): void {
     const isBoss = enemy.isBoss;
     const key = isBoss ? "boss" : (enemy.archetype as "fixed" | "chaser" | "ranged");
-    const dungeonId = this.deps.getActiveDungeonId();
-    const level = this.deps.progression.state.level;
-    let xp: number;
-    if (dungeonId === "dungeon-1" && !isBoss) {
-      xp = d1KillXp(level);
-    } else if (dungeonId === "dungeon-2" && !isBoss) {
-      xp = d2KillXp(level);
-    } else {
-      xp =
-        enemy.xpReward ??
-        DUNGEON_BALANCE.xpPerKill[isBoss ? "boss" : enemy.archetype as "fixed" | "chaser" | "ranged"] ??
-        8;
-    }
+    let xp =
+      enemy.xpReward ??
+      DUNGEON_BALANCE.xpPerKill[isBoss ? "boss" : enemy.archetype as "fixed" | "chaser" | "ranged"] ??
+      8;
     const xpBuff = this.deps.buffs?.active.find((buff) => buff.stat === "xpMultiplier");
     if (xpBuff) xp = Math.round(xp * (1 + (xpBuff.magnitude ?? 0)));
     this.deps.addSessionXp(xp);

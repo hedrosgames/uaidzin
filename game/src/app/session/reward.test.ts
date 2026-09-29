@@ -119,6 +119,22 @@ describe("RewardService", () => {
     expect(progression.state.xp).toBeLessThanOrEqual(progression.state.xpToNext);
   });
 
+  it("XP de kill vem do mob e não muda com o nível do jogador", () => {
+    const { rewards, progression, state } = createRewardHarness();
+    const enemy = { id: "sk1", archetype: "chaser", isBoss: false, xpReward: 10, monsterId: "caveira_campo" };
+
+    progression.state.level = 1;
+    rewards.grantKillXp(enemy);
+    const xpLow = state.sessionXp;
+
+    progression.state.level = 25;
+    state.sessionXp = 0;
+    rewards.grantKillXp(enemy);
+
+    expect(xpLow).toBe(10);
+    expect(state.sessionXp).toBe(10);
+  });
+
   it("AoE de 5 abates no mesmo frame gera exatamente 1 checkpoint", () => {
     const { rewards, state } = createRewardHarness();
 

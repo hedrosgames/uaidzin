@@ -1,6 +1,8 @@
 export const D1_XP_PER_KILL_UNIT = 10;
-export const D1_KILLS_BASE = 4;
 export const D2_XP_PER_KILL_UNIT = 10;
+export const D1_REFERENCE_MOB_XP = D1_XP_PER_KILL_UNIT;
+export const D2_REFERENCE_MOB_XP = D2_XP_PER_KILL_UNIT;
+export const D1_KILLS_BASE = 4;
 export const D2_KILLS_BASE = 100;
 export const D2_LEVEL_START = 35;
 
@@ -50,18 +52,6 @@ export function xpToLevel(level: number): number {
     return d2KillsForLevelUp(level) * D2_XP_PER_KILL_UNIT;
   }
   return d1KillsForLevelUp(level) * D1_XP_PER_KILL_UNIT;
-}
-
-export function d1KillXp(playerLevel: number): number {
-  const need = xpToLevel(playerLevel);
-  const kills = d1KillsForLevelUp(playerLevel);
-  return Math.max(1, Math.round(need / kills));
-}
-
-export function d2KillXp(playerLevel: number): number {
-  const need = xpToLevel(playerLevel);
-  const kills = d2KillsForLevelUp(playerLevel);
-  return Math.max(1, Math.round(need / kills));
 }
 
 export function d2ChaliceGrantXp(playerLevel: number): number {
