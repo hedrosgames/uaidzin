@@ -62,6 +62,13 @@ import { DungeonFlow, type LeaveReason } from "./session/DungeonFlow";
 import { InteractionController, INTERACT_RANGE } from "./session/InteractionController";
 import { CombatOrchestrator } from "./session/CombatOrchestrator";
 import { cycleCombatAttackMode, type CombatAttackMode } from "../domain/combat/combat-attack-mode";
+import {
+  AUTO_MOVE_HUNT_RANGE,
+  AUTO_MOVE_HUNT_STEP_METERS,
+  AUTO_MOVE_SIDE_METERS,
+  cycleCombatMoveMode,
+  type CombatMoveMode,
+} from "../domain/combat/combat-move-mode";
 import { GlobalKillGoldModifier } from "../domain/progression/GlobalKillGoldModifier";
 import { GlobalKillXpModifier } from "../domain/progression/GlobalKillXpModifier";
 import { RewardService } from "./session/RewardService";
@@ -157,7 +164,9 @@ export class CityGameSession {
   progressState: SavePayload["progress"] = emptyProgress();
   potionSlots: [string | null, string | null, string | null] = [null, null, null];
   attackMode: CombatAttackMode = "physical";
-  autoMove = false;
+  moveMode: CombatMoveMode = "off";
+  private autoMoveAnchor: { x: number; z: number; perpX: number; perpZ: number } | null = null;
+  private autoMoveAnchorPhase = 0;
   autoPotion = false;
   penaReviveCooldownSec = 0;
   private potionAutoCooldown = 0;
@@ -354,14 +363,15 @@ export class CityGameSession {
       getHudOptions: () => ({
         potionSlots: [...this.potionSlots] as [string | null, string | null, string | null],
         attackMode: this.attackMode,
-        autoMove: this.autoMove,
+        moveMode: this.moveMode,
         autoPotion: this.autoPotion,
         penaReviveCooldownSec: this.penaReviveCooldownSec,
       }),
       setHudOptions: (opts) => {
         this.potionSlots = [...opts.potionSlots] as [string | null, string | null, string | null];
         this.attackMode = opts.attackMode;
-        this.autoMove = opts.autoMove;
+        this.moveMode = opts.moveMode;
+        if (this.moveMode !== "anchor") this.autoMoveAnchor = null;
         this.autoPotion = opts.autoPotion;
         this.penaReviveCooldownSec = Math.max(0, opts.penaReviveCooldownSec || 0);
       },
@@ -643,14 +653,15 @@ export class CityGameSession {
       const axes = this.controller.getMoveAxes();
       if (axes.x !== 0 || axes.z !== 0) this.interactions.clearPendingInteract();
       if (
-        this.autoMove &&
+        this.moveMode !== "off" &&
         inDungeon &&
         axes.x === 0 &&
         axes.z === 0 &&
         !click &&
         !this.character.isDead
       ) {
-        this.applyAutoMove();
+        if (this.moveMode === "anchor") this.applyAutoMoveAnchor();
+        else if (this.moveMode === "hunt") this.applyAutoMoveHunt();
       }
       const worldAxes = this.camera.toWorldMove(axes.x, axes.z);
       this.player.update(dt, worldAxes.x, worldAxes.z, world.boundary, world.collision);
@@ -759,7 +770,7 @@ export class CityGameSession {
       skills: this.skill.slotStates(),
       potionSlots: this.buildPotionHudSlots(),
       attackMode: this.attackMode,
-      autoMove: this.autoMove,
+      moveMode: this.moveMode,
       autoPotion: this.autoPotion,
       drops: this.visibleDropLog(),
       weaponSet: this.renderer.playerView.getWeaponSet(),
@@ -788,7 +799,52 @@ export class CityGameSession {
     });
   }
 
-  private applyAutoMove(): void {
+  private beginAutoMoveAnchor(): void {
+    const fx = Math.sin(this.player.facing);
+    const fz = Math.cos(this.player.facing);
+    this.autoMoveAnchor = {
+      x: this.player.x,
+      z: this.player.z,
+      perpX: fz,
+      perpZ: -fx,
+    };
+    this.autoMoveAnchorPhase = 0;
+  }
+
+  private autoMoveAnchorGoal(anchor: { x: number; z: number; perpX: number; perpZ: number }): {
+    x: number;
+    z: number;
+  } {
+    const side = AUTO_MOVE_SIDE_METERS;
+    const phase = this.autoMoveAnchorPhase % 4;
+    if (phase === 0) {
+      return { x: anchor.x + anchor.perpX * side, z: anchor.z + anchor.perpZ * side };
+    }
+    if (phase === 1) return { x: anchor.x, z: anchor.z };
+    if (phase === 2) {
+      return { x: anchor.x - anchor.perpX * side, z: anchor.z - anchor.perpZ * side };
+    }
+    return { x: anchor.x, z: anchor.z };
+  }
+
+  private applyAutoMoveAnchor(): void {
+    const world = this.worlds.getCurrent();
+    if (!world) return;
+    if (!this.autoMoveAnchor) this.beginAutoMoveAnchor();
+    const anchor = this.autoMoveAnchor!;
+    const goal = this.autoMoveAnchorGoal(anchor);
+    const px = this.player.x;
+    const pz = this.player.z;
+    const dist = Math.hypot(goal.x - px, goal.z - pz);
+    if (dist < 0.35) {
+      this.autoMoveAnchorPhase += 1;
+      return;
+    }
+    const safe = projectWalkTarget(goal.x, goal.z, this.player.radius, world.collision, px, pz);
+    this.player.setMoveTarget(safe.x, safe.z);
+  }
+
+  private applyAutoMoveHunt(): void {
     const world = this.worlds.getCurrent();
     const worldId = world?.id ?? "";
     const collision = world?.collision;
@@ -797,9 +853,14 @@ export class CityGameSession {
     const targets = this.enemies.aliveTargets().filter((t) => {
       const enemy = this.enemies.findById(t.id);
       if (!enemy) return false;
+      const d = Math.hypot(enemy.x - px, enemy.z - pz);
+      if (d > AUTO_MOVE_HUNT_RANGE) return false;
       return canEngageEnemy(worldId, px, pz, enemy.x, enemy.z, enemy.arenaIndex, collision);
     });
-    if (!targets.length) return;
+    if (!targets.length) {
+      this.player.clearMoveTarget();
+      return;
+    }
     let best = targets[0]!;
     let bestDist = Math.hypot(best.x - px, best.z - pz);
     for (let i = 1; i < targets.length; i++) {
@@ -816,14 +877,10 @@ export class CityGameSession {
       return;
     }
     if (!world) return;
-    const safe = projectWalkTarget(
-      best.x,
-      best.z,
-      this.player.radius,
-      world.collision,
-      this.player.x,
-      this.player.z,
-    );
+    const step = Math.min(AUTO_MOVE_HUNT_STEP_METERS, Math.max(0, bestDist - reach));
+    const tx = px + ((best.x - px) / bestDist) * step;
+    const tz = pz + ((best.z - pz) / bestDist) * step;
+    const safe = projectWalkTarget(tx, tz, this.player.radius, world.collision, px, pz);
     this.player.setMoveTarget(safe.x, safe.z);
   }
 
@@ -1170,14 +1227,19 @@ export class CityGameSession {
 
   toggleCombatAuto(kind: "attack" | "move" | "potion"): boolean {
     if (kind === "attack") this.attackMode = cycleCombatAttackMode(this.attackMode);
-    else if (kind === "move") this.autoMove = !this.autoMove;
+    else if (kind === "move") {
+      const next = cycleCombatMoveMode(this.moveMode);
+      if (next === "anchor") this.beginAutoMoveAnchor();
+      else this.autoMoveAnchor = null;
+      this.moveMode = next;
+    }
     else this.autoPotion = !this.autoPotion;
     this.saves.markDirty("options", "deferred");
     return true;
   }
 
-  getCombatAutos(): { attackMode: CombatAttackMode; move: boolean; potion: boolean } {
-    return { attackMode: this.attackMode, move: this.autoMove, potion: this.autoPotion };
+  getCombatAutos(): { attackMode: CombatAttackMode; moveMode: CombatMoveMode; potion: boolean } {
+    return { attackMode: this.attackMode, moveMode: this.moveMode, potion: this.autoPotion };
   }
 
   getPotionBar(): Array<HudPotionSlot | null> {

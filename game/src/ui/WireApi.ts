@@ -85,7 +85,7 @@ export interface WirePotionBarSlot {
 
 export interface WireCombatAutos {
   attackMode: import("../domain/combat/combat-attack-mode").CombatAttackMode;
-  move: boolean;
+  moveMode: import("../domain/combat/combat-move-mode").CombatMoveMode;
   potion: boolean;
 }
 

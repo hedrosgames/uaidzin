@@ -1147,8 +1147,16 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
   background:linear-gradient(180deg,#1a2438 0%,#101820 100%);
   border-color:#4a6a9a;
 }
-.hud-auto-btn.hud-auto-atk.mode-off{
+.hud-auto-btn.hud-auto-atk.mode-off,
+.hud-auto-btn.hud-auto-mov.mode-off{
   color:var(--ink-dim);
+}
+.hud-auto-btn.hud-auto-mov.mode-anchor.is-on{
+  color:var(--gold-hi);
+}
+.hud-auto-btn.hud-auto-mov.mode-hunt.is-on{
+  color:#b8e8c8;
+  border-color:#4a7a5a;
 }
 .hud-auto-btn.is-on{
   opacity:1;color:var(--gold-hi);border-color:var(--gold);

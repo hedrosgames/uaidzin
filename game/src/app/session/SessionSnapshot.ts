@@ -21,13 +21,14 @@ import {
   type SavePayload,
 } from "../../persistence/SaveTypes";
 import { parseCombatAttackMode } from "../../domain/combat/combat-attack-mode";
+import { parseCombatMoveMode } from "../../domain/combat/combat-move-mode";
 import { normalizeSavePayload } from "../../persistence/migrations";
 import { saveVault } from "../../persistence/SaveVault";
 
 export type SessionHudOptions = {
   potionSlots: [string | null, string | null, string | null];
   attackMode: import("../../domain/combat/combat-attack-mode").CombatAttackMode;
-  autoMove: boolean;
+  moveMode: import("../../domain/combat/combat-move-mode").CombatMoveMode;
   autoPotion: boolean;
   penaReviveCooldownSec: number;
 };
@@ -190,7 +191,7 @@ export class SessionSnapshot {
       potionSlots: [null, null, null],
       penaReviveCooldownSec: 0,
       attackMode: "physical",
-      autoMove: false,
+      moveMode: "off",
       autoPotion: false,
     });
     this.deps.setHadSave(false);
@@ -265,7 +266,10 @@ export class SessionSnapshot {
         (opts as { attackMode?: unknown }).attackMode,
         (opts as { autoAttack?: boolean }).autoAttack !== false,
       ),
-      autoMove: opts.autoMove === true,
+      moveMode: parseCombatMoveMode(
+        (opts as { moveMode?: unknown }).moveMode,
+        (opts as { autoMove?: boolean }).autoMove === true,
+      ),
       autoPotion: opts.autoPotion === true,
       penaReviveCooldownSec: Math.max(0, Number(opts.penaReviveCooldownSec) || 0),
     });
