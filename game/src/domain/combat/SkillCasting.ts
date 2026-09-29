@@ -1,7 +1,8 @@
 import { SKILL_BALANCE } from "../../data/balance/skills";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
 import { rollPlayerAttackHits } from "./HitChanceCalculator";
-import { mitigatedDamage } from "./DamageCalculator";
+import { mitigatedSkillDamage } from "./DamageCalculator";
+import type { SkillElement } from "../../data/classes/skill-types";
 import type { AttackTarget } from "./AttackController";
 import type { CombatMods } from "./CombatMods";
 import type { SkillDef, SkillEnemySpec, SummonSpec, TransformSpec } from "../../data/classes/skill-types";
@@ -104,6 +105,7 @@ export function resolveSkill(input: {
   targets: AttackTarget[];
   defenseOf: (id: string) => number;
   evasionOf: (id: string) => number;
+  elementResistOf: (id: string, element?: SkillElement) => number;
   hpOf: (id: string) => { hp: number; maxHp: number };
   mods: CombatMods;
   transformed: boolean;
@@ -133,8 +135,16 @@ export function resolveSkill(input: {
       let atk = power * input.mods.attackMul;
       if (skill.power === "magic") atk *= 1 + input.mods.magicPower;
       if (alone) atk *= 1 + input.mods.isolatedBonus;
-      const defense = Math.max(0, input.defenseOf(target.id) * (1 - (skill.pierce ?? 0)));
-      let damage = mitigatedDamage(atk * skill.damageMultiplier, defense);
+      const isMagic = skill.power === "magic";
+      const defense = input.defenseOf(target.id);
+      let damage = mitigatedSkillDamage({
+        rawDamage: atk * skill.damageMultiplier,
+        defense,
+        defensePierce: skill.pierce ?? 0,
+        isMagic,
+        element: skill.element,
+        elementResist: isMagic ? input.elementResistOf(target.id, skill.element) : 0,
+      });
       if (skill.executeBelow != null && ratio <= skill.executeBelow) {
         damage = Math.round(damage * (1 + (skill.executeBonus ?? 0.5)));
       }

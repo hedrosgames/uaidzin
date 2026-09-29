@@ -1,3 +1,4 @@
+import type { ElementalResistProfile } from "../../data/balance/elemental-resistance";
 import { COMBAT_BALANCE, DOT_TICK_SEC, type EnemyArchetype } from "../../data/balance/combat";
 
 export interface EnemyInit {
@@ -12,6 +13,7 @@ export interface EnemyInit {
   defense: number;
   evasion?: number;
   critChance?: number;
+  elementResists?: ElementalResistProfile;
   range: number;
   attackInterval: number;
   speed?: number;
@@ -43,6 +45,7 @@ export class EnemyModel {
   readonly defense: number;
   readonly evasion: number;
   readonly critChance: number;
+  readonly elementResists: ElementalResistProfile;
   readonly range: number;
   readonly attackInterval: number;
   readonly speed: number;
@@ -91,6 +94,7 @@ export class EnemyModel {
     this.defense = init.defense;
     this.evasion = init.evasion ?? 0;
     this.critChance = init.critChance ?? 0;
+    this.elementResists = init.elementResists ?? {};
     this.range = init.range;
     this.attackInterval = init.attackInterval;
     this.speed = init.speed ?? 0;

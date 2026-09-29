@@ -120,6 +120,6 @@ export function buildCombatMods(
   mods.attackMul = Math.max(0.2, mods.attackMul);
   mods.damageReduction = Math.min(0.75, Math.max(0, mods.damageReduction));
   mods.evasion = Math.max(0, mods.evasion);
-  mods.magicResist = Math.min(0.75, Math.max(0, mods.magicResist));
+  mods.magicResist = Math.min(0.5, Math.max(0, mods.magicResist));
   return mods;
 }

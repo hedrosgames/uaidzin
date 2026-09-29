@@ -1,4 +1,6 @@
 import { COMBAT_BALANCE } from "../../data/balance/combat";
+import { applyElementalResistToDamage } from "../../data/balance/elemental-resistance";
+import type { SkillElement } from "../../data/classes/skill-types";
 
 export function armorDamageMultiplier(armor: number): number {
   if (!Number.isFinite(armor)) return 1;
@@ -15,3 +17,20 @@ export function mitigatedDamage(rawDamage: number, defense: number): number {
 export function calculateDamage(attack: number, defense: number): number {
   return mitigatedDamage(attack, defense);
 }
+
+export function mitigatedSkillDamage(input: {
+  rawDamage: number;
+  defense: number;
+  defensePierce?: number;
+  isMagic: boolean;
+  element?: SkillElement;
+  elementResist?: number;
+}): number {
+  const defense = Math.max(0, input.defense * (1 - (input.defensePierce ?? 0)));
+  let damage = mitigatedDamage(input.rawDamage, defense);
+  if (input.isMagic && (input.elementResist ?? 0) > 0) {
+    damage = applyElementalResistToDamage(damage, input.elementResist ?? 0);
+  }
+  return damage;
+}
+

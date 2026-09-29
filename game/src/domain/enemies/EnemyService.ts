@@ -74,6 +74,7 @@ export class EnemyService {
       defense,
       evasion: clampEnemyEvasion(def.evasion ?? 0),
       critChance: clampEnemyCritChance(def.critChance),
+      elementResists: def.elementResists,
       range: def.range,
       attackInterval: def.attackInterval,
       speed: def.speed,

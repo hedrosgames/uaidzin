@@ -31,6 +31,8 @@ import {
   basicAttackAnimTimeScale,
   basicAttackHitCount,
 } from "../../domain/combat/BasicAttackSpeed";
+import { totalElementalResist } from "../../data/balance/elemental-resistance";
+import type { SkillElement } from "../../data/classes/skill-types";
 import { rollCritStrike } from "../../domain/combat/crit-strike";
 import { rollEnemyStrikeDamage } from "../../domain/combat/enemy-strike";
 import { canEngageEnemy } from "../../domain/combat/CombatSpace";
@@ -215,6 +217,10 @@ export class CombatOrchestrator {
       this.deps.player.facing,
       (id) => this.deps.enemies.findById(id)?.defense ?? 0,
       (id) => this.deps.enemies.findById(id)?.evasion ?? 0,
+      (id, element?: SkillElement) => {
+        const enemy = this.deps.enemies.findById(id);
+        return totalElementalResist(element, enemy?.elementResists);
+      },
       (id) => {
         const enemy = this.deps.enemies.findById(id);
         return { hp: enemy?.hp ?? 0, maxHp: enemy?.maxHp ?? 1 };
@@ -424,9 +430,6 @@ export class CombatOrchestrator {
       }
       let dmg = calculateDamage(enemy.attack, this.deps.character.defense * frameMods.defenseMul);
       dmg = Math.max(1, Math.round(dmg * (1 - frameMods.damageReduction)));
-      if (enemy.archetype === "ranged") {
-        dmg = Math.max(1, Math.round(dmg * (1 - frameMods.magicResist)));
-      }
       const struck = rollEnemyStrikeDamage(dmg, enemy.critChance);
       this.hurtPlayer(struck.damage, struck.crit);
       if (this.deps.character.isDead) break;

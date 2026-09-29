@@ -211,6 +211,7 @@ async function main() {
         sess.player.facing,
         () => 0,
         () => 0,
+        () => 0,
         () => ({ hp: 10, maxHp: 10 }),
         sess.buffs,
         sess.form,

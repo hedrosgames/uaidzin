@@ -1,3 +1,4 @@
+import type { ElementalResistProfile } from "../balance/elemental-resistance";
 import type { EnemyArchetype } from "../balance/combat";
 import monstersData from "./monsters.json";
 
@@ -10,6 +11,7 @@ export interface MonsterDef {
   defense: number;
   evasion?: number;
   critChance?: number;
+  elementResists?: ElementalResistProfile;
   range: number;
   attackInterval: number;
   speed: number;
