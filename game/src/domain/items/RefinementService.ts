@@ -1,4 +1,6 @@
 import { ECONOMY_BALANCE } from "../../data/balance/economy";
+import { refineSuccessMultiplier } from "../../data/items/equipment-set-balance";
+import { gearSetForItem } from "./equip-stat-rules";
 import { lifeSuccessChance } from "./item-life";
 import type { InventoryService } from "../inventory/InventoryService";
 import type { ItemInstance } from "./ItemModel";
@@ -46,13 +48,18 @@ export class RefinementService {
     }
     this.inventory.gold -= costGold;
     this.inventory.consumeMaterial(mat, 1);
-    const chance = ECONOMY_BALANCE.refine.successByLevel[item.refine];
+    const chance = this.refineChance(item);
     if (random() <= chance) {
       item.refine = next;
       return { ok: true, costGold, mat };
     }
 
     return { ok: false, costGold, mat };
+  }
+
+  private refineChance(item: ItemInstance): number {
+    const base = ECONOMY_BALANCE.refine.successByLevel[item.refine];
+    return Math.min(1, base * refineSuccessMultiplier(gearSetForItem(item)));
   }
 
   refineWithMaterial(
@@ -80,7 +87,7 @@ export class RefinementService {
       this.inventory.gold -= costGold;
     }
     this.inventory.consumeMaterial(materialDefId, 1);
-    const chance = ECONOMY_BALANCE.refine.successByLevel[item.refine];
+    const chance = this.refineChance(item);
     if (random() <= chance) {
       item.refine = next;
       return { ok: true, mat: materialDefId, kind: "refine" };
@@ -95,7 +102,7 @@ export class RefinementService {
     const mat = ECONOMY_BALANCE.life.materialId;
     if (this.inventory.countMaterial(mat) < 1) return { ok: false, consumed: false };
     this.inventory.consumeMaterial(mat, 1);
-    const chance = lifeSuccessChance(life);
+    const chance = lifeSuccessChance(life) * refineSuccessMultiplier(gearSetForItem(item));
     if (random() <= chance) {
       item.life = life + 1;
       return { ok: true, consumed: true };

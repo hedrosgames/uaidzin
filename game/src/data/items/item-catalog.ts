@@ -1,4 +1,5 @@
 import rawItems from "./items.json";
+import { EQUIPMENT_SET_ITEMS } from "./equipment-set-items";
 
 export type ItemCatalogKind =
   | "weapon"
@@ -40,6 +41,13 @@ export type ItemCatalogDef = {
   stackable?: boolean;
   weaponSet?: string;
   classId?: string;
+  gearSet?: 1 | 2 | 3;
+  primaryStat?: "attack" | "defense" | "hp";
+  hpBonus?: number;
+  critBonus?: number;
+  speedBonus?: number;
+  secondaryAttack?: number;
+  secondaryDefense?: number;
   effect?: ItemEffectDef;
   available?: boolean;
 };
@@ -47,6 +55,9 @@ export type ItemCatalogDef = {
 export const ITEM_CATALOG: Record<string, ItemCatalogDef> = {};
 
 for (const item of (rawItems as ItemCatalogDef[])) {
+  ITEM_CATALOG[item.id] = item;
+}
+for (const item of EQUIPMENT_SET_ITEMS) {
   ITEM_CATALOG[item.id] = item;
 }
 

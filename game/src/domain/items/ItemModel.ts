@@ -11,6 +11,12 @@ export interface ItemInstance {
   lifeAccessoryBase?: { hp: number; crit: number; damage: number; speed: number };
   attackBonus: number;
   defenseBonus: number;
+  hpBonus?: number;
+  critBonus?: number;
+  speedBonus?: number;
+  secondaryAttack?: number;
+  secondaryDefense?: number;
+  gearSet?: 1 | 2 | 3;
   stack: number;
   sellValue: number;
   attackRange?: number;

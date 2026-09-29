@@ -1,8 +1,10 @@
-import {
-  ECONOMY_BALANCE,
-  WEAPON_SET_BY_ITEM,
-} from "../../data/balance/economy";
+import { WEAPON_SET_BY_ITEM } from "../../data/balance/economy";
 import { lifeBonusesForItem } from "./item-life";
+import {
+  itemPrimaryBonuses,
+  itemSecondaryBonuses,
+  refinePrimaryBonus,
+} from "./equip-stat-rules";
 import type { ItemInstance } from "./ItemModel";
 import type { InventoryService } from "../inventory/InventoryService";
 import type { CharacterModel } from "../character/CharacterModel";
@@ -93,20 +95,17 @@ export class EquipmentService {
     let equipMaxHp = 0;
     let equipCrit = 0;
     let equipSpeed = 0;
-    const rules = ECONOMY_BALANCE.refine.bonusBySlot;
     for (const slot of Object.keys(this.equipped) as EquipSlot[]) {
       const item = this.equipped[slot];
       if (!item) continue;
-      attack += item.attackBonus || 0;
-      defense += item.defenseBonus || 0;
-      const rule = rules[slot];
-      if (rule && item.refine > 0) {
-        if (rule.stat === "attack") {
-          attack += item.refine * rule.perLevel;
-        } else if (rule.stat === "defense") {
-          defense += item.refine * rule.perLevel;
-        }
-      }
+      const primary = itemPrimaryBonuses(item);
+      const refine = refinePrimaryBonus(item);
+      const secondary = itemSecondaryBonuses(item);
+      attack += primary.attack + refine.attack + secondary.attack;
+      defense += primary.defense + refine.defense + secondary.defense;
+      equipMaxHp += primary.hp + refine.hp;
+      equipCrit += secondary.crit;
+      equipSpeed += secondary.speed;
       const life = lifeBonusesForItem(item);
       attack += life.attack;
       defense += life.defense;
