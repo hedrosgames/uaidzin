@@ -1,7 +1,7 @@
 import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, InstancedMesh, MeshStandardMaterial, Object3D } from "three";
 import type { WorldCollision } from "./collision";
 import type { InteractableDef } from "./definitions";
-import { isCheapShaders } from "../presentation/rendering/GraphicsQuality";
+import { grassCount, isCheapShaders } from "../presentation/rendering/GraphicsQuality";
 
 export const CITY_GARDEN_BEDS = [
   [-14.6, -13.6, 2.4, 2.2], [-5.0, -15.3, 2.8, 1.35],
@@ -49,7 +49,7 @@ function makeGrassGeometry(): BufferGeometry {
       x - dx, 0, z - dz, x + dx * 1.5, height * 0.6, z + dz * 1.5,
       x + dx * 0.5, height, z + dz * 3.5);
     for (let v = 0; v < 6; v++) {
-      const brightness = v === 5 ? 1 : v === 2 || v === 4 ? 0.82 : 0.5;
+      const brightness = v === 5 ? 1 : v === 2 || v === 4 ? 0.9 : 0.72;
       colors.push(brightness, brightness, brightness);
     }
   }
@@ -68,7 +68,6 @@ export function buildCityVegetation(collision: WorldCollision, services: Interac
   grass.name = "city-grass";
   grass.userData.occlusionIgnore = true;
   grass.raycast = () => {};
-  grass.receiveShadow = true;
   const transform = new Object3D();
   const color = new Color();
   let seed = 7259;
@@ -91,11 +90,14 @@ export function buildCityVegetation(collision: WorldCollision, services: Interac
     transform.scale.setScalar(0.55 + random() * 0.8);
     transform.updateMatrix();
     grass.setMatrixAt(count, transform.matrix);
-    color.setHSL(0.23 + random() * 0.06, 0.3 + random() * 0.2, 0.31 + random() * 0.15);
+    color.setHSL(0.24 + random() * 0.05, 0.28 + random() * 0.16, 0.42 + random() * 0.14);
     grass.setColorAt(count, color);
     count++;
   }
-  grass.count = count;
+  grass.userData.budgetKind = "grass";
+  grass.userData.fullCount = count;
+  grass.count = grassCount(count);
+  grass.receiveShadow = false;
   grass.computeBoundingSphere();
   group.add(grass);
   return group;

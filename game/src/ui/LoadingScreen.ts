@@ -124,6 +124,18 @@ export class LoadingScreen {
     if (this.textEl) this.textEl.textContent = msg;
   }
 
+  show(msg = "Carregando o jogo…"): void {
+    if (!this.element) this.createDom();
+    this.setText(msg);
+    if (this.textEl) this.textEl.style.display = "";
+    if (this.spinnerEl) this.spinnerEl.style.display = "";
+    if (this.errorBoxEl) this.errorBoxEl.style.display = "none";
+    if (!this.element) return;
+    this.element.style.display = "flex";
+    this.element.style.pointerEvents = "auto";
+    this.element.style.opacity = "1";
+  }
+
   showError(message: string, onRetry?: () => void): void {
     this.onRetryCallback = onRetry;
     if (this.textEl) this.textEl.style.display = "none";
@@ -152,4 +164,16 @@ export class LoadingScreen {
       window.setTimeout(finish, 400);
     });
   }
+}
+
+let sharedLoading: LoadingScreen | null = null;
+
+export function showGameLoading(msg = "Carregando o jogo…"): void {
+  if (!sharedLoading) sharedLoading = new LoadingScreen();
+  sharedLoading.show(msg);
+}
+
+export function hideGameLoading(): Promise<void> {
+  if (!sharedLoading) return Promise.resolve();
+  return sharedLoading.dismiss();
 }

@@ -27,6 +27,7 @@ import { makeCitySolidMaterial } from "./CityMaterialTextures";
 import { makeCemeteryGroundMaterial } from "./CemeteryGround";
 import { buildCemeteryLandscape } from "./CemeteryLandscape";
 import { createCemeteryAtmosphere } from "../presentation/effects/CemeteryAtmosphere";
+import { attachCityNpc } from "./CityNpc";
 
 const FOUNTAIN_HEIGHT = 2.8;
 const STALL_HEIGHT = 2.6;
@@ -70,6 +71,13 @@ export interface WorldTickable {
   dispose(): void;
 }
 
+export interface WorldGates {
+  readonly count: number;
+  isOpen(index: number): boolean;
+  open(index: number): void;
+  reset(): void;
+}
+
 export interface BuiltWorld {
   id: string;
   group: Group;
@@ -80,6 +88,8 @@ export interface BuiltWorld {
   tickables: WorldTickable[];
   groundY: (x: number, z: number) => number;
   occluders?: Object3D[];
+  gates?: WorldGates;
+  visualsReady?: Promise<void>;
 }
 
 function makeNpcMarker(def: InteractableDef): Group {
@@ -259,11 +269,15 @@ export function buildCityWorld(): BuiltWorld {
     );
   }
 
+  const tickables: WorldTickable[] = [fountainWater];
   for (const def of CITY_INTERACTABLES) {
-    group.add(def.kind === "chest" ? makeChest(def) : makeNpcMarker(def));
+    const marker = def.kind === "chest" ? makeChest(def) : makeNpcMarker(def);
+    marker.position.y = sampleCityGroundY(def.x, def.z);
+    group.add(marker);
+    const npc = attachCityNpc(marker);
+    if (npc) tickables.push(npc);
     collision.circles.push({ x: def.x, z: def.z, r: def.kind === "chest" ? 0.55 : 0.4 });
   }
-  const tickables: WorldTickable[] = [fountainWater];
   group.add(buildCityVegetation(collision, CITY_INTERACTABLES));
   BRAZIER_SPOTS.forEach(([bx, bz], i) => {
     const brazier = createBrazier(`brazier-${i}`, bx, bz);
@@ -288,7 +302,7 @@ export function buildCityWorld(): BuiltWorld {
     boundary: boxBoundary(size - 2),
     collision,
     interactables: [...CITY_INTERACTABLES, CITY_PORTAL_PROP],
-    spawn: { x: 0, z: 4 },
+    spawn: { x: 5.8, z: -4.2 },
     tickables,
     groundY: sampleCityGroundY,
     occluders,
@@ -433,6 +447,8 @@ export function buildTestDungeonWorld(): BuiltWorld {
     group.add(ring);
 
     const fill = new PointLight(0xffd2a0, 8.5, 24, 1.45);
+    fill.userData.worldLight = true;
+    fill.userData.lightRank = 1;
     fill.position.set(arena.centerX, 5.8, arena.centerZ);
     group.add(fill);
 
@@ -476,6 +492,8 @@ export function buildTestDungeonWorld(): BuiltWorld {
   });
 
   const portalLight = new PointLight(0x44c0ff, 4, 10, 2);
+  portalLight.userData.worldLight = true;
+  portalLight.userData.lightRank = 2;
   portalLight.position.set(0, 2, 7);
   group.add(portalLight);
 

@@ -1,6 +1,6 @@
 import { ECONOMY_BALANCE } from "../../data/balance/economy";
 import type { InventoryService } from "../inventory/InventoryService";
-import { createEquipDrop, createMaterial } from "../items/ItemFactory";
+import { createEquipDrop, createFromCatalog, createMaterial } from "../items/ItemFactory";
 
 export type KillLootResult = {
   gold: number;
@@ -41,6 +41,14 @@ export class EconomyService {
       } else {
         if (res.added > 0) dropped = item.name;
         lost = item.name;
+      }
+    } else if (this.dungeonIndex > 1 && this.random() < ECONOMY_BALANCE.xpChaliceDropChance) {
+      const colorIndex = Math.floor(this.random() * 12) + 1;
+      const item = createFromCatalog(`chalice_xp_${String(colorIndex).padStart(2, "0")}`);
+      if (item) {
+        const res = this.inventory.add(item);
+        if (res.ok || res.added > 0) dropped = item.name;
+        if (!res.ok) lost = item.name;
       }
     } else if (this.random() < ECONOMY_BALANCE.materialDropChance) {
       const high = isBoss || this.dungeonIndex > ECONOMY_BALANCE.oriUntilDungeon;

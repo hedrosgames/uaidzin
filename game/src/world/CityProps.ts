@@ -1,6 +1,7 @@
 import { Group, Mesh, Object3D } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { applyCityPropMaterials } from "./CityPropMaterials";
+import { trackWorldVisual } from "./WorldVisuals";
 
 export type CityPropId =
   | "wall"
@@ -87,7 +88,7 @@ export function spawnCityProp(
   anchor.rotation.y = placement.quarterTurns * (Math.PI / 2);
   anchor.scale.set(placement.scaleX ?? placement.scale, placement.scale, placement.scale);
   parent.add(anchor);
-  void loadPrototype(placement.id).then((proto) => {
+  trackWorldVisual(loadPrototype(placement.id).then((proto) => {
     if (!proto) return;
     const clone = proto.clone(true);
     clone.traverse((obj) => {
@@ -97,6 +98,6 @@ export function spawnCityProp(
     });
     anchor.add(clone);
     onReady?.(clone);
-  });
+  }));
   return anchor;
 }

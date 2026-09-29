@@ -32,7 +32,11 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
     <div class="win-b">
       <div class="doll-wrap">
         <div class="doll-top" id="dollTop">
+          <div class="eq locked" data-slot="cape" aria-label="Capa (bloqueado)"><img class="lock" src="/assets/icons/eq/lock.svg" alt=""></div>
+          <div class="eq locked" data-slot="orb" aria-label="Orbe (bloqueado)"><img class="lock" src="/assets/icons/eq/lock.svg" alt=""></div>
           <div class="eq eq-head" data-slot="head"><img class="ico type" src="/assets/icons/eq/crown.svg" alt="Cabeça"></div>
+          <div class="eq locked" data-slot="seal" aria-label="Selo (bloqueado)"><img class="lock" src="/assets/icons/eq/lock.svg" alt=""></div>
+          <div class="eq locked" data-slot="relic" aria-label="Relíquia (bloqueado)"><img class="lock" src="/assets/icons/eq/lock.svg" alt=""></div>
         </div>
         <div class="doll" id="doll">
           <div class="eq eq-neck" data-slot="neck"><img class="ico type" src="/assets/icons/eq/neck.svg" alt="Colar"></div>
@@ -42,6 +46,8 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
           <div class="eq eq-armor" data-slot="armor"><img class="ico type" src="/assets/icons/eq/armor.svg" alt="Armadura"></div>
           <div class="eq eq-ring1" data-slot="ring1"><img class="ico type" src="/assets/icons/eq/ring.svg" alt="Anel 1"></div>
           <div class="eq eq-ring2" data-slot="ring2"><img class="ico type" src="/assets/icons/eq/ring.svg" alt="Anel 2"></div>
+          <div class="eq eq-pet locked" data-slot="pet" aria-label="Pet (bloqueado)"><img class="lock" src="/assets/icons/eq/lock.svg" alt=""></div>
+          <div class="eq eq-mount locked" data-slot="mount" aria-label="Montaria (bloqueado)"><img class="lock" src="/assets/icons/eq/lock.svg" alt=""></div>
         </div>
       </div>
 
@@ -149,7 +155,7 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
 
       const item = eq[slot];
       if (!item) {
-        el.className = `eq eq-${slot}`;
+        el.className = slot === "head" ? "eq eq-head" : `eq eq-${slot}`;
         const typeImg = el.querySelector<HTMLImageElement>(".ico.type");
         if (typeImg) typeImg.style.display = "block";
         const oldItemImg = el.querySelector(".ico.item");
@@ -160,7 +166,7 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
         continue;
       }
 
-      el.className = `eq eq-${slot} has r-${item.rarity}`;
+      el.className = slot === "head" ? `eq eq-head has r-${item.rarity}` : `eq eq-${slot} has r-${item.rarity}`;
       const typeImg = el.querySelector<HTMLImageElement>(".ico.type");
       if (typeImg) typeImg.style.display = "none";
 
@@ -277,6 +283,19 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
         ctx.hideItemTip();
       });
 
+      const potionLike =
+        it.slot === "consumable" || it.slot === "misc" || it.defId.startsWith("pocao_");
+      if (potionLike) {
+        cell.draggable = true;
+        cell.addEventListener("dragstart", (e) => {
+          e.dataTransfer?.setData(
+            "text/plain",
+            JSON.stringify({ kind: "potion", defId: it.defId, uid: it.uid }),
+          );
+          if (e.dataTransfer) e.dataTransfer.effectAllowed = "copy";
+        });
+      }
+
       cell.addEventListener("click", () => {
         if (trashModeActive) {
           ctx.openConfirm({
@@ -298,7 +317,12 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
           return;
         }
 
-        if (it.slot === "material" || it.slot === "misc" || it.slot === "entry") {
+        if (
+          it.slot === "material" ||
+          it.slot === "misc" ||
+          it.slot === "entry" ||
+          it.slot === "consumable"
+        ) {
           ctx.api.useConsumable(it.uid);
           ctx.syncFromGame();
         } else {

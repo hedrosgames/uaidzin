@@ -63,9 +63,12 @@ export function createWireShell(
   stage.id = "stage";
   viewport.appendChild(stage);
 
-  hostEl.replaceChildren(viewport);
+  const dialogHost = document.createElement("div");
+  dialogHost.className = "dialog-host";
 
-  const dialogMgr: DialogManager = createDialogManager(stage, (open) => {
+  hostEl.replaceChildren(viewport, dialogHost);
+
+  const dialogMgr: DialogManager = createDialogManager(dialogHost, (open) => {
     opts?.onDialogOpen?.(open);
   });
 
@@ -130,15 +133,16 @@ export function createWireShell(
     </div>
     ${skillBarHud.renderHtml()}
     ${tooltipMgr.renderHtml()}
-    ${dialogMgr.renderHtml()}
   `;
+
+  dialogHost.innerHTML = dialogMgr.renderHtml();
+  dialogMgr.bindEvents();
 
   stage.querySelectorAll(".win").forEach((win) => {
     win.classList.add("is-closed");
   });
 
   hintBar.bindEvents();
-  dialogMgr.bindEvents();
   personPanel.bindEvents();
   skillsPanel.bindEvents();
   skillMasterPanel.bindEvents();
@@ -162,6 +166,7 @@ export function createWireShell(
   window.addEventListener("resize", fit);
 
   function syncAll(): void {
+    cachedView = api.getCharacterViewModel();
     personPanel.sync(cachedView);
     skillsPanel.sync();
     skillMasterPanel.sync();

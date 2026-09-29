@@ -55,6 +55,7 @@ export interface CombatOrchestratorDeps {
   getMoveLock: () => number;
   triggerHitStop: (duration: number) => void;
   onAutoAttackSwing: () => void;
+  isAutoAttackEnabled: () => boolean;
 }
 
 export class CombatOrchestrator {
@@ -109,7 +110,7 @@ export class CombatOrchestrator {
 
     const hitTarget = this.deps.attack.tick(
       dt,
-      this.deps.player.isMoving || this.deps.getMoveLock() > 0,
+      this.deps.player.isMoving || this.deps.getMoveLock() > 0 || !this.deps.isAutoAttackEnabled(),
       targets,
       this.deps.player.x,
       this.deps.player.z,
@@ -122,9 +123,9 @@ export class CombatOrchestrator {
         const dz = enemy.z - this.deps.player.z;
         this.deps.player.facing = Math.atan2(dx, dz);
         this.deps.effects.playAttackPulse(this.deps.renderer.playerMesh);
-        this.deps.renderer.playerView.playAttack();
+        const atkAnim = this.deps.renderer.playerView.playAttack();
         this.deps.onAutoAttackSwing();
-        this.deps.lockFromAnim("attack", COMBAT_BALANCE.moveLock.attackFallback);
+        this.deps.lockFromAnim(atkAnim, COMBAT_BALANCE.moveLock.attackFallback);
 
         if (enemy.alive && rollHitSimple()) {
           let atk = this.deps.character.attack * frameMods.attackMul;
@@ -133,6 +134,7 @@ export class CombatOrchestrator {
           if (Math.random() < frameMods.critChance + (this.deps.form.active ? frameMods.transformedCrit : 0)) {
             dmg = Math.max(1, Math.round(dmg * 1.5));
           }
+          dmg += frameMods.damageFlat;
           const killed = enemy.applyDamage(dmg);
           const mesh = this.deps.enemyView.getMesh(enemy.id);
           this.deps.effects.playHitFlash(mesh);
@@ -252,23 +254,6 @@ export class CombatOrchestrator {
       this.invalidateMods();
     }
 
-    for (const enemy of this.deps.enemies.enemies) {
-      if (!enemy.alive) continue;
-      const dot = enemy.tickStatus(dt);
-      if (dot > 0) {
-        const dmg = Math.max(1, Math.round(dot));
-        const killed = enemy.applyDamage(dmg);
-        this.deps.effects.spawnDamageNumber(enemy.x, 1.5, enemy.z, dmg, "skill");
-        if (killed) {
-          this.deps.rewards.grantKillXp(enemy);
-          this.deps.enemyView.playDeath(enemy.id);
-          this.deps.effects.playDeath(this.deps.enemyView.getMesh(enemy.id), 1.4);
-          this.deps.effects.hideHpBar(enemy.id);
-          this.deps.enemies.onEnemyDeath(enemy);
-        }
-      }
-    }
-
     const strikes = this.deps.summons.tick(
       dt,
       this.deps.enemies.enemies.map((enemy) => ({
@@ -346,6 +331,9 @@ export class CombatOrchestrator {
       });
       if (!wantsAttack) continue;
       this.deps.enemyView.playAttack(enemy.id);
+      if (enemy.archetype === "ranged" && enemy.modelUrl?.includes("skeleton-special")) {
+        this.deps.effects.enemyFireball(enemy.x, enemy.z, this.deps.player.x, this.deps.player.z);
+      }
       const summon = this.deps.summons.nearest(enemy.x, enemy.z, enemy.range);
       const summonDist = summon ? Math.hypot(summon.x - enemy.x, summon.z - enemy.z) : Number.POSITIVE_INFINITY;
       const playerDist = Math.hypot(this.deps.player.x - enemy.x, this.deps.player.z - enemy.z);

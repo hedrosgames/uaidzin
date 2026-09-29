@@ -23,6 +23,13 @@ import {
 import { normalizeSavePayload } from "../../persistence/migrations";
 import { saveVault } from "../../persistence/SaveVault";
 
+export type SessionHudOptions = {
+  potionSlots: [string | null, string | null, string | null];
+  autoAttack: boolean;
+  autoMove: boolean;
+  autoPotion: boolean;
+};
+
 export interface SessionSnapshotDeps {
   saveService: SaveService;
   saves: SaveCoordinator;
@@ -41,6 +48,8 @@ export interface SessionSnapshotDeps {
   setSaveUnreadable: (val: boolean) => void;
   setHadSave: (val: boolean) => void;
   refreshWeaponSetFromGear: () => void;
+  getHudOptions: () => SessionHudOptions;
+  setHudOptions: (opts: SessionHudOptions) => void;
 }
 
 export class SessionSnapshot {
@@ -100,7 +109,7 @@ export class SessionSnapshot {
         dungeonClears: { ...progressState.dungeonClears },
         quests: { ...progressState.quests },
       },
-      options: {},
+      options: { ...this.deps.getHudOptions() },
     };
     return payload;
   }
@@ -174,6 +183,13 @@ export class SessionSnapshot {
     this.deps.progression.recomputeCombatStats();
     this.deps.character.healFull();
     this.deps.skillLoadout.refresh();
+    this.deps.refreshWeaponSetFromGear();
+    this.deps.setHudOptions({
+      potionSlots: [null, null, null],
+      autoAttack: true,
+      autoMove: false,
+      autoPotion: false,
+    });
     this.deps.setHadSave(false);
     this.deps.saves.markDirty([...PROFILE_SECTIONS], "critical");
   }
@@ -233,5 +249,18 @@ export class SessionSnapshot {
     this.deps.character.isDead = this.deps.character.hp <= 0;
     this.deps.skillLoadout.refresh();
     this.deps.refreshWeaponSetFromGear();
+    const opts = data.options || {};
+    const rawSlots = Array.isArray(opts.potionSlots) ? opts.potionSlots : [];
+    const potionSlots: [string | null, string | null, string | null] = [
+      typeof rawSlots[0] === "string" ? rawSlots[0] : null,
+      typeof rawSlots[1] === "string" ? rawSlots[1] : null,
+      typeof rawSlots[2] === "string" ? rawSlots[2] : null,
+    ];
+    this.deps.setHudOptions({
+      potionSlots,
+      autoAttack: opts.autoAttack !== false,
+      autoMove: opts.autoMove === true,
+      autoPotion: opts.autoPotion === true,
+    });
   }
 }

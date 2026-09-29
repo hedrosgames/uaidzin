@@ -69,7 +69,7 @@ describe("EquipmentService and CompositionService", () => {
     expect(character.equipAttack).toBe(10 + 9 * 2);
   });
 
-  it("set de arma segue a peca equipada e machado na bolsa nao conta", () => {
+  it("set de arma segue a peca equipada e sem arma nas maos fica vazio", () => {
     const inv = new InventoryService();
     const character = new CharacterModel({ maxHp: 100, attack: 10, defense: 5 });
     const eq = new EquipmentService(inv, character);
@@ -77,7 +77,7 @@ describe("EquipmentService and CompositionService", () => {
     const axeInBag = createItem({ uid: "axe1", defId: "machado_leve", weaponSet: "axe-shield" });
     inv.add(axeInBag);
 
-    expect(eq.getWeaponSet("TK")).toBe("axe-shield");
+    expect(eq.getWeaponSet("TK")).toBeNull();
 
     const sword = createItem({ uid: "sw1", defId: "espada_curta", weaponSet: "sword-shield" });
     inv.add(sword);
@@ -87,6 +87,7 @@ describe("EquipmentService and CompositionService", () => {
     expect(eq.weaponSet).toBe("sword-shield");
 
     eq.unequip("weapon");
-    expect(eq.getWeaponSet("TK")).toBe("axe-shield");
+    expect(eq.getWeaponSet("TK")).toBeNull();
+    expect(eq.weaponSet).toBeNull();
   });
 });

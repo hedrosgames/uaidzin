@@ -1,4 +1,5 @@
 import { createSceneFadeOverlay, type SceneFadeOverlay } from "../BootFlow";
+import { hideGameLoading, showGameLoading } from "../../ui/LoadingScreen";
 import { DUNGEON_TEST, type DungeonDef } from "../../data/dungeons/dungeon-definitions";
 import { DUNGEONS_MORTAL, dungeonsAllowedForLevel, findDungeon } from "../../data/dungeons/dungeons-mortal";
 import type { WorldId } from "../../world/WorldManager";
@@ -27,7 +28,7 @@ export interface DungeonFlowDeps {
   renderer: SceneRenderer;
   enemies: EnemyService;
   bus: EventBus;
-  enterWorld: (id: WorldId) => void;
+  enterWorld: (id: WorldId) => void | Promise<void>;
   getWorldId: () => WorldId;
   ensureSceneFade?: () => SceneFadeOverlay;
   clearDeathReturnTimer: () => void;
@@ -118,18 +119,21 @@ export class DungeonFlow {
   private async executeEnterFade(dungeonId: string): Promise<void> {
     this.deps.effects.clearSkillVfx();
     this.worldFadeBusy = true;
+    showGameLoading();
     const fade = this.ensureSceneFade();
     try {
       await fade.fadeIn();
       try {
-        this.deps.enterWorld(dungeonId === "dungeon-2" ? "dungeon-2" : "dungeon-test");
+        await this.deps.enterWorld(dungeonId === "dungeon-1" || dungeonId === "dungeon-2" ? dungeonId : "dungeon-test");
       } catch {
-        this.deps.enterWorld("city");
+        await this.deps.enterWorld("city");
       }
+      await hideGameLoading();
       await fade.fadeOut();
     } finally {
       this.worldFadeBusy = false;
       this.handlePendingLeave();
+      await hideGameLoading();
     }
   }
 
@@ -176,8 +180,8 @@ export class DungeonFlow {
         xp: result.xpGained,
       });
       this.deps.character.healFull();
-      this.deps.enterWorld("city");
-      this.deps.saves.markDirty("character", "deferred");
+      await this.deps.enterWorld("city");
+      this.deps.saves.markDirty("character", reason === "death" ? "critical" : "deferred");
       await fade.fadeOut();
     } finally {
       this.worldFadeBusy = false;
@@ -190,10 +194,10 @@ export class DungeonFlow {
       this.pendingLeaveReason = "exit";
       return;
     }
-    void this.withWorldFade(() => {
+    void this.withWorldFade(async () => {
       this.deps.renderer.playerView.clearDeath();
       this.deps.character.isDead = false;
-      this.deps.enterWorld("city");
+      await this.deps.enterWorld("city");
       void this.deps.saves.checkpoint();
     });
   }

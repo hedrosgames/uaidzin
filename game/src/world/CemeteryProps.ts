@@ -1,6 +1,7 @@
 import { Group, Mesh, Object3D } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { applyCemeteryMaterials } from "./CemeteryMaterials";
+import { trackWorldVisual } from "./WorldVisuals";
 
 export type CemeteryPropId = "wall" | "tomb" | "tree" | "mausoleum";
 
@@ -73,15 +74,15 @@ export function spawnCemeteryProp(parent: Group, placement: CemeteryPropPlacemen
   anchor.rotation.y = placement.yaw ?? (placement.quarterTurns ?? 0) * (Math.PI / 2);
   anchor.scale.set(placement.scaleX ?? placement.scale, placement.scale, placement.scale);
   parent.add(anchor);
-  void loadPrototype(placement.id).then((proto) => {
+  trackWorldVisual(loadPrototype(placement.id).then((proto) => {
     const clone = proto.clone(true);
     clone.traverse((obj) => {
       const mesh = obj as Mesh;
       if (!mesh.isMesh) return;
       mesh.visible = true;
-      mesh.frustumCulled = false;
+      if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
     });
     anchor.add(clone);
-  });
+  }));
   return anchor;
 }

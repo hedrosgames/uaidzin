@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>UAIDZIN</title>
+<meta name="description" content="Quatro classes, oito dungeons, dez minutos por descida. A morte não tira nada." />
+<link rel="stylesheet" href="assets/style.css" />
+<link rel="icon" href="assets/runas.svg" type="image/svg+xml" />
+</head>
+<body>
+
+<div class="sky" aria-hidden="true">
+  <div class="sky-embers"></div>
+  <div class="sky-horizon"></div>
+</div>
+
+<nav class="mainnav" aria-label="Principal">
+  <a class="logo" href="#topo">
+    <svg class="logo-mark" viewBox="0 0 44 32" aria-hidden="true">
+      <g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 27V6l7 9V6" />
+        <path d="M19 6l6 21 6-21" />
+        <path d="M32 27V6l7 10V6" />
+      </g>
+    </svg>
+    <span class="logo-text">UAIDZIN</span>
+  </a>
+  <div class="navlinks">
+    <a href="#topo">Início</a>
+    <a href="#classes">Classes</a>
+    <a href="#dungeons">Dungeons</a>
+    <a href="#bestiario">Bestiário</a>
+    <a href="#equipamento">Equipamento</a>
+    <a href="#skills">Skills</a>
+    <a href="#loja">Cidade</a>
+    <a href="#comoJogar">Como jogar</a>
+  </div>
+</nav>
+
+<header class="hero" id="topo">
+  <div class="hero-cast" id="hero-cast" aria-hidden="true"></div>
+  <div class="hero-veil" aria-hidden="true"></div>
+  <div class="hero-in">
+    <h1 class="hero-title">UAIDZIN</h1>
+    <p class="hero-cycle" id="hero-cycle"></p>
+    <div class="hero-cta">
+      <a class="btn btn-cta btn-lg" href="http://127.0.0.1:5173/boot/01-login.html" target="_blank" rel="noreferrer">Criar conta</a>
+      <a class="btn btn-iron btn-lg" href="http://127.0.0.1:5173/" target="_blank" rel="noreferrer">Jogar agora</a>
+    </div>
+    <div class="hero-stats" id="hero-stats"></div>
+  </div>
+  <a class="hero-down" href="#classes" aria-label="Ver classes">
+    <svg viewBox="0 0 16 10" aria-hidden="true"><path d="M1 1l7 7 7-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+</header>
+
+<section class="quicklinks">
+  <div class="quicklinks-in">
+    <a class="ql ql-main" href="http://127.0.0.1:5173/boot/01-login.html" target="_blank" rel="noreferrer">
+      <span class="ql-label">Criar conta</span>
+      <span class="ql-note">Quatro classes, personagem zerado</span>
+    </a>
+    <a class="ql" href="http://127.0.0.1:5173/" target="_blank" rel="noreferrer">
+      <span class="ql-label">Jogar</span>
+      <span class="ql-note">Entrar no mundo</span>
+    </a>
+    <a class="ql" href="#comoJogar">
+      <span class="ql-label">Como jogar</span>
+      <span class="ql-note">O ciclo em seis passos</span>
+    </a>
+    <a class="ql" href="#dungeons">
+      <span class="ql-label">Dungeons</span>
+      <span class="ql-note">Oito portões, 600 s cada</span>
+    </a>
+  </div>
+</section>
+
+<section class="band" id="classes">
+  <p class="band-kicker">Escolha um mortal</p>
+  <h2 class="band-title">Quatro classes, mesmo começo</h2>
+  <p class="band-lede">
+    Todas nascem em 5/5/5/5, sem ouro e sem equipamento. O que muda é o atributo
+    primário, que define a arma que você vai usar primeiro.
+  </p>
+  <div class="class-grid" id="class-grid"></div>
+</section>
+
+<section class="band band-alt" id="dungeons">
+  <p class="band-kicker">Oito portões</p>
+  <h2 class="band-title">Dez minutos por descida</h2>
+  <p class="band-lede">
+    Toda dungeon dura 600 segundos. As três primeiras têm entrada livre; da quarta
+    em diante, é preciso comprar o selo. As janelas de nível se tocam, então você
+    sempre tem para onde ir em seguida.
+  </p>
+  <div class="dg-grid" id="dungeon-grid"></div>
+  <div class="dg-timeline">
+    <div class="dg-track" id="dg-track" role="img" aria-label="Janelas de nível das oito dungeons"></div>
+    <div class="dg-legend">
+      <span><i class="livre"></i>Entrada livre</span>
+      <span><i class="selo"></i>Cobra selo</span>
+      <span>Nível do jogador</span>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="bestiario">
+  <p class="band-kicker">O que te espera lá embaixo</p>
+  <h2 class="band-title">Bestiário</h2>
+  <p class="band-lede">
+    O esqueleto do campo é o primeiro que você enfrenta. A partir dele tudo sobe
+    rápido. Todo mundo volta ao mesmo ponto depois de poucos segundos.
+  </p>
+  <div class="mob-grid" id="mob-grid"></div>
+</section>
+
+<section class="band band-alt" id="equipamento">
+  <p class="band-kicker">Sete lugares</p>
+  <h2 class="band-title">Equipamento</h2>
+  <p class="band-lede">
+    Arma, cabeça, corpo, dois dedos, pescoço e orelha. Tudo isso começa vazio e é
+    preenchido com o que cai dos inimigos ou com o que o Ferreiro vende.
+  </p>
+  <div class="eq-wrap">
+    <div class="paperdoll" id="paperdoll"></div>
+    <div class="loja-col">
+      <p class="loja-title">O que tem para comprar</p>
+      <div class="item-grid" id="item-grid"></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="skills">
+  <p class="band-kicker">Um ponto por nível</p>
+  <h2 class="band-title">Skills</h2>
+  <p class="band-lede">
+    Cada nível rende um ponto de skill. O Mestre de Habilidades compra as entradas
+    das árvores, e cada linha pode ser especializada para encurtar o tempo de
+    recarga. A barra do personagem leva dez slots.
+  </p>
+  <div class="tree-grid" id="tree-grid"></div>
+</section>
+
+<section class="band band-alt" id="loja">
+  <p class="band-kicker">Tudo numa praça</p>
+  <h2 class="band-title">A cidade</h2>
+  <p class="band-lede">
+    Não existe viagem. Mercador, Ferreiro e os dois mestres ficam no mesmo
+    compasso, e o Sábio explica o que for preciso.
+  </p>
+  <div class="npc-grid" id="npc-grid"></div>
+</section>
+
+<section class="band" id="regras">
+  <p class="band-kicker">As regras do mundo</p>
+  <h2 class="band-title">Seis coisas que valem saber</h2>
+  <div class="rule-grid" id="rule-grid"></div>
+</section>
+
+<section class="band" id="comoJogar">
+  <p class="band-kicker">O caminho todo</p>
+  <h2 class="band-title">Como jogar</h2>
+  <div class="steps" id="steps"></div>
+  <div class="final-cta">
+    <p class="final-lede">A conta nova vem zerada de verdade. Cria, escolhe, compra o machado e desce.</p>
+    <div class="hero-cta">
+      <a class="btn btn-cta btn-lg" href="http://127.0.0.1:5173/boot/01-login.html" target="_blank" rel="noreferrer">Criar conta</a>
+      <a class="btn btn-iron btn-lg" href="http://127.0.0.1:5173/" target="_blank" rel="noreferrer">Jogar agora</a>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="foot-in">
+    <span class="foot-brand">UAIDZIN</span>
+  </div>
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

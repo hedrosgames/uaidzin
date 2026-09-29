@@ -1,9 +1,20 @@
 import type { ErrorStats } from "../core/errors/ErrorReporter";
 
+export interface DebugPerf {
+  draws: number;
+  triangles: number;
+  programs: number;
+  lights: number;
+  particles: number;
+  quality: string;
+}
+
 export class DebugHud {
   private frames = 0;
   private fps = 0;
   private lastSample = performance.now();
+  private lastFrame = performance.now();
+  private readonly frameTimes: number[] = [];
   private readonly textContainer: HTMLElement;
   private readonly resetBtn: HTMLButtonElement | null = null;
 
@@ -36,23 +47,34 @@ export class DebugHud {
     elapsed: number;
     extra?: string;
     errorStats?: ErrorStats;
+    perf?: DebugPerf;
   }): void {
     if (!import.meta.env.DEV || this.element.hidden) return;
 
     const now = performance.now();
+    this.frameTimes.push(now - this.lastFrame);
+    if (this.frameTimes.length > 120) this.frameTimes.shift();
+    this.lastFrame = now;
     this.frames += 1;
     if (now - this.lastSample >= 500) {
       this.fps = Math.round((this.frames * 1000) / (now - this.lastSample));
       this.frames = 0;
       this.lastSample = now;
     }
+    const sorted = [...this.frameTimes].sort((a, b) => a - b);
+    const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] ?? 0;
 
     const lines = [
       "UAIDZIN · greybox",
       `mode: ${info.mode}`,
-      `fps: ${this.fps}`,
+      `fps: ${this.fps}  p95: ${p95.toFixed(1)}ms`,
       `t: ${info.elapsed.toFixed(1)}s`,
     ];
+    if (info.perf) {
+      lines.push(`q: ${info.perf.quality}`);
+      lines.push(`draw: ${info.perf.draws}  tri: ${info.perf.triangles}`);
+      lines.push(`prog: ${info.perf.programs}  luz: ${info.perf.lights}  part: ${info.perf.particles}`);
+    }
     if (info.extra) lines.push(info.extra);
     if (info.errorStats && (info.errorStats.consecutive > 0 || info.errorStats.total > 0)) {
       lines.push(`erros: ${info.errorStats.consecutive} consec (${info.errorStats.total} total)`);

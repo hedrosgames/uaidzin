@@ -75,6 +75,19 @@ export interface WireSkillBarSlot {
   cd?: number;
 }
 
+export interface WirePotionBarSlot {
+  defId: string;
+  name: string;
+  icon: string;
+  stack: number;
+}
+
+export interface WireCombatAutos {
+  attack: boolean;
+  move: boolean;
+  potion: boolean;
+}
+
 export interface WireComposerItem {
   uid: string;
   defId: string;
@@ -155,6 +168,11 @@ export interface WireApi {
   clearSkillSlot(slotIndex: number): boolean;
   toggleSkillAuto(slotIndex: number): boolean;
   swapSkillSlots(fromIndex: number, toIndex: number): boolean;
+  getPotionBar(): Array<WirePotionBarSlot | null>;
+  setPotionSlot(slotIndex: number, defId: string | null): boolean;
+  usePotionSlot(slotIndex: number): boolean;
+  getCombatAutos(): WireCombatAutos;
+  toggleCombatAuto(kind: "attack" | "move" | "potion"): boolean;
 
   getShopCatalog(): ShopCatalogForUi;
   buyShop(shopId: string, itemId: string): { ok: boolean; reason?: string };

@@ -1,0 +1,9 @@
+{
+  "id": "gema_life",
+  "name": "Gema Life",
+  "category": "items",
+  "group": "gem",
+  "source": "C:\\Users\\Felipe\\.codex\\generated_images\\01a0eab8-371e-7c52-b2ab-fc37375c1d8e\\exec-91f1c5e9-8795-4921-bf12-e83f1ee6e6d7.png",
+  "prompt": "Use case: stylized-concept. Create exactly ONE production inventory icon for colorful fantasy RPG UAIDZIN. Subject: An original jewel inspired by MU Jewel of Life: deep emerald green oval organic gemstone with a small luminous gold-green core.. Item name for context only: Gema Life. Style: richly colored polished stylized 3D render with hand-painted MMORPG finish, tactile material volume, clean broad silhouette, crisp readable shapes, warm key light upper left and subtle rim light. Entire object isolated and centered in square canvas with at least 10 percent transparent padding on every side, small restrained contact-free highlights. TRUE transparent alpha background. No decorative frame, no border, no tile, no floor, no background, no cast shadow outside silhouette, no labels, no letters, no watermark, no grid. Readable at 64 pixels; avoid excessive tiny detail. ",
+  "status": "generated"
+}

@@ -51,13 +51,13 @@ export function createSkillsPanel(container: HTMLElement, ctx: WireContext): Ski
     if (!treesContainer) return;
 
     const treeNames: Record<TreeId, string> = {
-      fisica: "Caça",
-      controle: "Armadilha",
-      magia: "Marca",
+      fisica: catalog.treeLabels?.fisica || "Física",
+      controle: catalog.treeLabels?.controle || "Controle",
+      magia: catalog.treeLabels?.magia || "Magia",
     };
 
     const eighthVal = win.querySelector<HTMLElement>("#eighthTreeVal");
-    if (eighthVal) eighthVal.textContent = catalog.eighthTree ? treeNames[catalog.eighthTree] || catalog.eighthTree : "Caça";
+    if (eighthVal) eighthVal.textContent = catalog.eighthTree ? treeNames[catalog.eighthTree] || catalog.eighthTree : treeNames.fisica;
 
     const ptsVal = win.querySelector<HTMLElement>("#skillPtsVal");
     if (ptsVal) ptsVal.textContent = String(catalog.skillPoints || 0);
@@ -120,7 +120,10 @@ export function createSkillsPanel(container: HTMLElement, ctx: WireContext): Ski
       if (sk.learned && !sk.passive) {
         slotEl.setAttribute("draggable", "true");
         slotEl.addEventListener("dragstart", (e) => {
-          e.dataTransfer?.setData("text/plain", JSON.stringify({ kind: "skill", skillId: sk.id }));
+          e.dataTransfer?.setData(
+            "text/plain",
+            JSON.stringify({ kind: "skill", skillId: sk.skillId || sk.id }),
+          );
           if (e.dataTransfer) e.dataTransfer.effectAllowed = "copy";
         });
       }

@@ -1,0 +1,332 @@
+{
+  "width": 1254,
+  "height": 1254,
+  "cols": 3,
+  "rows": 3,
+  "cells": [
+    {
+      "row": 1,
+      "col": 1,
+      "crop": {
+        "left": 0,
+        "top": 0,
+        "width": 418,
+        "height": 418
+      },
+      "alphaGt0": 45020,
+      "alphaGt16": 34430,
+      "alphaGte128": 32899,
+      "maxAlpha": 255,
+      "occupancyGt16": 0.1971,
+      "bboxAlphaGt0": {
+        "x": 49,
+        "y": 33,
+        "width": 369,
+        "height": 385
+      },
+      "bboxAlphaGt16": {
+        "x": 59,
+        "y": 99,
+        "width": 322,
+        "height": 254
+      },
+      "bboxAlphaGte128": {
+        "x": 60,
+        "y": 100,
+        "width": 320,
+        "height": 252
+      },
+      "edgeAlphaGt0": true,
+      "edgeAlphaGt16": false,
+      "edgeAlphaGte128": false
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "crop": {
+        "left": 418,
+        "top": 0,
+        "width": 418,
+        "height": 418
+      },
+      "alphaGt0": 63285,
+      "alphaGt16": 56880,
+      "alphaGte128": 55759,
+      "maxAlpha": 255,
+      "occupancyGt16": 0.3255,
+      "bboxAlphaGt0": {
+        "x": 1,
+        "y": 17,
+        "width": 413,
+        "height": 399
+      },
+      "bboxAlphaGt16": {
+        "x": 57,
+        "y": 57,
+        "width": 306,
+        "height": 323
+      },
+      "bboxAlphaGte128": {
+        "x": 58,
+        "y": 58,
+        "width": 304,
+        "height": 321
+      },
+      "edgeAlphaGt0": false,
+      "edgeAlphaGt16": false,
+      "edgeAlphaGte128": false
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "crop": {
+        "left": 836,
+        "top": 0,
+        "width": 418,
+        "height": 418
+      },
+      "alphaGt0": 43507,
+      "alphaGt16": 39231,
+      "alphaGte128": 38317,
+      "maxAlpha": 255,
+      "occupancyGt16": 0.2245,
+      "bboxAlphaGt0": {
+        "x": 5,
+        "y": 40,
+        "width": 354,
+        "height": 343
+      },
+      "bboxAlphaGt16": {
+        "x": 83,
+        "y": 97,
+        "width": 272,
+        "height": 283
+      },
+      "bboxAlphaGte128": {
+        "x": 84,
+        "y": 98,
+        "width": 270,
+        "height": 281
+      },
+      "edgeAlphaGt0": false,
+      "edgeAlphaGt16": false,
+      "edgeAlphaGte128": false
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "crop": {
+        "left": 0,
+        "top": 418,
+        "width": 418,
+        "height": 418
+      },
+      "alphaGt0": 39193,
+      "alphaGt16": 27810,
+      "alphaGte128": 26421,
+      "maxAlpha": 255,
+      "occupancyGt16": 0.1592,
+      "bboxAlphaGt0": {
+        "x": 41,
+        "y": 0,
+        "width": 335,
+        "height": 418
+      },
+      "bboxAlphaGt16": {
+        "x": 85,
+        "y": 58,
+        "width": 264,
+        "height": 299
+      },
+      "bboxAlphaGte128": {
+        "x": 87,
+        "y": 59,
+        "width": 261,
+        "height": 297
+      },
+      "edgeAlphaGt0": true,
+      "edgeAlphaGt16": false,
+      "edgeAlphaGte128": false
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "crop": {
+        "left": 418,
+        "top": 418,
+        "width": 418,
+        "height": 418
+      },
+      "alphaGt0": 33110,
+      "alphaGt16": 26109,
+      "alphaGte128": 25206,
+      "maxAlpha": 255,
+      "occupancyGt16": 0.1494,
+      "bboxAlphaGt0": {
+        "x": 13,
+        "y": 1,
+        "width": 405,
+        "height": 413
+      },
+      "bboxAlphaGt16": {
+        "x": 61,
+        "y": 37,
+        "width": 301,
+        "height": 342
+      },
+      "bboxAlphaGte128": {
+        "x": 62,
+        "y": 37,
+        "width": 300,
+        "height": 341
+      },
+      "edgeAlphaGt0": true,
+      "edgeAlphaGt16": false,
+      "edgeAlphaGte128": false
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "crop": {
+        "left": 836,
+        "top": 418,
+        "width": 418,
+        "height": 418
+      },
+      "alphaGt0": 48289,
+      "alphaGt16": 38120,
+      "alphaGte128": 36649,
+      "maxAlpha": 255,
+      "occupancyGt16": 0.2182,
+      "bboxAlphaGt0": {
+        "x": 1,
+        "y": 5,
+        "width": 397,
+        "height": 411
+      },
+      "bboxAlphaGt16": {
+        "x": 71,
+        "y": 92,
+        "width": 287,
+        "height": 225
+      },
+      "bboxAlphaGte128": {
+        "x": 72,
+        "y": 93,
+        "width": 285,
+        "height": 222
+      },
+      "edgeAlphaGt0": false,
+      "edgeAlphaGt16": false,
+      "edgeAlphaGte128": false
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "crop": {
+        "left": 0,
+        "top": 836,
+        "width": 418,
+        "height": 418
+      },
+      "alphaGt0": 47793,
+      "alphaGt16": 38176,
+      "alphaGte128": 36316,
+      "maxAlpha": 255,
+      "occupancyGt16": 0.2185,
+      "bboxAlphaGt0": {
+        "x": 23,
+        "y": 1,
+        "width": 395,
+        "height": 361
+      },
+      "bboxAlphaGt16": {
+        "x": 89,
+        "y": 18,
+        "width": 252,
+        "height": 340
+      },
+      "bboxAlphaGte128": {
+        "x": 90,
+        "y": 19,
+        "width": 250,
+        "height": 339
+      },
+      "edgeAlphaGt0": true,
+      "edgeAlphaGt16": false,
+      "edgeAlphaGte128": false
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "crop": {
+        "left": 418,
+        "top": 836,
+        "width": 418,
+        "height": 418
+      },
+      "alphaGt0": 19288,
+      "alphaGt16": 12620,
+      "alphaGte128": 11612,
+      "maxAlpha": 255,
+      "occupancyGt16": 0.0722,
+      "bboxAlphaGt0": {
+        "x": 1,
+        "y": 5,
+        "width": 397,
+        "height": 367
+      },
+      "bboxAlphaGt16": {
+        "x": 125,
+        "y": 13,
+        "width": 197,
+        "height": 351
+      },
+      "bboxAlphaGte128": {
+        "x": 125,
+        "y": 14,
+        "width": 196,
+        "height": 350
+      },
+      "edgeAlphaGt0": false,
+      "edgeAlphaGt16": false,
+      "edgeAlphaGte128": false
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "crop": {
+        "left": 836,
+        "top": 836,
+        "width": 418,
+        "height": 418
+      },
+      "alphaGt0": 20074,
+      "alphaGt16": 11948,
+      "alphaGte128": 10788,
+      "maxAlpha": 255,
+      "occupancyGt16": 0.0684,
+      "bboxAlphaGt0": {
+        "x": 5,
+        "y": 20,
+        "width": 365,
+        "height": 398
+      },
+      "bboxAlphaGt16": {
+        "x": 97,
+        "y": 33,
+        "width": 247,
+        "height": 319
+      },
+      "bboxAlphaGte128": {
+        "x": 98,
+        "y": 33,
+        "width": 246,
+        "height": 318
+      },
+      "edgeAlphaGt0": true,
+      "edgeAlphaGt16": false,
+      "edgeAlphaGte128": false
+    }
+  ]
+}

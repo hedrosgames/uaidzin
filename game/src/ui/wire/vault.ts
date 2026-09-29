@@ -7,8 +7,6 @@ export interface VaultPanel {
 }
 
 export function createVaultPanel(container: HTMLElement, ctx: WireContext): VaultPanel {
-  let curVaultPage = 0;
-
   function renderHtml(): string {
     return `
 <section class="win is-closed" id="p-vault">
@@ -31,8 +29,6 @@ export function createVaultPanel(container: HTMLElement, ctx: WireContext): Vaul
 
       <div class="bag-tabs" style="margin-bottom:6px">
         <button type="button" class="bag-tab on" data-vault-page="0">1</button>
-        <button type="button" class="bag-tab" data-vault-page="1">2</button>
-        <button type="button" class="bag-tab" data-vault-page="2">3</button>
         <span class="val" id="vaultCount">0 / 120</span>
       </div>
 
@@ -76,15 +72,6 @@ export function createVaultPanel(container: HTMLElement, ctx: WireContext): Vaul
       }
     });
 
-    win.querySelectorAll<HTMLButtonElement>(".bag-tab[data-vault-page]").forEach((tab) => {
-      tab.addEventListener("click", () => {
-        curVaultPage = Number(tab.dataset.vaultPage) || 0;
-        win.querySelectorAll(".bag-tab[data-vault-page]").forEach((t) => t.classList.remove("on"));
-        tab.classList.add("on");
-        renderVault();
-      });
-    });
-
     win.addEventListener("mouseleave", () => {
       ctx.hideItemTip();
     });
@@ -100,17 +87,14 @@ export function createVaultPanel(container: HTMLElement, ctx: WireContext): Vaul
     const footCountEl = win.querySelector<HTMLElement>("#vaultFootCount");
     if (!bagEl) return;
 
-    const countText = `${vault.items.length} / ${vault.capacity}`;
+    const capacity = Math.max(1, vault.capacity || 120);
+    const countText = `${vault.items.length} / ${capacity}`;
     if (countEl) countEl.textContent = countText;
     if (footCountEl) footCountEl.textContent = countText;
 
-    const pageSize = 40;
-    const startIndex = curVaultPage * pageSize;
-    const pageItems = vault.items.slice(startIndex, startIndex + pageSize);
-
     let html = "";
-    for (let i = 0; i < pageSize; i++) {
-      const it = pageItems[i];
+    for (let i = 0; i < capacity; i++) {
+      const it = vault.items[i];
       if (!it) {
         html += `<div class="cell empty" data-cell="${i}"></div>`;
         continue;

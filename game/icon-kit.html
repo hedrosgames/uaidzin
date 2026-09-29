@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Galeria de ícones</title>
+<style>
+:root{color-scheme:dark;font:15px system-ui,sans-serif;background:#100c08;color:#f0e6d0}body{margin:0;padding:24px}header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px}h1{font-size:22px;color:#d4a017;margin:0 auto 0 0}input,select{background:#241c14;color:#f0e6d0;border:1px solid #75603a;border-radius:2px;padding:9px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--card-min,300px),1fr));gap:12px}.card{background:#241c14;border:1px solid #51432c;border-radius:2px;padding:10px;min-width:0;user-select:none}.preview{display:grid;place-items:center}.sample{width:var(--icon-size,256px);height:var(--icon-size,256px);max-width:100%;display:grid;place-items:center;background-color:#171717;background-image:linear-gradient(45deg,#292929 25%,transparent 25%),linear-gradient(-45deg,#292929 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#292929 75%),linear-gradient(-45deg,transparent 75%,#292929 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;border:1px solid #53462f}.sample img{width:100%;height:100%;object-fit:contain}.sample span{font-size:13px;color:#9d8b6a}.name{font-weight:650;margin-top:8px;overflow-wrap:anywhere}.meta{color:#b9aa8c;font-size:12px;margin-top:3px}.pending{color:#ef9b68}.ready{color:#91c78b}
+</style>
+</head>
+<body>
+<header><h1>Galeria de ícones</h1><input id="search" placeholder="Filtrar por nome ou ID"><select id="category"><option value="">Todas as categorias</option></select><select id="status"><option value="">Todos os estados</option><option value="generated">Gerados</option><option value="needs-visual-review">Aguardando revisão visual</option><option value="pending">Pendentes</option><option value="ready">Prontos</option></select><select id="size"><option value="64">Prévia 64 px</option><option value="128">Prévia 128 px</option><option value="256" selected>Prévia 256 px</option></select></header>
+<main id="grid" class="grid"></main>
+<script type="module">
+const [galleryResult,briefResult,itemResult,interfaceResult]=await Promise.allSettled([fetch('/art/icon-kit/gallery-manifest.json').then(r=>r.ok?r.json():[]),fetch('/art/icon-kit/skill-briefs.json').then(r=>r.ok?r.json():[]),fetch('/art/icon-kit/item-briefs.json').then(r=>r.ok?r.json():[]),fetch('/assets/icons/interface-kit/manifest.json').then(r=>r.ok?r.json():[])]);
+const gallery=galleryResult.status==='fulfilled'?galleryResult.value:[];
+const briefs=briefResult.status==='fulfilled'?briefResult.value:[];
+const itemBriefs=itemResult.status==='fulfilled'?itemResult.value:[];
+const interfaceIcons=interfaceResult.status==='fulfilled'?interfaceResult.value.map(i=>({...i,category:'interface',status:'ready'})):[];
+const records=[...gallery,...itemBriefs.filter(b=>!gallery.some(g=>g.id===b.id)).map(b=>({...b,path:null,status:'pending',reason:'Aguardando geração da arte'})),...briefs.filter(b=>!gallery.some(g=>g.id===b.id)).map(b=>({...b,path:null,status:'pending',reason:'Aguardando geração da arte'})),...interfaceIcons];
+const search=document.querySelector('#search'),category=document.querySelector('#category'),status=document.querySelector('#status'),size=document.querySelector('#size'),grid=document.querySelector('#grid');
+for(const c of [...new Set(records.map(r=>r.category))].sort()){const option=document.createElement('option');option.value=c;option.textContent=c;category.append(option)}
+function render(){const px=Number(size.value);document.documentElement.style.setProperty('--icon-size',`${px}px`);document.documentElement.style.setProperty('--card-min',`${px+32}px`);grid.replaceChildren();const q=search.value.trim().toLowerCase();for(const r of records){const state=r.status==='generated'&&r.reviewStatus==='needs-visual-review'?'needs-visual-review':r.status;if(category.value&&r.category!==category.value)continue;if(status.value&&state!==status.value)continue;if(q&&!`${r.id} ${r.name} ${r.category}`.toLowerCase().includes(q))continue;const card=document.createElement('article');card.className='card';const preview=document.createElement('div');preview.className='preview';const sample=document.createElement('div');sample.className='sample';if(r.path){const img=document.createElement('img');img.src=(px===64&&r.preview64)||(px===128&&r.preview128)||r.path;img.alt=r.name;sample.append(img)}else{const pending=document.createElement('span');pending.textContent='Pendente';sample.append(pending)}preview.append(sample);const name=document.createElement('div');name.className='name';name.textContent=r.name||r.id;const meta=document.createElement('div');meta.className=`meta ${r.status==='pending'||state==='needs-visual-review'?'pending':'ready'}`;const label=state==='needs-visual-review'?'Aguardando revisão visual':r.status==='generated'?'Gerado':r.status==='ready'?'Pronto':'Pendente';meta.textContent=`${r.category} · ${label} · ${r.id}`;card.append(preview,name,meta);grid.append(card)}}
+search.addEventListener('input',render);category.addEventListener('change',render);status.addEventListener('change',render);size.addEventListener('change',render);render();
+</script>
+</body>
+</html>

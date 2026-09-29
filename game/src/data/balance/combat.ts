@@ -5,7 +5,7 @@ export const COMBAT_BALANCE = {
     attackFallback: 0.4,
     hitFallback: 0.28,
     skillFallback: 0.45,
-    max: 0.85,
+    max: 2.4,
   },
   player: {
     maxHp: 120,

@@ -22,6 +22,12 @@ function makeMockPlayerLoader(delayMs = 5): PlayerGltfLoader {
 }
 
 describe("PlayerView weapon set async racing", () => {
+  it("load sem arma deixa as maos vazias", async () => {
+    const view = new PlayerView(makeMockPlayerLoader(0));
+    await view.load("TK");
+    expect(view.getWeaponSet()).toBe("sword-shield");
+  });
+
   it("tres setWeaponSet rapidos: vence o ultimo", async () => {
     const loader = makeMockPlayerLoader(10);
     const view = new PlayerView(loader);

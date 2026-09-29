@@ -1,9 +1,10 @@
 import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, IcosahedronGeometry, InstancedMesh, MeshStandardMaterial, Object3D } from "three";
+import { grassCount } from "../presentation/rendering/GraphicsQuality";
 import { positionBlocked, type WorldCollision } from "./collision";
 import { cemeteryPathDistance } from "./CemeteryGround";
 import { buildCemeteryGraves } from "./CemeteryGraves";
 
-function makeDryGrassGeometry(): BufferGeometry {
+export function makeDryGrassGeometry(): BufferGeometry {
   const positions: number[] = [];
   const colors: number[] = [];
   for (let blade = 0; blade < 5; blade++) {
@@ -14,7 +15,7 @@ function makeDryGrassGeometry(): BufferGeometry {
       const width = 0.013 * (1 - step);
       const reach = 0.024 + bend * step * step;
       positions.push(Math.cos(angle) * reach + Math.sin(angle) * width * side, height * step, Math.sin(angle) * reach - Math.cos(angle) * width * side);
-      const shade = 0.38 + step * 0.62;
+      const shade = 0.62 + step * 0.38;
       colors.push(shade, shade, shade * 0.88);
     };
     for (let segment = 0; segment < 3; segment++) {
@@ -64,13 +65,18 @@ export function buildCemeteryLandscape(parent: Group, collision: WorldCollision)
       transform.scale.set(scale, scale * (mesh === stones ? 0.38 : 1), scale);
       transform.updateMatrix();
       mesh.setMatrixAt(count, transform.matrix);
-      if (mesh === grass) color.setHSL(0.115 + random() * 0.06, 0.12 + random() * 0.14, 0.3 + random() * 0.19);
+      if (mesh === grass) color.setHSL(0.12 + random() * 0.04, 0.16 + random() * 0.1, 0.46 + random() * 0.12);
       else color.setHSL(0.12, 0.05, 0.52 + random() * 0.25);
       mesh.setColorAt(count, color);
       count++;
     }
     mesh.count = count;
-    mesh.receiveShadow = true;
+    mesh.receiveShadow = mesh !== grass;
+    if (mesh === grass) {
+      mesh.userData.budgetKind = "grass";
+      mesh.userData.fullCount = count;
+      mesh.count = grassCount(count);
+    }
     mesh.userData.occlusionIgnore = true;
     mesh.raycast = () => {};
     mesh.computeBoundingSphere();

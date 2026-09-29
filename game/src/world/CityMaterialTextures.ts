@@ -1,4 +1,5 @@
 import { MeshStandardMaterial, RepeatWrapping, SRGBColorSpace, Texture, TextureLoader, Vector2 } from "three";
+import { stampAnisotropy } from "../presentation/rendering/GraphicsQuality";
 
 export type CitySurfaceKind = "stone" | "wood" | "cloth" | "iron";
 
@@ -25,7 +26,7 @@ export function loadCitySurfaceTextures(kind: CitySurfaceKind): Promise<CitySurf
     const texture = await loader.loadAsync(`/textures/city-materials/${assets[kind]}-${suffix}.jpg`);
     texture.wrapS = RepeatWrapping;
     texture.wrapT = RepeatWrapping;
-    texture.anisotropy = 8;
+    stampAnisotropy(texture);
     texture.channel = 1;
     if (suffix === "diffuse") texture.colorSpace = SRGBColorSpace;
     return texture;

@@ -1,5 +1,4 @@
 import {
-  CLASS_DEFAULT_WEAPON_SET,
   ECONOMY_BALANCE,
   WEAPON_SET_BY_ITEM,
 } from "../../data/balance/economy";
@@ -11,7 +10,7 @@ export type EquipSlot = "weapon" | "head" | "armor" | "ring1" | "ring2" | "neck"
 
 export class EquipmentService {
   readonly equipped: Partial<Record<EquipSlot, ItemInstance>> = {};
-  weaponSet = "axe-shield";
+  weaponSet: string | null = null;
 
   constructor(
     private readonly inventory: InventoryService,
@@ -80,14 +79,11 @@ export class EquipmentService {
     return ["weapon", "head", "armor", "ring1", "ring2", "neck", "ear"].includes(slot);
   }
 
-  getWeaponSet(classId?: string): string {
+  getWeaponSet(_classId?: string): string | null {
     const weapon = this.equipped.weapon;
-    if (weapon) {
-      if (weapon.weaponSet) return weapon.weaponSet;
-      if (WEAPON_SET_BY_ITEM[weapon.defId]) return WEAPON_SET_BY_ITEM[weapon.defId];
-    }
-    const cid = classId || "TK";
-    return CLASS_DEFAULT_WEAPON_SET[cid] || "axe-shield";
+    if (!weapon) return null;
+    if (weapon.weaponSet) return weapon.weaponSet;
+    return WEAPON_SET_BY_ITEM[weapon.defId] ?? null;
   }
 
   recalcEquipBonus(classId?: string): void {

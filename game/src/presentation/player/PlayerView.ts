@@ -114,7 +114,6 @@ export class PlayerView {
   private current: PlayerAnim | "" = "";
   private busyUntil = 0;
   private dead = false;
-  private hitFlip = false;
   private moving = false;
   private classId: PlayerClassId = "TK";
   private readonly armorAura = new ArmorAura();
@@ -218,9 +217,11 @@ export class PlayerView {
       this.actions.set(name, this.mixer.clipAction(clip));
     }
 
-    this.play("idle", true);
-    for (let i = 0; i < 20; i++) this.mixer.update(1 / 30);
     this.fitStandingHeight(model);
+    if (this.classIdleClip && this.mixer) {
+      this.actions.set("idle", this.mixer.clipAction(this.classIdleClip));
+    }
+    this.play("idle", true);
     this.buildGhosts(model);
     this.weaponRig.bindModel(model);
 
@@ -237,6 +238,20 @@ export class PlayerView {
     const loadToken = this.loadGen;
     if (!this.model || !this.mixer) return;
     await this.applyWeaponSet(set, weaponToken, loadToken);
+  }
+
+  async clearWeapons(): Promise<void> {
+    this.weaponSet = null;
+    const weaponToken = ++this.weaponSetGen;
+    const loadToken = this.loadGen;
+    this.weaponRig.clear();
+    this.armorAura.apply([]);
+    if (!this.model || !this.mixer) return;
+    this.attackClip = "attack";
+    await this.bindAttackClipSafe("attack", weaponToken, loadToken);
+    if (weaponToken !== this.weaponSetGen || loadToken !== this.loadGen) return;
+    await this.bindIdleClip("class", weaponToken, loadToken);
+    if (!this.dead) this.play(this.moving ? "run" : "idle", true);
   }
 
   private async applyWeaponSet(
@@ -258,6 +273,7 @@ export class PlayerView {
     await this.weaponRig.equip(this.root, set);
     if (weaponToken !== this.weaponSetGen || loadToken !== this.loadGen) return;
     this.armorAura.apply(this.weaponRig.getVisualRoots());
+    if (!this.dead) this.play(this.moving ? "run" : "idle", true);
   }
 
   getWeaponSet(): WeaponSetId | null {
@@ -309,9 +325,11 @@ export class PlayerView {
     else if (want === "run") this.syncRunTimeScale();
   }
 
-  playAttack(): void {
-    const set = this.weaponRig.getSet() ?? this.weaponSet ?? CLASS_WEAPON_SET[this.classId];
-    this.playOneShot(basicAnimForWeapon(set));
+  playAttack(): "attack" | "cast" {
+    const set = this.weaponRig.getSet() ?? this.weaponSet;
+    const anim: "attack" | "cast" = set ? basicAnimForWeapon(set) : "attack";
+    this.playOneShot(anim);
+    return anim;
   }
 
   playCast(): void {
@@ -319,8 +337,15 @@ export class PlayerView {
   }
 
   playHit(): void {
-    this.hitFlip = !this.hitFlip;
-    this.playOneShot(this.hitFlip ? "hit_gut" : "hit_right");
+  }
+
+  isBusy(): boolean {
+    return !this.dead && this.busyUntil > 0 && performance.now() < this.busyUntil;
+  }
+
+  getBusyRemainingSec(): number {
+    if (!this.isBusy()) return 0;
+    return Math.max(0, (this.busyUntil - performance.now()) / 1000);
   }
 
   playDeath(): void {
@@ -340,13 +365,7 @@ export class PlayerView {
     if (!this.dead && this.current !== "death") return;
     this.dead = false;
     this.busyUntil = 0;
-    const death = this.actions.get("death");
-    if (death) {
-      death.fadeOut(0.05);
-      death.stop();
-      death.reset();
-      death.weight = 0;
-    }
+    this.mixer?.stopAllAction();
     this.current = "";
     if (this.ready) this.play(this.moving ? "run" : "idle", true);
   }
@@ -365,17 +384,17 @@ export class PlayerView {
     weaponSet: WeaponSetId | null;
     attackClipId: HumanAttackClip;
     idleClipId: WeaponIdleId;
-    basicAnim: ReturnType<typeof basicAnimForWeapon>;
+    basicAnim: "attack" | "cast";
     attackDurationSec: number;
     attackActionReady: boolean;
   } {
-    const set = this.weaponRig.getSet() ?? this.weaponSet ?? CLASS_WEAPON_SET[this.classId];
+    const set = this.weaponRig.getSet() ?? this.weaponSet;
     const action = this.actions.get("attack");
     return {
       weaponSet: set,
       attackClipId: this.attackClip,
       idleClipId: this.idleClip,
-      basicAnim: basicAnimForWeapon(set),
+      basicAnim: set ? basicAnimForWeapon(set) : "attack",
       attackDurationSec: this.getAnimDurationSec("attack"),
       attackActionReady: !!(this.ready && action && action.getClip()),
     };
@@ -401,10 +420,6 @@ export class PlayerView {
     model.scale.setScalar(1);
     model.position.set(0, 0, 0);
     model.updateMatrixWorld(true);
-    if (this.mixer) {
-      for (let i = 0; i < 10; i++) this.mixer.update(1 / 30);
-    }
-    model.updateMatrixWorld(true);
 
     const boneBox = new Box3();
     const tip = new Vector3();
@@ -425,7 +440,12 @@ export class PlayerView {
 
     const center = boneBox.getCenter(new Vector3());
     const height = Math.max(boneBox.max.y - boneBox.min.y, 0.001);
-    const scale = TARGET_HEIGHT / height;
+    let scale = TARGET_HEIGHT / height;
+    if (this.classId === "TK") scale = 0.0217;
+    else if (this.classId === "FM") scale = 0.0218;
+    else if (this.classId === "BM") scale = 0.0216;
+    else if (this.classId === "HT") scale = 0.0200;
+
     model.scale.setScalar(scale);
     model.position.set(-center.x * scale, -boneBox.min.y * scale, -center.z * scale);
     model.updateMatrixWorld(true);
@@ -492,8 +512,8 @@ export class PlayerView {
     model.traverse((obj) => {
       const mesh = obj as Mesh;
       if (!mesh.isMesh) return;
-      mesh.castShadow = false;
-      mesh.receiveShadow = false;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       const next: MeshStandardMaterial[] = [];
       for (const mat of mats) {

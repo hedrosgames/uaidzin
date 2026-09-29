@@ -161,9 +161,10 @@ export class ProgressionService {
     const primaryValue = a[primary];
     const extraAttack = Math.floor(primaryValue * (bonus.attackPerPoint ?? 0));
     const extraHp = Math.floor(primaryValue * (bonus.hpPerPoint ?? 0));
-    this.character.baseAttack = PROGRESSION_BALANCE.attackFromFor(a.FOR) + extraAttack;
-    this.character.baseDefense = PROGRESSION_BALANCE.defenseFromCons(a.CONS);
-    const maxHp = PROGRESSION_BALANCE.maxHpFromCons(a.CONS) + extraHp;
+    const growth = PROGRESSION_BALANCE.levelGrowth(this.state.level);
+    this.character.baseAttack = Math.floor((PROGRESSION_BALANCE.attackFromFor(a.FOR) + extraAttack) * growth);
+    this.character.baseDefense = PROGRESSION_BALANCE.defenseFromDes(a.DES);
+    const maxHp = Math.floor((PROGRESSION_BALANCE.maxHpFromCons(a.CONS) + extraHp) * growth);
     const ratio = this.character.maxHp > 0 ? this.character.hp / this.character.maxHp : 1;
     this.character.maxHp = maxHp;
     this.character.hp = this.character.isDead ? 0 : Math.max(1, Math.round(maxHp * Math.min(1, ratio)));

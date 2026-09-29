@@ -1,0 +1,155 @@
+{
+  "name": "skills-BM",
+  "source": "C:\\Users\\Felipe\\.codex\\generated_images\\01a0eab8-371e-7c52-b2ab-fc37375c1d8e\\exec-d8e196be-6b7b-49c6-8301-bf1f16cb8d57.png",
+  "columns": 6,
+  "rows": 4,
+  "category": "skills",
+  "items": [
+    {
+      "id": "bm_fis_lobo_guerreiro",
+      "name": "Lobo Guerreiro",
+      "category": "skills",
+      "visual": "A dramatic primal transformation emblem showing a distinct beast warrior silhouette, Lobo Guerreiro motif, coiling nature energy and readable animal features, isolated fantasy game icon"
+    },
+    {
+      "id": "bm_fis_couro_fera",
+      "name": "Couro de Fera",
+      "category": "skills",
+      "visual": "A distinct Couro de Fera emblem built around the actual effect: a layered iron-and-gold protective ward; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon"
+    },
+    {
+      "id": "bm_fis_furia_selvagem",
+      "name": "Fúria Selvagem",
+      "category": "skills",
+      "visual": "A distinct Furia Selvagem emblem built around the actual effect: a raised weapon wrapped in a focused attack aura; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon"
+    },
+    {
+      "id": "bm_fis_investida",
+      "name": "Investida Bestial",
+      "category": "skills",
+      "visual": "A vivid Investida Bestial spell icon, steel-white kinetic force forming a focused projectile or blade striking one clear target; class BM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "bm_fis_garra_brutal",
+      "name": "Garra Brutal",
+      "category": "skills",
+      "visual": "A vivid Garra Brutal spell icon, steel-white kinetic force forming a focused projectile or blade striking one clear target; class BM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "bm_fis_ursao",
+      "name": "Ursão Ancião",
+      "category": "skills",
+      "visual": "A dramatic primal transformation emblem showing a distinct beast warrior silhouette, Ursao Anciao motif, coiling nature energy and readable animal features, isolated fantasy game icon"
+    },
+    {
+      "id": "bm_fis_presas_aco",
+      "name": "Presas de Aço",
+      "category": "skills",
+      "visual": "A sharply readable Presas de Aco emblem showing a pair of polished steel wolf fangs framing a focused critical strike spark; crisp central silhouette, restrained magical glow, isolated fantasy game icon"
+    },
+    {
+      "id": "bm_fis_tita",
+      "name": "Titã Primordial",
+      "category": "skills",
+      "visual": "A dramatic primal transformation emblem showing a distinct beast warrior silhouette, Tita Primordial motif, coiling nature energy and readable animal features, isolated fantasy game icon"
+    },
+    {
+      "id": "bm_mag_dardo_igneo",
+      "name": "Dardo Ígneo",
+      "category": "skills",
+      "visual": "A vivid Dardo Igneo spell icon, ember orange and scarlet flame forming a focused projectile or blade striking one clear target; class BM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "bm_mag_fenda_glacial",
+      "name": "Fenda Glacial",
+      "category": "skills",
+      "visual": "A vivid Fenda Glacial spell icon, glacial cyan frost forming a focused projectile or blade striking one clear target; class BM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "bm_mag_escarpa",
+      "name": "Escarpa Sísmica",
+      "category": "skills",
+      "visual": "A vivid Escarpa Sismica spell icon, ochre stone and dust forming a compact circular burst with several tiny enemy silhouettes around its edge; class BM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "bm_mag_voz_trovao",
+      "name": "Voz do Trovão",
+      "category": "skills",
+      "visual": "A vivid Voz do Trovao spell icon, electric cobalt and pale gold arcs forming a focused projectile or blade striking one clear target; class BM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "bm_mag_manto",
+      "name": "Manto Elemental",
+      "category": "skills",
+      "visual": "A distinct Manto Elemental emblem built around the actual effect: a brilliant arcane core intensifying into a spell aura; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon"
+    },
+    {
+      "id": "bm_mag_corrente_agua",
+      "name": "Corrente de Água",
+      "category": "skills",
+      "visual": "A vivid Corrente de Agua spell icon, clear turquoise water forming a compact circular burst with several tiny enemy silhouettes around its edge; class BM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "bm_mag_muralha",
+      "name": "Muralha de Rocha",
+      "category": "skills",
+      "visual": "A distinct Muralha de Rocha emblem built around the actual effect: a layered iron-and-gold protective ward; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon"
+    },
+    {
+      "id": "bm_mag_furia_quatro",
+      "name": "Fúria dos Quatro",
+      "category": "skills",
+      "visual": "A vivid Furia dos Quatro spell icon, interwoven multicolor elemental energy forming a compact circular burst with several tiny enemy silhouettes around its edge; class BM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "bm_ctrl_condor",
+      "name": "Invocar Condor",
+      "category": "skills",
+      "visual": "A sharply silhouetted a sweeping golden-feathered condor emerging from a carved primal summoning sigil; Invocar Condor motif, polished fantasy game icon, isolated object"
+    },
+    {
+      "id": "bm_ctrl_lobo",
+      "name": "Invocar Lobo",
+      "category": "skills",
+      "visual": "A sharply silhouetted a lean silver wolf emerging from a carved primal summoning sigil; Invocar Lobo motif, polished fantasy game icon, isolated object"
+    },
+    {
+      "id": "bm_ctrl_chamado_boss",
+      "name": "Chamado do Boss",
+      "category": "skills",
+      "visual": "A distinct Chamado do Boss emblem built around the actual effect: a commanding beast spirit surrounded by allied animal silhouettes; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon"
+    },
+    {
+      "id": "bm_ctrl_urso",
+      "name": "Invocar Urso",
+      "category": "skills",
+      "visual": "A sharply silhouetted a massive brown guardian bear emerging from a carved primal summoning sigil; Invocar Urso motif, polished fantasy game icon, isolated object"
+    },
+    {
+      "id": "bm_ctrl_tigre",
+      "name": "Invocar Tigre",
+      "category": "skills",
+      "visual": "A sharply silhouetted a striped amber tiger emerging from a carved primal summoning sigil; Invocar Tigre motif, polished fantasy game icon, isolated object"
+    },
+    {
+      "id": "bm_ctrl_dragao",
+      "name": "Invocar Dragão",
+      "category": "skills",
+      "visual": "A sharply silhouetted a small emerald dragon emerging from a carved primal summoning sigil; Invocar Dragao motif, polished fantasy game icon, isolated object"
+    },
+    {
+      "id": "bm_ctrl_vinculo",
+      "name": "Vínculo Vital",
+      "category": "skills",
+      "visual": "A sharply readable Vinculo Vital emblem showing a luminous green bond connecting a beast paw and a warrior heart; crisp central silhouette, restrained magical glow, isolated fantasy game icon"
+    },
+    {
+      "id": "bm_ctrl_exercito",
+      "name": "Exército Primordial",
+      "category": "skills",
+      "visual": "A sharply silhouetted a formation of primal animal spirits emerging from a carved primal summoning sigil; Exercito Primordial motif, polished fantasy game icon, isolated object"
+    }
+  ],
+  "prompt": "Create ONE sprite sheet containing exactly 24 different fantasy RPG SKILL illustrations for class skills-BM. Strict invisible grid of 6 columns and 4 rows, each tile a square. Landscape canvas ideally 1536x1024. Each illustration fully fills its own square tile with a rich dark colored background and strong colorful dimensional fantasy action illustration. No frame, no border, no visible grid lines, no labels, no lettering, no words, no numbers, no watermark. Do not merge adjacent panels; exactly 24 clearly different compositions. These are provisional game placeholders but meaning and distinction matter. Bold silhouettes readable at 64px, painted 3D fantasy MMORPG style. Follow this exact row-major list of skill names and effects (names describe subject; DO NOT WRITE names):\nRow 1 column 1: Lobo Guerreiro — A dramatic primal transformation emblem showing a distinct beast warrior silhouette, Lobo Guerreiro motif, coiling nature energy and readable animal features, isolated fantasy game icon\nRow 1 column 2: Couro de Fera — A distinct Couro de Fera emblem built around the actual effect: a layered iron-and-gold protective ward; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon\nRow 1 column 3: Fúria Selvagem — A distinct Furia Selvagem emblem built around the actual effect: a raised weapon wrapped in a focused attack aura; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon\nRow 1 column 4: Investida Bestial — A vivid Investida Bestial spell icon, steel-white kinetic force forming a focused projectile or blade striking one clear target; class BM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 1 column 5: Garra Brutal — A vivid Garra Brutal spell icon, steel-white kinetic force forming a focused projectile or blade striking one clear target; class BM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 1 column 6: Ursão Ancião — A dramatic primal transformation emblem showing a distinct beast warrior silhouette, Ursao Anciao motif, coiling nature energy and readable animal features, isolated fantasy game icon\nRow 2 column 1: Presas de Aço — A sharply readable Presas de Aco emblem showing a pair of polished steel wolf fangs framing a focused critical strike spark; crisp central silhouette, restrained magical glow, isolated fantasy game icon\nRow 2 column 2: Titã Primordial — A dramatic primal transformation emblem showing a distinct beast warrior silhouette, Tita Primordial motif, coiling nature energy and readable animal features, isolated fantasy game icon\nRow 2 column 3: Dardo Ígneo — A vivid Dardo Igneo spell icon, ember orange and scarlet flame forming a focused projectile or blade striking one clear target; class BM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 2 column 4: Fenda Glacial — A vivid Fenda Glacial spell icon, glacial cyan frost forming a focused projectile or blade striking one clear target; class BM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 2 column 5: Escarpa Sísmica — A vivid Escarpa Sismica spell icon, ochre stone and dust forming a compact circular burst with several tiny enemy silhouettes around its edge; class BM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 2 column 6: Voz do Trovão — A vivid Voz do Trovao spell icon, electric cobalt and pale gold arcs forming a focused projectile or blade striking one clear target; class BM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 3 column 1: Manto Elemental — A distinct Manto Elemental emblem built around the actual effect: a brilliant arcane core intensifying into a spell aura; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon\nRow 3 column 2: Corrente de Água — A vivid Corrente de Agua spell icon, clear turquoise water forming a compact circular burst with several tiny enemy silhouettes around its edge; class BM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 3 column 3: Muralha de Rocha — A distinct Muralha de Rocha emblem built around the actual effect: a layered iron-and-gold protective ward; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon\nRow 3 column 4: Fúria dos Quatro — A vivid Furia dos Quatro spell icon, interwoven multicolor elemental energy forming a compact circular burst with several tiny enemy silhouettes around its edge; class BM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 3 column 5: Invocar Condor — A sharply silhouetted a sweeping golden-feathered condor emerging from a carved primal summoning sigil; Invocar Condor motif, polished fantasy game icon, isolated object\nRow 3 column 6: Invocar Lobo — A sharply silhouetted a lean silver wolf emerging from a carved primal summoning sigil; Invocar Lobo motif, polished fantasy game icon, isolated object\nRow 4 column 1: Chamado do Boss — A distinct Chamado do Boss emblem built around the actual effect: a commanding beast spirit surrounded by allied animal silhouettes; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon\nRow 4 column 2: Invocar Urso — A sharply silhouetted a massive brown guardian bear emerging from a carved primal summoning sigil; Invocar Urso motif, polished fantasy game icon, isolated object\nRow 4 column 3: Invocar Tigre — A sharply silhouetted a striped amber tiger emerging from a carved primal summoning sigil; Invocar Tigre motif, polished fantasy game icon, isolated object\nRow 4 column 4: Invocar Dragão — A sharply silhouetted a small emerald dragon emerging from a carved primal summoning sigil; Invocar Dragao motif, polished fantasy game icon, isolated object\nRow 4 column 5: Vínculo Vital — A sharply readable Vinculo Vital emblem showing a luminous green bond connecting a beast paw and a warrior heart; crisp central silhouette, restrained magical glow, isolated fantasy game icon\nRow 4 column 6: Exército Primordial — A sharply silhouetted a formation of primal animal spirits emerging from a carved primal summoning sigil; Exercito Primordial motif, polished fantasy game icon, isolated object",
+  "status": "placeholder"
+}

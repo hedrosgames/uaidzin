@@ -30,7 +30,7 @@ export const BRAZIER_RADIUS = 0.4;
 const LIGHT_COLOR = 0xff8a3c;
 const LIGHT_INTENSITY = 16;
 const LIGHT_DISTANCE = 12;
-const MAX_BRAZIER_LIGHTS = 4;
+const MAX_BRAZIER_LIGHTS = 1;
 let activeBrazierLights = 0;
 let flameAtlas: ReturnType<typeof createFireBurstFlameTexture> | null = null;
 
@@ -146,6 +146,8 @@ totalEmissiveRadiance += vec3(0.35, 0.025, 0.002) * fissure;`);
   if (attachLight) {
     activeBrazierLights++;
     light = new PointLight(LIGHT_COLOR, LIGHT_INTENSITY, LIGHT_DISTANCE, 2);
+    light.userData.worldLight = true;
+    light.userData.lightRank = 3;
     light.position.y = 1.95;
     group.add(light);
   }

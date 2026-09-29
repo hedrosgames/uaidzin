@@ -11,7 +11,7 @@
   },
   {
     "id": "npc-merchant",
-    "label": "Mercador",
+    "label": "Mercadora",
     "kind": "npc",
     "service": "merchant",
     "x": 11.9,
@@ -41,7 +41,7 @@
   },
   {
     "id": "npc-sage",
-    "label": "Sábio",
+    "label": "Sábia",
     "kind": "npc",
     "service": "sage",
     "x": -4.2,

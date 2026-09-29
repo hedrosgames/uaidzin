@@ -5,9 +5,10 @@
     "slot": "misc",
     "rarity": "Comum",
     "desc": "Restaura parte do HP.",
-    "icon": "/assets/icons/items/potion.svg",
+    "icon": "/assets/icons/items/pocao_menor.png",
     "sellValue": 4,
-    "stackable": true
+    "stackable": true,
+    "available": true
   },
   {
     "id": "mat_ori",
@@ -15,9 +16,10 @@
     "slot": "material",
     "rarity": "Comum",
     "desc": "Material de reforço até +5.",
-    "icon": "/assets/icons/items/ori.svg",
+    "icon": "/assets/icons/items/mat_ori.png",
     "sellValue": 2,
-    "stackable": true
+    "stackable": true,
+    "available": true
   },
   {
     "id": "mat_lac",
@@ -25,9 +27,10 @@
     "slot": "material",
     "rarity": "Comum",
     "desc": "Material de reforço de +6 a +10.",
-    "icon": "/assets/icons/items/lac.svg",
+    "icon": "/assets/icons/items/mat_lac.png",
     "sellValue": 8,
-    "stackable": true
+    "stackable": true,
+    "available": true
   },
   {
     "id": "poeira_ori",
@@ -35,9 +38,10 @@
     "slot": "material",
     "rarity": "Comum",
     "desc": "Material de reforço até +5.",
-    "icon": "/assets/icons/items/ori.svg",
+    "icon": "/assets/icons/items/mat_ori.png",
     "sellValue": 2,
-    "stackable": true
+    "stackable": true,
+    "available": false
   },
   {
     "id": "poeira_lac",
@@ -45,9 +49,10 @@
     "slot": "material",
     "rarity": "Comum",
     "desc": "Material de reforço de +6 a +10.",
-    "icon": "/assets/icons/items/lac.svg",
+    "icon": "/assets/icons/items/mat_lac.png",
     "sellValue": 8,
-    "stackable": true
+    "stackable": true,
+    "available": false
   },
   {
     "id": "entry_d4",
@@ -55,8 +60,9 @@
     "slot": "entry",
     "rarity": "Comum",
     "desc": "Consome ao entrar na Dungeon 4.",
-    "icon": "/assets/icons/items/seal.svg",
-    "sellValue": 20
+    "icon": "/assets/icons/items/entry_d4.png",
+    "sellValue": 20,
+    "available": true
   },
   {
     "id": "entry_d5",
@@ -64,8 +70,9 @@
     "slot": "entry",
     "rarity": "Comum",
     "desc": "Consome ao entrar na Dungeon 5.",
-    "icon": "/assets/icons/items/seal.svg",
-    "sellValue": 35
+    "icon": "/assets/icons/items/entry_d5.png",
+    "sellValue": 35,
+    "available": true
   },
   {
     "id": "entry_d6",
@@ -73,8 +80,9 @@
     "slot": "entry",
     "rarity": "Comum",
     "desc": "Consome ao entrar na Dungeon 6.",
-    "icon": "/assets/icons/items/seal.svg",
-    "sellValue": 50
+    "icon": "/assets/icons/items/entry_d6.png",
+    "sellValue": 50,
+    "available": true
   },
   {
     "id": "entry_d7",
@@ -82,8 +90,9 @@
     "slot": "entry",
     "rarity": "Comum",
     "desc": "Consome ao entrar na Dungeon 7.",
-    "icon": "/assets/icons/items/seal.svg",
-    "sellValue": 75
+    "icon": "/assets/icons/items/entry_d7.png",
+    "sellValue": 75,
+    "available": true
   },
   {
     "id": "entry_d8",
@@ -91,8 +100,9 @@
     "slot": "entry",
     "rarity": "Comum",
     "desc": "Consome ao entrar na Dungeon 8.",
-    "icon": "/assets/icons/items/seal.svg",
-    "sellValue": 100
+    "icon": "/assets/icons/items/entry_d8.png",
+    "sellValue": 100,
+    "available": true
   },
   {
     "id": "espada_curta",
@@ -100,11 +110,12 @@
     "slot": "weapon",
     "rarity": "Comum",
     "desc": "Ataque +4",
-    "icon": "/assets/icons/items/espada_curta.svg",
+    "icon": "/assets/icons/items/espada_curta.png",
     "weaponSet": "sword-shield",
     "attackBonus": 4,
     "defenseBonus": 0,
-    "sellValue": 20
+    "sellValue": 20,
+    "available": true
   },
   {
     "id": "machado_leve",
@@ -112,11 +123,12 @@
     "slot": "weapon",
     "rarity": "Comum",
     "desc": "Ataque +5",
-    "icon": "/assets/icons/items/machado_leve.svg",
+    "icon": "/assets/icons/items/machado_leve.png",
     "weaponSet": "axe-shield",
     "attackBonus": 5,
     "defenseBonus": 0,
-    "sellValue": 0
+    "sellValue": 0,
+    "available": true
   },
   {
     "id": "armadura_leve",
@@ -124,10 +136,11 @@
     "slot": "armor",
     "rarity": "Comum",
     "desc": "Defesa +3",
-    "icon": "/assets/icons/items/armadura_leve.svg",
+    "icon": "/assets/icons/items/armadura_leve.png",
     "attackBonus": 0,
     "defenseBonus": 3,
-    "sellValue": 18
+    "sellValue": 18,
+    "available": true
   },
   {
     "id": "capacete",
@@ -135,10 +148,11 @@
     "slot": "head",
     "rarity": "Comum",
     "desc": "Defesa +2",
-    "icon": "/assets/icons/items/capacete.svg",
+    "icon": "/assets/icons/items/capacete.png",
     "attackBonus": 0,
     "defenseBonus": 2,
-    "sellValue": 14
+    "sellValue": 14,
+    "available": true
   },
   {
     "id": "anel_cobre",
@@ -146,10 +160,11 @@
     "slot": "ring1",
     "rarity": "Comum",
     "desc": "Ataque +1 · Defesa +1",
-    "icon": "/assets/icons/items/anel_cobre.svg",
+    "icon": "/assets/icons/items/anel_cobre.png",
     "attackBonus": 1,
     "defenseBonus": 1,
-    "sellValue": 10
+    "sellValue": 10,
+    "available": true
   },
   {
     "id": "anel_ferro",
@@ -157,10 +172,11 @@
     "slot": "ring2",
     "rarity": "Incomum",
     "desc": "Ataque +2 · Defesa +2",
-    "icon": "/assets/icons/items/anel_ferro.svg",
+    "icon": "/assets/icons/items/anel_ferro.png",
     "attackBonus": 2,
     "defenseBonus": 2,
-    "sellValue": 40
+    "sellValue": 40,
+    "available": true
   },
   {
     "id": "colar_simples",
@@ -168,10 +184,11 @@
     "slot": "neck",
     "rarity": "Comum",
     "desc": "Ataque +1 · Defesa +1",
-    "icon": "/assets/icons/items/colar_simples.svg",
+    "icon": "/assets/icons/items/colar_simples.png",
     "attackBonus": 1,
     "defenseBonus": 1,
-    "sellValue": 12
+    "sellValue": 12,
+    "available": true
   },
   {
     "id": "brinco_osso",
@@ -179,9 +196,1753 @@
     "slot": "ear",
     "rarity": "Comum",
     "desc": "Ataque +1",
-    "icon": "/assets/icons/items/brinco_osso.svg",
+    "icon": "/assets/icons/items/brinco_osso.png",
     "attackBonus": 1,
     "defenseBonus": 0,
-    "sellValue": 8
+    "sellValue": 8,
+    "available": true
+  },
+  {
+    "id": "armor_chest_tk_silver",
+    "name": "Peitoral Thegn Knight Silver",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura silver de Thegn Knight. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_tk_silver.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 10,
+    "classId": "TK",
+    "available": true
+  },
+  {
+    "id": "armor_chest_tk_gold",
+    "name": "Peitoral Thegn Knight Gold",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura gold de Thegn Knight. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_tk_gold.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 16,
+    "classId": "TK",
+    "available": true
+  },
+  {
+    "id": "armor_chest_tk_adamant",
+    "name": "Peitoral Thegn Knight Adamant",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura adamant de Thegn Knight. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_tk_adamant.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 23,
+    "classId": "TK",
+    "available": true
+  },
+  {
+    "id": "armor_chest_fm_silver",
+    "name": "Peitoral Frost Maiden Silver",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura silver de Frost Maiden. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_fm_silver.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 10,
+    "classId": "FM",
+    "available": true
+  },
+  {
+    "id": "armor_chest_fm_gold",
+    "name": "Peitoral Frost Maiden Gold",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura gold de Frost Maiden. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_fm_gold.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 16,
+    "classId": "FM",
+    "available": true
+  },
+  {
+    "id": "armor_chest_fm_adamant",
+    "name": "Peitoral Frost Maiden Adamant",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura adamant de Frost Maiden. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_fm_adamant.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 23,
+    "classId": "FM",
+    "available": true
+  },
+  {
+    "id": "armor_chest_bm_silver",
+    "name": "Peitoral Beast Master Silver",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura silver de Beast Master. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_bm_silver.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 10,
+    "classId": "BM",
+    "available": true
+  },
+  {
+    "id": "armor_chest_bm_gold",
+    "name": "Peitoral Beast Master Gold",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura gold de Beast Master. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_bm_gold.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 16,
+    "classId": "BM",
+    "available": true
+  },
+  {
+    "id": "armor_chest_bm_adamant",
+    "name": "Peitoral Beast Master Adamant",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura adamant de Beast Master. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_bm_adamant.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 23,
+    "classId": "BM",
+    "available": true
+  },
+  {
+    "id": "armor_chest_ht_silver",
+    "name": "Peitoral Huntress Silver",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura silver de Huntress. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_ht_silver.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 10,
+    "classId": "HT",
+    "available": true
+  },
+  {
+    "id": "armor_chest_ht_gold",
+    "name": "Peitoral Huntress Gold",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura gold de Huntress. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_ht_gold.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 16,
+    "classId": "HT",
+    "available": true
+  },
+  {
+    "id": "armor_chest_ht_adamant",
+    "name": "Peitoral Huntress Adamant",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Armadura adamant de Huntress. Defesa provisória por tier, fonte: valores atuais de equipamentos em items.json.",
+    "icon": "/assets/icons/items/armor_chest_ht_adamant.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 0,
+    "defenseBonus": 23,
+    "classId": "HT",
+    "available": true
+  },
+  {
+    "id": "pocao_vida",
+    "name": "Poção de Vida",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Restaura até 500 de vida.",
+    "icon": "/assets/icons/items/pocao_vida.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "restore",
+      "hp": 500,
+      "mp": 0
+    },
+    "available": true
+  },
+  {
+    "id": "pocao_mana",
+    "name": "Poção de Mana",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Restaura até 500 de mana.",
+    "icon": "/assets/icons/items/pocao_mana.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "restore",
+      "hp": 0,
+      "mp": 500
+    },
+    "available": true
+  },
+  {
+    "id": "pocao_vida_mana",
+    "name": "Poção de Vida e Mana",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Restaura até 500 de vida e 500 de mana.",
+    "icon": "/assets/icons/items/pocao_vida_mana.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "restore",
+      "hp": 500,
+      "mp": 500
+    },
+    "available": true
+  },
+  {
+    "id": "antidoto",
+    "name": "Antídoto",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Remove efeitos negativos.",
+    "icon": "/assets/icons/items/antidoto.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "cleanse"
+    },
+    "available": true
+  },
+  {
+    "id": "ouro",
+    "name": "Ouro",
+    "slot": "currency",
+    "rarity": "Comum",
+    "desc": "Moeda do reino.",
+    "icon": "/assets/icons/items/ouro.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "currency"
+    },
+    "available": true
+  },
+  {
+    "id": "bau_xp",
+    "name": "Baú de XP",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Dobra o XP de inimigos derrotados por 4 horas. Duração provisória conforme pedido do Felipe.",
+    "icon": "/assets/icons/items/bau_xp.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "xp_multiplier",
+      "magnitude": 1,
+      "durationSec": 14400
+    },
+    "available": true
+  },
+  {
+    "id": "frango_assado",
+    "name": "Frango Assado",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Adiciona 1000 de dano por ataque durante 4 horas.",
+    "icon": "/assets/icons/items/frango_assado.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "attack_flat",
+      "magnitude": 1000,
+      "durationSec": 14400
+    },
+    "available": true
+  },
+  {
+    "id": "entry_d2",
+    "name": "Entrada da Dungeon 2",
+    "slot": "entry",
+    "rarity": "Comum",
+    "desc": "Consome ao entrar na Dungeon 2.",
+    "icon": "/assets/icons/items/entry_d2.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "available": true
+  },
+  {
+    "id": "entry_d3",
+    "name": "Entrada da Dungeon 3",
+    "slot": "entry",
+    "rarity": "Comum",
+    "desc": "Consome ao entrar na Dungeon 3.",
+    "icon": "/assets/icons/items/entry_d3.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "available": true
+  },
+  {
+    "id": "scroll_01",
+    "name": "Pergaminho Fogo",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Pergaminho Fogo; efeito aguardando definição.",
+    "icon": "/assets/icons/items/scroll_01.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "scroll_02",
+    "name": "Pergaminho Gelo",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Pergaminho Gelo; efeito aguardando definição.",
+    "icon": "/assets/icons/items/scroll_02.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "scroll_03",
+    "name": "Pergaminho Raio",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Pergaminho Raio; efeito aguardando definição.",
+    "icon": "/assets/icons/items/scroll_03.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "scroll_04",
+    "name": "Pergaminho Veneno",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Pergaminho Veneno; efeito aguardando definição.",
+    "icon": "/assets/icons/items/scroll_04.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "scroll_05",
+    "name": "Pergaminho Sangue",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Pergaminho Sangue; efeito aguardando definição.",
+    "icon": "/assets/icons/items/scroll_05.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "scroll_06",
+    "name": "Pergaminho Sombra",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Pergaminho Sombra; efeito aguardando definição.",
+    "icon": "/assets/icons/items/scroll_06.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "scroll_07",
+    "name": "Pergaminho Luz",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Pergaminho Luz; efeito aguardando definição.",
+    "icon": "/assets/icons/items/scroll_07.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "scroll_08",
+    "name": "Pergaminho Vento",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Pergaminho Vento; efeito aguardando definição.",
+    "icon": "/assets/icons/items/scroll_08.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "book_01",
+    "name": "Livro de Guerra",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Livro de Guerra; efeito aguardando definição.",
+    "icon": "/assets/icons/items/book_01.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "book_02",
+    "name": "Livro de Sabedoria",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Livro de Sabedoria; efeito aguardando definição.",
+    "icon": "/assets/icons/items/book_02.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "book_03",
+    "name": "Livro de Bestiário",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Livro de Bestiário; efeito aguardando definição.",
+    "icon": "/assets/icons/items/book_03.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "book_04",
+    "name": "Livro de Runas",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Livro de Runas; efeito aguardando definição.",
+    "icon": "/assets/icons/items/book_04.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_01",
+    "name": "Gema Rubi",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Rubi reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_01.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_02",
+    "name": "Gema Safira",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Safira reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_02.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_03",
+    "name": "Gema Esmeralda",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Esmeralda reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_03.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_04",
+    "name": "Gema Ametista",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Ametista reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_04.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_05",
+    "name": "Gema Topázio",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Topázio reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_05.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_06",
+    "name": "Gema Diamante",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Diamante reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_06.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_07",
+    "name": "Gema Ônix",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Ônix reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_07.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_08",
+    "name": "Gema Opala",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Opala reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_08.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_09",
+    "name": "Gema Jade",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Jade reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_09.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_10",
+    "name": "Gema Granada",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Granada reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_10.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_11",
+    "name": "Gema Turquesa",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Turquesa reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_11.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_12",
+    "name": "Gema Quartzo",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Quartzo reservada para composições futuras.",
+    "icon": "/assets/icons/items/gema_12.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_bless",
+    "name": "Gema Bless",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Bless, referência visual de MMORPG; usos em composição/refino sem receita nova.",
+    "icon": "/assets/icons/items/gema_bless.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_soul",
+    "name": "Gema Soul",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Soul, referência visual de MMORPG; usos em composição/refino sem receita nova.",
+    "icon": "/assets/icons/items/gema_soul.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_life",
+    "name": "Gema Life",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema Life, referência visual de MMORPG; usos em composição/refino sem receita nova.",
+    "icon": "/assets/icons/items/gema_life.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "gema_chaos",
+    "name": "Gema do Chaos",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Gema do Chaos, referência visual de MMORPG; usos em composição/refino sem receita nova.",
+    "icon": "/assets/icons/items/gema_chaos.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "ring_01",
+    "name": "Anel da Vitalidade",
+    "slot": "ring1",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios inspirados em acessórios de MMORPG; fonte de escala: bônus atuais dos equipamentos em items.json.",
+    "icon": "/assets/icons/items/ring_01.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 2,
+    "defenseBonus": 3,
+    "available": true
+  },
+  {
+    "id": "ring_02",
+    "name": "Anel da Fortuna",
+    "slot": "ring1",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios inspirados em acessórios de MMORPG; fonte de escala: bônus atuais dos equipamentos em items.json.",
+    "icon": "/assets/icons/items/ring_02.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 3,
+    "defenseBonus": 1,
+    "available": true
+  },
+  {
+    "id": "ring_03",
+    "name": "Anel da Precisão",
+    "slot": "ring1",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios inspirados em acessórios de MMORPG; fonte de escala: bônus atuais dos equipamentos em items.json.",
+    "icon": "/assets/icons/items/ring_03.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 1,
+    "defenseBonus": 2,
+    "available": true
+  },
+  {
+    "id": "ring_04",
+    "name": "Anel da Força",
+    "slot": "ring1",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios inspirados em acessórios de MMORPG; fonte de escala: bônus atuais dos equipamentos em items.json.",
+    "icon": "/assets/icons/items/ring_04.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 2,
+    "defenseBonus": 3,
+    "available": true
+  },
+  {
+    "id": "ring_05",
+    "name": "Anel da Agilidade",
+    "slot": "ring2",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios inspirados em acessórios de MMORPG; fonte de escala: bônus atuais dos equipamentos em items.json.",
+    "icon": "/assets/icons/items/ring_05.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 3,
+    "defenseBonus": 1,
+    "available": true
+  },
+  {
+    "id": "ring_06",
+    "name": "Anel da Proteção",
+    "slot": "ring2",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios inspirados em acessórios de MMORPG; fonte de escala: bônus atuais dos equipamentos em items.json.",
+    "icon": "/assets/icons/items/ring_06.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 1,
+    "defenseBonus": 2,
+    "available": true
+  },
+  {
+    "id": "ring_07",
+    "name": "Anel da Sanguessuga",
+    "slot": "ring2",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios inspirados em acessórios de MMORPG; fonte de escala: bônus atuais dos equipamentos em items.json.",
+    "icon": "/assets/icons/items/ring_07.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 2,
+    "defenseBonus": 3,
+    "available": true
+  },
+  {
+    "id": "ring_08",
+    "name": "Anel da Fortaleza",
+    "slot": "ring2",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios inspirados em acessórios de MMORPG; fonte de escala: bônus atuais dos equipamentos em items.json.",
+    "icon": "/assets/icons/items/ring_08.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 3,
+    "defenseBonus": 1,
+    "available": true
+  },
+  {
+    "id": "earring_01",
+    "name": "Brinco Lobo",
+    "slot": "ear",
+    "rarity": "Comum",
+    "desc": "Bônus provisório de ataque; fonte: escala atual de equipamentos em items.json.",
+    "icon": "/assets/icons/items/earring_01.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 1,
+    "defenseBonus": 3,
+    "available": true
+  },
+  {
+    "id": "earring_02",
+    "name": "Brinco Águia",
+    "slot": "ear",
+    "rarity": "Comum",
+    "desc": "Bônus provisório de ataque; fonte: escala atual de equipamentos em items.json.",
+    "icon": "/assets/icons/items/earring_02.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 2,
+    "defenseBonus": 2,
+    "available": true
+  },
+  {
+    "id": "earring_03",
+    "name": "Brinco Corvo",
+    "slot": "ear",
+    "rarity": "Comum",
+    "desc": "Bônus provisório de ataque; fonte: escala atual de equipamentos em items.json.",
+    "icon": "/assets/icons/items/earring_03.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 3,
+    "defenseBonus": 1,
+    "available": true
+  },
+  {
+    "id": "earring_04",
+    "name": "Brinco Fênix",
+    "slot": "ear",
+    "rarity": "Comum",
+    "desc": "Bônus provisório de ataque; fonte: escala atual de equipamentos em items.json.",
+    "icon": "/assets/icons/items/earring_04.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 4,
+    "defenseBonus": 0,
+    "available": true
+  },
+  {
+    "id": "necklace_01",
+    "name": "Colar Guardião",
+    "slot": "neck",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios de ataque e defesa; fonte: escala atual de equipamentos em items.json.",
+    "icon": "/assets/icons/items/necklace_01.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 1,
+    "defenseBonus": 4,
+    "available": true
+  },
+  {
+    "id": "necklace_02",
+    "name": "Colar Oráculo",
+    "slot": "neck",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios de ataque e defesa; fonte: escala atual de equipamentos em items.json.",
+    "icon": "/assets/icons/items/necklace_02.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 2,
+    "defenseBonus": 3,
+    "available": true
+  },
+  {
+    "id": "necklace_03",
+    "name": "Colar Caçador",
+    "slot": "neck",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios de ataque e defesa; fonte: escala atual de equipamentos em items.json.",
+    "icon": "/assets/icons/items/necklace_03.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 3,
+    "defenseBonus": 2,
+    "available": true
+  },
+  {
+    "id": "necklace_04",
+    "name": "Colar Tempestade",
+    "slot": "neck",
+    "rarity": "Comum",
+    "desc": "Bônus provisórios de ataque e defesa; fonte: escala atual de equipamentos em items.json.",
+    "icon": "/assets/icons/items/necklace_04.png",
+    "sellValue": 1,
+    "stackable": false,
+    "attackBonus": 4,
+    "defenseBonus": 1,
+    "available": true
+  },
+  {
+    "id": "rune_fehu",
+    "name": "Runa Fehu",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Fehu; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_fehu.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_uruz",
+    "name": "Runa Uruz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Uruz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_uruz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_thurisaz",
+    "name": "Runa Thurisaz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Thurisaz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_thurisaz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_ansuz",
+    "name": "Runa Ansuz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Ansuz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_ansuz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_raidho",
+    "name": "Runa Raidho",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Raidho; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_raidho.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_kenaz",
+    "name": "Runa Kenaz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Kenaz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_kenaz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_gebo",
+    "name": "Runa Gebo",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Gebo; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_gebo.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_wunjo",
+    "name": "Runa Wunjo",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Wunjo; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_wunjo.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_hagalaz",
+    "name": "Runa Hagalaz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Hagalaz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_hagalaz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_nauthiz",
+    "name": "Runa Nauthiz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Nauthiz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_nauthiz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_isa",
+    "name": "Runa Isa",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Isa; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_isa.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_jera",
+    "name": "Runa Jera",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Jera; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_jera.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_eihwaz",
+    "name": "Runa Eihwaz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Eihwaz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_eihwaz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_perthro",
+    "name": "Runa Perthro",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Perthro; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_perthro.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_algiz",
+    "name": "Runa Algiz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Algiz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_algiz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_sowilo",
+    "name": "Runa Sowilo",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Sowilo; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_sowilo.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_tiwaz",
+    "name": "Runa Tiwaz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Tiwaz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_tiwaz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_berkano",
+    "name": "Runa Berkano",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Berkano; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_berkano.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_ehwaz",
+    "name": "Runa Ehwaz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Ehwaz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_ehwaz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_mannaz",
+    "name": "Runa Mannaz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Mannaz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_mannaz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_laguz",
+    "name": "Runa Laguz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Laguz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_laguz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_ingwaz",
+    "name": "Runa Ingwaz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Ingwaz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_ingwaz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_dagaz",
+    "name": "Runa Dagaz",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Dagaz; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_dagaz.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "rune_othala",
+    "name": "Runa Othala",
+    "slot": "material",
+    "rarity": "Comum",
+    "desc": "Runa Elder Futhark Othala; componente de composição futura.",
+    "icon": "/assets/icons/items/rune_othala.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "composition_component"
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_01",
+    "name": "Cálice da Sabedoria Rubi",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_01.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_02",
+    "name": "Cálice da Sabedoria Safira",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_02.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_03",
+    "name": "Cálice da Sabedoria Esmeralda",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_03.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_04",
+    "name": "Cálice da Sabedoria Âmbar",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_04.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_05",
+    "name": "Cálice da Sabedoria Ametista",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_05.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_06",
+    "name": "Cálice da Sabedoria Água-marinha",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_06.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_07",
+    "name": "Cálice da Sabedoria Jade",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_07.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_08",
+    "name": "Cálice da Sabedoria Granada",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_08.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_09",
+    "name": "Cálice da Sabedoria Topázio",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_09.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_10",
+    "name": "Cálice da Sabedoria Opala",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_10.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_11",
+    "name": "Cálice da Sabedoria Turquesa",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_11.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "chalice_xp_12",
+    "name": "Cálice da Sabedoria Quartzo Rosa",
+    "slot": "consumable",
+    "rarity": "Comum",
+    "desc": "Concede XP ao ser usado; valor provisório uniforme de 100 XP, baseado no pedido de cálices de XP.",
+    "icon": "/assets/icons/items/chalice_xp_12.png",
+    "sellValue": 1,
+    "stackable": true,
+    "attackBonus": 0,
+    "defenseBonus": 0,
+    "effect": {
+      "type": "grant_xp",
+      "amount": 100
+    },
+    "available": true
+  },
+  {
+    "id": "weapon_sword",
+    "name": "Espada",
+    "slot": "weapon",
+    "rarity": "Comum",
+    "desc": "Peça individual Espada. Bônus provisório baseado nos equipamentos atuais em items.json.",
+    "icon": "/assets/icons/items/weapon_sword.png",
+    "sellValue": 10,
+    "attackBonus": 6,
+    "defenseBonus": 0,
+    "stackable": false,
+    "available": true,
+    "weaponSet": "sword-shield"
+  },
+  {
+    "id": "weapon_shield",
+    "name": "Escudo",
+    "slot": "offhand",
+    "rarity": "Comum",
+    "desc": "Peça individual Escudo. Bônus provisório baseado nos equipamentos atuais em items.json.",
+    "icon": "/assets/icons/items/weapon_shield.png",
+    "sellValue": 10,
+    "attackBonus": 0,
+    "defenseBonus": 5,
+    "stackable": false,
+    "available": true
+  },
+  {
+    "id": "weapon_axe",
+    "name": "Machado",
+    "slot": "weapon",
+    "rarity": "Comum",
+    "desc": "Peça individual Machado. Bônus provisório baseado nos equipamentos atuais em items.json.",
+    "icon": "/assets/icons/items/weapon_axe.png",
+    "sellValue": 10,
+    "attackBonus": 7,
+    "defenseBonus": 0,
+    "stackable": false,
+    "available": true,
+    "weaponSet": "axe-shield"
+  },
+  {
+    "id": "weapon_greatsword",
+    "name": "Espadão",
+    "slot": "weapon",
+    "rarity": "Comum",
+    "desc": "Peça individual Espadão. Bônus provisório baseado nos equipamentos atuais em items.json.",
+    "icon": "/assets/icons/items/weapon_greatsword.png",
+    "sellValue": 10,
+    "attackBonus": 9,
+    "defenseBonus": 0,
+    "stackable": false,
+    "available": true,
+    "weaponSet": "greatsword"
+  },
+  {
+    "id": "weapon_staff",
+    "name": "Cajado",
+    "slot": "weapon",
+    "rarity": "Comum",
+    "desc": "Peça individual Cajado. Bônus provisório baseado nos equipamentos atuais em items.json.",
+    "icon": "/assets/icons/items/weapon_staff.png",
+    "sellValue": 10,
+    "attackBonus": 6,
+    "defenseBonus": 0,
+    "stackable": false,
+    "available": true,
+    "weaponSet": "staff-shield"
+  },
+  {
+    "id": "weapon_greatstaff",
+    "name": "Cajadão",
+    "slot": "weapon",
+    "rarity": "Comum",
+    "desc": "Peça individual Cajadão. Bônus provisório baseado nos equipamentos atuais em items.json.",
+    "icon": "/assets/icons/items/weapon_greatstaff.png",
+    "sellValue": 10,
+    "attackBonus": 8,
+    "defenseBonus": 0,
+    "stackable": false,
+    "available": true,
+    "weaponSet": "greatstaff"
+  },
+  {
+    "id": "weapon_bow",
+    "name": "Arco",
+    "slot": "weapon",
+    "rarity": "Comum",
+    "desc": "Peça individual Arco. Bônus provisório baseado nos equipamentos atuais em items.json.",
+    "icon": "/assets/icons/items/weapon_bow.png",
+    "sellValue": 10,
+    "attackBonus": 7,
+    "defenseBonus": 0,
+    "stackable": false,
+    "available": true,
+    "weaponSet": "bow"
+  },
+  {
+    "id": "weapon_glove",
+    "name": "Manopla de Garras",
+    "slot": "weapon",
+    "rarity": "Comum",
+    "desc": "Peça individual Manopla de Garras. Bônus provisório baseado nos equipamentos atuais em items.json.",
+    "icon": "/assets/icons/items/weapon_glove.png",
+    "sellValue": 10,
+    "attackBonus": 7,
+    "defenseBonus": 0,
+    "stackable": false,
+    "available": true,
+    "weaponSet": "dual-gloves"
+  },
+  {
+    "id": "cajado_rustico",
+    "name": "Cajado Rústico",
+    "slot": "weapon",
+    "rarity": "Comum",
+    "desc": "Ataque +4",
+    "icon": "/assets/icons/items/cajado_rustico.png",
+    "weaponSet": "staff-shield",
+    "attackBonus": 4,
+    "defenseBonus": 0,
+    "sellValue": 18,
+    "available": true
+  },
+  {
+    "id": "arco_curto",
+    "name": "Arco Curto",
+    "slot": "weapon",
+    "rarity": "Comum",
+    "desc": "Ataque +4",
+    "icon": "/assets/icons/items/arco_curto.png",
+    "weaponSet": "bow",
+    "attackBonus": 4,
+    "defenseBonus": 0,
+    "sellValue": 18,
+    "available": true
+  },
+  {
+    "id": "touca_couro",
+    "name": "Touca de Couro",
+    "slot": "head",
+    "rarity": "Comum",
+    "desc": "Defesa +2",
+    "icon": "/assets/icons/items/touca_couro.png",
+    "attackBonus": 0,
+    "defenseBonus": 2,
+    "sellValue": 12,
+    "available": true
+  },
+  {
+    "id": "tunica",
+    "name": "Túnica",
+    "slot": "armor",
+    "rarity": "Comum",
+    "desc": "Defesa +3",
+    "icon": "/assets/icons/items/tunica.png",
+    "attackBonus": 0,
+    "defenseBonus": 3,
+    "sellValue": 16,
+    "available": true
+  },
+  {
+    "id": "vela",
+    "name": "Vela",
+    "slot": "misc",
+    "rarity": "Comum",
+    "desc": "Utilitário de exploração. Provisório.",
+    "icon": "/assets/icons/items/vela.png",
+    "sellValue": 25,
+    "stackable": true,
+    "available": true
+  },
+  {
+    "id": "pena_fenix",
+    "name": "Pena da Fênix",
+    "slot": "material",
+    "rarity": "Raro",
+    "desc": "Material raro. Provisório.",
+    "icon": "/assets/icons/items/pena_fenix.png",
+    "sellValue": 40,
+    "stackable": true,
+    "available": true
   }
 ]

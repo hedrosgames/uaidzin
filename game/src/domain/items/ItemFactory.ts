@@ -1,6 +1,6 @@
 import { ECONOMY_BALANCE, type Rarity } from "../../data/balance/economy";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
-import { ITEM_CATALOG } from "../../data/items/item-catalog";
+import { ITEM_CATALOG, itemHasIcon } from "../../data/items/item-catalog";
 import { nextItemUid, type ItemInstance } from "./ItemModel";
 
 const NAMES = {
@@ -93,7 +93,7 @@ export function createMaterial(kind: "Ori" | "Lac", qty = 1): ItemInstance {
 
 export function createEntrySeal(defId: string, qty = 1): ItemInstance | null {
   const def = ITEM_CATALOG[defId];
-  if (!def || def.slot !== "entry" || !def.icon) return null;
+  if (!def || def.slot !== "entry" || !def.icon || !itemHasIcon(defId)) return null;
   return {
     uid: nextItemUid(),
     defId: def.id,
@@ -110,7 +110,21 @@ export function createEntrySeal(defId: string, qty = 1): ItemInstance | null {
 
 export function createFromCatalog(defId: string, qty = 1): ItemInstance | null {
   const def = ITEM_CATALOG[defId];
-  if (!def || !def.icon) return null;
+  if (!def || !def.icon || !itemHasIcon(defId)) return null;
+  if (def.slot === "currency") {
+    return {
+      uid: nextItemUid(),
+      defId: def.id,
+      name: def.name,
+      rarity: (def.rarity as Rarity) || "Comum",
+      slot: "misc",
+      refine: 0,
+      attackBonus: 0,
+      defenseBonus: 0,
+      stack: Math.max(1, Math.floor(qty)),
+      sellValue: def.sellValue ?? 1,
+    };
+  }
   if (def.slot === "entry") return createEntrySeal(defId, qty);
   if (def.slot === "material") {
     return {
@@ -140,7 +154,7 @@ export function createFromCatalog(defId: string, qty = 1): ItemInstance | null {
     refine: 0,
     attackBonus: def.attackBonus ?? 0,
     defenseBonus: def.defenseBonus ?? 0,
-    stack: 1,
+    stack: def.stackable ? Math.max(1, Math.floor(qty)) : 1,
     sellValue: def.sellValue ?? 1,
     attackRange: reach?.attackRange,
     attackInterval: reach?.attackInterval,

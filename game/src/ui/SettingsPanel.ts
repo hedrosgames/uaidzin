@@ -5,15 +5,27 @@ import {
 } from "../presentation/rendering/GraphicsQuality";
 
 const SETTINGS_KEY = "uaidzin_settings";
+const DEFAULT_POTION_HP_PCT = 50;
+const DEFAULT_POTION_MP_PCT = 40;
+
+export interface AutoPotionThresholds {
+  hpPct: number;
+  mpPct: number;
+}
 
 export interface SettingsCallbacks {
   applyArmorAura: (enabled: boolean) => void;
   applyQuality: (quality: GraphicsQualityLevel) => void;
-  applyShadows?: (enabled: boolean) => void;
   onChangeCharacter: () => void;
   onLogout: () => void;
   showToast: (text: string, kind?: "skill" | "attr" | "level" | "dungeon") => void;
   onOpenChange?: (open: boolean) => void;
+}
+
+function clampPct(raw: unknown, fallback: number): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(5, Math.min(95, Math.round(n)));
 }
 
 export class SettingsPanel {
@@ -22,8 +34,23 @@ export class SettingsPanel {
     ["vol-master", "vol-master-val"],
     ["vol-music", "vol-music-val"],
     ["vol-sfx", "vol-sfx-val"],
+    ["opt-potion-hp", "opt-potion-hp-val"],
+    ["opt-potion-mp", "opt-potion-mp-val"],
   ];
   private readonly callbacks: SettingsCallbacks;
+
+  static readAutoPotionThresholds(): AutoPotionThresholds {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      const data = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      return {
+        hpPct: clampPct(data.optPotionHpPct, DEFAULT_POTION_HP_PCT),
+        mpPct: clampPct(data.optPotionMpPct, DEFAULT_POTION_MP_PCT),
+      };
+    } catch {
+      return { hpPct: DEFAULT_POTION_HP_PCT, mpPct: DEFAULT_POTION_MP_PCT };
+    }
+  }
 
   constructor(
     overlay: HTMLElement,
@@ -115,6 +142,8 @@ export class SettingsPanel {
       "vol-master": "volMaster",
       "vol-music": "volMusic",
       "vol-sfx": "volSfx",
+      "opt-potion-hp": "optPotionHpPct",
+      "opt-potion-mp": "optPotionMpPct",
     };
 
     this.ranges.forEach(([id, valId]) => {
@@ -124,8 +153,14 @@ export class SettingsPanel {
       if (!el || !key) return;
       const val = data[key];
       if (val != null) {
-        el.value = String(val);
-        if (label) label.textContent = String(val);
+        const shown =
+          id === "opt-potion-hp"
+            ? String(clampPct(val, DEFAULT_POTION_HP_PCT))
+            : id === "opt-potion-mp"
+              ? String(clampPct(val, DEFAULT_POTION_MP_PCT))
+              : String(val);
+        el.value = shown;
+        if (label) label.textContent = shown;
       }
     });
 
@@ -175,7 +210,6 @@ export class SettingsPanel {
         ? "baixo"
         : DEFAULT_GRAPHICS_QUALITY;
     this.callbacks.applyQuality(q);
-    this.callbacks.applyShadows?.(data.optShadows == null ? true : Boolean(data.optShadows));
     this.callbacks.applyArmorAura(Boolean(data.optArmorAura));
   }
 
@@ -188,6 +222,8 @@ export class SettingsPanel {
       if (id === "vol-master") data.volMaster = Number(el.value);
       if (id === "vol-music") data.volMusic = Number(el.value);
       if (id === "vol-sfx") data.volSfx = Number(el.value);
+      if (id === "opt-potion-hp") data.optPotionHpPct = clampPct(el.value, DEFAULT_POTION_HP_PCT);
+      if (id === "opt-potion-mp") data.optPotionMpPct = clampPct(el.value, DEFAULT_POTION_MP_PCT);
     });
 
     const fullscreen = document.getElementById("opt-fullscreen") as HTMLInputElement | null;
@@ -215,7 +251,6 @@ export class SettingsPanel {
       ? data.optGraphicsQuality
       : DEFAULT_GRAPHICS_QUALITY;
     this.callbacks.applyQuality(q);
-    if (shadows) this.callbacks.applyShadows?.(shadows.checked);
     this.callbacks.applyArmorAura(Boolean(armorAura?.checked));
   }
 }

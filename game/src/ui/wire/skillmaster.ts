@@ -76,22 +76,28 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
       if (parts.length) metaHtml = `<div class="sub">${parts.join(" · ")}</div>`;
     }
 
+    const treeLabel = catalog.treeLabels?.[sk.tree] || sk.tree;
+
     detailEl.innerHTML = `
-      <div class="ttl">${sk.name}</div>
-      <div class="sub">${sk.tree} · Slot ${sk.idx + 1}</div>
-      ${metaHtml}
-      <div class="desc">${sk.desc || ""}</div>
-      <div class="cost-rows">
-        <div class="cost-row ${!hasPoints && !sk.learned ? "is-bad" : ""}">
-          <span class="lab">Pontos de Skill</span>
-          <span class="val">${pointsCost}</span>
-        </div>
-        <div class="cost-row ${!canAffordGold && !sk.learned ? "is-bad" : ""}">
-          <span class="lab">Custo em Ouro</span>
-          <span class="val">${goldCost.toLocaleString("pt-BR")}</span>
-        </div>
+      <div class="sm-detail-info">
+        <div class="ttl">${sk.name}</div>
+        <div class="sub">${treeLabel} · Slot ${sk.idx + 1}</div>
+        ${metaHtml}
+        <div class="desc">${sk.desc || ""}</div>
       </div>
-      ${btnHtml}
+      <div class="sm-detail-bottom">
+        <div class="cost-rows">
+          <div class="cost-row ${!hasPoints && !sk.learned ? "is-bad" : ""}">
+            <span class="lab">Pontos de Skill</span>
+            <span class="val">${pointsCost}</span>
+          </div>
+          <div class="cost-row ${!canAffordGold && !sk.learned ? "is-bad" : ""}">
+            <span class="lab">Custo em Ouro</span>
+            <span class="val">${goldCost.toLocaleString("pt-BR")}</span>
+          </div>
+        </div>
+        ${btnHtml}
+      </div>
     `;
 
     detailEl.querySelector<HTMLButtonElement>("#btnBuySkill")?.addEventListener("click", () => {
@@ -111,9 +117,9 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
     if (!treesContainer) return;
 
     const treeNames: Record<TreeId, string> = {
-      fisica: "Caça",
-      controle: "Armadilha",
-      magia: "Marca",
+      fisica: catalog.treeLabels?.fisica || "Física",
+      controle: catalog.treeLabels?.controle || "Controle",
+      magia: catalog.treeLabels?.magia || "Magia",
     };
 
     let html = "";

@@ -24,6 +24,7 @@ import { SkillBarView } from "../ui/SkillBarView";
 import { DropLogView } from "../ui/DropLogView";
 import { SettingsPanel } from "../ui/SettingsPanel";
 import { getSkillVfxProfile } from "../presentation/effects/skill/SkillVfxCatalog";
+import { preloadCampoKit } from "../world/Dungeon1World";
 import {
   DEFAULT_GRAPHICS_QUALITY,
   type GraphicsQualityLevel,
@@ -170,30 +171,19 @@ export class GameApp {
       console.info("[UAIDZIN] reset", ok ? "ok" : "bloqueado");
     });
 
-    const weaponSetStrip = deps.hudToolsElement.querySelector<HTMLElement>("#weapon-set-strip")!;
-    if (!import.meta.env.DEV && weaponSetStrip) {
-      weaponSetStrip.style.display = "none";
-    }
-    this.hudBarsView = new HudBarsView(
-      {
-        playerFaceElement: deps.playerFaceElement,
-        playerNameElement: deps.playerNameElement,
-        playerLevelElement: deps.playerLevelElement,
-        hpFillElement: deps.hpFillElement,
-        hpTextElement: deps.hpTextElement,
-        mpFillElement: deps.mpFillElement,
-        mpTextElement: deps.mpTextElement,
-        xpFillElement: deps.xpFillElement,
-        xpTextElement: deps.xpTextElement,
-        timerElement: deps.timerElement,
-        farmStatsElement: deps.farmStatsElement,
-        weaponSetStrip,
-      },
-      (set) => {
-        void this.renderer.playerView.setWeaponSet(set);
-        this.hudBarsView.setActiveWeaponSet(set);
-      },
-    );
+    this.hudBarsView = new HudBarsView({
+      playerFaceElement: deps.playerFaceElement,
+      playerNameElement: deps.playerNameElement,
+      playerLevelElement: deps.playerLevelElement,
+      hpFillElement: deps.hpFillElement,
+      hpTextElement: deps.hpTextElement,
+      mpFillElement: deps.mpFillElement,
+      mpTextElement: deps.mpTextElement,
+      xpFillElement: deps.xpFillElement,
+      xpTextElement: deps.xpTextElement,
+      timerElement: deps.timerElement,
+      farmStatsElement: deps.farmStatsElement,
+    });
 
     this.panel = new InteractionPanel(
       deps.interactionPanelElement,
@@ -224,7 +214,6 @@ export class GameApp {
     this.settingsPanel = new SettingsPanel(deps.settingsOverlayElement, btnSettings, {
       applyArmorAura: (enabled) => this.session.setArmorAuraEnabled(enabled),
       applyQuality: (quality) => this.renderer.setQuality(quality),
-      applyShadows: (enabled) => this.renderer.setShadowsEnabled(enabled),
       onChangeCharacter: () => void this.leaveToBoot("select"),
       onLogout: () => void this.leaveToBoot("login"),
       showToast: (text, kind) => this.showToast(text, kind),
@@ -318,24 +307,28 @@ export class GameApp {
   private bindInputActions(): void {
     this.input.registerAction("panel.person", () => {
       if (!this.entered) return;
+      this.wireUi?.applyCharacter(this.currentViewModel());
       this.wireUi?.toggle("person");
       this.syncUiOpen();
     });
 
     this.input.registerAction("panel.skills", () => {
       if (!this.entered) return;
+      this.wireUi?.applyCharacter(this.currentViewModel());
       this.wireUi?.toggle("skills");
       this.syncUiOpen();
     });
 
     this.input.registerAction("panel.inv", () => {
       if (!this.entered) return;
+      this.wireUi?.applyCharacter(this.currentViewModel());
       this.wireUi?.toggle("inv");
       this.syncUiOpen();
     });
 
     this.input.registerAction("panel.vault", () => {
       if (!this.entered) return;
+      this.wireUi?.applyCharacter(this.currentViewModel());
       this.wireUi?.toggle("vault");
       this.syncUiOpen();
     });
@@ -443,6 +436,7 @@ export class GameApp {
       this.showToast(`Nível ${level}!`, "level");
       this.pulseFrame();
       this.flashBars();
+      this.wireUi?.applyCharacter(this.currentViewModel());
     });
     this.bus.on("dungeon:entered", ({ dungeonId }) => {
       this.showToast(dungeonId, "dungeon");
@@ -501,6 +495,7 @@ export class GameApp {
   }
 
   private async beginFromSave(character: BootCharacter): Promise<void> {
+    void preloadCampoKit();
     let loaded: LoadSaveResult;
     try {
       loaded = await this.session.loadSave();
@@ -545,10 +540,13 @@ export class GameApp {
     for (const slot of this.session.skillLoadout.slots) {
       if (!slot) continue;
       const profile = getSkillVfxProfile(slot.skill.id);
+      if (profile?.family === "chain") this.session.effects.warmFireBurst();
       if (profile?.dedicatedVfx && tkRegistry.supports(profile.dedicatedVfx)) {
         tkRegistry.get(profile.dedicatedVfx);
       }
     }
+    this.session.effects.warmClassVfx(this.session.skillTree.state.classId);
+    this.renderer.applyRuntimeBudget();
     this.renderer.renderer.compile(this.renderer.scene, this.session.camera.camera);
     this.loop.start();
     this.enterGame();
@@ -600,9 +598,7 @@ export class GameApp {
   private renderHud(hud: SessionHud): void {
     this.lastHud = hud;
     this.hudBarsView.update(hud);
-    const weaponSet = this.renderer.playerView.getWeaponSet() || "sword-shield";
-    this.hudBarsView.setActiveWeaponSet(weaponSet);
-    this.skillBarView.update(hud.skills, Boolean(this.wireUi));
+    this.skillBarView.update(hud.skills, Boolean(this.wireUi), hud);
     this.dropLogView.update(hud.drops);
     if (hud.lootToast) this.showToast(hud.lootToast, hud.uiToastKind);
   }
@@ -653,11 +649,17 @@ export class GameApp {
       this.notifyFirstFrame();
       const char = this.session.character;
       const timer = this.lastHud?.timer;
+      const stats = this.renderer.getFrameStats();
       this.debugHud.update({
         mode: this.state.getMode(),
         elapsed: this.clock.getElapsedSeconds(),
         extra: `hp ${char.hp}/${char.maxHp} · mp ${char.mp}/${char.maxMp} · ${this.session.worlds.getCurrentId() ?? "-"} · timer ${timer != null ? formatMMSS(Number(timer)) : "--"} · kills ${this.session.dungeonRun.getKills()}`,
         errorStats: this.errors.getStats(),
+        perf: {
+          ...stats,
+          particles: this.session.effects.getSkillVfxState().particles,
+          quality: this.renderer.getQuality(),
+        },
       });
     } catch (error) {
       this.errors.report(error, "GameApp.tick");

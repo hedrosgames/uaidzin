@@ -123,3 +123,4 @@ npm run smoke        # smoke rápido
 - Não fechar UI “porque parece pronto”.
 - Não emoji nem escudo fora dos usos travados.
 - Não escrever tutorial de controle na UI (exceto Sábio).
+- **Não resetar a escala do player.** Calibrada uma vez no load, no bind pose, em `PlayerView.fitStandingHeight`. `TARGET_HEIGHT` = `1.72 * 1.1`. A função mede só o eixo Y dos ossos, sem `mixer.update` e sem usar Z. Proibido sem pedido explícito do Felipe: editar `fitStandingHeight`, `TARGET_HEIGHT`, `model.scale`, medir altura de novo, ou “corrigir” tamanho ao mexer em animação, arma, oclusão ou carregamento. Animação quebrada se corrige no clip e no mixer. O encaixe de escala do inimigo em `EnemyRuntimeView` também não se mexe.

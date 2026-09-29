@@ -3,6 +3,7 @@ import { DUNGEON_BALANCE } from "../../data/balance/dungeon";
 import { QUEST_BY_ID } from "../../data/quests/quest-definitions";
 import type { ProgressionService } from "../../domain/progression/ProgressionService";
 import type { CharacterModel } from "../../domain/character/CharacterModel";
+import type { BuffService } from "../../domain/character/BuffService";
 import type { SkillTreeService } from "../../domain/skills/SkillTreeService";
 import type { SkillLoadout } from "../../domain/combat/SkillLoadout";
 import type { InventoryService } from "../../domain/inventory/InventoryService";
@@ -19,6 +20,7 @@ import type { DropLogKind } from "../../ui/HudModel";
 export interface RewardServiceDeps {
   progression: ProgressionService;
   character: CharacterModel;
+  buffs?: BuffService;
   skillTree: SkillTreeService;
   skillLoadout: SkillLoadout;
   inventory: InventoryService;
@@ -35,6 +37,7 @@ export interface RewardServiceDeps {
   pushDropLog: (text: string, kind: DropLogKind) => void;
   showToast: (text: string, kind?: "skill" | "attr" | "level" | "dungeon") => void;
   addSessionXp: (amount: number) => void;
+  onKill?: (enemyId: string) => void;
 }
 
 export class RewardService {
@@ -49,9 +52,12 @@ export class RewardService {
     if (this.deps.getActiveDungeonId() === "dungeon-1" && !isBoss) {
       xp = Math.round(xp * 3);
     }
+    const xpBuff = this.deps.buffs?.active.find((buff) => buff.stat === "xpMultiplier");
+    if (xpBuff) xp = Math.round(xp * (1 + (xpBuff.magnitude ?? 0)));
     this.deps.addSessionXp(xp);
     const { levelsGained } = this.deps.progression.addXp(xp);
     this.deps.dungeonRun.addKill(xp);
+    this.deps.onKill?.(enemy.id);
     this.deps.economy.lootLevel = this.deps.character.level;
     const loot = this.deps.economy.grantKillLoot(key, isBoss);
     if (loot.droppedItem) {

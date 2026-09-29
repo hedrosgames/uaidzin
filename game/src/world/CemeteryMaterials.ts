@@ -1,6 +1,7 @@
 import { Mesh, MeshStandardMaterial, Object3D, RepeatWrapping, SRGBColorSpace, TextureLoader, Vector2 } from "three";
 import { loadCitySurfaceTextures, type CitySurfaceTextures } from "./CityMaterialTextures";
 import { CITY_SURFACE_GLSL } from "./CitySurface";
+import { stampAnisotropy } from "../presentation/rendering/GraphicsQuality";
 import type { CemeteryPropId } from "./CemeteryProps";
 
 let barkTextures: Promise<CitySurfaceTextures> | null = null;
@@ -9,7 +10,7 @@ function loadBarkTextures(): Promise<CitySurfaceTextures> {
   barkTextures ??= Promise.all(["diffuse", "nor_gl", "rough"].map(async (suffix) => {
     const texture = await new TextureLoader().loadAsync(`/textures/cemetery-materials/bark_brown_01-${suffix}.jpg`);
     texture.wrapS = texture.wrapT = RepeatWrapping;
-    texture.anisotropy = 8;
+    stampAnisotropy(texture);
     texture.channel = 1;
     if (suffix === "diffuse") texture.colorSpace = SRGBColorSpace;
     return texture;
@@ -27,7 +28,7 @@ function finishMaterial(source: MeshStandardMaterial, id: CemeteryPropId, maps: 
   material.normalScale = new Vector2(id === "tree" ? 0.48 : 0.27, id === "tree" ? 0.48 : 0.27);
   if (material.map) {
     material.map.colorSpace = SRGBColorSpace;
-    material.map.anisotropy = 8;
+    stampAnisotropy(material.map);
   }
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uCemeteryDetail = { value: maps.albedo };

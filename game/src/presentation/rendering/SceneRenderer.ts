@@ -1,6 +1,7 @@
 import {
   ACESFilmicToneMapping,
   BackSide,
+  Box3,
   BufferGeometry,
   CanvasTexture,
   CapsuleGeometry,
@@ -15,6 +16,7 @@ import {
   MeshBasicMaterial,
   Object3D,
   PCFSoftShadowMap,
+  PointLight,
   PerspectiveCamera,
   Raycaster,
   Scene,
@@ -33,6 +35,8 @@ import { PlayerView } from "../player/PlayerView";
 import {
   DEFAULT_GRAPHICS_QUALITY,
   GRAPHICS_PRESETS,
+  grassCount,
+  stampAnisotropy,
   type GraphicsQualityLevel,
   setActiveQuality,
 } from "./GraphicsQuality";
@@ -47,7 +51,6 @@ const SKY_HORIZON = 0x2a1f22;
 const FOG_COLOR = 0x1a1518;
 const FOG_DENSITY = 0.016;
 const KEY_LIGHT_OFFSET = new Vector3(14, 22, 10);
-const SHADOW_HALF_EXTENT = 24;
 const BLOOM = { strength: 0.42, radius: 0.45, threshold: 0.82 };
 
 export class SceneRenderer {
@@ -72,7 +75,12 @@ export class SceneRenderer {
   private quality: GraphicsQualityLevel;
   private lastWidth = 1;
   private lastHeight = 1;
-  private readonly lastLightPos = new Vector3(-9999, -9999, -9999);
+  private lastOcclusionAt = 0;
+  private occlusionVisible = false;
+  private readonly occlusionHit = new Vector3();
+  private readonly samplePoint = new Vector3();
+  private readonly sampleRight = new Vector3();
+  private visiblePointLights = 0;
 
   constructor(options: SceneRendererOptions) {
     this.scene.name = "UAIDZIN_Scene";
@@ -106,7 +114,7 @@ export class SceneRenderer {
     this.renderer.shadowMap.autoUpdate = false;
     this.renderer.shadowMap.needsUpdate = profile.shadows;
 
-    this.keyLight = this.setupLights(profile.shadows, profile.shadowMapSize);
+    this.keyLight = this.setupLights(profile.shadows, profile.shadowMapSize, profile.shadowHalfExtent);
     this.skyDome = this.createSkyDome();
     this.scene.add(this.skyDome);
 
@@ -118,7 +126,7 @@ export class SceneRenderer {
     this.playerView.root.add(this.playerOutlineMesh);
     this.playerView.root.add(this.playerGhostMesh);
     this.playerBlobShadow = this.createPlayerBlobShadow();
-    this.playerBlobShadow.visible = profile.shadows;
+    this.playerBlobShadow.visible = !profile.shadows;
     this.playerView.root.add(this.playerBlobShadow);
     this.scene.add(this.playerView.root);
 
@@ -152,7 +160,7 @@ export class SceneRenderer {
     return this.composer;
   }
 
-  private setupLights(shadows: boolean, shadowMapSize: number): DirectionalLight {
+  private setupLights(shadows: boolean, shadowMapSize: number, shadowHalfExtent: number): DirectionalLight {
     this.scene.add(new HemisphereLight(0x8090c0, 0x3a2a1c, 0.55));
 
     const key = new DirectionalLight(0xffdcb0, 2.1);
@@ -161,13 +169,14 @@ export class SceneRenderer {
     key.shadow.mapSize.set(shadowMapSize, shadowMapSize);
     key.shadow.camera.near = 1;
     key.shadow.camera.far = 80;
-    key.shadow.camera.left = -SHADOW_HALF_EXTENT;
-    key.shadow.camera.right = SHADOW_HALF_EXTENT;
-    key.shadow.camera.top = SHADOW_HALF_EXTENT;
-    key.shadow.camera.bottom = -SHADOW_HALF_EXTENT;
+    key.shadow.camera.left = -shadowHalfExtent;
+    key.shadow.camera.right = shadowHalfExtent;
+    key.shadow.camera.top = shadowHalfExtent;
+    key.shadow.camera.bottom = -shadowHalfExtent;
     key.shadow.bias = -0.0004;
     key.shadow.normalBias = 0.03;
-    key.shadow.radius = 3;
+    key.shadow.radius = 2;
+    key.shadow.intensity = 0.38;
     this.scene.add(key);
     this.scene.add(key.target);
 
@@ -268,8 +277,8 @@ export class SceneRenderer {
     const ctx = canvas.getContext("2d");
     if (ctx) {
       const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-      gradient.addColorStop(0, "rgba(0,0,0,0.45)");
-      gradient.addColorStop(0.45, "rgba(0,0,0,0.2)");
+      gradient.addColorStop(0, "rgba(0,0,0,0.22)");
+      gradient.addColorStop(0.5, "rgba(0,0,0,0.08)");
       gradient.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, size, size);
@@ -313,7 +322,8 @@ export class SceneRenderer {
       Math.round(this.lastHeight * (profile.bloomHalfRes ? 0.5 : 1)),
     );
 
-    this.applyShadowsPreset(profile.shadows, profile.shadowMapSize);
+    this.applyShadowsPreset(profile.shadows, profile.shadowMapSize, profile.shadowHalfExtent);
+    this.applyRuntimeBudget();
 
     if (profile.cheapShaders !== previousProfile.cheapShaders) {
       this.worldRoot.traverse((obj) => {
@@ -333,23 +343,72 @@ export class SceneRenderer {
     return this.quality;
   }
 
-  setShadowsEnabled(enabled: boolean): void {
-    this.applyShadowsPreset(enabled, enabled ? 1024 : 512);
+  applyRuntimeBudget(): void {
+    this.scene.traverse((obj) => {
+      const mesh = obj as Mesh;
+      if (mesh.userData.budgetKind === "grass") {
+        const full = mesh.userData.fullCount;
+        const instanced = mesh as Mesh & { count?: number };
+        if (typeof full === "number" && typeof instanced.count === "number") instanced.count = grassCount(full);
+        mesh.receiveShadow = false;
+      }
+      if (!mesh.isMesh || !mesh.material) return;
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const mat of mats) {
+        const mapped = mat as { map?: { anisotropy: number } | null; normalMap?: { anisotropy: number } | null; roughnessMap?: { anisotropy: number } | null };
+        stampAnisotropy(mapped.map);
+        stampAnisotropy(mapped.normalMap);
+        stampAnisotropy(mapped.roughnessMap);
+      }
+    });
+    this.syncPointLights();
   }
 
-  private applyShadowsPreset(enabled: boolean, mapSize: number): void {
-    if (this.renderer.shadowMap.enabled === enabled && this.keyLight.castShadow === enabled) return;
+  private applyShadowFrustum(extent: number, mapSize: number): void {
+    const camera = this.keyLight.shadow.camera;
+    camera.left = -extent;
+    camera.right = extent;
+    camera.top = extent;
+    camera.bottom = -extent;
+    camera.updateProjectionMatrix();
+    this.keyLight.shadow.mapSize.set(mapSize, mapSize);
+    if (this.keyLight.shadow.map) {
+      this.keyLight.shadow.map.dispose();
+      this.keyLight.shadow.map = null as never;
+    }
+  }
+
+  private applyShadowsPreset(enabled: boolean, mapSize: number, extent: number): void {
     this.renderer.shadowMap.enabled = enabled;
     this.keyLight.castShadow = enabled;
-    this.playerBlobShadow.visible = enabled;
-    if (enabled) {
-      this.keyLight.shadow.mapSize.set(mapSize, mapSize);
-      if (this.keyLight.shadow.map) {
-        this.keyLight.shadow.map.dispose();
-        this.keyLight.shadow.map = null as never;
-      }
-      this.renderer.shadowMap.needsUpdate = true;
+    this.playerBlobShadow.visible = !enabled;
+    this.applyShadowFrustum(extent, mapSize);
+    if (enabled) this.renderer.shadowMap.needsUpdate = true;
+  }
+
+  private syncPointLights(): void {
+    const profile = GRAPHICS_PRESETS[this.quality];
+    const world: PointLight[] = [];
+    const skill: PointLight[] = [];
+    this.scene.traverse((obj) => {
+      const light = obj as PointLight;
+      if (!light.isPointLight) return;
+      if (light.userData.worldLight === true) world.push(light);
+      else skill.push(light);
+    });
+    world.sort((a, b) => ((b.userData.lightRank as number) || 0) - ((a.userData.lightRank as number) || 0));
+    let visible = 0;
+    world.forEach((light, index) => {
+      const keep = index < profile.maxPointLights;
+      light.visible = keep;
+      if (keep) visible += 1;
+    });
+    for (const light of skill) {
+      const keep = profile.vfxLights && light.intensity > 0.001;
+      light.visible = keep;
+      if (keep) visible += 1;
     }
+    this.visiblePointLights = visible;
   }
 
   setWorldLook(kind: "city" | "dungeon"): void {
@@ -407,54 +466,100 @@ export class SceneRenderer {
     this.occluders = occluders;
   }
 
-  private isFixedOccluder(obj: Object3D): boolean {
-    let cur: Object3D | null = obj;
-    while (cur) {
-      if (cur.userData.occlusionIgnore === true) return false;
-      if (cur.name === "enemies-view") return false;
-      cur = cur.parent;
+  private occlusionBox(obj: Object3D): Box3 | null {
+    const stamp = obj.children.length;
+    const cached = obj.userData.occlusionBox as Box3 | undefined;
+    if (cached && obj.userData.occlusionStamp === stamp && !cached.isEmpty()) return cached;
+    obj.updateWorldMatrix(true, true);
+    const box = new Box3().setFromObject(obj);
+    if (box.isEmpty()) return null;
+    obj.userData.occlusionBox = box;
+    obj.userData.occlusionStamp = stamp;
+    return box;
+  }
+
+  private sampleOccluded(origin: Vector3): boolean {
+    this.toPlayer.subVectors(this.samplePoint, origin);
+    const dist = this.toPlayer.length();
+    if (dist < 0.2) return false;
+    this.raycaster.set(origin, this.toPlayer.multiplyScalar(1 / dist));
+    const limit = dist - 0.15;
+    for (const obj of this.occluders) {
+      if (obj.userData.occlusionIgnore === true) continue;
+      const box = this.occlusionBox(obj);
+      if (!box || box.containsPoint(this.samplePoint)) continue;
+      if (!this.raycaster.ray.intersectBox(box, this.occlusionHit)) continue;
+      if (this.occlusionHit.distanceTo(origin) < limit) return true;
     }
-    if ((obj as { isLineSegments?: boolean }).isLineSegments) return false;
-    if (obj.name === "ground") return false;
-    return true;
+    return false;
   }
 
   private updatePlayerGhost(camera: PerspectiveCamera): void {
-    this.playerMesh.getWorldPosition(this.playerCenter);
-    this.playerCenter.y += 0.9;
-    this.toPlayer.subVectors(this.playerCenter, camera.position);
-    const dist = this.toPlayer.length();
     this.playerGhostMesh.visible = false;
-    if (dist < 0.2 || !this.playerView.ready || this.occluders.length === 0) {
+    if (!this.playerView.ready || this.occluders.length === 0) {
+      this.occlusionVisible = false;
       this.playerView.setOcclusionGhostVisible(false);
       return;
     }
-    this.raycaster.set(camera.position, this.toPlayer.normalize());
-    this.raycaster.far = dist - 0.2;
-    const hits = this.raycaster.intersectObjects(this.occluders, true);
-    const occluded = hits.some((hit) => this.isFixedOccluder(hit.object));
-    this.playerView.setOcclusionGhostVisible(occluded);
+    const now = performance.now();
+    if (now - this.lastOcclusionAt < 80) {
+      this.playerView.setOcclusionGhostVisible(this.occlusionVisible);
+      return;
+    }
+    this.lastOcclusionAt = now;
+    this.playerMesh.getWorldPosition(this.playerCenter);
+    this.sampleRight.setFromMatrixColumn(camera.matrixWorld, 0);
+    this.sampleRight.y = 0;
+    if (this.sampleRight.lengthSq() < 1e-6) this.sampleRight.set(1, 0, 0);
+    else this.sampleRight.normalize();
+    const xs = [-0.32, 0, 0.32];
+    const ys = [0.35, 0.95, 1.5];
+    let occluded = 0;
+    for (const y of ys) {
+      for (const x of xs) {
+        this.samplePoint.copy(this.playerCenter);
+        this.samplePoint.addScaledVector(this.sampleRight, x);
+        this.samplePoint.y += y;
+        if (this.sampleOccluded(camera.position)) occluded += 1;
+      }
+    }
+    this.occlusionVisible = occluded > 4;
+    this.playerView.setOcclusionGhostVisible(this.occlusionVisible);
   }
 
   private followKeyLight(): void {
     const p = this.playerMesh.position;
-    const dx = Math.abs(p.x - this.lastLightPos.x);
-    const dz = Math.abs(p.z - this.lastLightPos.z);
-    if (dx > 0.05 || dz > 0.05) {
-      this.lastLightPos.copy(p);
-      this.keyLight.target.position.set(p.x, 0, p.z);
-      this.keyLight.position.set(p.x + KEY_LIGHT_OFFSET.x, KEY_LIGHT_OFFSET.y, p.z + KEY_LIGHT_OFFSET.z);
-      this.skyDome.position.set(p.x, 0, p.z);
-      if (this.renderer.shadowMap.enabled) {
-        this.renderer.shadowMap.needsUpdate = true;
-      }
-    }
+    this.skyDome.position.set(p.x, 0, p.z);
+    this.keyLight.target.position.set(p.x, 0, p.z);
+    this.keyLight.position.set(p.x + KEY_LIGHT_OFFSET.x, KEY_LIGHT_OFFSET.y, p.z + KEY_LIGHT_OFFSET.z);
+    if (this.renderer.shadowMap.enabled) this.renderer.shadowMap.needsUpdate = true;
+  }
+
+  present(camera: PerspectiveCamera): void {
+    if (this.disposed) return;
+    this.renderer.compile(this.scene, camera);
+    this.render(camera);
+  }
+
+  getFrameStats(): { draws: number; triangles: number; programs: number; lights: number } {
+    const info = this.renderer.info;
+    return {
+      draws: info.render.calls,
+      triangles: info.render.triangles,
+      programs: info.programs?.length ?? 0,
+      lights: this.visiblePointLights,
+    };
   }
 
   render(camera: PerspectiveCamera): void {
     if (this.disposed) return;
     this.updatePlayerGhost(camera);
     this.followKeyLight();
+    this.syncPointLights();
+    if (!GRAPHICS_PRESETS[this.quality].useComposer) {
+      this.renderer.render(this.scene, camera);
+      return;
+    }
     const renderPass = this.composer.passes[0] as RenderPass;
     renderPass.camera = camera;
     this.composer.render();

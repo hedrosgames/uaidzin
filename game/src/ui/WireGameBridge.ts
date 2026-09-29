@@ -1,4 +1,4 @@
-import { CLASSES, type ClassId, type TreeId } from "../data/classes/class-definitions";
+import { CLASSES, type TreeId } from "../data/classes/class-definitions";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
 import { SKILL_BALANCE } from "../data/balance/skills";
 import { resolveItemIcon, shopCatalogForUi, SKILL_TRAINING } from "../data/balance/economy";
@@ -36,12 +36,8 @@ function gearScore(it: ItemInstance): number {
   return (rIdx >= 0 ? rIdx : 0) * 1000 + (it.refine || 0) * 100 + (it.attackBonus || 0) + (it.defenseBonus || 0);
 }
 
-function skillIconPath(_classId: ClassId, tree: TreeId, index: number): string {
-  const n = Math.min(12, index + 1);
-  if (tree === "fisica") return `/assets/icons/skills/caca-${n}.svg`;
-  if (tree === "controle") return `/assets/icons/skills/armadilha-${n}.svg`;
-  if (tree === "magia") return `/assets/icons/skills/marca-${n}.svg`;
-  return `/assets/icons/skills/special-${n}.svg`;
+function skillIconPath(skillId: string): string {
+  return `/assets/icons/skills/${skillId}.png`;
 }
 
 function toWireItem(it: ItemInstance): WireItem {
@@ -93,7 +89,7 @@ export function buildWireSkillCatalog(session: CityGameSession): WireSkillCatalo
         cd: sk.cooldown ?? 0,
         pointsCost: SKILL_TRAINING.pointsCost,
         goldCost: SKILL_TRAINING.goldCost(i),
-        icon: skillIconPath(st.classId, tree, i),
+        icon: skillIconPath(sk.id),
       };
     });
   }
@@ -336,7 +332,6 @@ export function createWireGameApi(
       return learned;
     },
     getSkillBar: (): WireSkillBarSlot[] => {
-      const klass = CLASSES[session.skillTree.state.classId];
       return session.skillLoadout.slots.map((s, idx) => {
         if (!s) {
           return {
@@ -345,16 +340,12 @@ export function createWireGameApi(
             auto: false,
           };
         }
-        let iconIdx = 0;
-        const treeDefs = klass?.trees[s.tree] || [];
-        const foundIdx = treeDefs.findIndex((def) => def.id === s.skill.id);
-        if (foundIdx >= 0) iconIdx = foundIdx;
         return {
           slotIndex: idx,
           skillId: s.skill.id,
           tree: s.tree,
           name: s.skill.name,
-          icon: skillIconPath(session.skillTree.state.classId, s.tree, iconIdx),
+          icon: skillIconPath(s.skill.id),
           auto: s.auto,
           cooldown: s.cooldown,
           cd: s.cd,
@@ -362,7 +353,11 @@ export function createWireGameApi(
       });
     },
     equipSkill: (slotIndex: number, skillId: string) => {
-      const ok = session.skillLoadout.assignToSlot(slotIndex, skillId);
+      let resolved = skillId;
+      const catalog = buildWireSkillCatalog(session);
+      const wireRow = catalog.skills[skillId];
+      if (wireRow?.skillId) resolved = wireRow.skillId;
+      const ok = session.skillLoadout.assignToSlot(slotIndex, resolved);
       if (ok) {
         session.saves.markDirty("skillLoadout", "deferred");
         notifyChanged();
@@ -387,6 +382,23 @@ export function createWireGameApi(
         session.saves.markDirty("skillLoadout", "deferred");
         notifyChanged();
       }
+      return ok;
+    },
+    getPotionBar: () => session.getPotionBar(),
+    setPotionSlot: (slotIndex: number, defId: string | null) => {
+      const ok = session.setPotionSlot(slotIndex, defId);
+      if (ok) notifyChanged();
+      return ok;
+    },
+    usePotionSlot: (slotIndex: number) => {
+      const ok = session.usePotionSlot(slotIndex);
+      if (ok) notifyChanged();
+      return ok;
+    },
+    getCombatAutos: () => session.getCombatAutos(),
+    toggleCombatAuto: (kind: "attack" | "move" | "potion") => {
+      const ok = session.toggleCombatAuto(kind);
+      if (ok) notifyChanged();
       return ok;
     },
 

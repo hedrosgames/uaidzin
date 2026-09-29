@@ -11,6 +11,7 @@ export const ECONOMY_BALANCE = {
   equipDropChance: 0.22,
   bossEquipDropChance: 0.4,
   materialDropChance: 0.18,
+  xpChaliceDropChance: 0.1,
   oriShare: 0.75,
   oriUntilDungeon: 4,
   equipStatLevelDivisor: 8,
@@ -18,10 +19,9 @@ export const ECONOMY_BALANCE = {
   rarities: ["Comum", "Incomum", "Raro", "Épico", "Lendário"] as const,
   rarityWeights: [50, 28, 14, 6, 2] as const,
   refine: {
-    maxLevel: 10,
-    successByLevel: [1, 1, 0.95, 0.9, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35],
-    goldCost: [10, 20, 40, 70, 110, 160, 230, 320, 430, 560],
-    materialTierSwitchAt: 6,
+    maxLevel: 15,
+    successByLevel: [1, 1, 0.95, 0.9, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1],
+    goldCost: [10, 20, 40, 70, 110, 160, 230, 320, 430, 560, 700, 900, 1200, 1600, 2200],
     bonusBySlot: {
       weapon: { stat: "attack" as const, perLevel: 2 },
       head: { stat: "defense" as const, perLevel: 1 },
@@ -71,7 +71,7 @@ export type ShopSlotDef = {
 
 function shopItemFromCatalog(id: string): ShopItemDef {
   const def = ITEM_CATALOG[id];
-  if (!def || !def.icon) {
+    if (!def || !def.icon || def.available === false) {
     throw new Error(`SHOP_CATALOG: item sem ícone ou def: ${id}`);
   }
   return {
@@ -87,7 +87,7 @@ function shopItemFromCatalog(id: string): ShopItemDef {
 function shopItems(): Record<string, ShopItemDef> {
   const out: Record<string, ShopItemDef> = {};
   for (const [id, def] of Object.entries(ITEM_CATALOG)) {
-    if (def && def.icon) {
+    if (def && def.icon && def.available !== false) {
       out[id] = shopItemFromCatalog(id);
     }
   }

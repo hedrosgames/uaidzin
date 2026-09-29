@@ -109,18 +109,19 @@ export class SkillController {
     return { slot, resolved, mods };
   }
 
-  slotStates(): Array<{ key: number; name: string; cdRatio: number; ready: boolean; auto: boolean }> {
-    const list: Array<{ key: number; name: string; cdRatio: number; ready: boolean; auto: boolean }> = [];
+  slotStates(): Array<{ key: number; name: string; cdRatio: number; cdLeft: number; ready: boolean; auto: boolean }> {
+    const list: Array<{ key: number; name: string; cdRatio: number; cdLeft: number; ready: boolean; auto: boolean }> = [];
     for (let i = 0; i < SKILL_BALANCE.barSize; i++) {
       const slot = this.loadout.slots[i];
       const key = i === 9 ? 0 : i + 1;
       if (!slot) {
-        list.push({ key, name: "", cdRatio: 0, ready: false, auto: false });
+        list.push({ key, name: "", cdRatio: 0, cdLeft: 0, ready: false, auto: false });
       } else {
         list.push({
           key,
           name: slot.skill.name,
           cdRatio: slot.cooldown > 0 ? slot.cd / slot.cooldown : 0,
+          cdLeft: Math.max(0, slot.cd),
           ready: slot.cd <= 0,
           auto: slot.auto,
         });

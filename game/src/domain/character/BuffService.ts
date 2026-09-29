@@ -14,7 +14,9 @@ export type BuffStat =
   | "mpCost"
   | "mpToHp"
   | "stealth"
-  | "summonPower";
+  | "summonPower"
+  | "damageFlat"
+  | "xpMultiplier";
 
 export type ActiveBuff = {
   id: string;

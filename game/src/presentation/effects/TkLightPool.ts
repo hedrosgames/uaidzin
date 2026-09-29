@@ -1,5 +1,6 @@
 import { Group, PointLight, type Scene } from "three";
 import { TK_LIGHT_POOL_SIZE } from "../../data/balance/vfx";
+import { getActiveProfile } from "../rendering/GraphicsQuality";
 
 export class TkLightPool {
   private readonly available: PointLight[] = [];
@@ -11,19 +12,22 @@ export class TkLightPool {
     for (let i = 0; i < size; i++) {
       const light = new PointLight(0xffffff, 0, 8, 2);
       light.name = `tk-pool-light-${i}`;
+      light.visible = false;
       this.available.push(light);
-      this.root.add(light);
     }
     scene?.add(this.root);
   }
 
   acquire(color?: number, distance?: number): PointLight | null {
+    if (!getActiveProfile().vfxLights) return null;
     const light = this.available.pop();
     if (!light) return null;
     this.inUse.add(light);
     if (color !== undefined) light.color.set(color);
     if (distance !== undefined) light.distance = distance;
     light.intensity = 0;
+    light.visible = true;
+    this.root.add(light);
     return light;
   }
 
@@ -31,14 +35,16 @@ export class TkLightPool {
     if (!light || !this.inUse.has(light)) return;
     this.inUse.delete(light);
     light.intensity = 0;
-    this.root.add(light);
+    light.visible = false;
+    light.removeFromParent();
     this.available.push(light);
   }
 
   clear(): void {
     for (const light of this.inUse) {
       light.intensity = 0;
-      this.root.add(light);
+      light.visible = false;
+      light.removeFromParent();
       this.available.push(light);
     }
     this.inUse.clear();

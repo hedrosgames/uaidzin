@@ -1,0 +1,53 @@
+{
+  "npcs": [
+    {
+      "role": "merchant",
+      "height": 1.780382131127892,
+      "ground": 0,
+      "minY": -0.00017151451245378709,
+      "maxY": 0.0001284653657177468,
+      "animated": true,
+      "finite": true,
+      "pick": "npc-merchant",
+      "drift": 0.005982719387375582
+    },
+    {
+      "role": "blacksmith",
+      "height": 1.5201132720891173,
+      "ground": 0,
+      "minY": -0.0005536671994903537,
+      "maxY": 0.00029649273757882005,
+      "animated": true,
+      "finite": true,
+      "pick": "npc-blacksmith",
+      "drift": 0.124057467623821
+    },
+    {
+      "role": "sage",
+      "height": 1.6810409875722843,
+      "ground": 0.16,
+      "minY": 0.15985069233901122,
+      "maxY": 0.16000003413009603,
+      "animated": true,
+      "finite": true,
+      "pick": "npc-sage",
+      "drift": 0.0015006892234107965
+    }
+  ],
+  "shaderFailures": 0,
+  "errors": [],
+  "capture": {
+    "playerHidden": true,
+    "reason": "Enquadramento dos NPCs; TK reproduzido isoladamente com altura de 12.61, sem carregar CityWorld ou os novos NPCs.",
+    "camera": [
+      3,
+      12.5,
+      21
+    ],
+    "target": [
+      3.8,
+      0.3,
+      3.4
+    ]
+  }
+}

@@ -4,6 +4,8 @@ import type { PassiveId, SkillDef } from "../../data/classes/skill-types";
 
 export interface CombatMods {
   attackMul: number;
+  damageFlat: number;
+  xpMultiplier: number;
   defenseMul: number;
   maxHpMul: number;
   evasion: number;
@@ -28,6 +30,8 @@ export interface CombatMods {
 export function emptyMods(): CombatMods {
   return {
     attackMul: 1,
+    damageFlat: 0,
+    xpMultiplier: 1,
     defenseMul: 1,
     maxHpMul: 0,
     evasion: 0,
@@ -52,6 +56,8 @@ export function emptyMods(): CombatMods {
 
 function addStat(mods: CombatMods, stat: BuffStat, magnitude: number, nextHitMul?: number): void {
   if (stat === "attack") mods.attackMul += magnitude;
+  else if (stat === "damageFlat") mods.damageFlat += magnitude;
+  else if (stat === "xpMultiplier") mods.xpMultiplier += magnitude;
   else if (stat === "defense") mods.defenseMul += magnitude;
   else if (stat === "maxHp") mods.maxHpMul += magnitude;
   else if (stat === "evasion") mods.evasion += magnitude;

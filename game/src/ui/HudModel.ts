@@ -12,8 +12,16 @@ export interface HudSkillSlot {
   key: number;
   name: string;
   cdRatio: number;
+  cdLeft: number;
   ready: boolean;
   auto?: boolean;
+}
+
+export interface HudPotionSlot {
+  defId: string;
+  name: string;
+  icon: string;
+  stack: number;
 }
 
 export interface HudModel {
@@ -32,8 +40,12 @@ export interface HudModel {
   kills: number;
   arenaHint: string | null;
   skills: HudSkillSlot[];
+  potionSlots: Array<HudPotionSlot | null>;
+  autoAttack: boolean;
+  autoMove: boolean;
+  autoPotion: boolean;
   drops: DropLogEntry[];
-  weaponSet: WeaponSetId;
+  weaponSet: WeaponSetId | null;
   pendingSave: boolean;
   lootToast?: string | null;
   uiToastKind?: "skill" | "attr" | "level" | "dungeon";

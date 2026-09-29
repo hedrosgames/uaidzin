@@ -1,0 +1,155 @@
+{
+  "name": "skills-FM",
+  "source": "C:\\Users\\Felipe\\.codex\\generated_images\\01a0eab8-371e-7c52-b2ab-fc37375c1d8e\\exec-aec79f35-9888-4dee-ac87-af2a0476bcfd.png",
+  "columns": 6,
+  "rows": 4,
+  "category": "skills",
+  "items": [
+    {
+      "id": "fm_fis_impacto_longinquo",
+      "name": "Impacto Longínquo",
+      "category": "skills",
+      "visual": "A vivid Impacto Longinquo spell icon, steel-white kinetic force forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_fis_olho_falcao",
+      "name": "Olho de Falcão",
+      "category": "skills",
+      "visual": "A sharply readable Olho de Falcao emblem showing a hawk eye above a hunter silhouette sidestepping an incoming arrow; crisp central silhouette, restrained magical glow, isolated fantasy game icon"
+    },
+    {
+      "id": "fm_fis_furia_combate",
+      "name": "Fúria de Combate",
+      "category": "skills",
+      "visual": "A distinct Furia de Combate emblem built around the actual effect: a raised weapon wrapped in a focused attack aura; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon"
+    },
+    {
+      "id": "fm_fis_guarda_solida",
+      "name": "Guarda Sólida",
+      "category": "skills",
+      "visual": "A sharply readable Guarda Solida emblem showing a firmly planted shield braced against a heavy descending hammer; crisp central silhouette, restrained magical glow, isolated fantasy game icon"
+    },
+    {
+      "id": "fm_fis_conversao_vital",
+      "name": "Conversão Vital",
+      "category": "skills",
+      "visual": "A distinct Conversao Vital emblem built around the actual effect: blue mana streams transforming into red healing light; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon"
+    },
+    {
+      "id": "fm_fis_mestre_arco",
+      "name": "Mestre do Arco",
+      "category": "skills",
+      "visual": "A sharply readable Mestre do Arco emblem showing an elegant longbow with a taut string and a sharp golden arrow, bow mastery emblem; crisp central silhouette, restrained magical glow, isolated fantasy game icon"
+    },
+    {
+      "id": "fm_fis_ponto_critico",
+      "name": "Ponto Crítico",
+      "category": "skills",
+      "visual": "A sharply readable Ponto Critico emblem showing a focused crosshair over one bright weak point on a distant armored target; crisp central silhouette, restrained magical glow, isolated fantasy game icon"
+    },
+    {
+      "id": "fm_fis_negacao_vida",
+      "name": "Negação de Vida",
+      "category": "skills",
+      "visual": "A vivid Negacao de Vida spell icon, deep violet shadow mist forming a compact circular burst with several tiny enemy silhouettes around its edge; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_ctrl_cura",
+      "name": "Cura",
+      "category": "skills",
+      "visual": "A bright restorative spell focal object with a ruby heart and healing light, Cura motif, clear healing rays and a distinct silhouette, isolated fantasy game icon"
+    },
+    {
+      "id": "fm_ctrl_julgamento",
+      "name": "Julgamento Sagrado",
+      "category": "skills",
+      "visual": "A vivid Julgamento Sagrado spell icon, warm gold-white sacred radiance forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_ctrl_bencao",
+      "name": "Bênção",
+      "category": "skills",
+      "visual": "A sharply readable Bencao emblem showing a holy hand placing a gold-edged blessing sigil on an iron shield; crisp central silhouette, restrained magical glow, isolated fantasy game icon"
+    },
+    {
+      "id": "fm_ctrl_purificacao",
+      "name": "Purificação",
+      "category": "skills",
+      "visual": "A bright restorative spell focal object with a ruby heart and healing light, Purificacao motif, clear healing rays and a distinct silhouette, isolated fantasy game icon"
+    },
+    {
+      "id": "fm_ctrl_lanca_luz",
+      "name": "Lança de Luz",
+      "category": "skills",
+      "visual": "A vivid Lanca de Luz spell icon, warm gold-white sacred radiance forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_ctrl_vontade_divina",
+      "name": "Vontade Divina",
+      "category": "skills",
+      "visual": "A distinct Vontade Divina emblem built around the actual effect: a brilliant arcane core intensifying into a spell aura; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon"
+    },
+    {
+      "id": "fm_ctrl_castigo",
+      "name": "Castigo Celestial",
+      "category": "skills",
+      "visual": "A vivid Castigo Celestial spell icon, warm gold-white sacred radiance forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_ctrl_graca_ceu",
+      "name": "Graça do Céu",
+      "category": "skills",
+      "visual": "A vivid Graca do Ceu spell icon, warm gold-white sacred radiance forming a compact circular burst with several tiny enemy silhouettes around its edge; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_mag_esfera_ignea",
+      "name": "Esfera Ígnea",
+      "category": "skills",
+      "visual": "A vivid Esfera Ignea spell icon, ember orange and scarlet flame forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_mag_lanca_glacial",
+      "name": "Lança Glacial",
+      "category": "skills",
+      "visual": "A vivid Lanca Glacial spell icon, glacial cyan frost forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_mag_choque_vital",
+      "name": "Choque Vital",
+      "category": "skills",
+      "visual": "A vivid Choque Vital spell icon, electric cobalt and pale gold arcs forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_mag_picada",
+      "name": "Picada Peçonhenta",
+      "category": "skills",
+      "visual": "A vivid Picada Peconhenta spell icon, acid green venom forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_mag_tempestade_brasa",
+      "name": "Tempestade de Brasa",
+      "category": "skills",
+      "visual": "A vivid Tempestade de Brasa spell icon, ember orange and scarlet flame forming a compact circular burst with several tiny enemy silhouettes around its edge; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_mag_sombra_corrosiva",
+      "name": "Sombra Corrosiva",
+      "category": "skills",
+      "visual": "A vivid Sombra Corrosiva spell icon, deep violet shadow mist forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_mag_nevasca",
+      "name": "Nevasca",
+      "category": "skills",
+      "visual": "A vivid Nevasca spell icon, glacial cyan frost forming a compact circular burst with several tiny enemy silhouettes around its edge; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    },
+    {
+      "id": "fm_mag_colapso",
+      "name": "Colapso Elemental",
+      "category": "skills",
+      "visual": "A vivid Colapso Elemental spell icon, interwoven multicolor elemental energy forming a compact circular burst with several tiny enemy silhouettes around its edge; class FM fantasy art direction, one strong central silhouette, isolated object, no frame"
+    }
+  ],
+  "prompt": "Create ONE sprite sheet containing exactly 24 different fantasy RPG SKILL illustrations for class skills-FM. Strict invisible grid of 6 columns and 4 rows, each tile a square. Landscape canvas ideally 1536x1024. Each illustration fully fills its own square tile with a rich dark colored background and strong colorful dimensional fantasy action illustration. No frame, no border, no visible grid lines, no labels, no lettering, no words, no numbers, no watermark. Do not merge adjacent panels; exactly 24 clearly different compositions. These are provisional game placeholders but meaning and distinction matter. Bold silhouettes readable at 64px, painted 3D fantasy MMORPG style. Follow this exact row-major list of skill names and effects (names describe subject; DO NOT WRITE names):\nRow 1 column 1: Impacto Longínquo — A vivid Impacto Longinquo spell icon, steel-white kinetic force forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 1 column 2: Olho de Falcão — A sharply readable Olho de Falcao emblem showing a hawk eye above a hunter silhouette sidestepping an incoming arrow; crisp central silhouette, restrained magical glow, isolated fantasy game icon\nRow 1 column 3: Fúria de Combate — A distinct Furia de Combate emblem built around the actual effect: a raised weapon wrapped in a focused attack aura; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon\nRow 1 column 4: Guarda Sólida — A sharply readable Guarda Solida emblem showing a firmly planted shield braced against a heavy descending hammer; crisp central silhouette, restrained magical glow, isolated fantasy game icon\nRow 1 column 5: Conversão Vital — A distinct Conversao Vital emblem built around the actual effect: blue mana streams transforming into red healing light; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon\nRow 1 column 6: Mestre do Arco — A sharply readable Mestre do Arco emblem showing an elegant longbow with a taut string and a sharp golden arrow, bow mastery emblem; crisp central silhouette, restrained magical glow, isolated fantasy game icon\nRow 2 column 1: Ponto Crítico — A sharply readable Ponto Critico emblem showing a focused crosshair over one bright weak point on a distant armored target; crisp central silhouette, restrained magical glow, isolated fantasy game icon\nRow 2 column 2: Negação de Vida — A vivid Negacao de Vida spell icon, deep violet shadow mist forming a compact circular burst with several tiny enemy silhouettes around its edge; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 2 column 3: Cura — A bright restorative spell focal object with a ruby heart and healing light, Cura motif, clear healing rays and a distinct silhouette, isolated fantasy game icon\nRow 2 column 4: Julgamento Sagrado — A vivid Julgamento Sagrado spell icon, warm gold-white sacred radiance forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 2 column 5: Bênção — A sharply readable Bencao emblem showing a holy hand placing a gold-edged blessing sigil on an iron shield; crisp central silhouette, restrained magical glow, isolated fantasy game icon\nRow 2 column 6: Purificação — A bright restorative spell focal object with a ruby heart and healing light, Purificacao motif, clear healing rays and a distinct silhouette, isolated fantasy game icon\nRow 3 column 1: Lança de Luz — A vivid Lanca de Luz spell icon, warm gold-white sacred radiance forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 3 column 2: Vontade Divina — A distinct Vontade Divina emblem built around the actual effect: a brilliant arcane core intensifying into a spell aura; incorporate the skill name as a recognizable object or action motif, crisp readable silhouette, isolated fantasy game icon\nRow 3 column 3: Castigo Celestial — A vivid Castigo Celestial spell icon, warm gold-white sacred radiance forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 3 column 4: Graça do Céu — A vivid Graca do Ceu spell icon, warm gold-white sacred radiance forming a compact circular burst with several tiny enemy silhouettes around its edge; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 3 column 5: Esfera Ígnea — A vivid Esfera Ignea spell icon, ember orange and scarlet flame forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 3 column 6: Lança Glacial — A vivid Lanca Glacial spell icon, glacial cyan frost forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 4 column 1: Choque Vital — A vivid Choque Vital spell icon, electric cobalt and pale gold arcs forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 4 column 2: Picada Peçonhenta — A vivid Picada Peconhenta spell icon, acid green venom forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 4 column 3: Tempestade de Brasa — A vivid Tempestade de Brasa spell icon, ember orange and scarlet flame forming a compact circular burst with several tiny enemy silhouettes around its edge; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 4 column 4: Sombra Corrosiva — A vivid Sombra Corrosiva spell icon, deep violet shadow mist forming a focused projectile or blade striking one clear target; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 4 column 5: Nevasca — A vivid Nevasca spell icon, glacial cyan frost forming a compact circular burst with several tiny enemy silhouettes around its edge; class FM fantasy art direction, one strong central silhouette, isolated object, no frame\nRow 4 column 6: Colapso Elemental — A vivid Colapso Elemental spell icon, interwoven multicolor elemental energy forming a compact circular burst with several tiny enemy silhouettes around its edge; class FM fantasy art direction, one strong central silhouette, isolated object, no frame",
+  "status": "placeholder"
+}

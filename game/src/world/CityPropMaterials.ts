@@ -1,6 +1,7 @@
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, Object3D, SRGBColorSpace, Vector2 } from "three";
 import type { CityPropId } from "./CityProps";
 import { loadCitySurfaceTextures, type CitySurfaceKind, type CitySurfaceTextures } from "./CityMaterialTextures";
+import { stampAnisotropy } from "../presentation/rendering/GraphicsQuality";
 
 type PropSurface = CitySurfaceKind | "paint" | "paper";
 type AtlasRect = readonly [number, number, number, number];
@@ -134,7 +135,7 @@ export async function applyCityPropMaterials(root: Object3D, id: CityPropId): Pr
     const source = mesh.material;
     if (source.map) {
       source.map.colorSpace = SRGBColorSpace;
-      source.map.anisotropy = 8;
+      stampAnisotropy(source.map);
     }
     const kinds = partitionSurfaces(mesh, id, source);
     const materials = await Promise.all(kinds.map(async (kind) => makeSurfaceMaterial(source, id, kind,

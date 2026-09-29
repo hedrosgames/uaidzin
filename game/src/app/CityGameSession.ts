@@ -21,6 +21,7 @@ import { BagLockService } from "../domain/inventory/BagLockService";
 import { EconomyService } from "../domain/economy/EconomyService";
 import { RefinementService } from "../domain/items/RefinementService";
 import { EquipmentService } from "../domain/items/EquipmentService";
+import { ItemUseService } from "../domain/items/ItemUseService";
 import { AccountVaultService } from "../domain/account/AccountVaultService";
 import { BuffService } from "../domain/character/BuffService";
 import { SaveService } from "../persistence/SaveService";
@@ -33,13 +34,15 @@ import { DUNGEON_TEST } from "../data/dungeons/dungeon-definitions";
 import { findDungeon } from "../data/dungeons/dungeons-mortal";
 import { type TreeId } from "../data/classes/class-definitions";
 import { SKILL_TRAINING } from "../data/balance/economy";
-import { CONSUMABLE_BALANCE, isConsumableId } from "../data/balance/consumables";
+import { isPotionDefId, resolveConsumableRestore } from "../data/balance/consumables";
+import { ITEM_CATALOG, resolveItemIcon } from "../data/items/item-catalog";
+import { SettingsPanel } from "../ui/SettingsPanel";
 import { isWeaponSetId } from "../presentation/player/WeaponRig";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
 import type { BootCharacter } from "./BootFlow";
 import { PlayerController } from "../gameplay/PlayerController";
 import type { InputService } from "../gameplay/InputService";
-import type { HudModel } from "../ui/HudModel";
+import type { HudModel, HudPotionSlot } from "../ui/HudModel";
 import { PlayerRuntime } from "../gameplay/PlayerRuntime";
 import { EnemyRuntimeView } from "../presentation/enemies/EnemyRuntimeView";
 import { EffectManager } from "../presentation/effects/EffectManager";
@@ -89,6 +92,7 @@ export class CityGameSession {
   readonly buffs = new BuffService();
   readonly economy = new EconomyService(this.inventory);
   readonly refinement = new RefinementService(this.inventory);
+  readonly itemUse: ItemUseService;
   readonly equipment = new EquipmentService(this.inventory, this.character);
   readonly composition = new CompositionService(this.inventory, this.equipment);
   readonly quests = new QuestService(() => this.progressState.quests);
@@ -131,6 +135,7 @@ export class CityGameSession {
   moveLock = 0;
   private dropLog: DropLogEntry[] = [];
   private dropLogSeq = 0;
+  private gateKills: number[] = [];
   pendingSkillSlot = -1;
   hadSave = false;
   saveUnreadable = false;
@@ -138,6 +143,11 @@ export class CityGameSession {
   deathEmitCount = 0;
   autoAttackSwings = 0;
   progressState: SavePayload["progress"] = emptyProgress();
+  potionSlots: [string | null, string | null, string | null] = [null, null, null];
+  autoAttack = true;
+  autoMove = false;
+  autoPotion = false;
+  private potionAutoCooldown = 0;
 
   private cachedWeaponReach: { attackRange: number; attackInterval: number } | null = null;
   private lastAttackRange = -1;
@@ -172,6 +182,7 @@ export class CityGameSession {
     );
     this.enemyView.bindEffects(this.effects);
     this.summonView = new SummonView(renderer.scene);
+    this.itemUse = new ItemUseService(this.inventory, this.character, this.buffs, (amount) => this.grantItemXp(amount));
 
     this.dungeonFlow = new DungeonFlow({
       inventory: this.inventory,
@@ -212,6 +223,7 @@ export class CityGameSession {
     this.rewards = new RewardService({
       progression: this.progression,
       character: this.character,
+      buffs: this.buffs,
       skillTree: this.skillTree,
       skillLoadout: this.skillLoadout,
       inventory: this.inventory,
@@ -230,6 +242,7 @@ export class CityGameSession {
       addSessionXp: (amount) => {
         this.sessionXp += amount;
       },
+      onKill: (enemyId) => this.rollGateKey(enemyId),
     });
 
     this.combat = new CombatOrchestrator({
@@ -269,13 +282,14 @@ export class CityGameSession {
         this.bus.emit("character:death", { at: Date.now() });
         this.deathEmitCount += 1;
       },
-      getMoveLock: () => this.moveLock,
+      getMoveLock: () => Math.max(this.moveLock, this.renderer.playerView.getBusyRemainingSec()),
       triggerHitStop: (duration) => {
         this.hitStop = duration;
       },
       onAutoAttackSwing: () => {
         this.autoAttackSwings += 1;
       },
+      isAutoAttackEnabled: () => this.autoAttack,
     });
 
     this.vaultTransfer = new VaultTransfer({
@@ -308,6 +322,18 @@ export class CityGameSession {
         this.hadSave = val;
       },
       refreshWeaponSetFromGear: () => this.refreshWeaponSetFromGear(),
+      getHudOptions: () => ({
+        potionSlots: [...this.potionSlots] as [string | null, string | null, string | null],
+        autoAttack: this.autoAttack,
+        autoMove: this.autoMove,
+        autoPotion: this.autoPotion,
+      }),
+      setHudOptions: (opts) => {
+        this.potionSlots = [...opts.potionSlots] as [string | null, string | null, string | null];
+        this.autoAttack = opts.autoAttack;
+        this.autoMove = opts.autoMove;
+        this.autoPotion = opts.autoPotion;
+      },
     });
 
     this.debug = new SessionDebug(this);
@@ -326,7 +352,7 @@ export class CityGameSession {
 
   async start(): Promise<void> {
     await this.renderer.loadPlayerModel(this.skillTree.state.classId);
-    this.enterWorld("city");
+    await this.enterWorld("city");
   }
 
   async reloadAccountVault(): Promise<void> {
@@ -343,11 +369,12 @@ export class CityGameSession {
     return res.ok;
   }
 
-  enterWorld(id: WorldId): void {
+  async enterWorld(id: WorldId): Promise<void> {
     this.effects.clearSkillVfx();
     const world = this.worlds.switchTo(id);
-    this.renderer.setWorldLook(id === "city" || id === "dungeon-2" ? "city" : "dungeon");
+    this.renderer.setWorldLook(id === "dungeon-test" ? "dungeon" : "city");
     this.renderer.setOccluders(world.occluders ?? []);
+    this.renderer.applyRuntimeBudget();
     if (id === "city") this.character.healFull();
     this.player.setPosition(world.spawn.x, world.spawn.z);
     this.player.clearMoveTarget();
@@ -399,6 +426,8 @@ export class CityGameSession {
         DUNGEON_BALANCE.debugDurationSecondsOverride ?? def.durationSeconds;
       this.dungeonRun.start(def, duration);
       this.enemies.spawnFromDungeon(def);
+      world.gates?.reset();
+      this.gateKills = [];
       this.skillLoadout.refresh();
       this.skill.reset();
       this.sessionXp = 0;
@@ -409,6 +438,10 @@ export class CityGameSession {
     }
     this.bus.emit("world:changed", { worldId: world.id });
     if (id === "city") this.saves.markDirty("character", "deferred");
+    await world.visualsReady;
+    await this.enemyView.whenModelsSettled();
+    this.renderer.applyRuntimeBudget();
+    this.renderer.present(this.camera.camera);
   }
 
   pickDungeonForLevel(): DungeonDef {
@@ -505,10 +538,10 @@ export class CityGameSession {
       this.renderer.render(this.camera.camera);
       this.pushHud(inDungeon);
       if (this.resultHold <= 0) {
-        void this.withWorldFade(() => {
+        void this.withWorldFade(async () => {
           this.character.healFull();
           this.renderer.playerView.clearDeath();
-          this.enterWorld("city");
+          await this.enterWorld("city");
           this.saves.markDirty("character", "deferred");
         });
       }
@@ -538,7 +571,7 @@ export class CityGameSession {
     const hpCap = Math.round(this.character.maxHp * (1 + Math.max(0, frameMods.maxHpMul)));
     if (this.character.hp > hpCap) this.character.hp = hpCap;
 
-    const locked = this.moveLock > 0;
+    const locked = this.isActionLocked();
     const click = this.controller.consumeClickMove();
     if (click) {
       if (this.panel.isOpen() || uiBlocked) this.input.triggerAction("ui.escape");
@@ -578,11 +611,25 @@ export class CityGameSession {
     } else {
       const axes = this.controller.getMoveAxes();
       if (axes.x !== 0 || axes.z !== 0) this.interactions.clearPendingInteract();
+      if (
+        this.autoMove &&
+        inDungeon &&
+        axes.x === 0 &&
+        axes.z === 0 &&
+        !click &&
+        !this.character.isDead
+      ) {
+        this.applyAutoMove();
+      }
       const worldAxes = this.camera.toWorldMove(axes.x, axes.z);
       this.player.update(dt, worldAxes.x, worldAxes.z, world.boundary, world.collision);
     }
 
     this.interactions.resolvePendingInteract();
+    this.potionAutoCooldown = Math.max(0, this.potionAutoCooldown - dt);
+    if (this.autoPotion && !this.character.isDead) {
+      this.tickAutoPotion();
+    }
 
     if (this.hitStop > 0) {
       this.hitStop -= dt;
@@ -677,8 +724,12 @@ export class CityGameSession {
       kills: this.dungeonRun.getKills(),
       arenaHint: inDungeon ? this.currentArenaLabel() : null,
       skills: this.skill.slotStates(),
+      potionSlots: this.buildPotionHudSlots(),
+      autoAttack: this.autoAttack,
+      autoMove: this.autoMove,
+      autoPotion: this.autoPotion,
       drops: this.visibleDropLog(),
-      weaponSet: this.renderer.playerView.getWeaponSet() || "sword-shield",
+      weaponSet: this.renderer.playerView.getWeaponSet(),
       pendingSave: saveVault.hasPendingCritical(),
       lootToast: this.lootToastTimer > 0 ? this.lootToast : null,
       uiToastKind: this.uiToastKind,
@@ -688,8 +739,97 @@ export class CityGameSession {
     this.hudListener?.(model);
   }
 
+  private buildPotionHudSlots(): Array<HudPotionSlot | null> {
+    return this.potionSlots.map((defId) => {
+      if (!defId) return null;
+      const def = ITEM_CATALOG[defId];
+      const stack = this.inventory.items
+        .filter((i) => i.defId === defId)
+        .reduce((sum, i) => sum + Math.max(0, i.stack || 0), 0);
+      return {
+        defId,
+        name: def?.name || defId,
+        icon: resolveItemIcon(defId, def?.slot, def?.name) || "/assets/icons/items/potion.svg",
+        stack,
+      };
+    });
+  }
+
+  private applyAutoMove(): void {
+    const targets = this.enemies.aliveTargets();
+    if (!targets.length) return;
+    let best = targets[0]!;
+    let bestDist = Math.hypot(best.x - this.player.x, best.z - this.player.z);
+    for (let i = 1; i < targets.length; i++) {
+      const t = targets[i]!;
+      const d = Math.hypot(t.x - this.player.x, t.z - this.player.z);
+      if (d < bestDist) {
+        best = t;
+        bestDist = d;
+      }
+    }
+    const reach = this.weaponReach().attackRange * 0.85;
+    if (bestDist <= reach) {
+      this.player.clearMoveTarget();
+      return;
+    }
+    const world = this.worlds.getCurrent();
+    if (!world) return;
+    const safe = projectWalkTarget(
+      best.x,
+      best.z,
+      this.player.radius,
+      world.collision,
+      this.player.x,
+      this.player.z,
+    );
+    this.player.setMoveTarget(safe.x, safe.z);
+  }
+
+  private tickAutoPotion(): void {
+    if (this.potionAutoCooldown > 0) return;
+    const thresholds = SettingsPanel.readAutoPotionThresholds();
+    const hpPct = this.character.maxHp > 0 ? (this.character.hp / this.character.maxHp) * 100 : 100;
+    const mpPct = this.character.maxMp > 0 ? (this.character.mp / this.character.maxMp) * 100 : 100;
+    const needHp = hpPct <= thresholds.hpPct;
+    const needMp = mpPct <= thresholds.mpPct;
+    if (!needHp && !needMp) return;
+    for (let i = 0; i < this.potionSlots.length; i++) {
+      const defId = this.potionSlots[i];
+      if (!defId) continue;
+      const restore = resolveConsumableRestore(defId, this.character.maxHp);
+      if (!restore) continue;
+      const helpsHp = restore.hp > 0 && needHp && this.character.hp < this.character.maxHp;
+      const helpsMp = restore.mp > 0 && needMp && this.character.mp < this.character.maxMp;
+      if (!helpsHp && !helpsMp) continue;
+      if (this.usePotionSlot(i)) {
+        this.potionAutoCooldown = 0.55;
+        return;
+      }
+    }
+  }
+
+  private rollGateKey(enemyId: string): void {
+    const gates = this.worlds.getCurrent()?.gates;
+    const arenas = this.dungeonRun.getDef()?.arenas;
+    if (!gates || !arenas) return;
+    const zone = arenas.findIndex((arena) => arena.spawns.some((spawn) => spawn.id === enemyId));
+    if (zone < 0 || zone >= gates.count || gates.isOpen(zone)) return;
+    this.gateKills[zone] = (this.gateKills[zone] ?? 0) + 1;
+    const guaranteed = this.gateKills[zone]! >= arenas[zone]!.spawns.length;
+    if (!guaranteed && Math.random() >= DUNGEON_BALANCE.gateKey.dropChance) return;
+    gates.open(zone);
+    this.pushDropLog(`Chave do Portão ${zone + 1} · portão aberto`, "item");
+  }
+
   private currentArenaLabel(): string | null {
     const world = this.worlds.getCurrent();
+    if (world?.id === "dungeon-1") {
+      const z = this.player.z;
+      if (z > -8) return "Zona 1 / 3";
+      if (z > -26) return "Zona 2 / 3";
+      return "Zona 3 / 3";
+    }
     if (world?.id === "dungeon-2") {
       const px = this.player.x;
       const pz = this.player.z;
@@ -702,6 +842,10 @@ export class CityGameSession {
     if (z > -12) return "Arena 1 / 3";
     if (z > -36) return "Arena 2 / 3";
     return "Arena 3 / 3";
+  }
+
+  private isActionLocked(): boolean {
+    return this.moveLock > 0 || this.renderer.playerView.isBusy();
   }
 
   private lockMovement(seconds: number): void {
@@ -747,7 +891,7 @@ export class CityGameSession {
   }
 
   getMoveLockRemaining(): number {
-    return this.moveLock;
+    return Math.max(this.moveLock, this.renderer.playerView.getBusyRemainingSec());
   }
 
   get pendingInteract(): InteractableDef | null {
@@ -883,15 +1027,67 @@ export class CityGameSession {
 
   tryUseConsumable(uid: string): boolean {
     const item = this.inventory.items.find((i) => i.uid === uid);
-    if (!item || !isConsumableId(item.defId)) return false;
-    const spec = CONSUMABLE_BALANCE[item.defId];
-    const heal = Math.max(1, Math.round(this.character.maxHp * spec.healRatio));
-    if (this.character.hp >= this.character.maxHp) return false;
-    this.character.heal(heal, this.character.maxHp);
+    if (!item) return false;
+    const useResult = this.itemUse.use(uid);
+    if (useResult.ok) {
+      this.saves.markDirty(["character", "inventory", "buffs"], "critical");
+      void this.saves.checkpoint();
+      return true;
+    }
+    if (useResult.reason !== "unsupported") return false;
+    const restore = resolveConsumableRestore(item.defId, this.character.maxHp);
+    if (!restore) return false;
+    const needHp = restore.hp > 0 && this.character.hp < this.character.maxHp;
+    const needMp = restore.mp > 0 && this.character.mp < this.character.maxMp;
+    if (!needHp && !needMp) return false;
+    if (needHp) this.character.heal(restore.hp, this.character.maxHp);
+    if (needMp) this.character.regenMp(restore.mp);
     item.stack -= 1;
     if (item.stack <= 0) this.inventory.remove(item.uid);
     this.saves.markDirty(["character", "inventory"], "critical");
     return true;
+  }
+
+  private grantItemXp(amount: number): void {
+    const { levelsGained } = this.progression.addXp(amount);
+    this.sessionXp += amount;
+    if (levelsGained <= 0) return;
+    this.skillTree.grantSkillPoints(levelsGained);
+    this.skillLoadout.refresh();
+    this.character.healFull();
+  }
+
+  setPotionSlot(index: number, defId: string | null): boolean {
+    if (index < 0 || index > 2) return false;
+    if (defId != null && !isPotionDefId(defId)) return false;
+    this.potionSlots[index] = defId;
+    this.saves.markDirty("options", "deferred");
+    return true;
+  }
+
+  usePotionSlot(index: number): boolean {
+    if (index < 0 || index > 2) return false;
+    const defId = this.potionSlots[index];
+    if (!defId) return false;
+    const item = this.inventory.items.find((i) => i.defId === defId && i.stack > 0);
+    if (!item) return false;
+    return this.tryUseConsumable(item.uid);
+  }
+
+  toggleCombatAuto(kind: "attack" | "move" | "potion"): boolean {
+    if (kind === "attack") this.autoAttack = !this.autoAttack;
+    else if (kind === "move") this.autoMove = !this.autoMove;
+    else this.autoPotion = !this.autoPotion;
+    this.saves.markDirty("options", "deferred");
+    return true;
+  }
+
+  getCombatAutos(): { attack: boolean; move: boolean; potion: boolean } {
+    return { attack: this.autoAttack, move: this.autoMove, potion: this.autoPotion };
+  }
+
+  getPotionBar(): Array<HudPotionSlot | null> {
+    return this.buildPotionHudSlots();
   }
 
   tryLearnSkill(tree: TreeId, index: number): boolean {
@@ -923,8 +1119,10 @@ export class CityGameSession {
 
   refreshWeaponSetFromGear(): void {
     const set = this.equipment.getWeaponSet(this.progression.state.classId);
-    if (isWeaponSetId(set)) {
+    if (set && isWeaponSetId(set)) {
       void this.renderer.playerView.setWeaponSet(set);
+    } else {
+      void this.renderer.playerView.clearWeapons();
     }
     this.cachedWeaponReach = null;
     this.combat.invalidateMods();

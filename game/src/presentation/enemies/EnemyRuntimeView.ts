@@ -21,6 +21,9 @@ import type { EnemyModel } from "../../domain/enemies/EnemyModel";
 import type { EnemyService } from "../../domain/enemies/EnemyService";
 import type { EffectManager } from "../effects/EffectManager";
 
+const ENEMY_BASE_HEIGHT = 1.72;
+const WOLF_BASE_HEIGHT = 1.05;
+
 const DEFAULT_COLORS: Record<EnemyArchetype, number> = {
   fixed: 0xc45c26,
   chaser: 0xe23b3b,
@@ -78,7 +81,55 @@ export const SHARED_CLIP_URLS = {
   death: "/models/player/shared/anims/death.glb",
   idle_2h: "/models/anims/human/idle_2h.glb",
   attack_swipe: "/models/anims/human/attack_swipe.glb",
+  mutant_idle: "/models/anims/mutant/idle.glb",
+  mutant_run: "/models/anims/mutant/run.glb",
+  mutant_attack: "/models/anims/mutant/attack.glb",
+  mutant_death: "/models/anims/mutant/death.glb",
 };
+
+const HELD_WEAPONS: Record<string, { url: string; x: number; y: number; z: number; tilt: number; scale: number; grip: number }> = {
+  caveira_campo: { url: "/models/enemies/skeleton-axe.glb", x: -0.33, y: 0.29, z: 0.03, tilt: 0.3, scale: 0.42, grip: 0.3 },
+};
+
+const heldWeaponPrototypes = new Map<string, Promise<Object3D | null>>();
+
+function releaseClonedModel(root: Object3D, ownedMaterials: boolean): void {
+  root.traverse((obj) => {
+    const mesh = obj as Mesh;
+    if (!mesh.isMesh || !ownedMaterials || !mesh.material) return;
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const mat of mats) mat?.dispose();
+  });
+  root.removeFromParent();
+}
+
+function attachHeldWeapon(monsterId: string | undefined, model: Object3D): void {
+  const spec = monsterId ? HELD_WEAPONS[monsterId] : undefined;
+  if (!spec) return;
+  let pending = heldWeaponPrototypes.get(spec.url);
+  if (!pending) {
+    pending = gltfLoader.loadAsync(spec.url).then((gltf) => gltf.scene).catch(() => null);
+    heldWeaponPrototypes.set(spec.url, pending);
+  }
+  void pending.then((proto) => {
+    if (!proto) return;
+    const pivot = new Group();
+    pivot.name = "held-weapon";
+    pivot.position.set(spec.x, spec.y, spec.z);
+    pivot.rotation.x = spec.tilt;
+    pivot.scale.setScalar(spec.scale);
+    const weapon = proto.clone(true);
+    weapon.position.y = -spec.grip;
+    weapon.traverse((obj) => {
+      const m = obj as Mesh;
+      if (!m.isMesh) return;
+      m.castShadow = true;
+      m.userData.occlusionIgnore = true;
+    });
+    pivot.add(weapon);
+    model.add(pivot);
+  });
+}
 
 const sharedClips = new Map<string, Promise<AnimationClip | null>>();
 
@@ -218,11 +269,29 @@ export class EnemyRuntimeView {
   private readonly scratchColor = new Color();
   private effects: EffectManager | null = null;
   private disposed = false;
+  private inflightModels = 0;
+  private modelWaiters: Array<() => void> = [];
 
   constructor(parent: Group, private readonly loader?: EnemyModelLoader) {
     this.group.name = "enemies-view";
     this.group.userData.occlusionIgnore = true;
     parent.add(this.group);
+  }
+
+  whenModelsSettled(): Promise<void> {
+    if (this.inflightModels === 0) return Promise.resolve();
+    return new Promise((resolve) => this.modelWaiters.push(resolve));
+  }
+
+  private trackModel(work: Promise<void>): void {
+    this.inflightModels += 1;
+    void work.finally(() => {
+      this.inflightModels = Math.max(0, this.inflightModels - 1);
+      if (this.inflightModels > 0) return;
+      const waiters = this.modelWaiters;
+      this.modelWaiters = [];
+      for (const wait of waiters) wait();
+    });
   }
 
   bindEffects(effects: EffectManager): void {
@@ -380,16 +449,7 @@ export class EnemyRuntimeView {
       ctrl.mixer.stopAllAction();
       ctrl.mixer.uncacheRoot(ctrl.model ?? ctrl.mesh);
     }
-    if (ctrl.model) {
-      ctrl.model.traverse((obj) => {
-        const m = obj as Mesh;
-        if (m.isMesh) {
-          m.geometry?.dispose();
-          const mats = Array.isArray(m.material) ? m.material : [m.material];
-          for (const mat of mats) mat?.dispose();
-        }
-      });
-    }
+    if (ctrl.model) releaseClonedModel(ctrl.model, true);
     ctrl.mesh.geometry.dispose();
     (ctrl.mesh.material as MeshStandardMaterial).dispose();
     this.group.remove(ctrl.mesh);
@@ -512,35 +572,29 @@ export class EnemyRuntimeView {
       const url = enemy.modelUrl;
       const isSkeletonSpecial = url.includes("skeleton-special") || enemy.monsterId === "caveira_especial";
       const isSkeletonNormal = url.includes("skeleton-normal") || enemy.monsterId === "caveira_normal";
+      const isWolf = url.includes("/wolf");
       const token = ctrl.token;
 
       const modelLoader = this.loader?.loadModel ?? loadModelPrototype;
       const clipLoader = this.loader?.loadClip ?? loadSharedClip;
 
-      modelLoader(url)
+      this.trackModel(modelLoader(url)
         .then(async (proto) => {
           const instance = SkeletonUtils.clone(proto.root);
           if (this.disposed || this.controllers.get(enemy.id) !== ctrl || ctrl.token !== token) {
-            instance.traverse((obj) => {
-              const m = obj as Mesh;
-              if (m.isMesh) {
-                m.geometry?.dispose();
-                const mats = Array.isArray(m.material) ? m.material : [m.material];
-                for (const mat of mats) mat?.dispose();
-              }
-            });
+            releaseClonedModel(instance, false);
             return;
           }
           const baseHeight = 0.55 * scale;
           const rawBox = new Box3().setFromObject(instance);
           const rawSize = rawBox.getSize(new Vector3());
           const rawCenter = rawBox.getCenter(new Vector3());
-          const targetHeight = (rawSize.y > 10 ? 1.8 : 1.72) * scale;
-          const s = targetHeight / Math.max(0.001, rawSize.y);
-          instance.scale.setScalar(s);
-          const posX = -rawCenter.x * s;
-          const posY = -rawBox.min.y * s - baseHeight;
-          const posZ = -rawCenter.z * s;
+          const targetHeight = (isWolf ? WOLF_BASE_HEIGHT : rawSize.y > 10 ? 1.8 : ENEMY_BASE_HEIGHT) * scale;
+          const fitted = targetHeight / Math.max(0.001, rawSize.y);
+          instance.scale.setScalar(fitted);
+          const posX = -rawCenter.x * fitted;
+          const posY = -rawBox.min.y * fitted - baseHeight;
+          const posZ = -rawCenter.z * fitted;
           instance.position.set(posX, posY, posZ);
 
           let hasSkinned = false;
@@ -574,6 +628,7 @@ export class EnemyRuntimeView {
           ctrl.baseZ = posZ;
           ctrl.isProceduralMesh = !hasSkinned;
           ctrl.standardMaterials = stdMats;
+          attachHeldWeapon(enemy.monsterId, instance);
 
           const mixer = new AnimationMixer(instance);
           mixer.addEventListener("finished", (e: unknown) => {
@@ -618,22 +673,29 @@ export class EnemyRuntimeView {
             attackClip = aClip;
             hitClip = hClip;
             deathClip = dClip;
+          } else if (isWolf) {
+            const [iClip, rClip, aClip, hClip, dClip] = await Promise.all([
+              clipLoader("mutant_idle"),
+              clipLoader("mutant_run"),
+              clipLoader("mutant_attack"),
+              clipLoader("hit_gut"),
+              clipLoader("mutant_death"),
+            ]);
+            hipsRest = instance.getObjectByName("mixamorigHips")?.position.clone() ?? null;
+            idleClip = iClip;
+            runClip = rClip;
+            attackClip = aClip;
+            hitClip = hClip;
+            deathClip = dClip;
           }
 
           if (this.disposed || this.controllers.get(enemy.id) !== ctrl || ctrl.token !== token) {
-            instance.traverse((obj) => {
-              const m = obj as Mesh;
-              if (m.isMesh) {
-                m.geometry?.dispose();
-                const mats = Array.isArray(m.material) ? m.material : [m.material];
-                for (const mat of mats) mat?.dispose();
-              }
-            });
+            releaseClonedModel(instance, true);
             return;
           }
 
           if (idleClip) {
-            const adapted = adaptClipTracks(idleClip, instance);
+            const adapted = adaptClipTracks(idleClip, instance, isWolf ? hipsRest : null);
             adapted.name = "idle";
             ctrl.actions.set("idle", mixer.clipAction(adapted));
           }
@@ -669,7 +731,7 @@ export class EnemyRuntimeView {
         })
         .catch(() => {
           placeholderMat.visible = true;
-        });
+        }));
     }
 
     return placeholderMesh;
@@ -683,16 +745,7 @@ export class EnemyRuntimeView {
         ctrl.mixer.stopAllAction();
         ctrl.mixer.uncacheRoot(ctrl.model ?? ctrl.mesh);
       }
-      if (ctrl.model) {
-        ctrl.model.traverse((obj) => {
-          const m = obj as Mesh;
-          if (m.isMesh) {
-            m.geometry?.dispose();
-            const mats = Array.isArray(m.material) ? m.material : [m.material];
-            for (const mat of mats) mat?.dispose();
-          }
-        });
-      }
+      if (ctrl.model) releaseClonedModel(ctrl.model, true);
       ctrl.mesh.geometry.dispose();
       (ctrl.mesh.material as MeshStandardMaterial).dispose();
       this.group.remove(ctrl.mesh);

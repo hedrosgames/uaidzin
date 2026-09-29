@@ -130,6 +130,7 @@ export function resolveSkill(input: {
         damage = Math.round(damage * (1 + (skill.executeBonus ?? 0.5)));
       }
       if (crit) damage = Math.round(damage * SKILL_BALANCE.critMultiplier);
+      damage += input.mods.damageFlat;
       const per = damage;
       for (let n = 0; n < hitCount; n++) {
         hits.push({ id: target.id, damage: per, x: target.x, z: target.z });

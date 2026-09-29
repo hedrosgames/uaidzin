@@ -1,6 +1,4 @@
 import { formatMMSS } from "../core/time/FormatTime";
-import { WEAPON_SET_IDS, WEAPON_SET_LABEL, type WeaponSetId } from "../presentation/player/WeaponRig";
-import { weaponSetIconMarkup } from "./WeaponSetHudIcons";
 import { artForClass } from "./CharacterUiBinder";
 import type { HudModel } from "./HudModel";
 
@@ -16,7 +14,6 @@ export interface HudBarsViewElements {
   xpTextElement: HTMLElement;
   timerElement: HTMLElement;
   farmStatsElement: HTMLElement;
-  weaponSetStrip: HTMLElement;
 }
 
 const CLASS_FACE: Record<string, string> = {
@@ -38,8 +35,6 @@ export class HudBarsView {
   private readonly xpText: HTMLElement;
   private readonly timerEl: HTMLElement;
   private readonly farmStats: HTMLElement;
-  private readonly weaponSetStrip: HTMLElement;
-  private readonly weaponSetButtons = new Map<WeaponSetId, HTMLButtonElement>();
 
   private lastFaceSrc = "";
   private lastName = "";
@@ -56,12 +51,8 @@ export class HudBarsView {
   private lastTimerUrgent = false;
   private lastFarmStatsText = "";
   private lastFarmStatsHidden = true;
-  private lastActiveWeaponSet: WeaponSetId | "" = "";
 
-  constructor(
-    elements: HudBarsViewElements,
-    onWeaponSetSelect?: (set: WeaponSetId) => void,
-  ) {
+  constructor(elements: HudBarsViewElements) {
     this.playerFace = elements.playerFaceElement;
     this.playerName = elements.playerNameElement;
     this.playerLevel = elements.playerLevelElement;
@@ -73,31 +64,6 @@ export class HudBarsView {
     this.xpText = elements.xpTextElement;
     this.timerEl = elements.timerElement;
     this.farmStats = elements.farmStatsElement;
-    this.weaponSetStrip = elements.weaponSetStrip;
-
-    this.buildWeaponSetStrip(onWeaponSetSelect);
-  }
-
-  private buildWeaponSetStrip(onSelect?: (set: WeaponSetId) => void): void {
-    if (!import.meta.env.DEV) {
-      if (this.weaponSetStrip) this.weaponSetStrip.style.display = "none";
-      return;
-    }
-    this.weaponSetStrip.replaceChildren();
-    this.weaponSetButtons.clear();
-    for (const set of WEAPON_SET_IDS) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "btn-weapon-set btn-opt-hud";
-      btn.dataset.weaponSet = set;
-      btn.setAttribute("aria-label", WEAPON_SET_LABEL[set]);
-      btn.innerHTML = weaponSetIconMarkup(set);
-      if (onSelect) {
-        btn.addEventListener("click", () => onSelect(set));
-      }
-      this.weaponSetStrip.appendChild(btn);
-      this.weaponSetButtons.set(set, btn);
-    }
   }
 
   update(model: HudModel): void {
@@ -171,25 +137,6 @@ export class HudBarsView {
         this.farmStats.hidden = true;
       }
     }
-
-    if (this.lastActiveWeaponSet !== model.weaponSet) {
-      this.lastActiveWeaponSet = model.weaponSet;
-      for (const [set, btn] of this.weaponSetButtons) {
-        const on = set === model.weaponSet;
-        btn.classList.toggle("is-active", on);
-        btn.setAttribute("aria-pressed", on ? "true" : "false");
-      }
-    }
-  }
-
-  setActiveWeaponSet(active: WeaponSetId): void {
-    if (this.lastActiveWeaponSet === active) return;
-    this.lastActiveWeaponSet = active;
-    for (const [set, btn] of this.weaponSetButtons) {
-      const on = set === active;
-      btn.classList.toggle("is-active", on);
-      btn.setAttribute("aria-pressed", on ? "true" : "false");
-    }
   }
 
   private updateBar(
@@ -203,7 +150,6 @@ export class HudBarsView {
     const ratio = Math.max(0, Math.min(1, value / safeMax));
     const widthStr = `${Math.round(ratio * 100)}%`;
     const textStr = `${Math.ceil(value)} / ${Math.ceil(max)}`;
-
     if (kind === "hp") {
       if (this.lastHpWidth !== widthStr) {
         this.lastHpWidth = widthStr;

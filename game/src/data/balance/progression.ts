@@ -20,8 +20,23 @@ export const PROGRESSION_BALANCE = {
   maxHpFromCons(cons: number): number {
     return 80 + cons * 4;
   },
-  defenseFromCons(cons: number): number {
-    return 2 + Math.floor(cons / 4);
+  defenseFromDes(des: number): number {
+    return 2 + Math.floor(des / 4);
+  },
+  levelGrowthBands: [
+    [50, 0.03],
+    [100, 0.02],
+    [200, 0.01],
+    [400, 0.005],
+  ] as ReadonlyArray<readonly [number, number]>,
+  levelGrowth(level: number): number {
+    let growth = 1;
+    let from = 1;
+    for (const [to, rate] of this.levelGrowthBands) {
+      growth += Math.max(0, Math.min(level, to) - from) * rate;
+      from = to;
+    }
+    return growth;
   },
   maxMpFromLevelInt(level: number, int: number): number {
     return 50 + level * 8 + int;
