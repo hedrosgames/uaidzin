@@ -15,10 +15,10 @@ try {
   await page.goto(targetUrl, { waitUntil: "networkidle", timeout: 120000 });
   await page.waitForFunction(() => document.body.dataset.ready === "true", null, { timeout: 120000 });
   const catalog = await page.evaluate(() => window.__UAIDZIN_SKILL_VFX__);
-  if (catalog.count !== 96 || catalog.profiles.length !== 96) {
+  if (catalog.count !== 100 || catalog.profiles.length !== 100) {
     throw new Error(`Catálogo inválido: count=${catalog.count}, profiles=${catalog.profiles.length}`);
   }
-  if (new Set(catalog.profiles.map((profile) => profile.id)).size !== 96) {
+  if (new Set(catalog.profiles.map((profile) => profile.id)).size !== 100) {
     throw new Error("IDs de skills duplicados");
   }
 

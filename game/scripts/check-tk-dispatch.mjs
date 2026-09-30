@@ -102,6 +102,7 @@ function assertNoNan(rootObj) {
     assert(Number.isFinite(obj.rotation.x), `rotation.x é NaN ou infinito em ${obj.name || obj.type}`);
     assert(Number.isFinite(obj.rotation.y), `rotation.y é NaN ou infinito em ${obj.name || obj.type}`);
     assert(Number.isFinite(obj.rotation.z), `rotation.z é NaN ou infinito em ${obj.name || obj.type}`);
+    assert(obj.position.y >= -0.001, `VFX abaixo do chão em ${obj.name || obj.type}: y=${obj.position.y}`);
   });
 }
 
