@@ -11,6 +11,7 @@ GDD (capítulos + builder): cópia de referência em `C:\Users\Felipe\Desktop\ua
 | Arquivo | Papel |
 |---|---|
 | [`VFX-KIT-FIREBURST.md`](VFX-KIT-FIREBURST.md) | Pipeline e qualidade FireBurstUAID |
+| [`PLANO-VISUAL-GLOBAL.md`](PLANO-VISUAL-GLOBAL.md) | Execução da refação visual global; testes e aceite visual pendente de Felipe |
 
 ## Inventários (`../inventarios/`)
 
