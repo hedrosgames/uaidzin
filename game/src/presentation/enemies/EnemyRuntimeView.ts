@@ -644,9 +644,10 @@ export class EnemyRuntimeView {
               m.userData.occlusionIgnore = true;
               if (m.material) {
                 const originals = Array.isArray(m.material) ? m.material : [m.material];
-                const painted = originals.map((material) => material instanceof MeshStandardMaterial
-                  ? makePaintedCharacterMaterial(material)
-                  : material.clone());
+                const painted = originals.map((material) =>
+                  material instanceof MeshStandardMaterial && enemy.monsterId !== "caveira_campo"
+                    ? makePaintedCharacterMaterial(material)
+                    : material.clone());
                 for (const material of painted) {
                   if (material instanceof MeshStandardMaterial) stdMats.push(material);
                 }

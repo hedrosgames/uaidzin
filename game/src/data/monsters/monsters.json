@@ -169,7 +169,7 @@
     "retreatIfCloserThan": 0,
     "respawnSeconds": 8,
     "xpReward": 10,
-    "color": "#d0cbbe",
+    "color": "#8a745f",
     "modelUrl": "/models/enemies/skeleton-normal.glb",
     "modelScale": 0.95,
     "isBoss": false

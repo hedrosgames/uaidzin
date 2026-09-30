@@ -120,4 +120,34 @@ describe("EnemyRuntimeView async view lifecycle", () => {
     view.sync(service);
     expect(ctrl.currentAnim).toBe("idle");
   });
+
+  it("caveira do campo preserva o material original", async () => {
+    const parent = new Group();
+    const modelRoot = new Group();
+    const sourceMaterial = new MeshStandardMaterial({ color: 0x8a745f });
+    const sourceMesh = new Mesh(new BoxGeometry(1, 1, 1), sourceMaterial);
+    modelRoot.add(sourceMesh);
+    const loader: EnemyModelLoader = {
+      loadModel: async () => ({ root: modelRoot, animations: [] }),
+      loadClip: async () => new AnimationClip("test", 1, []),
+    };
+    const view = new EnemyRuntimeView(parent, loader);
+    const enemy = makeFakeEnemy("campo", {
+      monsterId: "caveira_campo",
+      modelUrl: "/models/enemies/skeleton-normal.glb",
+      color: "#8a745f",
+    });
+    const service = { enemies: [enemy] } as unknown as EnemyService;
+
+    view.sync(service);
+    await view.whenModelsSettled();
+
+    const model = view.getController("campo")?.model;
+    expect(model).toBeDefined();
+    const mesh = model?.children.find((child) => (child as Mesh).isMesh) as Mesh | undefined;
+    const material = mesh?.material as MeshStandardMaterial | undefined;
+    expect(material?.userData.artProfile).not.toBe("painted-character");
+    expect(material?.color.getHex()).toBe(0x8a745f);
+    view.dispose();
+  });
 });
