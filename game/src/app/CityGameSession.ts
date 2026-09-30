@@ -1,4 +1,6 @@
 import { Vector3 } from "three";
+import { resolveArmorAppearance } from "../../public/boot/assets/armor-appearance.mjs";
+import { dungeon1ZoneIndex } from "../world/Dungeon1Layout";
 import { COMBAT_BALANCE } from "../data/balance/combat";
 import { DUNGEON_BALANCE } from "../data/balance/dungeon";
 import { VFX_BALANCE } from "../data/balance/vfx";
@@ -372,7 +374,7 @@ export class CityGameSession {
   async enterWorld(id: WorldId): Promise<void> {
     this.effects.clearSkillVfx();
     const world = this.worlds.switchTo(id);
-    this.renderer.setWorldLook(id === "dungeon-test" ? "dungeon" : "city");
+    this.renderer.setWorldLook(id === "city" ? "city" : id === "dungeon-2" ? "cemetery" : id === "dungeon-test" ? "dungeon" : "field");
     this.renderer.setOccluders(world.occluders ?? []);
     this.renderer.applyRuntimeBudget();
     if (id === "city") this.character.healFull();
@@ -826,9 +828,7 @@ export class CityGameSession {
     const world = this.worlds.getCurrent();
     if (world?.id === "dungeon-1") {
       const z = this.player.z;
-      if (z > -8) return "Zona 1 / 3";
-      if (z > -26) return "Zona 2 / 3";
-      return "Zona 3 / 3";
+      return `Zona ${dungeon1ZoneIndex(z) + 1} / 3`;
     }
     if (world?.id === "dungeon-2") {
       const px = this.player.x;
@@ -1118,6 +1118,10 @@ export class CityGameSession {
   }
 
   refreshWeaponSetFromGear(): void {
+    void this.renderer.playerView.setArmorAppearance(resolveArmorAppearance(
+      this.progression.state.classId,
+      this.equipment.equipped.armor?.defId,
+    ));
     const set = this.equipment.getWeaponSet(this.progression.state.classId);
     if (set && isWeaponSetId(set)) {
       void this.renderer.playerView.setWeaponSet(set);

@@ -10,108 +10,108 @@
       {
         "id": "d1-a1",
         "centerX": 0,
-        "centerZ": 1,
-        "halfSize": 9,
+        "centerZ": 2,
+        "halfSize": 18,
         "spawns": [
           {
             "id": "d1-a1-s1",
             "archetype": "chaser",
             "monsterId": "caveira_campo",
-            "x": -5,
-            "z": -4
+            "x": -10,
+            "z": -8
           },
           {
             "id": "d1-a1-s2",
             "archetype": "chaser",
             "monsterId": "caveira_campo",
-            "x": 5,
-            "z": -4
+            "x": 10,
+            "z": -8
           },
           {
             "id": "d1-a1-s3",
             "archetype": "chaser",
             "monsterId": "caveira_campo",
-            "x": -6,
-            "z": 1
+            "x": -12,
+            "z": 2
           },
           {
             "id": "d1-a1-s4",
             "archetype": "chaser",
             "monsterId": "caveira_campo",
-            "x": 6,
-            "z": 1
+            "x": 12,
+            "z": 2
           }
         ]
       },
       {
         "id": "d1-a2",
         "centerX": 0,
-        "centerZ": -17,
-        "halfSize": 9,
+        "centerZ": -34,
+        "halfSize": 18,
         "spawns": [
           {
             "id": "d1-a2-w1",
             "archetype": "chaser",
             "monsterId": "lobo_selvagem",
-            "x": -5,
-            "z": -13
+            "x": -10,
+            "z": -26
           },
           {
             "id": "d1-a2-w2",
             "archetype": "chaser",
             "monsterId": "lobo_selvagem",
-            "x": 5,
-            "z": -13
+            "x": 10,
+            "z": -26
           },
           {
             "id": "d1-a2-w3",
             "archetype": "chaser",
             "monsterId": "lobo_selvagem",
-            "x": -4,
-            "z": -21
+            "x": -8,
+            "z": -42
           },
           {
             "id": "d1-a2-w4",
             "archetype": "chaser",
             "monsterId": "lobo_selvagem",
-            "x": 4,
-            "z": -21
+            "x": 8,
+            "z": -42
           }
         ]
       },
       {
         "id": "d1-a3",
         "centerX": 0,
-        "centerZ": -36,
-        "halfSize": 10,
+        "centerZ": -72,
+        "halfSize": 20,
         "spawns": [
           {
             "id": "d1-a3-g1",
             "archetype": "ranged",
             "monsterId": "caveira_fogo",
-            "x": -5,
-            "z": -31
+            "x": -10,
+            "z": -62
           },
           {
             "id": "d1-a3-g2",
             "archetype": "ranged",
             "monsterId": "caveira_fogo",
-            "x": 5,
-            "z": -31
+            "x": 10,
+            "z": -62
           },
           {
             "id": "d1-a3-g3",
             "archetype": "ranged",
             "monsterId": "caveira_fogo",
             "x": 0,
-            "z": -35
+            "z": -70
           },
           {
             "id": "d1-a3-boss",
             "archetype": "ranged",
             "monsterId": "caveira_fogo",
             "x": 0,
-            "z": -41,
+            "z": -82,
             "isBoss": true
           }
         ]

@@ -8,7 +8,6 @@ import {
   Object3D,
   PlaneGeometry,
   PointLight,
-  TorusGeometry,
 } from "three";
 import { CITY_INTERACTABLES, CITY_PORTAL_PROP, type InteractableDef } from "./definitions";
 import { boxBoundary, type WorldBoundary } from "./WorldBoundary";
@@ -23,11 +22,13 @@ import { makeCityFloorMaterial, makeCityPlazaMaterial } from "./CityGround";
 import { buildCityScenery } from "./CityScenery";
 import { buildCityVegetation } from "./CityLandscape";
 import { addCemeteryEnclosure } from "./CemeteryDressing";
-import { makeCitySolidMaterial } from "./CityMaterialTextures";
+import { makeCityPaintedSolidMaterial } from "./CityPaintedMaterials";
 import { makeCemeteryGroundMaterial } from "./CemeteryGround";
 import { buildCemeteryLandscape } from "./CemeteryLandscape";
 import { createCemeteryAtmosphere } from "../presentation/effects/CemeteryAtmosphere";
 import { attachCityNpc } from "./CityNpc";
+import { makePaintedTerrainMaterial } from "./PaintedTerrain";
+import { buildPaintedGrassPatches } from "./PaintedGrass";
 
 const FOUNTAIN_HEIGHT = 2.8;
 const STALL_HEIGHT = 2.6;
@@ -123,9 +124,9 @@ function makeChest(def: InteractableDef): Group {
   g.name = def.id;
   g.position.set(def.x, 0, def.z);
 
-  const wood = makeCitySolidMaterial("wood", 0xd6b38b);
-  const darkWood = makeCitySolidMaterial("wood", 0xb49270);
-  const iron = makeCitySolidMaterial("iron", 0x888478);
+  const wood = makeCityPaintedSolidMaterial("wood", 0xd6b38b);
+  const darkWood = makeCityPaintedSolidMaterial("wood", 0xb49270);
+  const iron = makeCityPaintedSolidMaterial("iron", 0x888478);
 
   const base = new Mesh(new BoxGeometry(1.15, 0.55, 0.75), wood);
   base.position.y = 0.28;
@@ -167,7 +168,7 @@ export function buildCityWorld(): BuiltWorld {
   const group = new Group();
   group.name = "world-city";
   const floorMat = makeCityFloorMaterial(size / 2, CITY_PLAZA_RADIUS);
-  const plazaMat = makeCityPlazaMaterial(CITY_PLAZA_RADIUS);
+  const plazaMat = makeCityPlazaMaterial(CITY_PLAZA_OUTER_R);
   const ground = new Mesh(new PlaneGeometry(size, size), floorMat);
   ground.rotation.x = -Math.PI / 2;
   ground.name = "ground";
@@ -179,7 +180,7 @@ export function buildCityWorld(): BuiltWorld {
 
   const curb = new Mesh(
     new CylinderGeometry(CITY_PLAZA_OUTER_R, CITY_PLAZA_OUTER_R, 0.14, 48),
-    makeCityPlazaMaterial(CITY_PLAZA_OUTER_R),
+    plazaMat,
   );
   curb.position.y = 0.06;
   curb.receiveShadow = true;
@@ -195,7 +196,7 @@ export function buildCityWorld(): BuiltWorld {
 
   const fountainPlinth = new Mesh(
     new CylinderGeometry(FOUNTAIN_RING_R, FOUNTAIN_RING_R + 0.15, 0.18, 36),
-    makeCityPlazaMaterial(FOUNTAIN_RING_R),
+    plazaMat,
   );
   fountainPlinth.position.y = 0.18;
   fountainPlinth.receiveShadow = true;
@@ -280,7 +281,7 @@ export function buildCityWorld(): BuiltWorld {
   }
   group.add(buildCityVegetation(collision, CITY_INTERACTABLES));
   BRAZIER_SPOTS.forEach(([bx, bz], i) => {
-    const brazier = createBrazier(`brazier-${i}`, bx, bz);
+    const brazier = createBrazier(`brazier-${i}`, bx, bz, undefined, true);
     group.add(brazier.group);
     tickables.push(brazier);
     collision.circles.push({ x: bx, z: bz, r: BRAZIER_RADIUS });
@@ -321,8 +322,8 @@ const DUNGEON_BRAZIER_SPOTS: Array<[number, number]> = [
 ];
 
 function addCampoFence(group: Group, collision: WorldCollision, x: number, z: number, alongZ: boolean, length: number, occluders?: Object3D[]): void {
-  const wood = new MeshStandardMaterial({ color: 0x5a3d22, roughness: 0.92, metalness: 0.02 });
-  const postMat = new MeshStandardMaterial({ color: 0x3a2a1c, roughness: 0.95, metalness: 0 });
+  const wood = makeCityPaintedSolidMaterial("wood", 0x9e7954);
+  const postMat = makeCityPaintedSolidMaterial("wood", 0x6e5142);
   const posts = Math.max(2, Math.round(length / 2.4));
   for (let i = 0; i < posts; i++) {
     const t = posts === 1 ? 0.5 : i / (posts - 1);
@@ -354,19 +355,14 @@ export function buildTestDungeonWorld(): BuiltWorld {
   const depth = 78;
   const group = new Group();
   group.name = "world-dungeon-test";
+  group.add(buildCityScenery(18));
   const collision = emptyCollision();
   const tickables: WorldTickable[] = [];
   const occluders: Object3D[] = [];
 
-  group.add(new AmbientLight(0xd8c8a8, 0.72));
+  group.add(new AmbientLight(0xb4bdd7, 0.18));
 
-  const floorMat = new MeshStandardMaterial({
-    color: 0x5a6a3e,
-    roughness: 0.95,
-    metalness: 0.02,
-    emissive: 0x243018,
-    emissiveIntensity: 0.18,
-  });
+  const floorMat = makePaintedTerrainMaterial("field");
   const plane = new Mesh(new PlaneGeometry(width, depth), floorMat);
   plane.rotation.x = -Math.PI / 2;
   plane.position.z = -depth / 2 + 6;
@@ -374,26 +370,14 @@ export function buildTestDungeonWorld(): BuiltWorld {
   plane.userData.occlusionIgnore = true;
   group.add(plane);
 
-  const pathMat = new MeshStandardMaterial({
-    color: 0x6e5a3e,
-    roughness: 0.92,
-    metalness: 0.03,
-    emissive: 0x2a2214,
-    emissiveIntensity: 0.16,
-  });
+  const pathMat = makePaintedTerrainMaterial("paving");
   const path = new Mesh(new BoxGeometry(5.2, 0.05, depth - 4), pathMat);
   path.position.set(0, 0.03, -depth / 2 + 6);
   path.receiveShadow = true;
   path.userData.occlusionIgnore = true;
   group.add(path);
 
-  const wallMat = new MeshStandardMaterial({
-    color: 0x4a5540,
-    roughness: 0.9,
-    metalness: 0.04,
-    emissive: 0x1a2014,
-    emissiveIntensity: 0.1,
-  });
+  const wallMat = makeCityPaintedSolidMaterial("stone", 0xa395ab);
 
   for (const x of [-width / 2, width / 2]) {
     const wall = new Mesh(new BoxGeometry(0.55, 1.55, depth), wallMat);
@@ -407,7 +391,7 @@ export function buildTestDungeonWorld(): BuiltWorld {
 
   for (const arena of DUNGEON_TEST.arenas) {
     const berm = new Mesh(
-      new CylinderGeometry(arena.halfSize + 0.55, arena.halfSize + 0.75, 0.28, 28),
+      new BoxGeometry(arena.halfSize * 2 + 1.1, 0.28, arena.halfSize * 2 + 1.1),
       new MeshStandardMaterial({
         color: 0x4a3e2c,
         roughness: 0.94,
@@ -416,35 +400,21 @@ export function buildTestDungeonWorld(): BuiltWorld {
         emissiveIntensity: 0.12,
       }),
     );
-    berm.position.set(arena.centerX, 0.1, arena.centerZ);
+    berm.position.set(arena.centerX, -0.125, arena.centerZ);
     berm.receiveShadow = true;
     berm.castShadow = true;
     berm.userData.occlusionIgnore = true;
     group.add(berm);
 
-    const disc = new Mesh(
-      new CylinderGeometry(arena.halfSize, arena.halfSize, 0.06, 28),
-      new MeshStandardMaterial({
-        color: 0x6a7a48,
-        roughness: 0.9,
-        metalness: 0.03,
-        emissive: 0x2c3820,
-        emissiveIntensity: 0.22,
-      }),
+    const surface = new Mesh(
+      new PlaneGeometry(arena.halfSize * 2, arena.halfSize * 2),
+      floorMat,
     );
-    disc.position.set(arena.centerX, 0.2, arena.centerZ);
-    disc.receiveShadow = true;
-    disc.userData.occlusionIgnore = true;
-    group.add(disc);
-
-    const ring = new Mesh(
-      new TorusGeometry(arena.halfSize * 0.92, 0.07, 6, 36),
-      new MeshStandardMaterial({ color: 0x8a7340, roughness: 0.55, metalness: 0.4 }),
-    );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.set(arena.centerX, 0.24, arena.centerZ);
-    ring.userData.occlusionIgnore = true;
-    group.add(ring);
+    surface.position.set(arena.centerX, 0.02, arena.centerZ);
+    surface.rotation.x = -Math.PI / 2;
+    surface.receiveShadow = true;
+    surface.userData.occlusionIgnore = true;
+    group.add(surface);
 
     const fill = new PointLight(0xffd2a0, 8.5, 24, 1.45);
     fill.userData.worldLight = true;
@@ -514,6 +484,7 @@ export function buildTestDungeonWorld(): BuiltWorld {
   collision.boxes.push(
     boxFromCenter(0, 7, PORTAL_GATE_W * 0.9, PORTAL_COLLISION_DEPTH),
   );
+  group.add(buildPaintedGrassPatches({ minX: -13, maxX: 13, minZ: -70, maxZ: 5.5 }, collision, 1800));
 
   return {
     id: "dungeon-test",
@@ -547,7 +518,7 @@ export function buildDungeon2World(): BuiltWorld {
   const size = 36;
   const group = new Group();
   group.name = "world-dungeon-2";
-  const floorMat = makeCemeteryGroundMaterial(size);
+  const floorMat = makeCemeteryGroundMaterial();
   const ground = new Mesh(new PlaneGeometry(size, size), floorMat);
   ground.rotation.x = -Math.PI / 2;
   ground.name = "ground";

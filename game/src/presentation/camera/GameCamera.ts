@@ -1,20 +1,20 @@
 import { MathUtils, PerspectiveCamera, Vector3 } from "three";
 
-const ZOOM_MIN = 0.7;
+const ZOOM_MIN = 0.55;
 const ZOOM_MAX = 1;
 
 export class GameCamera {
   readonly camera: PerspectiveCamera;
 
-  private readonly offset = new Vector3(8, 10, 12);
+  private readonly offset = new Vector3(7.5, 15, 10.5);
   private readonly lookAt = new Vector3();
   private readonly desired = new Vector3();
   private readonly currentLook = new Vector3(0, 0.5, 0);
   private readonly smooth = 6;
-  private zoom = 1;
+  private zoom = 0.7;
 
   constructor(aspect = 1) {
-    this.camera = new PerspectiveCamera(50, aspect, 0.1, 200);
+    this.camera = new PerspectiveCamera(45, aspect, 0.1, 90);
     this.camera.position.copy(this.offset);
     this.camera.lookAt(0, 0.5, 0);
   }

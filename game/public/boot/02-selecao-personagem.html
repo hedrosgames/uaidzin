@@ -951,7 +951,9 @@ input[type="range"]::-webkit-slider-thumb{
 </script>
 <script type="module">
 import { mountCharPreview, teardownCharPreviews } from "./assets/char-preview.mjs";
+import { resolveArmorAppearance } from "./assets/armor-appearance.mjs";
 window.__mountCharPreview = mountCharPreview;
+window.__resolveArmorAppearance = resolveArmorAppearance;
 window.__teardownCharPreviews = teardownCharPreviews;
 </script>
 <script>
@@ -1239,6 +1241,7 @@ window.__teardownCharPreviews = teardownCharPreviews;
   }
 
   let previewDisposers = [];
+  const equippedArmorByProfile = new Map();
 
   function clearPreviews(){
     for (const stop of previewDisposers) {
@@ -1275,7 +1278,9 @@ window.__teardownCharPreviews = teardownCharPreviews;
         const body = el.querySelector(".body");
         const mount = window.__mountCharPreview;
         if (mount && body) {
-          previewDisposers.push(mount(body, slot.classId));
+          const armor = equippedArmorByProfile.get(slot.profileId);
+          const appearance = window.__resolveArmorAppearance(slot.classId, armor?.defId);
+          previewDisposers.push(mount(body, slot.classId, appearance));
         } else if (body) {
           body.innerHTML = `<img src="${c.img}" alt="">`;
         }
@@ -1602,6 +1607,9 @@ window.__teardownCharPreviews = teardownCharPreviews;
       toast("Não foi possível ler a conta. Recarregue a página.", true);
     } else if (data && Array.isArray(data.slots)) {
       slots = normalizeSlots(data.slots);
+      for (const slot of slots) {
+        if (slot) equippedArmorByProfile.set(slot.profileId, await UaidzinSave.loadEquippedArmor(slot.profileId));
+      }
     }
     buildScene();
   })();

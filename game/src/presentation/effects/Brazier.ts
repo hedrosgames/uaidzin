@@ -17,6 +17,7 @@ import {
 } from "three";
 import { createFireBurstFlameTexture } from "./fireBurst/FireBurstFlameTexture";
 import { makeCitySolidMaterial } from "../../world/CityMaterialTextures";
+import { makeCityPaintedSolidMaterial } from "../../world/CityPaintedMaterials";
 import { CITY_SURFACE_GLSL } from "../../world/CitySurface";
 
 export interface BrazierHandle {
@@ -46,19 +47,21 @@ export function createBrazier(
   x: number,
   z: number,
   withLight?: boolean,
+  painted = false,
 ): BrazierHandle {
   const group = new Group();
   group.name = id;
   group.position.set(x, 0, z);
 
-  const iron = makeCitySolidMaterial("iron", 0xaaa6a0);
+  const iron = painted ? makeCityPaintedSolidMaterial("iron", 0x747b94) : makeCitySolidMaterial("iron", 0xaaa6a0);
+  const lightIntensity = painted ? 6 : LIGHT_INTENSITY;
   const coals = new MeshStandardMaterial({
     color: 0x080707,
     emissive: 0x110400,
     emissiveIntensity: 0.1,
     roughness: 1,
   });
-  coals.onBeforeCompile = (shader) => {
+  if (!painted) coals.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vCoalPosition;");
     shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvCoalPosition = position;");
     shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>\nvarying vec3 vCoalPosition;\n${CITY_SURFACE_GLSL}`);
@@ -78,6 +81,17 @@ totalEmissiveRadiance += vec3(0.35, 0.025, 0.002) * fissure;`);
     depthWrite: false,
     toneMapped: false,
   });
+
+  if (painted) {
+    flame.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", `#include <map_fragment>
+float heat = diffuseColor.g;
+diffuseColor.rgb = mix(vec3(1.0, 0.24, 0.035), vec3(1.0, 0.76, 0.27), smoothstep(0.12, 0.48, heat));
+diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.95, 0.67), smoothstep(0.48, 0.78, heat));
+diffuseColor.a = smoothstep(0.08, 0.55, diffuseColor.a);`);
+    };
+    flame.customProgramCacheKey = () => "city-painted-flame-1";
+  }
 
   const base = new Mesh(ironGeo.base, iron);
   base.position.y = 0.06;
@@ -116,7 +130,7 @@ totalEmissiveRadiance += vec3(0.35, 0.025, 0.002) * fissure;`);
   flameMesh.raycast = () => {};
   group.add(flameMesh);
 
-  const sideFlames = [-1, 1].map((side) => {
+  const sideFlames = (painted ? [] : [-1, 1]).map((side) => {
     const texture = flameAtlas!.clone();
     texture.repeat.set(0.25, 0.25);
     const material = flame.clone();
@@ -145,7 +159,7 @@ totalEmissiveRadiance += vec3(0.35, 0.025, 0.002) * fissure;`);
   let light: PointLight | null = null;
   if (attachLight) {
     activeBrazierLights++;
-    light = new PointLight(LIGHT_COLOR, LIGHT_INTENSITY, LIGHT_DISTANCE, 2);
+    light = new PointLight(LIGHT_COLOR, lightIntensity, LIGHT_DISTANCE, 2);
     light.userData.worldLight = true;
     light.userData.lightRank = 3;
     light.position.y = 1.95;
@@ -163,7 +177,7 @@ totalEmissiveRadiance += vec3(0.35, 0.025, 0.002) * fissure;`);
         Math.sin(time * 17.7 + 1.3) * 0.3 +
         Math.sin(time * 29.1 + 2.1) * 0.2;
       if (light) {
-        light.intensity = LIGHT_INTENSITY * (1 + n * 0.22);
+        light.intensity = lightIntensity * (1 + n * 0.22);
       }
       const frame = Math.floor(time * 19) % 16;
       flameTexture.offset.set((frame % 4) * 0.25, (3 - Math.floor(frame / 4)) * 0.25);

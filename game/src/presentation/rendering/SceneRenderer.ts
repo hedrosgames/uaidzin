@@ -31,6 +31,8 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { FXAAShader } from "three/addons/shaders/FXAAShader.js";
 import { PlayerView } from "../player/PlayerView";
 import {
   DEFAULT_GRAPHICS_QUALITY,
@@ -46,12 +48,18 @@ export interface SceneRendererOptions {
   quality?: GraphicsQualityLevel;
 }
 
-const SKY_ZENITH = 0x0b1020;
-const SKY_HORIZON = 0x2a1f22;
-const FOG_COLOR = 0x1a1518;
-const FOG_DENSITY = 0.016;
-const KEY_LIGHT_OFFSET = new Vector3(14, 22, 10);
+const SKY_ZENITH = 0x758fc1;
+const SKY_HORIZON = 0xd7b2a6;
+const FOG_COLOR = 0xa6acbd;
+const FOG_DENSITY = 0.006;
+const KEY_LIGHT_OFFSET = new Vector3(-14, 19, 12);
 const BLOOM = { strength: 0.42, radius: 0.45, threshold: 0.82 };
+const WORLD_LOOKS = {
+  city: { sky: 0xaaa2e8, ground: 0x887084, ambient: 0.8, key: 3.4, shadow: 0.86, fog: FOG_COLOR, density: FOG_DENSITY, exposure: 1.18 },
+  field: { sky: 0xa9b8e0, ground: 0x858568, ambient: 0.85, key: 3.1, shadow: 0.78, fog: 0xa0afbb, density: 0.009, exposure: 1.12 },
+  cemetery: { sky: 0xa1abdb, ground: 0x716779, ambient: 0.75, key: 2.5, shadow: 0.82, fog: 0x8891ad, density: 0.013, exposure: 1.12 },
+  dungeon: { sky: 0x9daee0, ground: 0x747055, ambient: 0.8, key: 2.1, shadow: 0.65, fog: 0x7e8e9e, density: 0.016, exposure: 1.12 },
+};
 
 export class SceneRenderer {
   readonly scene = new Scene();
@@ -68,8 +76,11 @@ export class SceneRenderer {
   private readonly toPlayer = new Vector3();
   private readonly playerBlobShadow: Mesh;
   private readonly keyLight: DirectionalLight;
+  private readonly hemisphereLight = new HemisphereLight(0xb2bceb, 0xb49a72, 1.25);
+  private readonly fillLight = new DirectionalLight(0x8d9ee8, 0.65);
   private readonly composer: EffectComposer;
   private readonly bloomPass: UnrealBloomPass;
+  private readonly edgePass = new ShaderPass(FXAAShader);
   private readonly skyDome: Mesh;
   private occluders: Object3D[] = [];
   private quality: GraphicsQualityLevel;
@@ -81,6 +92,8 @@ export class SceneRenderer {
   private readonly samplePoint = new Vector3();
   private readonly sampleRight = new Vector3();
   private visiblePointLights = 0;
+  private worldLook: keyof typeof WORLD_LOOKS = "city";
+  private lastShadowUpdateAt = 0;
 
   constructor(options: SceneRendererOptions) {
     this.scene.name = "UAIDZIN_Scene";
@@ -150,6 +163,8 @@ export class SceneRenderer {
     this.composer.addPass(new RenderPass(this.scene, new PerspectiveCamera()));
     this.composer.addPass(this.bloomPass);
     this.composer.addPass(new OutputPass());
+    this.composer.addPass(this.edgePass);
+    this.updateEdgeResolution();
   }
 
   async loadPlayerModel(classId = "TK"): Promise<void> {
@@ -161,9 +176,9 @@ export class SceneRenderer {
   }
 
   private setupLights(shadows: boolean, shadowMapSize: number, shadowHalfExtent: number): DirectionalLight {
-    this.scene.add(new HemisphereLight(0x8090c0, 0x3a2a1c, 0.55));
+    this.scene.add(this.hemisphereLight);
 
-    const key = new DirectionalLight(0xffdcb0, 2.1);
+    const key = new DirectionalLight(0xffdfb8, 2.5);
     key.position.copy(KEY_LIGHT_OFFSET);
     key.castShadow = shadows;
     key.shadow.mapSize.set(shadowMapSize, shadowMapSize);
@@ -180,8 +195,8 @@ export class SceneRenderer {
     this.scene.add(key);
     this.scene.add(key.target);
 
-    const fill = new DirectionalLight(0x6f86d6, 0.35);
-    fill.position.set(-10, 6, -8);
+    const fill = this.fillLight;
+    fill.position.set(10, 8, 12);
     this.scene.add(fill);
     return key;
   }
@@ -215,7 +230,7 @@ export class SceneRenderer {
       depthWrite: false,
       fog: false,
     });
-    const dome = new Mesh(new SphereGeometry(150, 24, 12), material);
+    const dome = new Mesh(new SphereGeometry(70, 24, 12), material);
     dome.name = "sky-dome";
     dome.frustumCulled = false;
     return dome;
@@ -311,6 +326,7 @@ export class SceneRenderer {
 
     this.composer.setPixelRatio(this.renderer.getPixelRatio());
     this.composer.setSize(this.lastWidth, this.lastHeight);
+    this.updateEdgeResolution();
     this.composer.renderTarget1.samples = profile.samples;
     this.composer.renderTarget2.samples = profile.samples;
     this.composer.renderTarget1.dispose();
@@ -382,7 +398,7 @@ export class SceneRenderer {
     this.renderer.shadowMap.enabled = enabled;
     this.keyLight.castShadow = enabled;
     this.playerBlobShadow.visible = !enabled;
-    this.applyShadowFrustum(extent, mapSize);
+    this.applyShadowFrustum(this.worldLook === "city" ? 24 : extent, mapSize);
     if (enabled) this.renderer.shadowMap.needsUpdate = true;
   }
 
@@ -396,7 +412,14 @@ export class SceneRenderer {
       if (light.userData.worldLight === true) world.push(light);
       else skill.push(light);
     });
-    world.sort((a, b) => ((b.userData.lightRank as number) || 0) - ((a.userData.lightRank as number) || 0));
+    const player = this.playerMesh.position;
+    world.sort((a, b) => {
+      const distanceA = Math.hypot(a.position.x - player.x, a.position.z - player.z);
+      const distanceB = Math.hypot(b.position.x - player.x, b.position.z - player.z);
+      const scoreA = ((a.userData.lightRank as number) || 0) / (1 + distanceA);
+      const scoreB = ((b.userData.lightRank as number) || 0) / (1 + distanceB);
+      return scoreB - scoreA;
+    });
     let visible = 0;
     world.forEach((light, index) => {
       const keep = index < profile.maxPointLights;
@@ -411,27 +434,34 @@ export class SceneRenderer {
     this.visiblePointLights = visible;
   }
 
-  setWorldLook(kind: "city" | "dungeon"): void {
+  setWorldLook(kind: keyof typeof WORLD_LOOKS): void {
+    this.worldLook = kind;
+    const city = kind === "city";
+    const dungeon = kind === "dungeon";
+    const look = WORLD_LOOKS[kind];
+    this.hemisphereLight.color.set(look.sky);
+    this.hemisphereLight.groundColor.set(look.ground);
+    this.hemisphereLight.intensity = look.ambient;
+    this.fillLight.color.set(0xaab6f7);
+    this.fillLight.intensity = city ? 0.85 : 0.7;
+    this.keyLight.color.set(kind === "cemetery" ? 0xf5dabf : 0xffdfb8);
+    this.keyLight.intensity = look.key;
+    this.keyLight.shadow.intensity = look.shadow;
+    const profile = GRAPHICS_PRESETS[this.quality];
+    this.applyShadowFrustum(city ? 24 : profile.shadowHalfExtent, profile.shadowMapSize);
+    const fogColor = look.fog;
+    this.scene.background = new Color(fogColor);
     const fog = this.scene.fog as FogExp2 | null;
-    if (kind === "dungeon") {
-      this.scene.background = new Color(0x1a2218);
-      if (fog) {
-        fog.color.set(0x1a2218);
-        fog.density = 0.007;
-      }
-      this.renderer.toneMappingExposure = 1.32;
-      this.skyDome.visible = false;
-      return;
-    }
-    this.scene.background = new Color(FOG_COLOR);
     if (fog) {
-      fog.color.set(FOG_COLOR);
-      fog.density = FOG_DENSITY;
+      fog.color.set(fogColor);
+      fog.density = look.density;
     }
-    this.renderer.toneMappingExposure = 1.15;
-    this.skyDome.visible = true;
+    this.renderer.toneMappingExposure = look.exposure;
+    this.skyDome.visible = !dungeon;
+    const sky = this.skyDome.material as ShaderMaterial;
+    (sky.uniforms.zenith!.value as Color).set(kind === "cemetery" ? 0x7886ac : SKY_ZENITH);
+    (sky.uniforms.horizon!.value as Color).set(kind === "cemetery" ? 0x9ca0b5 : SKY_HORIZON);
   }
-
   setPlayerTransform(
     x: number,
     z: number,
@@ -455,11 +485,17 @@ export class SceneRenderer {
     this.lastHeight = h;
     this.renderer.setSize(w, h, false);
     this.composer.setSize(w, h);
+    this.updateEdgeResolution();
     const profile = GRAPHICS_PRESETS[this.quality];
     this.bloomPass.setSize(
       Math.round(w * (profile.bloomHalfRes ? 0.5 : 1)),
       Math.round(h * (profile.bloomHalfRes ? 0.5 : 1)),
     );
+  }
+
+  private updateEdgeResolution(): void {
+    const dpr = this.renderer.getPixelRatio();
+    this.edgePass.uniforms.resolution!.value.set(1 / (this.lastWidth * dpr), 1 / (this.lastHeight * dpr));
   }
 
   setOccluders(occluders: Object3D[]): void {
@@ -529,12 +565,19 @@ export class SceneRenderer {
 
   private followKeyLight(): void {
     const p = this.playerMesh.position;
+    const city = this.worldLook === "city";
+    const x = city ? 0 : p.x;
+    const z = city ? 0 : p.z;
     this.skyDome.position.set(p.x, 0, p.z);
-    this.keyLight.target.position.set(p.x, 0, p.z);
-    this.keyLight.position.set(p.x + KEY_LIGHT_OFFSET.x, KEY_LIGHT_OFFSET.y, p.z + KEY_LIGHT_OFFSET.z);
-    if (this.renderer.shadowMap.enabled) this.renderer.shadowMap.needsUpdate = true;
+    this.keyLight.target.position.set(x, 0, z);
+    this.keyLight.position.set(x + KEY_LIGHT_OFFSET.x, KEY_LIGHT_OFFSET.y, z + KEY_LIGHT_OFFSET.z);
+    const now = performance.now();
+    const interval = city ? GRAPHICS_PRESETS[this.quality].shadowUpdateInterval * 1000 : 80;
+    if (this.renderer.shadowMap.enabled && now - this.lastShadowUpdateAt >= interval) {
+      this.renderer.shadowMap.needsUpdate = true;
+      this.lastShadowUpdateAt = now;
+    }
   }
-
   present(camera: PerspectiveCamera): void {
     if (this.disposed) return;
     this.renderer.compile(this.scene, camera);
@@ -578,6 +621,7 @@ export class SceneRenderer {
     (this.skyDome.material as ShaderMaterial).dispose();
     this.skyDome.geometry.dispose();
     this.bloomPass.dispose();
+    this.edgePass.dispose();
     this.composer.dispose();
     this.renderer.dispose();
   }

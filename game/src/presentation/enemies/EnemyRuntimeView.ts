@@ -11,6 +11,7 @@ import {
   Mesh,
   MeshStandardMaterial,
   Object3D,
+  SkinnedMesh,
   Vector3,
   VectorKeyframeTrack,
 } from "three";
@@ -20,6 +21,7 @@ import type { EnemyArchetype } from "../../data/balance/combat";
 import type { EnemyModel } from "../../domain/enemies/EnemyModel";
 import type { EnemyService } from "../../domain/enemies/EnemyService";
 import type { EffectManager } from "../effects/EffectManager";
+import { makePaintedCharacterMaterial } from "../rendering/PaintedCharacter";
 
 const ENEMY_BASE_HEIGHT = 1.72;
 const WOLF_BASE_HEIGHT = 1.05;
@@ -28,6 +30,12 @@ const DEFAULT_COLORS: Record<EnemyArchetype, number> = {
   fixed: 0xc45c26,
   chaser: 0xe23b3b,
   ranged: 0xc45cff,
+};
+
+const DEFAULT_MODELS: Record<EnemyArchetype, string> = {
+  fixed: "/models/enemies/skeleton-normal.glb",
+  chaser: "/models/enemies/skeleton-normal.glb",
+  ranged: "/models/enemies/skeleton-special.glb",
 };
 
 const gltfLoader = new GLTFLoader();
@@ -178,6 +186,7 @@ function adaptClipTracks(
   clip: AnimationClip,
   model: Object3D,
   hipsRest?: Vector3 | null,
+  external = true,
 ): AnimationClip {
   const nodeNames = new Set<string>();
   model.traverse((o) => {
@@ -208,13 +217,20 @@ function adaptClipTracks(
 
     if (!nodeNames.has(resolvedName)) continue;
 
-    if (hipsRest && propName === ".position" && /Hips/i.test(resolvedName)) {
+    if (external) {
+      const bone = model.getObjectByName(resolvedName) as Object3D & { isBone?: boolean };
+      if (!bone?.isBone || propName === ".scale") continue;
+      if (propName === ".position" && !/Hips/i.test(resolvedName)) continue;
+    }
+
+    const rest = hipsRest ?? (external ? model.getObjectByName(resolvedName)?.position : null);
+    if (rest && propName === ".position" && /Hips/i.test(resolvedName)) {
       const duration = Math.max(clip.duration, 1 / 30);
       adaptedTracks.push(
         new VectorKeyframeTrack(
           resolvedName + propName,
           [0, duration],
-          [hipsRest.x, hipsRest.y, hipsRest.z, hipsRest.x, hipsRest.y, hipsRest.z],
+          [rest.x, rest.y, rest.z, rest.x, rest.y, rest.z],
         ),
       );
       continue;
@@ -568,8 +584,8 @@ export class EnemyRuntimeView {
 
     this.controllers.set(enemy.id, ctrl);
 
-    if (enemy.modelUrl && enemy.modelUrl.trim().length > 0) {
-      const url = enemy.modelUrl;
+    {
+      const url = enemy.modelUrl?.trim() || DEFAULT_MODELS[enemy.archetype];
       const isSkeletonSpecial = url.includes("skeleton-special") || enemy.monsterId === "caveira_especial";
       const isSkeletonNormal = url.includes("skeleton-normal") || enemy.monsterId === "caveira_normal";
       const isWolf = url.includes("/wolf");
@@ -586,12 +602,33 @@ export class EnemyRuntimeView {
             return;
           }
           const baseHeight = 0.55 * scale;
-          const rawBox = new Box3().setFromObject(instance);
+          const standing = isWolf ? await clipLoader("mutant_idle") : proto.animations[0];
+          if (standing) {
+            for (const track of standing.tracks) {
+              const separator = track.name.lastIndexOf(".");
+              const node = instance.getObjectByName(track.name.slice(0, separator));
+              if (!node || !track.name.endsWith(".quaternion")) continue;
+              node.quaternion.fromArray(track.values);
+            }
+          }
+          instance.updateMatrixWorld(true);
+          const rawBox = new Box3();
+          instance.traverse((node) => {
+            const mesh = node as Mesh;
+            if (!mesh.isMesh) return;
+            const skin = mesh as SkinnedMesh;
+            if (skin.isSkinnedMesh) {
+              skin.skeleton.update();
+              skin.computeBoundingBox();
+            } else mesh.geometry.computeBoundingBox();
+            const bounds = skin.isSkinnedMesh ? skin.boundingBox : mesh.geometry.boundingBox;
+            if (bounds) rawBox.union(bounds.clone().applyMatrix4(mesh.matrixWorld));
+          });
           const rawSize = rawBox.getSize(new Vector3());
           const rawCenter = rawBox.getCenter(new Vector3());
           const targetHeight = (isWolf ? WOLF_BASE_HEIGHT : rawSize.y > 10 ? 1.8 : ENEMY_BASE_HEIGHT) * scale;
           const fitted = targetHeight / Math.max(0.001, rawSize.y);
-          instance.scale.setScalar(fitted);
+          instance.scale.multiplyScalar(fitted);
           const posX = -rawCenter.x * fitted;
           const posY = -rawBox.min.y * fitted - baseHeight;
           const posZ = -rawCenter.z * fitted;
@@ -606,15 +643,14 @@ export class EnemyRuntimeView {
               m.receiveShadow = true;
               m.userData.occlusionIgnore = true;
               if (m.material) {
-                if (Array.isArray(m.material)) {
-                  m.material = m.material.map((mat) => mat.clone());
-                  for (const mat of m.material) {
-                    if (mat instanceof MeshStandardMaterial) stdMats.push(mat);
-                  }
-                } else {
-                  m.material = m.material.clone();
-                  if (m.material instanceof MeshStandardMaterial) stdMats.push(m.material);
+                const originals = Array.isArray(m.material) ? m.material : [m.material];
+                const painted = originals.map((material) => material instanceof MeshStandardMaterial
+                  ? makePaintedCharacterMaterial(material)
+                  : material.clone());
+                for (const material of painted) {
+                  if (material instanceof MeshStandardMaterial) stdMats.push(material);
                 }
+                m.material = Array.isArray(m.material) ? painted : painted[0]!;
               }
               if ((m as unknown as { isSkinnedMesh?: boolean }).isSkinnedMesh) {
                 hasSkinned = true;
@@ -695,7 +731,9 @@ export class EnemyRuntimeView {
           }
 
           if (idleClip) {
-            const adapted = adaptClipTracks(idleClip, instance, isWolf ? hipsRest : null);
+            const embedded = isSkeletonSpecial && proto.animations.length > 0;
+            const rest = hipsRest ?? instance.getObjectByName("mixamorigHips")?.position.clone();
+            const adapted = adaptClipTracks(idleClip, instance, rest, !embedded);
             adapted.name = "idle";
             ctrl.actions.set("idle", mixer.clipAction(adapted));
           }

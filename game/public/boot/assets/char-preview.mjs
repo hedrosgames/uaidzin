@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
 import { polishCharacterMaterial } from "./character-materials.mjs";
+import { armorAtlasUrl, normalizeArmorAppearance } from "./armor-appearance.mjs";
+import { repairCharacterGeometry } from "./character-geometry.mjs";
 
 const MODEL = {
   TK: "/models/player/TK/TK.glb",
@@ -28,14 +30,14 @@ const _right = new THREE.Vector3();
 const _fwd = new THREE.Vector3();
 const _up = new THREE.Vector3(0, 1, 0);
 
-function harden(model) {
+function harden(model, atlas) {
   model.traverse((obj) => {
     if (!obj.isMesh) return;
     const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
     const next = mats.map((src) => {
       if (!src) return src;
       const std = new THREE.MeshStandardMaterial({
-        map: src.map || null,
+        map: src.map ? atlas : null,
         color: src.color ? src.color.clone() : 0xffffff,
         side: THREE.DoubleSide,
         transparent: false,
@@ -48,7 +50,7 @@ function harden(model) {
         std.map.colorSpace = THREE.SRGBColorSpace;
         std.map.needsUpdate = true;
       }
-      polishCharacterMaterial(std, src.name);
+      polishCharacterMaterial(std, src.name, src.map);
       src.dispose();
       return std;
     });
@@ -124,13 +126,23 @@ function fitAndFrame(pivot, model, mixer, camera, shoulders) {
   camera.lookAt(center.x, center.y, center.z);
 }
 
-async function loadGltf(classId) {
+async function loadGltf(classId, appearance = "gold") {
   const key = MODEL[classId] ? classId : "TK";
-  if (gltfCache.has(key)) return gltfCache.get(key);
+  const variant = normalizeArmorAppearance(appearance);
+  const cacheKey = `${key}:${variant}`;
+  if (gltfCache.has(cacheKey)) return gltfCache.get(cacheKey);
   const loader = new GLTFLoader();
-  const gltf = await loader.loadAsync(MODEL[key]);
-  harden(gltf.scene);
-  gltfCache.set(key, gltf);
+  const [gltf, atlas] = await Promise.all([
+    loader.loadAsync(MODEL[key]),
+    new THREE.TextureLoader().loadAsync(armorAtlasUrl(key, variant)),
+  ]);
+  atlas.flipY = false;
+  atlas.colorSpace = THREE.SRGBColorSpace;
+  atlas.userData.paintedAtlas = true;
+  atlas.userData.armorAppearance = variant;
+  repairCharacterGeometry(gltf.scene, key);
+  harden(gltf.scene, atlas);
+  gltfCache.set(cacheKey, gltf);
   return gltf;
 }
 
@@ -256,7 +268,7 @@ export function teardownCharPreviews() {
   }
 }
 
-export function mountCharPreview(container, classId) {
+export function mountCharPreview(container, classId, appearance = "gold") {
   const canvas = document.createElement("canvas");
   canvas.className = "char-3d";
   container.innerHTML = "";
@@ -271,12 +283,12 @@ export function mountCharPreview(container, classId) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(28, w / h, 0.05, 50);
 
-  scene.add(new THREE.AmbientLight(0xfff0d8, 1.4));
-  const key = new THREE.DirectionalLight(0xffffff, 2.2);
-  key.position.set(1.4, 3.8, 4.2);
+  scene.add(new THREE.AmbientLight(0xfff0e5, 0.85));
+  const key = new THREE.DirectionalLight(0xffe3bd, 3.2);
+  key.position.set(-3.2, 4.8, 4.2);
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0xb8d8ff, 1.0);
-  fill.position.set(-2.8, 2.2, 1.5);
+  const fill = new THREE.DirectionalLight(0xabb6ff, 0.8);
+  fill.position.set(2.8, 2.2, 1.5);
   scene.add(fill);
   const rim = new THREE.DirectionalLight(0xffc878, 0.85);
   rim.position.set(0.5, 2.0, -3.0);
@@ -298,7 +310,7 @@ export function mountCharPreview(container, classId) {
   mountedCards.add(card);
   startLoop();
 
-  loadGltf(classId)
+  loadGltf(classId, appearance)
     .then(async (gltf) => {
       if (!card.alive) return;
       const clip = await resolveIdleClip(classId, gltf);

@@ -1,42 +1,18 @@
-import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, IcosahedronGeometry, InstancedMesh, MeshStandardMaterial, Object3D } from "three";
+import { Color, Group, IcosahedronGeometry, InstancedMesh, MeshStandardMaterial, Object3D } from "three";
+import { splitInstancedSectors } from "./InstancedSectors";
 import { grassCount } from "../presentation/rendering/GraphicsQuality";
 import { positionBlocked, type WorldCollision } from "./collision";
 import { cemeteryPathDistance } from "./CemeteryGround";
 import { buildCemeteryGraves } from "./CemeteryGraves";
-
-export function makeDryGrassGeometry(): BufferGeometry {
-  const positions: number[] = [];
-  const colors: number[] = [];
-  for (let blade = 0; blade < 5; blade++) {
-    const angle = blade * 2.39996;
-    const height = 0.14 + blade % 3 * 0.065;
-    const bend = 0.07 + blade % 2 * 0.04;
-    const point = (step: number, side: number) => {
-      const width = 0.013 * (1 - step);
-      const reach = 0.024 + bend * step * step;
-      positions.push(Math.cos(angle) * reach + Math.sin(angle) * width * side, height * step, Math.sin(angle) * reach - Math.cos(angle) * width * side);
-      const shade = 0.62 + step * 0.38;
-      colors.push(shade, shade, shade * 0.88);
-    };
-    for (let segment = 0; segment < 3; segment++) {
-      const low = segment / 3;
-      const high = (segment + 1) / 3;
-      point(low, -1); point(low, 1); point(high, 1);
-      point(low, -1); point(high, 1); point(high, -1);
-    }
-  }
-  const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
-  geometry.computeVertexNormals();
-  return geometry;
-}
+import { makePaintedGrassGeometry, makePaintedGrassMaterial } from "./PaintedGrass";
 
 export function buildCemeteryLandscape(parent: Group, collision: WorldCollision): Group {
   const group = new Group();
   group.name = "cemetery-understory";
   group.add(buildCemeteryGraves(parent.children.filter((node) => node.name === "prop-cemetery-tomb")));
-  const grass = new InstancedMesh(makeDryGrassGeometry(), new MeshStandardMaterial({ color: 0xc4b89d, roughness: 1, vertexColors: true, side: DoubleSide }), 3400);
+  const grassMaterial = makePaintedGrassMaterial();
+  grassMaterial.color.set(0xaeb9a2);
+  const grass = new InstancedMesh(makePaintedGrassGeometry(), grassMaterial, 2000);
   grass.name = "cemetery-grass";
   const stones = new InstancedMesh(new IcosahedronGeometry(1, 0), new MeshStandardMaterial({ color: 0x797d78, roughness: 0.96 }), 260);
   stones.name = "cemetery-stones";
@@ -57,15 +33,15 @@ export function buildCemeteryLandscape(parent: Group, collision: WorldCollision)
       const z = aroundGrave ? anchor.position.z + (random() - 0.5) * 4.4 : (random() - 0.5) * 33;
       if (Math.abs(x) > 16.6 || Math.abs(z) > 16.6 || positionBlocked(x, z, 0.08, collision)) continue;
       if (cemeteryPathDistance(x, z) < 1.25 || Math.hypot(x, z + 13.2) < 2) continue;
-      const patch = Math.sin(x * 2.6 + Math.sin(z * 1.7)) * Math.cos(z * 2.3 - x * 0.5);
-      if (random() > 0.5 + patch * 0.42) continue;
+      const patch = Math.sin(x * 0.72 + Math.sin(z * 0.37)) * Math.cos(z * 0.63 - x * 0.15);
+      if (random() > Math.max(0.04, patch * 0.88)) continue;
       transform.position.set(x, mesh === grass ? 0.012 : 0.018, z);
       transform.rotation.set(mesh === stones ? random() * 2 : 0, random() * Math.PI * 2, 0);
-      const scale = mesh === grass ? 0.55 + random() * 0.85 : 0.04 + random() * 0.09;
+      const scale = mesh === grass ? 0.65 + random() * 0.55 : 0.04 + random() * 0.09;
       transform.scale.set(scale, scale * (mesh === stones ? 0.38 : 1), scale);
       transform.updateMatrix();
       mesh.setMatrixAt(count, transform.matrix);
-      if (mesh === grass) color.setHSL(0.12 + random() * 0.04, 0.16 + random() * 0.1, 0.46 + random() * 0.12);
+      if (mesh === grass) color.setRGB(0.82 + random() * 0.15, 0.86 + random() * 0.12, 0.86 + random() * 0.14);
       else color.setHSL(0.12, 0.05, 0.52 + random() * 0.25);
       mesh.setColorAt(count, color);
       count++;
@@ -80,7 +56,7 @@ export function buildCemeteryLandscape(parent: Group, collision: WorldCollision)
     mesh.userData.occlusionIgnore = true;
     mesh.raycast = () => {};
     mesh.computeBoundingSphere();
-    group.add(mesh);
+    group.add(splitInstancedSectors(mesh));
   }
   return group;
 }

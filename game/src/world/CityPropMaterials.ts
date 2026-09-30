@@ -1,6 +1,7 @@
-import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, Object3D, SRGBColorSpace, Vector2 } from "three";
+import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, Object3D, SRGBColorSpace, type Texture } from "three";
 import type { CityPropId } from "./CityProps";
-import { loadCitySurfaceTextures, type CitySurfaceKind, type CitySurfaceTextures } from "./CityMaterialTextures";
+import type { CitySurfaceKind } from "./CityMaterialTextures";
+import { loadCityPaintedTexture } from "./CityPaintedMaterials";
 import { stampAnisotropy } from "../presentation/rendering/GraphicsQuality";
 
 type PropSurface = CitySurfaceKind | "paint" | "paper";
@@ -22,8 +23,6 @@ function insideAtlasRegion(u: number, v: number, regions?: readonly AtlasRect[])
   return regions?.some(([left, top, right, bottom]) => u >= left && u <= right && v >= top && v <= bottom) ?? false;
 }
 
-const normalStrength: Record<CitySurfaceKind, number> = { stone: 0.32, wood: 0.4, cloth: 0.55, iron: 0.18 };
-const detailScale: Record<CitySurfaceKind, number> = { stone: 3, wood: 5, cloth: 0.75, iron: 3 };
 
 function sourcePixels(material: MeshStandardMaterial): ImageData | null {
   const image = material.map?.image as CanvasImageSource & { width: number; height: number } | undefined;
@@ -60,89 +59,78 @@ function classifySurface(id: CityPropId, u: number, v: number, x: number, y: num
   return merchandise ? "paint" : "wood";
 }
 
-function partitionSurfaces(mesh: Mesh, id: CityPropId, source: MeshStandardMaterial): PropSurface[] {
+const surfaceIds: Record<PropSurface, number> = { stone: 0, wood: 1, cloth: 2, iron: 3, paint: 4, paper: 5 };
+
+function assignSurfaceKinds(mesh: Mesh, id: CityPropId, source: MeshStandardMaterial): void {
   const geometry = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
   const position = geometry.getAttribute("position");
   const uv = geometry.getAttribute("uv");
   const pixels = sourcePixels(source);
-  const buckets = new Map<PropSurface, number[]>();
-  const detailUv = new Float32Array(position.count * 2);
+  const surfaces = new Float32Array(position.count);
   for (let face = 0; face < position.count; face += 3) {
     const average = (attribute: typeof position, axis: number) => (attribute.getComponent(face, axis) + attribute.getComponent(face + 1, axis) + attribute.getComponent(face + 2, axis)) / 3;
     const kind = classifySurface(id, average(uv, 0), average(uv, 1), average(position, 0), average(position, 1), average(position, 2), pixels);
-    const indices = buckets.get(kind) ?? [];
-    indices.push(face, face + 1, face + 2);
-    buckets.set(kind, indices);
-    const scale = kind === "paint" || kind === "paper" ? 1 : detailScale[kind];
-    for (let vertex = face; vertex < face + 3; vertex++) {
-      detailUv[vertex * 2] = uv.getX(vertex) * scale;
-      detailUv[vertex * 2 + 1] = uv.getY(vertex) * scale;
-    }
+    surfaces.fill(surfaceIds[kind], face, face + 3);
   }
-  geometry.setAttribute("uv1", new Float32BufferAttribute(detailUv, 2));
-  const indices: number[] = [];
+  geometry.setAttribute("citySurface", new Float32BufferAttribute(surfaces, 1));
+  geometry.setIndex(Array.from({ length: position.count }, (_, index) => index));
   geometry.clearGroups();
-  const kinds = [...buckets.keys()];
-  for (const [materialIndex, kind] of kinds.entries()) {
-    const faces = buckets.get(kind)!;
-    geometry.addGroup(indices.length, faces.length, materialIndex);
-    indices.push(...faces);
-  }
-  geometry.setIndex(indices);
   mesh.geometry.dispose();
   mesh.geometry = geometry;
-  mesh.userData.citySurfaceTriangles = Object.fromEntries([...buckets].map(([kind, faces]) => [kind, faces.length / 3]));
-  return kinds;
 }
 
-function makeSurfaceMaterial(source: MeshStandardMaterial, id: CityPropId, kind: PropSurface, maps?: CitySurfaceTextures): MeshStandardMaterial {
+function makeSurfaceMaterial(source: MeshStandardMaterial, id: CityPropId, paint: Texture): MeshStandardMaterial {
   const material = source.clone();
-  material.name = `city-${id}-${kind}`;
+  material.name = `city-painted-${id}`;
   material.side = DoubleSide;
-  material.metalness = kind === "iron" ? 0.72 : 0;
-  material.roughness = kind === "paint" ? 0.9 : 1;
-  if (!maps) return material;
-  material.normalMap = maps.normal;
-  material.normalScale = new Vector2(normalStrength[kind as CitySurfaceKind], normalStrength[kind as CitySurfaceKind]);
-  material.roughnessMap = maps.roughness;
+  material.metalness = 0;
+  material.roughness = 1;
+  material.normalMap = null;
+  material.roughnessMap = null;
+  material.metalnessMap = null;
   material.onBeforeCompile = (shader) => {
-    shader.uniforms.uSurfaceAlbedo = { value: maps.albedo };
-    shader.fragmentShader = shader.fragmentShader.replace("#include <common>", "#include <common>\nuniform sampler2D uSurfaceAlbedo;");
+    shader.uniforms.cityPaint = { value: paint };
+    shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nattribute float citySurface;\nvarying float vCitySurface;\nvarying vec2 vCityPaintUv;");
+    shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvCitySurface = citySurface;\nvCityPaintUv = uv * 2.0;");
+    shader.fragmentShader = shader.fragmentShader.replace("#include <common>", "#include <common>\nuniform sampler2D cityPaint;\nvarying float vCitySurface;\nvarying vec2 vCityPaintUv;");
     shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", `#include <map_fragment>
-vec3 surfaceDetail = texture2D(uSurfaceAlbedo, vNormalMapUv).rgb;
-float originalLight = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-float detailLight = dot(surfaceDetail, vec3(0.2126, 0.7152, 0.0722));
-${kind === "stone" ? `
-vec3 mineral = mix(surfaceDetail, vec3(detailLight) * vec3(0.92, 0.98, 1.03), 0.74);
-diffuseColor.rgb = mix(diffuseColor.rgb, vec3(originalLight) * vec3(0.9, 0.95, 1.0), 0.82);
-diffuseColor.rgb *= mix(vec3(0.82), clamp(mineral * 3.0, vec3(0.65), vec3(1.4)), 0.72);` : kind === "wood" ? `
-diffuseColor.rgb = mix(diffuseColor.rgb, vec3(originalLight) * vec3(1.15, 1.02, 0.9), 0.5);
-diffuseColor.rgb *= mix(0.72, 1.3, clamp(detailLight * 3.4, 0.0, 1.0));` : kind === "cloth" ? `
-diffuseColor.rgb *= clamp(vec3(detailLight * 3.2), vec3(0.72), vec3(1.12));
-diffuseColor.rgb = mix(diffuseColor.rgb, vec3(dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722))), 0.12);` : `
-diffuseColor.rgb = mix(diffuseColor.rgb, surfaceDetail * vec3(0.36, 0.39, 0.42), 0.62);`}`);
-    shader.fragmentShader = shader.fragmentShader.replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
-roughnessFactor = clamp(roughnessFactor, ${kind === "iron" ? "0.38, 0.76" : kind === "cloth" ? "0.88, 1.0" : kind === "wood" ? "0.69, 0.95" : "0.78, 0.98"});`);
+vec3 pigment = texture2D(cityPaint, vCityPaintUv).rgb;
+float originalTone = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+float paintedShade = clamp(pow(max(originalTone, 0.001), 0.28) * 1.35, 0.58, 1.04);
+if (vCitySurface < 0.5) {
+  diffuseColor.rgb = pigment * paintedShade * vec3(0.88, 0.88, 0.97);
+} else if (vCitySurface < 1.5) {
+  diffuseColor.rgb = mix(pigment * paintedShade, sqrt(max(diffuseColor.rgb, vec3(0.0))) * vec3(0.75, 0.68, 0.64), 0.32);
+} else if (vCitySurface < 2.5) {
+  diffuseColor.rgb = pow(max(diffuseColor.rgb, vec3(0.0)), vec3(0.72));
+  diffuseColor.rgb = mix(diffuseColor.rgb, floor(diffuseColor.rgb * 9.0 + 0.5) / 9.0, 0.16);
+} else if (vCitySurface < 3.5) {
+  diffuseColor.rgb = mix(vec3(0.085, 0.10, 0.16), vec3(0.30, 0.33, 0.40), paintedShade * 0.6);
+} else {
+  diffuseColor.rgb = pow(max(diffuseColor.rgb, vec3(0.0)), vec3(0.82));
+}`);
+    shader.fragmentShader = shader.fragmentShader.replace("#include <metalnessmap_fragment>", "#include <metalnessmap_fragment>\nmetalnessFactor = vCitySurface > 2.5 && vCitySurface < 3.5 ? 0.28 : 0.0;");
+    shader.fragmentShader = shader.fragmentShader.replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = vCitySurface > 2.5 && vCitySurface < 3.5 ? 0.72 : 1.0;");
   };
-  material.customProgramCacheKey = () => `city-authored-surface-1-${kind}`;
+  material.customProgramCacheKey = () => "city-painted-prop-1";
   return material;
 }
 
 export async function applyCityPropMaterials(root: Object3D, id: CityPropId): Promise<void> {
-  const meshes: Mesh<BufferGeometry, MeshStandardMaterial>[] = [];
-  root.traverse((object) => { if (object instanceof Mesh) meshes.push(object); });
-  await Promise.all(meshes.map(async (mesh) => {
+  const stone = id === "wall" || id === "fountain" || id === "fountain-simple";
+  const paint = await loadCityPaintedTexture(stone ? "stone" : "wood");
+  root.traverse((object) => {
+    if (!(object instanceof Mesh)) return;
+    const mesh = object as Mesh<BufferGeometry, MeshStandardMaterial>;
     const source = mesh.material;
     if (source.map) {
       source.map.colorSpace = SRGBColorSpace;
       stampAnisotropy(source.map);
     }
-    const kinds = partitionSurfaces(mesh, id, source);
-    const materials = await Promise.all(kinds.map(async (kind) => makeSurfaceMaterial(source, id, kind,
-      kind === "paint" || kind === "paper" ? undefined : await loadCitySurfaceTextures(kind))));
-    (mesh as Mesh).material = materials.length === 1 ? materials[0]! : materials;
+    assignSurfaceKinds(mesh, id, source);
+    mesh.material = makeSurfaceMaterial(source, id, paint);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     source.dispose();
-  }));
+  });
 }

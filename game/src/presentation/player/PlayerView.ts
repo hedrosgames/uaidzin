@@ -16,6 +16,7 @@ import {
   SkinnedMesh,
   Vector3,
   VectorKeyframeTrack,
+  type Texture,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
@@ -27,6 +28,10 @@ import {
   type HumanAttackClip,
 } from "./PlayerAnimCatalog";
 import { ArmorAura } from "./ArmorAura";
+import { makePaintedCharacterMaterial } from "../rendering/PaintedCharacter";
+import { loadPaintedCharacterAtlas } from "../rendering/PaintedCharacterAtlas";
+import { normalizeArmorAppearance, type ArmorAppearance } from "../../../public/boot/assets/armor-appearance.mjs";
+import { repairCharacterGeometry } from "../../../public/boot/assets/character-geometry.mjs";
 import {
   CLASS_WEAPON_SET,
   attackClipForWeapon,
@@ -38,7 +43,6 @@ import {
   type WeaponSetId,
 } from "./WeaponSetCatalog";
 import { WeaponRig } from "./WeaponRig";
-import { polishCharacterMaterial } from "../../../public/boot/assets/character-materials.mjs";
 
 const HIPS_POSITION_TRACK = /Hips\.position$/;
 const RUN_REF_SPEED = 3.4;
@@ -47,6 +51,20 @@ function hipsRestFromClip(clip: AnimationClip): Vector3 | null {
   const track = clip.tracks.find((t) => HIPS_POSITION_TRACK.test(t.name));
   if (!track || track.values.length < 3) return null;
   return new Vector3(track.values[0], track.values[1], track.values[2]);
+}
+
+function applyClassStandingPose(model: Object3D, clip: AnimationClip | undefined): void {
+  if (!clip) return;
+  for (const track of clip.tracks) {
+    const separator = track.name.lastIndexOf(".");
+    const bone = model.getObjectByName(track.name.slice(0, separator)) as Bone | undefined;
+    if (!bone?.isBone) continue;
+    const property = track.name.slice(separator + 1);
+    if (property === "position") bone.position.fromArray(track.values);
+    else if (property === "quaternion") bone.quaternion.fromArray(track.values);
+    else if (property === "scale") bone.scale.fromArray(track.values);
+  }
+  model.updateMatrixWorld(true);
 }
 
 function pinHipsToRest(clip: AnimationClip, rest: Vector3): AnimationClip {
@@ -116,6 +134,10 @@ export class PlayerView {
   private dead = false;
   private moving = false;
   private classId: PlayerClassId = "TK";
+  private armorAppearance: ArmorAppearance = "gold";
+  private appliedArmorAppearance: ArmorAppearance | null = null;
+  private armorAppearanceGen = 0;
+  private readonly originalMaterials = new Map<Mesh, MeshStandardMaterial[]>();
   private readonly armorAura = new ArmorAura();
   private readonly ghosts: Mesh[] = [];
   private readonly weaponRig: WeaponRig;
@@ -156,12 +178,15 @@ export class PlayerView {
     this.classIdleClip = null;
     this.idleClip = "class";
     this.clearGhosts();
+    this.originalMaterials.clear();
+    this.appliedArmorAppearance = null;
+    const loadedAppearance = this.armorAppearance;
 
     const animEntries = Object.entries(FIXED_ANIM_URLS) as Array<
       [Exclude<PlayerAnim, "idle" | "attack">, string]
     >;
 
-    const [base, sharedIdleGltf, loadedAnims] = await Promise.all([
+    const [base, sharedIdleGltf, loadedAnims, paintedAtlas] = await Promise.all([
       this.loader.loadAsync(CLASS_MODEL[id]),
       id === "TK"
         ? this.loader.loadAsync(SHARED_IDLE_URL).catch(() => null)
@@ -172,6 +197,7 @@ export class PlayerView {
           return [name, gltf] as const;
         }),
       ),
+      this.loader instanceof GLTFLoader ? loadPaintedCharacterAtlas(id, loadedAppearance) : Promise.resolve(null),
     ]);
 
     if (loadToken !== this.loadGen) {
@@ -185,10 +211,13 @@ export class PlayerView {
 
     const model = base.scene;
     model.name = id;
-    this.hardenMaterials(model);
+    repairCharacterGeometry(model, id);
+    this.hardenMaterials(model, paintedAtlas);
+    this.appliedArmorAppearance = loadedAppearance;
 
     this.model = model;
     this.root.add(model);
+    applyClassStandingPose(model, base.animations[0]);
 
     this.mixer = new AnimationMixer(model);
 
@@ -229,7 +258,27 @@ export class PlayerView {
     const weaponToken = ++this.weaponSetGen;
     await this.applyWeaponSet(targetSet, weaponToken, loadToken);
     if (loadToken !== this.loadGen) return;
+    await this.setArmorAppearance(this.armorAppearance);
+    if (loadToken !== this.loadGen) return;
     this.ready = true;
+  }
+
+  async setArmorAppearance(appearance: ArmorAppearance): Promise<void> {
+    this.armorAppearance = normalizeArmorAppearance(appearance);
+    const token = ++this.armorAppearanceGen;
+    const loadToken = this.loadGen;
+    if (!this.model || this.appliedArmorAppearance === this.armorAppearance) return;
+    const requested = this.armorAppearance;
+    const atlas = this.loader instanceof GLTFLoader
+      ? await loadPaintedCharacterAtlas(this.classId, requested)
+      : null;
+    if (token !== this.armorAppearanceGen || loadToken !== this.loadGen || !this.model) return;
+    this.hardenMaterials(this.model, atlas);
+    this.appliedArmorAppearance = requested;
+  }
+
+  getArmorAppearance(): ArmorAppearance {
+    return this.appliedArmorAppearance ?? this.armorAppearance;
   }
 
   async setWeaponSet(set: WeaponSetId): Promise<void> {
@@ -440,11 +489,7 @@ export class PlayerView {
 
     const center = boneBox.getCenter(new Vector3());
     const height = Math.max(boneBox.max.y - boneBox.min.y, 0.001);
-    let scale = TARGET_HEIGHT / height;
-    if (this.classId === "TK") scale = 0.0217;
-    else if (this.classId === "FM") scale = 0.0218;
-    else if (this.classId === "BM") scale = 0.0216;
-    else if (this.classId === "HT") scale = 0.0200;
+    const scale = TARGET_HEIGHT / height;
 
     model.scale.setScalar(scale);
     model.position.set(-center.x * scale, -boneBox.min.y * scale, -center.z * scale);
@@ -508,38 +553,29 @@ export class PlayerView {
     });
   }
 
-  private hardenMaterials(model: Object3D): void {
+  private hardenMaterials(model: Object3D, atlas: Texture | null): void {
     model.traverse((obj) => {
       const mesh = obj as Mesh;
-      if (!mesh.isMesh) return;
+      if (!mesh.isMesh || mesh.name === GHOST_NAME) return;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const current = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const mats = this.originalMaterials.get(mesh) ?? current as MeshStandardMaterial[];
+      if (!this.originalMaterials.has(mesh)) this.originalMaterials.set(mesh, mats);
       const next: MeshStandardMaterial[] = [];
       for (const mat of mats) {
         if (!mat) continue;
         const src = mat as MeshStandardMaterial;
-        const std = new MeshStandardMaterial({
-          map: src.map ?? null,
-          color: src.color?.clone?.() ?? 0xffffff,
-          normalMap: src.normalMap ?? null,
-          roughnessMap: "roughnessMap" in src ? src.roughnessMap : null,
-          aoMap: src.aoMap ?? null,
-          side: DoubleSide,
-          transparent: false,
-          opacity: 1,
-          depthWrite: true,
-          metalness: 0,
-          roughness: 0.75,
-        });
+        const std = makePaintedCharacterMaterial(src, atlas);
+        if (src.map) std.userData.originalAtlas = src.map;
+        std.side = DoubleSide;
         if (std.map) {
           std.map.colorSpace = "srgb";
           std.map.needsUpdate = true;
         }
-        polishCharacterMaterial(std, src.name);
-        src.dispose();
         next.push(std);
       }
+      if (current !== mats) for (const mat of current) mat?.dispose();
       mesh.material = next.length === 1 ? next[0]! : next;
       if ((mesh as SkinnedMesh).isSkinnedMesh) {
         (mesh as SkinnedMesh).frustumCulled = false;
@@ -557,11 +593,14 @@ export class PlayerView {
         return;
       }
       mesh.geometry?.dispose();
+      for (const original of this.originalMaterials.get(mesh) ?? []) original.dispose();
+      this.originalMaterials.delete(mesh);
       const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       for (const mat of mats) {
         if (!mat) continue;
         const std = mat as MeshStandardMaterial;
-        std.map?.dispose();
+        if (!std.map?.userData.paintedAtlas) std.map?.dispose();
+        (std.userData.originalAtlas as Texture | undefined)?.dispose();
         std.dispose();
       }
     });

@@ -102,6 +102,10 @@ function createSlot(_session: AuthSession, slotIndex: number, input: { classId: 
   getSession: () => saveVault.getSession(),
   requireSession,
   loadSave,
+  loadEquippedArmor: async (profileId: string) => {
+    const loaded = await saveVault.loadCharacter(profileId);
+    return loaded.status === "ok" ? loaded.payload.equipment?.equipped?.armor || null : null;
+  },
   saveData,
   createSlot,
   deleteSlot,

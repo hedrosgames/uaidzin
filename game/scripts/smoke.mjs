@@ -191,6 +191,7 @@ async function main() {
     }
     if (s.enemiesAlive > 0) ok(`inimigos vivos=${s.enemiesAlive}`);
     else fail(`dungeon enemiesAlive esperado > 0, recebido ${s.enemiesAlive}`);
+    await page.waitForFunction(() => !window.__UAIDZIN__.session.worldFadeBusy, null, { timeout: 90000 });
 
     await page.evaluate(() => {
       window.__UAIDZIN__.learnFirstSkill();
@@ -247,7 +248,7 @@ async function main() {
     if (missTarget) {
       await page.evaluate(({ x, z }) => window.__UAIDZIN__.teleportPlayer(x, z), missTarget);
     }
-    await page.waitForTimeout(1200);
+    await page.waitForFunction(() => window.__UAIDZIN__.session.lastCombatMissAt > 0, null, { timeout: 15000 }).catch(() => {});
     const missAt = await page.evaluate(() => window.__UAIDZIN__.session.lastCombatMissAt);
     const missText = await page.evaluate(() => {
       const nodes = [...document.querySelectorAll(".dmg-number")];
@@ -454,6 +455,7 @@ async function main() {
     } catch (err) {
       fail(`D4: esperado mode "DUNGEON", ${err.message}`);
     }
+    await page.waitForFunction(() => !window.__UAIDZIN__.session.worldFadeBusy, null, { timeout: 90000 });
 
     await page.evaluate(() => {
       const sess = window.__UAIDZIN__.session;
@@ -468,7 +470,7 @@ async function main() {
         e.attackCooldown = 0;
       }
     });
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() => window.__UAIDZIN__.session.deathEmitCount > 0, null, { timeout: 15000 }).catch(() => {});
     const deaths = await page.evaluate(() => window.__UAIDZIN__.session.deathEmitCount);
     if (deaths === 1) ok("character:death emitido uma vez");
     else fail(`character:death esperado 1, recebido ${deaths}`);

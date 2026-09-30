@@ -1,7 +1,9 @@
-import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, InstancedMesh, MeshStandardMaterial, Object3D } from "three";
+import { BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, InstancedMesh, MeshBasicMaterial, Object3D, SRGBColorSpace, TextureLoader } from "three";
 import type { WorldCollision } from "./collision";
 import type { InteractableDef } from "./definitions";
+import { trackWorldVisual } from "./WorldVisuals";
 import { grassCount, isCheapShaders } from "../presentation/rendering/GraphicsQuality";
+import { splitInstancedSectors } from "./InstancedSectors";
 
 export const CITY_GARDEN_BEDS = [
   [-14.6, -13.6, 2.4, 2.2], [-5.0, -15.3, 2.8, 1.35],
@@ -35,36 +37,38 @@ export function getCityGardenGlsl(): string {
 
 function makeGrassGeometry(): BufferGeometry {
   const positions: number[] = [];
+  const uv: number[] = [];
   const colors: number[] = [];
-  for (let blade = 0; blade < 5; blade++) {
-    const angle = blade * 2.399;
-    const x = Math.cos(angle) * 0.045;
-    const z = Math.sin(angle) * 0.045;
-    const width = 0.022;
-    const height = 0.11 + (blade % 3) * 0.04;
-    const dx = Math.cos(angle) * width;
-    const dz = Math.sin(angle) * width;
-    positions.push(x - dx, 0, z - dz, x + dx, 0, z + dz,
-      x + dx * 1.5, height * 0.6, z + dz * 1.5,
-      x - dx, 0, z - dz, x + dx * 1.5, height * 0.6, z + dz * 1.5,
-      x + dx * 0.5, height, z + dz * 3.5);
-    for (let v = 0; v < 6; v++) {
-      const brightness = v === 5 ? 1 : v === 2 || v === 4 ? 0.9 : 0.72;
+  for (let plane = 0; plane < 2; plane++) {
+    const angle = plane * Math.PI / 2;
+    const x = Math.cos(angle) * 0.58;
+    const z = Math.sin(angle) * 0.58;
+    positions.push(-x, -0.018, -z, x, -0.018, z, x, 0.85, z,
+      -x, -0.018, -z, x, 0.85, z, -x, 0.85, -z);
+    uv.push(0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1);
+    for (let vertex = 0; vertex < 6; vertex++) {
+      const brightness = vertex === 2 || vertex > 3 ? 1 : 0.85;
       colors.push(brightness, brightness, brightness);
     }
   }
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new Float32BufferAttribute(uv, 2));
   geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
   geometry.computeVertexNormals();
   return geometry;
 }
-
 export function buildCityVegetation(collision: WorldCollision, services: InteractableDef[]): Group {
   const group = new Group();
   group.name = "city-gardens";
-  const material = new MeshStandardMaterial({ color: 0xc6d1bc, roughness: 1, side: DoubleSide, vertexColors: true });
-  const grass = new InstancedMesh(makeGrassGeometry(), material, 5200);
+  const material = new MeshBasicMaterial({ color: 0xb5be8a, side: DoubleSide, vertexColors: true, alphaTest: 0.42 });
+  material.name = "city-painted-grass";
+  trackWorldVisual(new TextureLoader().loadAsync("/textures/city-painted/grass.webp").then((texture) => {
+    texture.colorSpace = SRGBColorSpace;
+    material.map = texture;
+    material.needsUpdate = true;
+  }));
+  const grass = new InstancedMesh(makeGrassGeometry(), material, 1600);
   grass.name = "city-grass";
   grass.userData.occlusionIgnore = true;
   grass.raycast = () => {};
@@ -76,21 +80,24 @@ export function buildCityVegetation(collision: WorldCollision, services: Interac
     return (seed >>> 0) / 4294967296;
   };
   let count = 0;
-  for (let attempt = 0; attempt < 20000 && count < 5200; attempt++) {
+  for (let attempt = 0; attempt < 30000 && count < 1600; attempt++) {
     const bed = CITY_GARDEN_BEDS[attempt % CITY_GARDEN_BEDS.length]!;
     const x = bed[0] + (random() * 2 - 1) * bed[2] * 1.2;
     const z = bed[1] + (random() * 2 - 1) * bed[3] * 1.2;
     const radius = Math.hypot((x - bed[0]) / bed[2], (z - bed[1]) / bed[3]);
     if (radius > 0.8 + random() * 0.4 || Math.abs(x) > 16.8 || Math.abs(z) > 16.8) continue;
+    const patch = Math.sin(x * 2.1 + Math.sin(z * 1.4)) * Math.cos(z * 1.8 - x * 0.4);
+    if (random() > 0.44 + patch * 0.4 - radius * 0.12) continue;
     if (services.some((service) => Math.hypot(x - service.x, z - service.z) < 1.4)) continue;
     if (collision.boxes.some((box) => x > box.minX - 0.15 && x < box.maxX + 0.15 && z > box.minZ - 0.15 && z < box.maxZ + 0.15)) continue;
     if (collision.circles.some((circle) => Math.hypot(x - circle.x, z - circle.z) < circle.r + 0.2)) continue;
     transform.position.set(x, 0.015, z);
     transform.rotation.y = random() * Math.PI * 2;
-    transform.scale.setScalar(0.55 + random() * 0.8);
+    const width = 0.55 + random() * 0.65;
+    transform.scale.set(width, 0.6 + random() * 0.65, width);
     transform.updateMatrix();
     grass.setMatrixAt(count, transform.matrix);
-    color.setHSL(0.24 + random() * 0.05, 0.28 + random() * 0.16, 0.42 + random() * 0.14);
+    color.setRGB(0.84 + random() * 0.16, 0.88 + random() * 0.12, 0.84 + random() * 0.16);
     grass.setColorAt(count, color);
     count++;
   }
@@ -99,6 +106,6 @@ export function buildCityVegetation(collision: WorldCollision, services: Interac
   grass.count = grassCount(count);
   grass.receiveShadow = false;
   grass.computeBoundingSphere();
-  group.add(grass);
+  group.add(splitInstancedSectors(grass, 24));
   return group;
 }

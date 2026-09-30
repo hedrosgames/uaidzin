@@ -14,6 +14,7 @@ import {
   Vector3,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { makePaintedCharacterMaterial } from "../rendering/PaintedCharacter";
 import {
   WEAPON_SETS,
   type WeaponModelId,
@@ -102,13 +103,8 @@ function hardenWeaponMaterials(root: Object3D): void {
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     const next = mats.map((mat) => {
       const src = mat as MeshStandardMaterial;
-      const std = new MeshStandardMaterial({
-        map: src.map ?? null,
-        color: 0xffffff,
-        side: DoubleSide,
-        roughness: 0.7,
-        metalness: 0.05,
-      });
+      const std = makePaintedCharacterMaterial(src);
+      std.side = DoubleSide;
       if (std.map) {
         std.map.colorSpace = "srgb";
         std.map.needsUpdate = true;
@@ -431,8 +427,11 @@ export class WeaponRig {
     id: WeaponModelId,
     spec: WeaponModelSpec,
   ): Promise<{ body: Object3D; ownsGeometry: boolean } | null> {
-    if (id === "shield") return { body: makeShieldPlaceholder(spec.length), ownsGeometry: true };
-    if (id === "glove") return { body: makeGlovePlaceholder(spec.length), ownsGeometry: true };
+    if (id === "shield" || id === "glove") {
+      const body = id === "shield" ? makeShieldPlaceholder(spec.length) : makeGlovePlaceholder(spec.length);
+      hardenWeaponMaterials(body);
+      return { body, ownsGeometry: true };
+    }
     const proto = await this.loadPrototype(id, spec);
     if (!proto) return null;
     const inst = proto.clone(true);

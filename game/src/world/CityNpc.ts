@@ -1,9 +1,9 @@
 import { AnimationMixer, Box3, Group, Mesh, MeshStandardMaterial, Object3D, SkinnedMesh, Vector3 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { getArmorReflection } from "../../public/boot/assets/tk-materials.mjs";
 import type { WorldTickable } from "./CityWorld";
-import { stampAnisotropy } from "../presentation/rendering/GraphicsQuality";
 import { trackWorldVisual } from "./WorldVisuals";
+import { makePaintedCharacterMaterial } from "../presentation/rendering/PaintedCharacter";
+import { loadPaintedCharacterAtlas } from "../presentation/rendering/PaintedCharacterAtlas";
 
 interface CityNpcSpec {
   model: string;
@@ -12,35 +12,14 @@ interface CityNpcSpec {
 }
 
 const NPC_MODELS: Record<string, CityNpcSpec> = {
+  "npc-portal-guard": { model: "../player/TK/TK", height: 1.78, facing: 0.1 },
+  "npc-skill-master": { model: "../player/FM/FM", height: 1.72, facing: -0.3 },
+  "npc-quest": { model: "../player/BM/BM", height: 1.78, facing: 0.3 },
+  "npc-composer": { model: "blacksmith", height: 1.66, facing: 0.6 },
   "npc-merchant": { model: "merchant", height: 1.78, facing: -0.9 },
   "npc-blacksmith": { model: "blacksmith", height: 1.52, facing: -0.65 },
   "npc-sage": { model: "sage", height: 1.68, facing: 0.55 },
 };
-
-function polishNpcMaterial(material: MeshStandardMaterial): void {
-  material.roughness = 0.88;
-  material.metalness = 0;
-  material.transparent = false;
-  material.depthWrite = true;
-  material.envMap = getArmorReflection();
-  material.envMapIntensity = 0.45;
-  material.userData.artProfile = "city-npc-matte";
-  stampAnisotropy(material.map);
-  material.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader.replace(
-      "#include <roughnessmap_fragment>",
-      `#include <roughnessmap_fragment>
-      float npcLuma = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-      float npcSkin = smoothstep(0.14, 0.28, npcLuma)
-        * smoothstep(1.12, 1.3, diffuseColor.r / max(diffuseColor.g, 0.01))
-        * smoothstep(0.32, 0.5, diffuseColor.b / max(diffuseColor.r, 0.01));
-      roughnessFactor = mix(0.91, 0.74, npcSkin);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(npcLuma), 0.055);
-      `,
-    );
-  };
-  material.customProgramCacheKey = () => "city-npc-matte-v1";
-}
 
 function releaseNpc(root: Object3D): void {
   root.traverse((object) => {
@@ -50,7 +29,9 @@ function releaseNpc(root: Object3D): void {
     if ((mesh as SkinnedMesh).isSkinnedMesh) (mesh as SkinnedMesh).skeleton.dispose();
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const material of materials) {
-      (material as MeshStandardMaterial).map?.dispose();
+      const map = (material as MeshStandardMaterial).map;
+      if (!map?.userData.paintedAtlas) map?.dispose();
+      (material as MeshStandardMaterial).userData.originalAtlas?.dispose();
       material.dispose();
     }
   });
@@ -64,7 +45,11 @@ export function attachCityNpc(anchor: Group): WorldTickable | null {
   let model: Group | null = null;
   anchor.userData.interactableId = anchor.name;
 
-  trackWorldVisual(new GLTFLoader().loadAsync(`/models/npcs/${spec.model}.glb`).then((gltf) => {
+  const classId = spec.model.startsWith("../player/") ? spec.model.split("/")[2] : null;
+  trackWorldVisual(Promise.all([
+    new GLTFLoader().loadAsync(`/models/npcs/${spec.model}.glb`),
+    classId ? loadPaintedCharacterAtlas(classId) : Promise.resolve(null),
+  ]).then(([gltf, atlas]) => {
     if (disposed) {
       releaseNpc(gltf.scene);
       return;
@@ -77,7 +62,12 @@ export function attachCityNpc(anchor: Group): WorldTickable | null {
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      for (const material of materials) polishNpcMaterial(material as MeshStandardMaterial);
+      const paintedMaterials = materials.map((material) => {
+        const painted = makePaintedCharacterMaterial(material as MeshStandardMaterial, atlas);
+        material.dispose();
+        return painted;
+      });
+      mesh.material = paintedMaterials.length === 1 ? paintedMaterials[0]! : paintedMaterials;
     });
     mixer = new AnimationMixer(model);
     const idle = gltf.animations[0];
