@@ -1,0 +1,1666 @@
+{
+  "viewport": [
+    1440,
+    900
+  ],
+  "dpr": 1,
+  "warmupFrames": 60,
+  "sampleFrames": 180,
+  "scenes": [
+    {
+      "id": "city",
+      "actualWorld": "city",
+      "quality": "baixo",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 3.7705555552409753,
+        "median": 4,
+        "p95": 5.799999997019768
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 17.20949720670391,
+        "median": 16.600000001490116,
+        "p95": 17.80000000447035
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 4.7838939,
+        "median": 4.457135,
+        "p95": 7.00927
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 80,
+        "median": 80,
+        "p95": 80
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 155081,
+        "median": 155081,
+        "p95": 155081
+      },
+      "camera": [
+        11.05,
+        10.5,
+        3.1499999999999995
+      ]
+    },
+    {
+      "id": "city",
+      "actualWorld": "city",
+      "quality": "medio",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 3.2138888890544575,
+        "median": 2.7999999970197678,
+        "p95": 6.200000002980232
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 21.04189944134078,
+        "median": 16.600000001490116,
+        "p95": 17.899999998509884
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 8.904080283333334,
+        "median": 8.850833,
+        "p95": 10.162187
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 95.53333333333333,
+        "median": 93,
+        "p95": 93
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 173511.13333333333,
+        "median": 156359,
+        "p95": 156359
+      },
+      "camera": [
+        11.05,
+        10.5,
+        3.1499999999999995
+      ]
+    },
+    {
+      "id": "city",
+      "actualWorld": "city",
+      "quality": "alto",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 3.5699999997185334,
+        "median": 2.7999999970197678,
+        "p95": 7.399999998509884
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 19.72960893855581,
+        "median": 16.600000001490116,
+        "p95": 23.5
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 8.920426044444447,
+        "median": 8.727968,
+        "p95": 9.849635
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 95.53333333333333,
+        "median": 93,
+        "p95": 93
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 175027.13333333333,
+        "median": 157875,
+        "p95": 157875
+      },
+      "camera": [
+        11.05,
+        10.5,
+        3.1499999999999995
+      ]
+    },
+    {
+      "id": "dungeon-1",
+      "actualWorld": "dungeon-1",
+      "quality": "baixo",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 1.5405555557459594,
+        "median": 1.3999999985098839,
+        "p95": 3
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 20.48491620110067,
+        "median": 16.600000001490116,
+        "p95": 24.200000002980232
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 4.738240816666665,
+        "median": 4.76901,
+        "p95": 6.224062
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 48,
+        "median": 48,
+        "p95": 48
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 48399,
+        "median": 48399,
+        "p95": 48399
+      },
+      "camera": [
+        5.25,
+        10.5,
+        17.35
+      ]
+    },
+    {
+      "id": "dungeon-1",
+      "actualWorld": "dungeon-1",
+      "quality": "medio",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 2.551111110837923,
+        "median": 1.6000000014901161,
+        "p95": 4.700000002980232
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 24.865363128483295,
+        "median": 16.599999994039536,
+        "p95": 58.70000000298023
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 8.13413781666667,
+        "median": 8.07677,
+        "p95": 9.089531
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 62.68888888888889,
+        "median": 61,
+        "p95": 69
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 60240.78888888889,
+        "median": 51235,
+        "p95": 93894
+      },
+      "camera": [
+        5.25,
+        10.5,
+        17.35
+      ]
+    },
+    {
+      "id": "dungeon-1",
+      "actualWorld": "dungeon-1",
+      "quality": "alto",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 2.68944444420437,
+        "median": 2.5,
+        "p95": 5.100000001490116
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 20.11284916202782,
+        "median": 16.69999999552965,
+        "p95": 18.30000000447035
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 9.043563494444442,
+        "median": 8.796614,
+        "p95": 10.568802
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 63.4,
+        "median": 61,
+        "p95": 73
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 64937.6,
+        "median": 54595,
+        "p95": 106308
+      },
+      "camera": [
+        5.25,
+        10.5,
+        17.35
+      ]
+    },
+    {
+      "id": "dungeon-2",
+      "actualWorld": "dungeon-2",
+      "quality": "baixo",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 3.4238888886239796,
+        "median": 3.5999999940395355,
+        "p95": 5.300000004470348
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 18.343575418994412,
+        "median": 16.69999999552965,
+        "p95": 17.80000000447035
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 6.828491744444441,
+        "median": 7.393229,
+        "p95": 8.741875
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 79,
+        "median": 79,
+        "p95": 79
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 117433,
+        "median": 117433,
+        "p95": 117433
+      },
+      "camera": [
+        5.25,
+        10.5,
+        -3.1500000000000004
+      ]
+    },
+    {
+      "id": "dungeon-2",
+      "actualWorld": "dungeon-2",
+      "quality": "medio",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 3.468333333109816,
+        "median": 3.399999998509884,
+        "p95": 5.200000002980232
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 19.007262569815754,
+        "median": 16.69999999552965,
+        "p95": 17.899999998509884
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 9.198809149999999,
+        "median": 9.121041,
+        "p95": 10.690781
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 109.06111111111112,
+        "median": 92,
+        "p95": 175
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 160089.13333333333,
+        "median": 118955,
+        "p95": 319067
+      },
+      "camera": [
+        5.25,
+        10.5,
+        -3.1500000000000004
+      ]
+    },
+    {
+      "id": "dungeon-2",
+      "actualWorld": "dungeon-2",
+      "quality": "alto",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 4.4611111114008555,
+        "median": 4.399999998509884,
+        "p95": 6.700000002980232
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 19.83128491618447,
+        "median": 16.700000002980232,
+        "p95": 18.30000000447035
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 9.116980444444446,
+        "median": 8.879635,
+        "p95": 11.029427
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 111.4,
+        "median": 92,
+        "p95": 189
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 162843.6,
+        "median": 120767,
+        "p95": 331150
+      },
+      "camera": [
+        5.25,
+        10.5,
+        -3.1500000000000004
+      ]
+    },
+    {
+      "id": "dungeon-test",
+      "actualWorld": "dungeon-test",
+      "quality": "baixo",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 2.6944444451067184,
+        "median": 2.7000000029802322,
+        "p95": 4.100000001490116
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 18.43016759776536,
+        "median": 16.600000001490116,
+        "p95": 17.80000000447035
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 5.9291613166666695,
+        "median": 6.120364,
+        "p95": 8.201666
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 78,
+        "median": 78,
+        "p95": 78
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 68317,
+        "median": 68317,
+        "p95": 68317
+      },
+      "camera": [
+        5.25,
+        10.5,
+        9.35
+      ]
+    },
+    {
+      "id": "dungeon-test",
+      "actualWorld": "dungeon-test",
+      "quality": "medio",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 3.4061111111607816,
+        "median": 3.2999999970197678,
+        "p95": 5.899999998509884
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 18.249162011139887,
+        "median": 16.700000002980232,
+        "p95": 17.899999998509884
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 8.74051574444444,
+        "median": 8.57802,
+        "p95": 9.804739
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 100.07777777777778,
+        "median": 91,
+        "p95": 134
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 82443.1888888889,
+        "median": 69569,
+        "p95": 130552
+      },
+      "camera": [
+        5.25,
+        10.5,
+        9.35
+      ]
+    },
+    {
+      "id": "dungeon-test",
+      "actualWorld": "dungeon-test",
+      "quality": "alto",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 4.145000000049671,
+        "median": 4.200000002980232,
+        "p95": 6.5
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 18.622346368706758,
+        "median": 16.69999999552965,
+        "p95": 17.899999998509884
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 9.99651197777778,
+        "median": 9.586041,
+        "p95": 12.168281
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 99.83888888888889,
+        "median": 91,
+        "p95": 134
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 83586.39444444445,
+        "median": 71051,
+        "p95": 132034
+      },
+      "camera": [
+        5.25,
+        10.5,
+        9.35
+      ]
+    }
+  ],
+  "entries": [
+    {
+      "id": "dungeon-3",
+      "gate": {
+        "ok": true,
+        "def": {
+          "id": "dungeon-3",
+          "name": "Dungeon 3",
+          "minLevel": 80,
+          "maxLevel": 150,
+          "entryItemId": "entry_d3",
+          "durationSeconds": 600,
+          "arenas": [
+            {
+              "id": "d3-a1",
+              "centerX": 0,
+              "centerZ": 0,
+              "halfSize": 10,
+              "spawns": [
+                {
+                  "id": "d3-a1-c1",
+                  "archetype": "chaser",
+                  "x": 5,
+                  "z": 4
+                },
+                {
+                  "id": "d3-a1-c2",
+                  "archetype": "chaser",
+                  "x": -5,
+                  "z": 4
+                },
+                {
+                  "id": "d3-a1-f1",
+                  "archetype": "fixed",
+                  "x": 0,
+                  "z": -6
+                }
+              ]
+            },
+            {
+              "id": "d3-a2",
+              "centerX": -2,
+              "centerZ": -26,
+              "halfSize": 9,
+              "spawns": [
+                {
+                  "id": "d3-a2-c1",
+                  "archetype": "chaser",
+                  "x": 4,
+                  "z": -23
+                },
+                {
+                  "id": "d3-a2-c2",
+                  "archetype": "chaser",
+                  "x": -6,
+                  "z": -28
+                },
+                {
+                  "id": "d3-a2-r1",
+                  "archetype": "ranged",
+                  "x": 0,
+                  "z": -34
+                }
+              ]
+            },
+            {
+              "id": "d3-a3",
+              "centerX": 0,
+              "centerZ": -50,
+              "halfSize": 10,
+              "spawns": [
+                {
+                  "id": "d3-a3-c1",
+                  "archetype": "chaser",
+                  "x": 6,
+                  "z": -48
+                },
+                {
+                  "id": "d3-a3-c2",
+                  "archetype": "chaser",
+                  "x": -6,
+                  "z": -48
+                },
+                {
+                  "id": "d3-a3-boss",
+                  "archetype": "fixed",
+                  "x": 0,
+                  "z": -53,
+                  "isBoss": true
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "entered": {
+        "ok": true
+      },
+      "actual": {
+        "activeDungeon": "dungeon-3",
+        "world": "dungeon-test",
+        "boundary": {
+          "minX": -13,
+          "maxX": 13,
+          "minZ": -70,
+          "maxZ": 8
+        },
+        "enemies": [
+          {
+            "id": "d3-a1-c1",
+            "x": 5,
+            "z": 4,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d3-a1-c2",
+            "x": -5,
+            "z": 4,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d3-a1-f1",
+            "x": 0,
+            "z": -6,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d3-a2-c1",
+            "x": 4,
+            "z": -23,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d3-a2-c2",
+            "x": -6,
+            "z": -28,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d3-a2-r1",
+            "x": 0,
+            "z": -34,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d3-a3-c1",
+            "x": 6,
+            "z": -48,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d3-a3-c2",
+            "x": -6,
+            "z": -48,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d3-a3-boss",
+            "x": 0,
+            "z": -53,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "dungeon-4",
+      "gate": {
+        "ok": true,
+        "def": {
+          "id": "dungeon-4",
+          "name": "Dungeon 4",
+          "minLevel": 140,
+          "maxLevel": 220,
+          "entryItemId": "entry_d4",
+          "durationSeconds": 600,
+          "arenas": [
+            {
+              "id": "d4-a1",
+              "centerX": 0,
+              "centerZ": 0,
+              "halfSize": 8,
+              "spawns": [
+                {
+                  "id": "d4-a1-f1",
+                  "archetype": "fixed",
+                  "x": 4,
+                  "z": -4
+                },
+                {
+                  "id": "d4-a1-f2",
+                  "archetype": "fixed",
+                  "x": -4,
+                  "z": -4
+                },
+                {
+                  "id": "d4-a1-c1",
+                  "archetype": "chaser",
+                  "x": 5,
+                  "z": 3
+                },
+                {
+                  "id": "d4-a1-c2",
+                  "archetype": "chaser",
+                  "x": -5,
+                  "z": 3
+                }
+              ]
+            },
+            {
+              "id": "d4-a2",
+              "centerX": 0,
+              "centerZ": -22,
+              "halfSize": 8,
+              "spawns": [
+                {
+                  "id": "d4-a2-f1",
+                  "archetype": "fixed",
+                  "x": 5,
+                  "z": -26
+                },
+                {
+                  "id": "d4-a2-r1",
+                  "archetype": "ranged",
+                  "x": -5,
+                  "z": -28
+                },
+                {
+                  "id": "d4-a2-c1",
+                  "archetype": "chaser",
+                  "x": 0,
+                  "z": -19
+                },
+                {
+                  "id": "d4-a2-r2",
+                  "archetype": "ranged",
+                  "x": 6,
+                  "z": -28
+                }
+              ]
+            },
+            {
+              "id": "d4-a3",
+              "centerX": 0,
+              "centerZ": -46,
+              "halfSize": 9,
+              "spawns": [
+                {
+                  "id": "d4-a3-c1",
+                  "archetype": "chaser",
+                  "x": 5,
+                  "z": -45
+                },
+                {
+                  "id": "d4-a3-r1",
+                  "archetype": "ranged",
+                  "x": -5,
+                  "z": -52
+                },
+                {
+                  "id": "d4-a3-boss",
+                  "archetype": "fixed",
+                  "x": 0,
+                  "z": -48,
+                  "isBoss": true
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "entered": {
+        "ok": true
+      },
+      "actual": {
+        "activeDungeon": "dungeon-4",
+        "world": "dungeon-test",
+        "boundary": {
+          "minX": -13,
+          "maxX": 13,
+          "minZ": -70,
+          "maxZ": 8
+        },
+        "enemies": [
+          {
+            "id": "d4-a1-f1",
+            "x": 4,
+            "z": -4,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d4-a1-f2",
+            "x": -4,
+            "z": -4,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d4-a1-c1",
+            "x": 5,
+            "z": 3,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d4-a1-c2",
+            "x": -5,
+            "z": 3,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d4-a2-f1",
+            "x": 5,
+            "z": -26,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d4-a2-r1",
+            "x": -5,
+            "z": -28,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d4-a2-c1",
+            "x": 0,
+            "z": -19,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d4-a2-r2",
+            "x": 6,
+            "z": -28,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d4-a3-c1",
+            "x": 5,
+            "z": -45,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d4-a3-r1",
+            "x": -5,
+            "z": -52,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d4-a3-boss",
+            "x": 0,
+            "z": -48,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "dungeon-5",
+      "gate": {
+        "ok": true,
+        "def": {
+          "id": "dungeon-5",
+          "name": "Dungeon 5",
+          "minLevel": 200,
+          "maxLevel": 280,
+          "entryItemId": "entry_d5",
+          "durationSeconds": 600,
+          "arenas": [
+            {
+              "id": "d5-a1",
+              "centerX": 0,
+              "centerZ": 0,
+              "halfSize": 8,
+              "spawns": [
+                {
+                  "id": "d5-a1-r1",
+                  "archetype": "ranged",
+                  "x": 6,
+                  "z": -6
+                },
+                {
+                  "id": "d5-a1-r2",
+                  "archetype": "ranged",
+                  "x": -6,
+                  "z": -6
+                },
+                {
+                  "id": "d5-a1-f1",
+                  "archetype": "fixed",
+                  "x": 0,
+                  "z": 3
+                }
+              ]
+            },
+            {
+              "id": "d5-a2",
+              "centerX": 2,
+              "centerZ": -24,
+              "halfSize": 10,
+              "spawns": [
+                {
+                  "id": "d5-a2-r1",
+                  "archetype": "ranged",
+                  "x": 7,
+                  "z": -30
+                },
+                {
+                  "id": "d5-a2-c1",
+                  "archetype": "chaser",
+                  "x": -4,
+                  "z": -24
+                },
+                {
+                  "id": "d5-a2-f1",
+                  "archetype": "fixed",
+                  "x": 0,
+                  "z": -28
+                },
+                {
+                  "id": "d5-a2-r2",
+                  "archetype": "ranged",
+                  "x": -7,
+                  "z": -31
+                }
+              ]
+            },
+            {
+              "id": "d5-a3",
+              "centerX": 0,
+              "centerZ": -48,
+              "halfSize": 11,
+              "spawns": [
+                {
+                  "id": "d5-a3-r1",
+                  "archetype": "ranged",
+                  "x": 6,
+                  "z": -54
+                },
+                {
+                  "id": "d5-a3-r2",
+                  "archetype": "ranged",
+                  "x": -6,
+                  "z": -54
+                },
+                {
+                  "id": "d5-a3-boss",
+                  "archetype": "fixed",
+                  "x": 0,
+                  "z": -50,
+                  "isBoss": true
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "entered": {
+        "ok": true
+      },
+      "actual": {
+        "activeDungeon": "dungeon-5",
+        "world": "dungeon-test",
+        "boundary": {
+          "minX": -13,
+          "maxX": 13,
+          "minZ": -70,
+          "maxZ": 8
+        },
+        "enemies": [
+          {
+            "id": "d5-a1-r1",
+            "x": 6,
+            "z": -6,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d5-a1-r2",
+            "x": -6,
+            "z": -6,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d5-a1-f1",
+            "x": 0,
+            "z": 3,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d5-a2-r1",
+            "x": 7,
+            "z": -30,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d5-a2-c1",
+            "x": -4,
+            "z": -24,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d5-a2-f1",
+            "x": 0,
+            "z": -28,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d5-a2-r2",
+            "x": -7,
+            "z": -31,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d5-a3-r1",
+            "x": 6,
+            "z": -54,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d5-a3-r2",
+            "x": -6,
+            "z": -54,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d5-a3-boss",
+            "x": 0,
+            "z": -50,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "dungeon-6",
+      "gate": {
+        "ok": true,
+        "def": {
+          "id": "dungeon-6",
+          "name": "Dungeon 6",
+          "minLevel": 260,
+          "maxLevel": 330,
+          "entryItemId": "entry_d6",
+          "durationSeconds": 600,
+          "arenas": [
+            {
+              "id": "d6-a1",
+              "centerX": 0,
+              "centerZ": 0,
+              "halfSize": 10,
+              "spawns": [
+                {
+                  "id": "d6-a1-c1",
+                  "archetype": "chaser",
+                  "x": 5,
+                  "z": 4
+                },
+                {
+                  "id": "d6-a1-c2",
+                  "archetype": "chaser",
+                  "x": -5,
+                  "z": 4
+                },
+                {
+                  "id": "d6-a1-f1",
+                  "archetype": "fixed",
+                  "x": 0,
+                  "z": -6
+                }
+              ]
+            },
+            {
+              "id": "d6-a2",
+              "centerX": -2,
+              "centerZ": -26,
+              "halfSize": 9,
+              "spawns": [
+                {
+                  "id": "d6-a2-c1",
+                  "archetype": "chaser",
+                  "x": 4,
+                  "z": -23
+                },
+                {
+                  "id": "d6-a2-c2",
+                  "archetype": "chaser",
+                  "x": -6,
+                  "z": -28
+                },
+                {
+                  "id": "d6-a2-r1",
+                  "archetype": "ranged",
+                  "x": 0,
+                  "z": -34
+                }
+              ]
+            },
+            {
+              "id": "d6-a3",
+              "centerX": 0,
+              "centerZ": -50,
+              "halfSize": 10,
+              "spawns": [
+                {
+                  "id": "d6-a3-c1",
+                  "archetype": "chaser",
+                  "x": 6,
+                  "z": -48
+                },
+                {
+                  "id": "d6-a3-c2",
+                  "archetype": "chaser",
+                  "x": -6,
+                  "z": -48
+                },
+                {
+                  "id": "d6-a3-boss",
+                  "archetype": "fixed",
+                  "x": 0,
+                  "z": -53,
+                  "isBoss": true
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "entered": {
+        "ok": true
+      },
+      "actual": {
+        "activeDungeon": "dungeon-6",
+        "world": "dungeon-test",
+        "boundary": {
+          "minX": -13,
+          "maxX": 13,
+          "minZ": -70,
+          "maxZ": 8
+        },
+        "enemies": [
+          {
+            "id": "d6-a1-c1",
+            "x": 5,
+            "z": 4,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d6-a1-c2",
+            "x": -5,
+            "z": 4,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d6-a1-f1",
+            "x": 0,
+            "z": -6,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d6-a2-c1",
+            "x": 4,
+            "z": -23,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d6-a2-c2",
+            "x": -6,
+            "z": -28,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d6-a2-r1",
+            "x": 0,
+            "z": -34,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d6-a3-c1",
+            "x": 6,
+            "z": -48,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d6-a3-c2",
+            "x": -6,
+            "z": -48,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d6-a3-boss",
+            "x": 0,
+            "z": -53,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "dungeon-7",
+      "gate": {
+        "ok": true,
+        "def": {
+          "id": "dungeon-7",
+          "name": "Dungeon 7",
+          "minLevel": 310,
+          "maxLevel": 370,
+          "entryItemId": "entry_d7",
+          "durationSeconds": 600,
+          "arenas": [
+            {
+              "id": "d7-a1",
+              "centerX": 0,
+              "centerZ": 0,
+              "halfSize": 8,
+              "spawns": [
+                {
+                  "id": "d7-a1-f1",
+                  "archetype": "fixed",
+                  "x": 4,
+                  "z": -4
+                },
+                {
+                  "id": "d7-a1-f2",
+                  "archetype": "fixed",
+                  "x": -4,
+                  "z": -4
+                },
+                {
+                  "id": "d7-a1-c1",
+                  "archetype": "chaser",
+                  "x": 5,
+                  "z": 3
+                },
+                {
+                  "id": "d7-a1-c2",
+                  "archetype": "chaser",
+                  "x": -5,
+                  "z": 3
+                }
+              ]
+            },
+            {
+              "id": "d7-a2",
+              "centerX": 0,
+              "centerZ": -22,
+              "halfSize": 8,
+              "spawns": [
+                {
+                  "id": "d7-a2-f1",
+                  "archetype": "fixed",
+                  "x": 5,
+                  "z": -26
+                },
+                {
+                  "id": "d7-a2-r1",
+                  "archetype": "ranged",
+                  "x": -5,
+                  "z": -28
+                },
+                {
+                  "id": "d7-a2-c1",
+                  "archetype": "chaser",
+                  "x": 0,
+                  "z": -19
+                },
+                {
+                  "id": "d7-a2-r2",
+                  "archetype": "ranged",
+                  "x": 6,
+                  "z": -28
+                }
+              ]
+            },
+            {
+              "id": "d7-a3",
+              "centerX": 0,
+              "centerZ": -46,
+              "halfSize": 9,
+              "spawns": [
+                {
+                  "id": "d7-a3-c1",
+                  "archetype": "chaser",
+                  "x": 5,
+                  "z": -45
+                },
+                {
+                  "id": "d7-a3-r1",
+                  "archetype": "ranged",
+                  "x": -5,
+                  "z": -52
+                },
+                {
+                  "id": "d7-a3-boss",
+                  "archetype": "fixed",
+                  "x": 0,
+                  "z": -48,
+                  "isBoss": true
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "entered": {
+        "ok": true
+      },
+      "actual": {
+        "activeDungeon": "dungeon-7",
+        "world": "dungeon-test",
+        "boundary": {
+          "minX": -13,
+          "maxX": 13,
+          "minZ": -70,
+          "maxZ": 8
+        },
+        "enemies": [
+          {
+            "id": "d7-a1-f1",
+            "x": 4,
+            "z": -4,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d7-a1-f2",
+            "x": -4,
+            "z": -4,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d7-a1-c1",
+            "x": 5,
+            "z": 3,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d7-a1-c2",
+            "x": -5,
+            "z": 3,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d7-a2-f1",
+            "x": 5,
+            "z": -26,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d7-a2-r1",
+            "x": -5,
+            "z": -28,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d7-a2-c1",
+            "x": 0,
+            "z": -19,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d7-a2-r2",
+            "x": 6,
+            "z": -28,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d7-a3-c1",
+            "x": 5,
+            "z": -45,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d7-a3-r1",
+            "x": -5,
+            "z": -52,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d7-a3-boss",
+            "x": 0,
+            "z": -48,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "dungeon-8",
+      "gate": {
+        "ok": true,
+        "def": {
+          "id": "dungeon-8",
+          "name": "Dungeon 8",
+          "minLevel": 350,
+          "maxLevel": 400,
+          "entryItemId": "entry_d8",
+          "durationSeconds": 600,
+          "arenas": [
+            {
+              "id": "d8-a1",
+              "centerX": 0,
+              "centerZ": 0,
+              "halfSize": 10,
+              "spawns": [
+                {
+                  "id": "d8-a1-c1",
+                  "archetype": "chaser",
+                  "x": 5,
+                  "z": 4
+                },
+                {
+                  "id": "d8-a1-c2",
+                  "archetype": "chaser",
+                  "x": -5,
+                  "z": 4
+                },
+                {
+                  "id": "d8-a1-f1",
+                  "archetype": "fixed",
+                  "x": 0,
+                  "z": -6
+                }
+              ]
+            },
+            {
+              "id": "d8-a2",
+              "centerX": -2,
+              "centerZ": -26,
+              "halfSize": 9,
+              "spawns": [
+                {
+                  "id": "d8-a2-c1",
+                  "archetype": "chaser",
+                  "x": 4,
+                  "z": -23
+                },
+                {
+                  "id": "d8-a2-c2",
+                  "archetype": "chaser",
+                  "x": -6,
+                  "z": -28
+                },
+                {
+                  "id": "d8-a2-r1",
+                  "archetype": "ranged",
+                  "x": 0,
+                  "z": -34
+                }
+              ]
+            },
+            {
+              "id": "d8-a3",
+              "centerX": 0,
+              "centerZ": -50,
+              "halfSize": 10,
+              "spawns": [
+                {
+                  "id": "d8-a3-c1",
+                  "archetype": "chaser",
+                  "x": 6,
+                  "z": -48
+                },
+                {
+                  "id": "d8-a3-c2",
+                  "archetype": "chaser",
+                  "x": -6,
+                  "z": -48
+                },
+                {
+                  "id": "d8-a3-boss",
+                  "archetype": "fixed",
+                  "x": 0,
+                  "z": -53,
+                  "isBoss": true
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "entered": {
+        "ok": true
+      },
+      "actual": {
+        "activeDungeon": "dungeon-8",
+        "world": "dungeon-test",
+        "boundary": {
+          "minX": -13,
+          "maxX": 13,
+          "minZ": -70,
+          "maxZ": 8
+        },
+        "enemies": [
+          {
+            "id": "d8-a1-c1",
+            "x": 5,
+            "z": 4,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d8-a1-c2",
+            "x": -5,
+            "z": 4,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d8-a1-f1",
+            "x": 0,
+            "z": -6,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d8-a2-c1",
+            "x": 4,
+            "z": -23,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d8-a2-c2",
+            "x": -6,
+            "z": -28,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d8-a2-r1",
+            "x": 0,
+            "z": -34,
+            "skinned": 1,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d8-a3-c1",
+            "x": 6,
+            "z": -48,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d8-a3-c2",
+            "x": -6,
+            "z": -48,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          },
+          {
+            "id": "d8-a3-boss",
+            "x": 0,
+            "z": -53,
+            "skinned": 0,
+            "modelLoaded": true,
+            "placeholderVisible": false
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "staticScene": true,
+  "idlePlayer": true,
+  "liveSimulation": false,
+  "hardware": {
+    "renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A7A8) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "timerQuery": true,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+    "timeScale": 1
+  },
+  "finished": "2026-09-30T02:37:49.194Z"
+}

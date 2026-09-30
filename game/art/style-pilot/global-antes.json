@@ -1,0 +1,447 @@
+{
+  "stage": "antes",
+  "scenes": [
+    {
+      "id": "city",
+      "boundary": {
+        "minX": -17,
+        "maxX": 17,
+        "minZ": -17,
+        "maxZ": 17
+      },
+      "spawn": {
+        "x": 5.8,
+        "z": -4.2
+      },
+      "camera": [
+        13.8,
+        10,
+        7.8
+      ],
+      "stats": {
+        "baixo": {
+          "draws": 93,
+          "triangles": 229237,
+          "programs": 80,
+          "lights": 1
+        },
+        "medio": {
+          "draws": 106,
+          "triangles": 231623,
+          "programs": 83,
+          "lights": 1
+        },
+        "alto": {
+          "draws": 106,
+          "triangles": 234423,
+          "programs": 83,
+          "lights": 1
+        }
+      },
+      "instanced": [
+        {
+          "name": "city-grass",
+          "count": 1300,
+          "triangles": 4
+        },
+        {
+          "name": "brazier-0-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "brazier-1-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "brazier-2-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "brazier-3-charcoal",
+          "count": 23,
+          "triangles": 20
+        }
+      ],
+      "playerScale": [
+        1,
+        1,
+        1
+      ],
+      "modelScale": [
+        0.0217,
+        0.0217,
+        0.0217
+      ],
+      "fog": "a6acbd",
+      "shadowExtent": 24
+    },
+    {
+      "id": "dungeon-1",
+      "boundary": {
+        "minX": -8.7,
+        "maxX": 8.7,
+        "minZ": -45.7,
+        "maxZ": 9.7
+      },
+      "spawn": {
+        "x": 0,
+        "z": 5
+      },
+      "camera": [
+        8,
+        10,
+        17
+      ],
+      "stats": {
+        "baixo": {
+          "draws": 181,
+          "triangles": 231562,
+          "programs": 120,
+          "lights": 1
+        },
+        "medio": {
+          "draws": 214,
+          "triangles": 373599,
+          "programs": 142,
+          "lights": 2
+        },
+        "alto": {
+          "draws": 216,
+          "triangles": 428251,
+          "programs": 159,
+          "lights": 4
+        }
+      },
+      "instanced": [
+        {
+          "name": "d1-brazier-0-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "d1-brazier-1-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "d1-brazier-2-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "d1-brazier-3-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "d1-brazier-4-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "d1-brazier-5-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "d1-brazier-6-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "d1-brazier-7-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "campo-grass",
+          "count": 3380,
+          "triangles": 30
+        },
+        {
+          "name": "campo-stones",
+          "count": 220,
+          "triangles": 20
+        }
+      ],
+      "playerScale": [
+        1,
+        1,
+        1
+      ],
+      "modelScale": [
+        0.0217,
+        0.0217,
+        0.0217
+      ],
+      "gates": 2,
+      "fog": "1a1518",
+      "shadowExtent": 12
+    },
+    {
+      "id": "dungeon-2",
+      "boundary": {
+        "minX": -17,
+        "maxX": 17,
+        "minZ": -17,
+        "maxZ": 17
+      },
+      "spawn": {
+        "x": 0,
+        "z": -10.5
+      },
+      "camera": [
+        8,
+        10,
+        1.5
+      ],
+      "stats": {
+        "baixo": {
+          "draws": 94,
+          "triangles": 200185,
+          "programs": 186,
+          "lights": 1
+        },
+        "medio": {
+          "draws": 187,
+          "triangles": 430083,
+          "programs": 202,
+          "lights": 2
+        },
+        "alto": {
+          "draws": 202,
+          "triangles": 480921,
+          "programs": 215,
+          "lights": 4
+        }
+      },
+      "instanced": [
+        {
+          "name": "cemetery-grave-soil",
+          "count": 16,
+          "triangles": 62.333333333333336
+        },
+        {
+          "name": "cemetery-grave-edging",
+          "count": 137,
+          "triangles": 20
+        },
+        {
+          "name": "cemetery-grass",
+          "count": 2210,
+          "triangles": 30
+        },
+        {
+          "name": "cemetery-stones",
+          "count": 260,
+          "triangles": 20
+        },
+        {
+          "name": "d2-brazier-0-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "d2-brazier-1-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "d2-brazier-2-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "d2-brazier-3-charcoal",
+          "count": 23,
+          "triangles": 20
+        }
+      ],
+      "playerScale": [
+        1,
+        1,
+        1
+      ],
+      "modelScale": [
+        0.0217,
+        0.0217,
+        0.0217
+      ],
+      "fog": "1a1518",
+      "shadowExtent": 12
+    },
+    {
+      "id": "dungeon-test",
+      "boundary": {
+        "minX": -13,
+        "maxX": 13,
+        "minZ": -70,
+        "maxZ": 8
+      },
+      "spawn": {
+        "x": 0,
+        "z": 2
+      },
+      "camera": [
+        8,
+        10,
+        14
+      ],
+      "stats": {
+        "baixo": {
+          "draws": 126,
+          "triangles": 115857,
+          "programs": 215,
+          "lights": 1
+        },
+        "medio": {
+          "draws": 188,
+          "triangles": 220704,
+          "programs": 216,
+          "lights": 2
+        },
+        "alto": {
+          "draws": 188,
+          "triangles": 220704,
+          "programs": 217,
+          "lights": 4
+        }
+      },
+      "instanced": [
+        {
+          "name": "dungeon-brazier-0-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "dungeon-brazier-1-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "dungeon-brazier-2-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "dungeon-brazier-3-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "dungeon-brazier-4-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "dungeon-brazier-5-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "dungeon-brazier-6-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "dungeon-brazier-7-charcoal",
+          "count": 23,
+          "triangles": 20
+        }
+      ],
+      "playerScale": [
+        1,
+        1,
+        1
+      ],
+      "modelScale": [
+        0.0217,
+        0.0217,
+        0.0217
+      ],
+      "fog": "1a2218",
+      "shadowExtent": 12
+    },
+    {
+      "id": "city",
+      "boundary": {
+        "minX": -17,
+        "maxX": 17,
+        "minZ": -17,
+        "maxZ": 17
+      },
+      "spawn": {
+        "x": 5.8,
+        "z": -4.2
+      },
+      "camera": [
+        13.8,
+        10,
+        7.8
+      ],
+      "stats": {
+        "baixo": {
+          "draws": 93,
+          "triangles": 229237,
+          "programs": 222,
+          "lights": 1
+        },
+        "medio": {
+          "draws": 106,
+          "triangles": 231623,
+          "programs": 222,
+          "lights": 1
+        },
+        "alto": {
+          "draws": 106,
+          "triangles": 234423,
+          "programs": 222,
+          "lights": 1
+        }
+      },
+      "instanced": [
+        {
+          "name": "city-grass",
+          "count": 1300,
+          "triangles": 4
+        },
+        {
+          "name": "brazier-0-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "brazier-1-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "brazier-2-charcoal",
+          "count": 23,
+          "triangles": 20
+        },
+        {
+          "name": "brazier-3-charcoal",
+          "count": 23,
+          "triangles": 20
+        }
+      ],
+      "playerScale": [
+        1,
+        1,
+        1
+      ],
+      "modelScale": [
+        0.0217,
+        0.0217,
+        0.0217
+      ],
+      "fog": "a6acbd",
+      "shadowExtent": 24
+    }
+  ],
+  "errors": []
+}

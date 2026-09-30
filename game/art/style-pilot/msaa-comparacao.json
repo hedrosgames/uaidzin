@@ -1,0 +1,187 @@
+{
+  "viewport": [
+    1440,
+    900
+  ],
+  "dpr": 1,
+  "warmupFrames": 60,
+  "sampleFrames": 180,
+  "scenes": [
+    {
+      "id": "city",
+      "actualWorld": "city",
+      "quality": "medio",
+      "samples": 0,
+      "cpuSubmissionMs": {
+        "samples": 120,
+        "mean": 10.89833333361894,
+        "median": 11.100000001490116,
+        "p95": 15.200000002980232
+      },
+      "frameIntervalMs": {
+        "samples": 119,
+        "mean": 20.81848739500807,
+        "median": 16.69999999552965,
+        "p95": 18.5
+      },
+      "gpuRenderMs": {
+        "samples": 120,
+        "mean": 8.756092391666664,
+        "median": 8.687604,
+        "p95": 9.750156
+      },
+      "draws": {
+        "samples": 120,
+        "mean": 95.375,
+        "median": 93,
+        "p95": 93
+      },
+      "triangles": {
+        "samples": 120,
+        "mean": 172439.125,
+        "median": 156359,
+        "p95": 156359
+      },
+      "camera": [
+        11.05,
+        10.5,
+        3.1499999999999995
+      ]
+    },
+    {
+      "id": "city",
+      "actualWorld": "city",
+      "quality": "medio",
+      "samples": 2,
+      "cpuSubmissionMs": {
+        "samples": 120,
+        "mean": 9.211666666530073,
+        "median": 8,
+        "p95": 16
+      },
+      "frameIntervalMs": {
+        "samples": 119,
+        "mean": 23.04621848739496,
+        "median": 16.700000002980232,
+        "p95": 18.799999997019768
+      },
+      "gpuRenderMs": {
+        "samples": 120,
+        "mean": 16.534006925000007,
+        "median": 16.36875,
+        "p95": 17.949322
+      },
+      "draws": {
+        "samples": 120,
+        "mean": 95.375,
+        "median": 93,
+        "p95": 93
+      },
+      "triangles": {
+        "samples": 120,
+        "mean": 172439.125,
+        "median": 156359,
+        "p95": 156359
+      },
+      "camera": [
+        11.05,
+        10.5,
+        3.1499999999999995
+      ]
+    },
+    {
+      "id": "dungeon-1",
+      "actualWorld": "dungeon-1",
+      "quality": "medio",
+      "samples": 0,
+      "cpuSubmissionMs": {
+        "samples": 120,
+        "mean": 6.952500000099341,
+        "median": 7.399999998509884,
+        "p95": 11.699999995529652
+      },
+      "frameIntervalMs": {
+        "samples": 119,
+        "mean": 22.951260504164114,
+        "median": 16.69999999552965,
+        "p95": 18.599999994039536
+      },
+      "gpuRenderMs": {
+        "samples": 120,
+        "mean": 9.210443958333334,
+        "median": 9.143125,
+        "p95": 10.033333
+      },
+      "draws": {
+        "samples": 120,
+        "mean": 62.666666666666664,
+        "median": 61,
+        "p95": 69
+      },
+      "triangles": {
+        "samples": 120,
+        "mean": 60122.291666666664,
+        "median": 51235,
+        "p95": 93894
+      },
+      "camera": [
+        5.25,
+        10.5,
+        17.35
+      ]
+    },
+    {
+      "id": "dungeon-1",
+      "actualWorld": "dungeon-1",
+      "quality": "medio",
+      "samples": 2,
+      "cpuSubmissionMs": {
+        "samples": 120,
+        "mean": 4.049166666592161,
+        "median": 3.399999998509884,
+        "p95": 7.700000002980232
+      },
+      "frameIntervalMs": {
+        "samples": 119,
+        "mean": 24.16722689074378,
+        "median": 16.700000002980232,
+        "p95": 19.100000001490116
+      },
+      "gpuRenderMs": {
+        "samples": 120,
+        "mean": 16.17227340833334,
+        "median": 16.157343,
+        "p95": 16.943854
+      },
+      "draws": {
+        "samples": 120,
+        "mean": 62.666666666666664,
+        "median": 61,
+        "p95": 69
+      },
+      "triangles": {
+        "samples": 120,
+        "mean": 60122.291666666664,
+        "median": 51235,
+        "p95": 93894
+      },
+      "camera": [
+        5.25,
+        10.5,
+        17.35
+      ]
+    }
+  ],
+  "entries": [],
+  "errors": [],
+  "staticScene": true,
+  "idlePlayer": true,
+  "liveSimulation": false,
+  "hardware": {
+    "renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A7A8) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "timerQuery": true,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+    "timeScale": 1
+  },
+  "finished": "2026-09-30T09:43:34.736Z"
+}

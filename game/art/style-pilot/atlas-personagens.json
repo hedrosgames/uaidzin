@@ -1,0 +1,57 @@
+{
+  "estado": "Implementado e testado; aprovação visual de Felipe pendente",
+  "ferramenta": "image_gen integrada",
+  "uso": "Pintura dourada nas quatro classes e nos NPCs que reutilizam essas classes; seleção 3D usa o mesmo acabamento.",
+  "registroUV": "O shader consulta o atlas original nos UVs originais e protege pele, cabelo, tecidos e couro. A pintura gerada entra com peso máximo 0,45 somente onde original e pintura identificam dourado; regiões deslocadas da geração não substituem rosto ou tecido. Mistura suavizada para reduzir manchas duras e preservar o desenho da armadura.",
+  "arquivos": [
+    {
+      "classe": "TK",
+      "arquivo": "../../public/textures/characters-painted/TK.webp",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "bytes": 251122,
+      "original": "../../public/models/player/TK/texture.jpg",
+      "gerado": "C:/Users/Felipe/.codex/generated_images/01a0efa3-e1bc-7d60-bab0-c9ccd74cdd36/exec-9288d6b6-6575-4c2a-a52c-0c08574e8247.png",
+      "prompt": "EDIT THE FIRST INPUT IMAGE: it is an existing UV albedo atlas for the Thegn Knight game character. SECOND input is approved game rendering art direction only. Output a UV TEXTURE ATLAS, not a scene or a character illustration. Preserve exactly the first image's 1:1 UV layout, outlines, relative coordinates, all tiny islands and every face/eye/hair pixel position. No moving, resizing, rotating, merging or inventing islands. Keep dark leather dark brown, the hair chestnut, skin warm peach, eyes aligned. Repaint the EXISTING GOLD ARMOR SURFACES with deliberate painterly fantasy animation material matching the gold warrior in second input: amber gold middle planes, cream gold edge highlights, rich ochre shadow patches with muted violet accents, a few broad angular brush planes with clear value separation. Existing armor bevels/ornament contours should become crisp and readable; preserve their original coordinates. Remove muddy pale uniform look, add contrast inside existing islands. Skin shading clean with defined eye and brows, never gold skin. No metallic PBR reflection, no photographic grain, no new geometry drawing, no cast scene shadows. Painted broad strokes at moderate contrast, optimized albedo that will be shaded by game. No text, no border, no captions. Full square atlas same content framing as first input. Crucial pixel registration to original UV shapes and skin regions."
+    },
+    {
+      "classe": "FM",
+      "arquivo": "../../public/textures/characters-painted/FM.webp",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "bytes": 259380,
+      "original": "../../public/models/player/FM/texture.jpg",
+      "gerado": "C:/Users/Felipe/.codex/generated_images/01a0efa3-e1bc-7d60-bab0-c9ccd74cdd36/exec-6eae5bd2-8531-4bf7-b3c3-3cbdaf54106c.png",
+      "prompt": "EDIT THE FIRST INPUT IMAGE: it is the existing FM character UV albedo atlas. SECOND input is approved game art direction only. THIRD input is painterly gold texture rendering STYLE reference only; NEVER use its layout. Output ONLY THE FIRST IMAGE REPAINTED AS A UV ATLAS. Preserve EXACTLY original 1:1 normalized UV layout and registration: every island outline, every eye, nose, mouth, skin fragment, hair fragment, leather region, red cloth and ornament at its original coordinates. No island repositioning, rotating, resizing, merging, new islands or added features. Repaint only existing surfaces in vivid hand-painted animated fantasy style. Existing gold armor: warm amber middle planes, pale gold edge strokes, rich ochre shadow planes and restrained cool violet accents; clear value separation and 3-5 broad angular brush planes inside each original armor patch. Crisp preexisting bevel and decoration contours at original positions. Match THIRD input's gold painted treatment. Preserve first image's skin colors and facial features, hair hues, red/brown fabrics and leather. No gold skin, no altered face, no muddy uniform yellow. Paint moderate broad strokes, no photographic micrograin, no photoreal metallic reflection, no scene lighting or cast shadows. This is game ALBEDO texture, not a rendered character. Full square same image framing, no captions, no text, no border. UV placement fidelity is essential."
+    },
+    {
+      "classe": "BM",
+      "arquivo": "../../public/textures/characters-painted/BM.webp",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "bytes": 244098,
+      "original": "../../public/models/player/BM/texture.jpg",
+      "gerado": "C:/Users/Felipe/.codex/generated_images/01a0efa3-e1bc-7d60-bab0-c9ccd74cdd36/exec-cdeb62d2-49d7-4b8a-8558-64a3723e1402.png",
+      "prompt": "EDIT THE FIRST INPUT IMAGE: it is the existing BM character UV albedo atlas. SECOND input is approved game art direction only. THIRD input is painterly gold texture rendering STYLE reference only; NEVER use its layout. Output ONLY THE FIRST IMAGE REPAINTED AS A UV ATLAS. Preserve EXACTLY original 1:1 normalized UV layout and registration: every island outline, every eye, nose, mouth, skin fragment, hair fragment, leather region, red cloth and ornament at its original coordinates. No island repositioning, rotating, resizing, merging, new islands or added features. Repaint only existing surfaces in vivid hand-painted animated fantasy style. Existing gold armor: warm amber middle planes, pale gold edge strokes, rich ochre shadow planes and restrained cool violet accents; clear value separation and 3-5 broad angular brush planes inside each original armor patch. Crisp preexisting bevel and decoration contours at original positions. Match THIRD input's gold painted treatment. Preserve first image's skin colors and facial features, hair hues, red/brown fabrics and leather. No gold skin, no altered face, no muddy uniform yellow. Paint moderate broad strokes, no photographic micrograin, no photoreal metallic reflection, no scene lighting or cast shadows. This is game ALBEDO texture, not a rendered character. Full square same image framing, no captions, no text, no border. UV placement fidelity is essential."
+    },
+    {
+      "classe": "HT",
+      "arquivo": "../../public/textures/characters-painted/HT.webp",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "bytes": 261928,
+      "original": "../../public/models/player/HT/texture.jpg",
+      "gerado": "C:/Users/Felipe/.codex/generated_images/01a0efa3-e1bc-7d60-bab0-c9ccd74cdd36/exec-70a17e25-b236-428b-8309-471cbb6ad291.png",
+      "prompt": "EDIT THE FIRST INPUT IMAGE: it is the existing HT character UV albedo atlas. SECOND input is approved game art direction only. THIRD input is painterly gold texture rendering STYLE reference only; NEVER use its layout. Output ONLY THE FIRST IMAGE REPAINTED AS A UV ATLAS. Preserve EXACTLY original 1:1 normalized UV layout and registration: every island outline, every eye, nose, mouth, skin fragment, hair fragment, leather region, red cloth and ornament at its original coordinates. No island repositioning, rotating, resizing, merging, new islands or added features. Repaint only existing surfaces in vivid hand-painted animated fantasy style. Existing gold armor: warm amber middle planes, pale gold edge strokes, rich ochre shadow planes and restrained cool violet accents; clear value separation and 3-5 broad angular brush planes inside each original armor patch. Crisp preexisting bevel and decoration contours at original positions. Match THIRD input's gold painted treatment. Preserve first image's skin colors and facial features, hair hues, red/brown fabrics and leather. No gold skin, no altered face, no muddy uniform yellow. Paint moderate broad strokes, no photographic micrograin, no photoreal metallic reflection, no scene lighting or cast shadows. This is game ALBEDO texture, not a rendered character. Full square same image framing, no captions, no text, no border. UV placement fidelity is essential."
+    }
+  ],
+  "validacao": "Inspeção das quatro classes no runtime e no módulo real de seleção, sem erros de página ou shader. Capturas de detalhe usam câmera aproximada para inspecionar os materiais; global-final-* usa câmera normal."
+}

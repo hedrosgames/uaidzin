@@ -1,0 +1,241 @@
+{
+  "errors": [],
+  "render": {
+    "frame": 75,
+    "calls": 180,
+    "triangles": 477447,
+    "points": 178,
+    "lines": 0
+  },
+  "memory": {
+    "geometries": 71,
+    "textures": 50
+  },
+  "groundMaterial": "city-painted-paving",
+  "programs": [
+    {
+      "name": "city-painted-paving"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-painted-plaza"
+    },
+    {
+      "name": "city-fountain-stone"
+    },
+    {
+      "name": "fountain-submerged-stone"
+    },
+    {
+      "name": "EquirectangularToCubeUV"
+    },
+    {
+      "name": "SphericalGaussianBlur"
+    },
+    {
+      "name": "fountain-independent-water"
+    },
+    {
+      "name": "fountain-independent-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": "city-stall-1-wood"
+    },
+    {
+      "name": "city-stall-1-cloth"
+    },
+    {
+      "name": "city-stall-1-paint"
+    },
+    {
+      "name": "city-weapon-rack-iron"
+    },
+    {
+      "name": "CityNpc_merchant"
+    },
+    {
+      "name": "city-crafted-wood"
+    },
+    {
+      "name": "city-crafted-iron"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "TK_Material"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "TK_Material"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-painted-paving"
+    },
+    {
+      "name": "city-painted-plaza"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-crafted-iron"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-bulletin-board-paper"
+    },
+    {
+      "name": "city-bulletin-board-wood"
+    },
+    {
+      "name": "city-fountain-stone"
+    },
+    {
+      "name": "fountain-submerged-stone"
+    },
+    {
+      "name": "city-stall-2-cloth"
+    },
+    {
+      "name": "CityNpc_sage"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "fountain-independent-water"
+    },
+    {
+      "name": "fountain-independent-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "OutputShader"
+    },
+    {
+      "name": "city-wagon-iron"
+    }
+  ],
+  "playerScale": [
+    1,
+    1,
+    1
+  ]
+}

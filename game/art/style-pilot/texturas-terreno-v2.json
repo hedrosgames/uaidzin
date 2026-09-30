@@ -1,0 +1,33 @@
+{
+  "data": "2026-09-30",
+  "ferramenta": "image_gen integrada",
+  "texturas": [
+    {
+      "arquivo": "../../public/textures/city-painted/meadow.webp",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "fonte": "exec-2b65f51f-9477-457e-91ae-e0a402ab624a.png",
+      "prompt": "Create a production-ready seamless square hand-painted grass ground ALBEDO texture for a stylized fantasy action RPG. Flat top-down orthographic ground only, completely fills canvas, 1024 square. It should feel painted with broad confident gouache brush shapes like a beautiful animated fantasy background: luminous yellow-olive and spring green middle values, cooler sage green broad low contrast patches, warm yellow-green small broad highlights. About 12 large interlocking brush shapes across the entire width, with quieter flat areas within each shape. VERY restrained texture detail: no tiny flecks, no grain, no realistic grass strands, no leaf clusters, no noisy camouflage or leopard spots. 95 percent short green turf, only subtle olive gaps, no exposed orange dirt patches, no rocks, no flowers, no scattered objects, no cast shadows, no perspective. All four edges tile seamlessly. Colors relatively light and saturated but natural, never neon: overall spring meadow yellow-green mixed with sage, dark tones no lower than medium green. Legible calm surface under separate 3D tall grass and character. Single continuous texture, no panels, no border, no labels. Warm fantasy painterly game environment, not a photograph."
+    },
+    {
+      "arquivo": "../../public/textures/city-painted/earth.webp",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "fonte": "exec-64f88362-8e56-452f-8741-415a4de2f9ad.png",
+      "prompt": "Production-ready seamless 1024 square ALBEDO texture of a fantasy footpath: entirely flat top-down compacted warm sandy earth painted with broad confident gouache strokes. Calm pale warm ochre, dusty peach and muted sand, soft broad lavender taupe shadow shapes. Like the ground in a beautifully hand-painted animated fantasy landscape, suitable for a stylized 3D RPG. About 10 to 14 large overlapping angular brush shapes across the width; broad clear middle planes, sparse small shallow worn edges. Very low contrast, generous quiet areas. No photographic grain, no tiny noise, no grit, no pebbles, no leaves, no grass, no cracked dry mud, no stones, no perspective, no scene shadows. Not orange, not brown dark mud. Seamlessly repeat all four sides. Full bleed texture only, no border or text."
+    },
+    {
+      "arquivo": "../../public/textures/city-painted/grass.webp",
+      "dimensoes": [
+        512,
+        512
+      ],
+      "fonte": "exec-50d05d23-08e5-41e0-8c5f-91d5e79161f3.png",
+      "prompt": "A single production-ready hand-painted grass tuft cutout for a stylized fantasy 3D action RPG, transparent background. Front view upright tuft with 9 to 14 long broad tapering blades, loose open silhouette, blades grow from one narrow grounded base at the very bottom center. Tall graceful simple painted leaves in warm yellow-green sunlit faces and muted sage cool planes, two or three broad gouache strokes per blade. Bright mossy middle values, pale golden tips, no black outlines. No tiny grass, no grain, no intricate clusters, no photographic detail. One simple small tuft filling a square canvas, wider at the top than the compact base, generous transparent gaps between blades. Fantasy animation background style. No earth, no rocks, no shadow, no horizon. Transparent exterior and gaps. Do not make a rectangular hedge or dense bush. The long blades lean gently outwards. Texture usable on intersecting upright grass cards viewed from a high isometric camera."
+    }
+  ]
+}

@@ -1,0 +1,256 @@
+{
+  "errors": [],
+  "render": {
+    "frame": 75,
+    "calls": 1,
+    "triangles": 1,
+    "points": 0,
+    "lines": 0
+  },
+  "memory": {
+    "geometries": 78,
+    "textures": 53
+  },
+  "groundMaterial": "city-granite-earth",
+  "programs": [
+    {
+      "name": "city-granite-earth"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-radial-slate"
+    },
+    {
+      "name": "city-radial-slate"
+    },
+    {
+      "name": "city-radial-slate"
+    },
+    {
+      "name": "city-fountain-stone"
+    },
+    {
+      "name": "fountain-submerged-stone"
+    },
+    {
+      "name": "EquirectangularToCubeUV"
+    },
+    {
+      "name": "SphericalGaussianBlur"
+    },
+    {
+      "name": "fountain-independent-water"
+    },
+    {
+      "name": "fountain-independent-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": "city-stall-1-wood"
+    },
+    {
+      "name": "city-stall-1-cloth"
+    },
+    {
+      "name": "city-stall-1-paint"
+    },
+    {
+      "name": "city-weapon-rack-iron"
+    },
+    {
+      "name": "CityNpc_merchant"
+    },
+    {
+      "name": "city-crafted-wood"
+    },
+    {
+      "name": "city-crafted-iron"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "TK_Material"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "TK_Material"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-granite-earth"
+    },
+    {
+      "name": "city-radial-slate"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-radial-slate"
+    },
+    {
+      "name": "city-radial-slate"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-crafted-iron"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-stall-1-paint"
+    },
+    {
+      "name": "city-fountain-stone"
+    },
+    {
+      "name": "fountain-submerged-stone"
+    },
+    {
+      "name": "city-stall-1-wood"
+    },
+    {
+      "name": "city-stall-1-cloth"
+    },
+    {
+      "name": "CityNpc_merchant"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "fountain-independent-water"
+    },
+    {
+      "name": "fountain-independent-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "OutputShader"
+    },
+    {
+      "name": "city-crafted-wood"
+    },
+    {
+      "name": "city-wagon-iron"
+    }
+  ],
+  "playerScale": [
+    1,
+    1,
+    1
+  ]
+}

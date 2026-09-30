@@ -1,0 +1,357 @@
+{
+  "data": "2026-09-30",
+  "conclusao": "Clipes amostrados não dissolvem geometricamente os rostos. Encontrado e removido componente original de dois triângulos soltos junto ao rosto do TK. Suavidade facial também está no atlas original; acabamento v8 preserva UVs e aplica nitidez limitada.",
+  "metodo": [
+    "GLTFLoader Three.js 0.170; leitura de atributos e bind matrices sem materiais; distâncias entre pares de vértices com peso Head > 0.99999 em 20 tempos por clip.",
+    "Comparação original versus v5: mesmo objeto, pose idle embutido t=0.8, câmera frontal mirando Head+0.06Y, luz ambiente branca1.4 e direcional branca2.2, render 550x720 por painel. Nenhuma alteração de geometria/UV/escala."
+  ],
+  "limites": [
+    "Pares amostrados nos vértices predominantemente rígidos da cabeça; não equivale a auditoria visual de todos os triângulos nem de todos os clips.",
+    "Captura usa idle embutido de cada classe; TK runtime usa shared idle, auditado numericamente.",
+    "Não mede perda subjetiva de detalhe nem prova alinhamento pixel a pixel de toda ilha UV. Aprovação visual pertence a Felipe."
+  ],
+  "materiais": {
+    "gpu": "Textura sRGB tem decode automático no sampler GPU; texture2D original recebe valores lineares. Nenhum bug concreto de colorSpace/flipY identificado.",
+    "ghost": "Preview não cria ghost. Runtime inicia ghosts invisíveis, compartilhando geometria e skeleton com mesh base.",
+    "original": "baseColorTexture srgb, flipY false, UV0, offset [0,0], repeat [1,1], 1024x1024 nas quatro classes"
+  },
+  "rig": [
+    {
+      "id": "TK",
+      "meshes": [
+        {
+          "bindError": 6.929246261222488e-7,
+          "name": "TK_Body",
+          "vertices": 12492,
+          "sumErr": 4.470348358154297e-8,
+          "bad": 0,
+          "nerr": 1.3284690392190157e-7,
+          "headCount": 1468,
+          "multi": 0,
+          "uvCount": 12492,
+          "bones": 65
+        }
+      ],
+      "anim": [
+        {
+          "name": "embedded",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.00000216879589487462
+        },
+        {
+          "name": "models/player/shared/anims/idle.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.000001611449206961879
+        },
+        {
+          "name": "models/anims/human/run.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000016644204876570257
+        },
+        {
+          "name": "models/anims/human/idle_2h.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.000001616066027665397
+        },
+        {
+          "name": "models/anims/human/attack.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000011300454598739407
+        }
+      ]
+    },
+    {
+      "id": "FM",
+      "meshes": [
+        {
+          "bindError": 4.962961722698722e-7,
+          "name": "FM_Body",
+          "vertices": 13497,
+          "sumErr": 4.470348358154297e-8,
+          "bad": 0,
+          "nerr": 1.1199939309314288e-7,
+          "headCount": 3484,
+          "multi": 0,
+          "uvCount": 13497,
+          "bones": 65
+        }
+      ],
+      "anim": [
+        {
+          "name": "embedded",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.00000194687529031512
+        },
+        {
+          "name": "models/player/shared/anims/idle.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000030419365089073835
+        },
+        {
+          "name": "models/anims/human/run.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.000002739350488667469
+        },
+        {
+          "name": "models/anims/human/idle_2h.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.000002185518194863789
+        },
+        {
+          "name": "models/anims/human/attack.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000012951630097290945
+        }
+      ]
+    },
+    {
+      "id": "BM",
+      "meshes": [
+        {
+          "bindError": 5.40990184056539e-7,
+          "name": "BM_Body",
+          "vertices": 10645,
+          "sumErr": 4.9534719437360764e-8,
+          "bad": 0,
+          "nerr": 1.149867019378803e-7,
+          "headCount": 1235,
+          "multi": 0,
+          "uvCount": 10645,
+          "bones": 65
+        }
+      ],
+      "anim": [
+        {
+          "name": "embedded",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000018348339434481886
+        },
+        {
+          "name": "models/player/shared/anims/idle.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000018348339576590433
+        },
+        {
+          "name": "models/anims/human/run.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000013947723740415086
+        },
+        {
+          "name": "models/anims/human/idle_2h.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000016747060449517903
+        },
+        {
+          "name": "models/anims/human/attack.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000010586196879103227
+        }
+      ]
+    },
+    {
+      "id": "HT",
+      "meshes": [
+        {
+          "bindError": 6.92358411789884e-7,
+          "name": "HT_Body",
+          "vertices": 12901,
+          "sumErr": 4.6566128730773926e-8,
+          "bad": 0,
+          "nerr": 1.1216234163669014e-7,
+          "headCount": 1764,
+          "multi": 0,
+          "uvCount": 12901,
+          "bones": 65
+        }
+      ],
+      "anim": [
+        {
+          "name": "embedded",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000013631593303031764
+        },
+        {
+          "name": "models/player/shared/anims/idle.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000010486162533851484
+        },
+        {
+          "name": "models/anims/human/run.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000011431625690505598
+        },
+        {
+          "name": "models/anims/human/idle_2h.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000017318445948433236
+        },
+        {
+          "name": "models/anims/human/attack.glb",
+          "missing": 0,
+          "headPairDistanceMaxDrift": 0.0000013124557796118097
+        }
+      ]
+    }
+  ],
+  "capturas": [
+    {
+      "id": "TK",
+      "info": [
+        {
+          "mesh": "TK_Body",
+          "texture": {
+            "colorSpace": "srgb",
+            "flipY": false,
+            "width": 1024,
+            "height": 1024,
+            "channel": 0,
+            "offset": [
+              0,
+              0
+            ],
+            "repeat": [
+              1,
+              1
+            ]
+          },
+          "uvCount": 12492
+        }
+      ],
+      "camera": [
+        -0.0003107925048885347,
+        0.773176135757208,
+        0.9384989000994114
+      ],
+      "target": [
+        -0.0003107925048885347,
+        0.773176135757208,
+        0.03849890009941133
+      ],
+      "time": 0.8
+    },
+    {
+      "id": "FM",
+      "info": [
+        {
+          "mesh": "FM_Body",
+          "texture": {
+            "colorSpace": "srgb",
+            "flipY": false,
+            "width": 1024,
+            "height": 1024,
+            "channel": 0,
+            "offset": [
+              0,
+              0
+            ],
+            "repeat": [
+              1,
+              1
+            ]
+          },
+          "uvCount": 13497
+        }
+      ],
+      "camera": [
+        0.00044619724305591514,
+        0.7112254800944897,
+        0.8666402231841643
+      ],
+      "target": [
+        0.00044619724305591514,
+        0.7112254800944897,
+        -0.033359776815835664
+      ],
+      "time": 0.8
+    },
+    {
+      "id": "BM",
+      "info": [
+        {
+          "mesh": "BM_Body",
+          "texture": {
+            "colorSpace": "srgb",
+            "flipY": false,
+            "width": 1024,
+            "height": 1024,
+            "channel": 0,
+            "offset": [
+              0,
+              0
+            ],
+            "repeat": [
+              1,
+              1
+            ]
+          },
+          "uvCount": 10645
+        }
+      ],
+      "camera": [
+        0.01674183233396685,
+        0.7432640157700132,
+        0.9041672599370435
+      ],
+      "target": [
+        0.01674183233396685,
+        0.7432640157700132,
+        0.004167259937043482
+      ],
+      "time": 0.8
+    },
+    {
+      "id": "HT",
+      "info": [
+        {
+          "mesh": "HT_Body",
+          "texture": {
+            "colorSpace": "srgb",
+            "flipY": false,
+            "width": 1024,
+            "height": 1024,
+            "channel": 0,
+            "offset": [
+              0,
+              0
+            ],
+            "repeat": [
+              1,
+              1
+            ]
+          },
+          "uvCount": 12901
+        }
+      ],
+      "camera": [
+        -0.0057820559792153975,
+        0.7436226713653782,
+        0.8852746653293431
+      ],
+      "target": [
+        -0.0057820559792153975,
+        0.7436226713653782,
+        -0.014725334670656922
+      ],
+      "time": 0.8
+    }
+  ],
+  "fontes": [
+    "game/src/presentation/player/PlayerView.ts",
+    "game/public/boot/assets/char-preview.mjs",
+    "game/public/boot/assets/character-materials.mjs",
+    "game/src/presentation/rendering/PaintedCharacter.ts",
+    "game/public/models/player/{TK,FM,BM,HT}/{classe}.glb",
+    "game/public/models/player/{TK,FM,BM,HT}/texture.jpg",
+    "game/public/textures/characters-painted/{classe}.webp"
+  ],
+  "reproducao": "Scripts e capturas temporários: C:/Users/Felipe/AppData/Local/Temp/uaidzin-rig-review/rig.mjs, visual.mjs e {TK,FM,BM,HT}-original-v5.png",
+  "proposta": "Preservar atlas original, alterar somente regiões de metal em variante controlada; não editar rig, weights, clip adaptation ou escala para corrigir este sintoma.",
+  "geometriaSoltaTK": {
+    "mesh": "TK_Body",
+    "vertices": 4,
+    "triangulos": 2,
+    "causa": "Componente desconectado original, junto ao rosto, ligado predominantemente ao osso Head.",
+    "correcao": "Remoção dos seis índices após confirmar assinatura exata de índices e posições; atributos, pesos, UVs e escala preservados.",
+    "teste": "character-geometry.test.js: quatro GLBs reais, quatro testes passaram; correção idempotente."
+  }
+}

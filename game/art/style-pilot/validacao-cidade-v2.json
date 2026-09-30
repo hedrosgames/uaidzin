@@ -1,0 +1,211 @@
+{
+  "errors": [],
+  "render": {
+    "frame": 60,
+    "calls": 175,
+    "triangles": 614873,
+    "points": 178,
+    "lines": 0
+  },
+  "memory": {
+    "geometries": 75,
+    "textures": 38
+  },
+  "groundMaterial": "city-painted-paving",
+  "programs": [
+    {
+      "name": "city-painted-paving"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-painted-plaza"
+    },
+    {
+      "name": "city-painted-fountain"
+    },
+    {
+      "name": "fountain-painted-basin"
+    },
+    {
+      "name": "fountain-painted-water"
+    },
+    {
+      "name": "fountain-painted-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": "EquirectangularToCubeUV"
+    },
+    {
+      "name": "SphericalGaussianBlur"
+    },
+    {
+      "name": "CityNpc_merchant"
+    },
+    {
+      "name": "city-painted-wood"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "TK_Material"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "TK_Material"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-painted-paving"
+    },
+    {
+      "name": "city-painted-plaza"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "city-painted-bulletin-board"
+    },
+    {
+      "name": "fountain-painted-basin"
+    },
+    {
+      "name": "CityNpc_sage"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "fountain-painted-water"
+    },
+    {
+      "name": "fountain-painted-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-falling-water"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": "fountain-impact-ripple"
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": ""
+    },
+    {
+      "name": "OutputShader"
+    }
+  ],
+  "playerScale": [
+    1,
+    1,
+    1
+  ]
+}

@@ -1,0 +1,269 @@
+{
+  "sets": [
+    {
+      "set": "dual-axe",
+      "materials": [
+        {
+          "name": "axe",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "axe",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        }
+      ],
+      "modelScale": [
+        2.119732354251808,
+        2.119732354251808,
+        2.119732354251808
+      ]
+    },
+    {
+      "set": "axe-shield",
+      "materials": [
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "axe",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        }
+      ],
+      "modelScale": [
+        2.119732354251808,
+        2.119732354251808,
+        2.119732354251808
+      ]
+    },
+    {
+      "set": "sword-shield",
+      "materials": [
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "sword",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        }
+      ],
+      "modelScale": [
+        2.119732354251808,
+        2.119732354251808,
+        2.119732354251808
+      ]
+    },
+    {
+      "set": "dual-sword",
+      "materials": [
+        {
+          "name": "sword",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "sword",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        }
+      ],
+      "modelScale": [
+        2.119732354251808,
+        2.119732354251808,
+        2.119732354251808
+      ]
+    },
+    {
+      "set": "greatsword",
+      "materials": [
+        {
+          "name": "sword-2",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        }
+      ],
+      "modelScale": [
+        2.119732354251808,
+        2.119732354251808,
+        2.119732354251808
+      ]
+    },
+    {
+      "set": "dual-gloves",
+      "materials": [
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        }
+      ],
+      "modelScale": [
+        2.119732354251808,
+        2.119732354251808,
+        2.119732354251808
+      ]
+    },
+    {
+      "set": "staff-shield",
+      "materials": [
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        },
+        {
+          "name": "staff",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        }
+      ],
+      "modelScale": [
+        2.119732354251808,
+        2.119732354251808,
+        2.119732354251808
+      ]
+    },
+    {
+      "set": "greatstaff",
+      "materials": [
+        {
+          "name": "staff",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        }
+      ],
+      "modelScale": [
+        2.119732354251808,
+        2.119732354251808,
+        2.119732354251808
+      ]
+    },
+    {
+      "set": "bow",
+      "materials": [
+        {
+          "name": "bow",
+          "painted": true,
+          "roughness": 0.82,
+          "metalness": 0.12
+        }
+      ],
+      "modelScale": [
+        2.119732354251808,
+        2.119732354251808,
+        2.119732354251808
+      ]
+    }
+  ],
+  "errors": []
+}

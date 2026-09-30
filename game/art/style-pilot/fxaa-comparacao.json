@@ -1,0 +1,187 @@
+{
+  "viewport": [
+    1440,
+    900
+  ],
+  "dpr": 1,
+  "warmupFrames": 60,
+  "sampleFrames": 120,
+  "scenes": [
+    {
+      "id": "city",
+      "actualWorld": "city",
+      "quality": "medio",
+      "samples": 0,
+      "cpuSubmissionMs": {
+        "samples": 120,
+        "mean": 5.95416666654249,
+        "median": 5.200000002980232,
+        "p95": 9.800000011920929
+      },
+      "frameIntervalMs": {
+        "samples": 119,
+        "mean": 17.481512605142193,
+        "median": 16.700000002980232,
+        "p95": 18.200000002980232
+      },
+      "gpuRenderMs": {
+        "samples": 120,
+        "mean": 8.036362816666669,
+        "median": 7.979427,
+        "p95": 9.29401
+      },
+      "draws": {
+        "samples": 120,
+        "mean": 95.375,
+        "median": 93,
+        "p95": 93
+      },
+      "triangles": {
+        "samples": 120,
+        "mean": 172439.125,
+        "median": 156359,
+        "p95": 156359
+      },
+      "camera": [
+        11.05,
+        10.5,
+        3.1499999999999995
+      ]
+    },
+    {
+      "id": "city",
+      "actualWorld": "city",
+      "quality": "medio",
+      "samples": 1,
+      "cpuSubmissionMs": {
+        "samples": 120,
+        "mean": 4.914166667312384,
+        "median": 4.5,
+        "p95": 9.5
+      },
+      "frameIntervalMs": {
+        "samples": 119,
+        "mean": 18.903361344537814,
+        "median": 16.5,
+        "p95": 18.5
+      },
+      "gpuRenderMs": {
+        "samples": 120,
+        "mean": 10.260216966666661,
+        "median": 10.177708,
+        "p95": 11.24375
+      },
+      "draws": {
+        "samples": 120,
+        "mean": 96.375,
+        "median": 94,
+        "p95": 94
+      },
+      "triangles": {
+        "samples": 120,
+        "mean": 172440.125,
+        "median": 156360,
+        "p95": 156360
+      },
+      "camera": [
+        11.05,
+        10.5,
+        3.1499999999999995
+      ]
+    },
+    {
+      "id": "dungeon-1",
+      "actualWorld": "dungeon-1",
+      "quality": "medio",
+      "samples": 0,
+      "cpuSubmissionMs": {
+        "samples": 120,
+        "mean": 3.3466666668653486,
+        "median": 3.3999999910593033,
+        "p95": 5
+      },
+      "frameIntervalMs": {
+        "samples": 119,
+        "mean": 19.047058823479325,
+        "median": 16.69999998807907,
+        "p95": 17.80000001192093
+      },
+      "gpuRenderMs": {
+        "samples": 120,
+        "mean": 8.788270816666664,
+        "median": 8.724114,
+        "p95": 9.742552
+      },
+      "draws": {
+        "samples": 120,
+        "mean": 62.6,
+        "median": 61,
+        "p95": 69
+      },
+      "triangles": {
+        "samples": 120,
+        "mean": 59766.8,
+        "median": 51235,
+        "p95": 93894
+      },
+      "camera": [
+        5.25,
+        10.5,
+        17.35
+      ]
+    },
+    {
+      "id": "dungeon-1",
+      "actualWorld": "dungeon-1",
+      "quality": "medio",
+      "samples": 1,
+      "cpuSubmissionMs": {
+        "samples": 120,
+        "mean": 4.0399999992301066,
+        "median": 3.7999999970197678,
+        "p95": 5.5999999940395355
+      },
+      "frameIntervalMs": {
+        "samples": 119,
+        "mean": 21.57226890751294,
+        "median": 16.700000002980232,
+        "p95": 18
+      },
+      "gpuRenderMs": {
+        "samples": 120,
+        "mean": 9.915822833333335,
+        "median": 9.747343,
+        "p95": 10.974895
+      },
+      "draws": {
+        "samples": 120,
+        "mean": 63.666666666666664,
+        "median": 62,
+        "p95": 70
+      },
+      "triangles": {
+        "samples": 120,
+        "mean": 60123.291666666664,
+        "median": 51236,
+        "p95": 93895
+      },
+      "camera": [
+        5.25,
+        10.5,
+        17.35
+      ]
+    }
+  ],
+  "entries": [],
+  "errors": [],
+  "staticScene": true,
+  "idlePlayer": true,
+  "liveSimulation": false,
+  "hardware": {
+    "renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A7A8) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "timerQuery": true,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+    "timeScale": 1
+  },
+  "finished": "2026-09-30T14:33:05.871Z"
+}

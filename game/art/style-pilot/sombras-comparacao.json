@@ -1,0 +1,187 @@
+{
+  "viewport": [
+    1440,
+    900
+  ],
+  "dpr": 1,
+  "warmupFrames": 60,
+  "sampleFrames": 180,
+  "scenes": [
+    {
+      "id": "city",
+      "shadowEveryFrame": false,
+      "actualWorld": "city",
+      "quality": "medio",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 4.885555555505885,
+        "median": 4.5,
+        "p95": 8.399999998509884
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 17.414525139681455,
+        "median": 16.69999999552965,
+        "p95": 17.799999997019768
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 8.138450911111116,
+        "median": 8.089687,
+        "p95": 9.174739
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 95.4,
+        "median": 93,
+        "p95": 93
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 173475.57777777777,
+        "median": 156359,
+        "p95": 156359
+      },
+      "camera": [
+        11.05,
+        10.5,
+        3.1499999999999995
+      ]
+    },
+    {
+      "id": "city",
+      "shadowEveryFrame": true,
+      "actualWorld": "city",
+      "quality": "medio",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 5.926111111582982,
+        "median": 6,
+        "p95": 11.699999995529652
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 19.44804469275408,
+        "median": 16.69999999552965,
+        "p95": 18.200000002980232
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 9.197590377777782,
+        "median": 9.195989,
+        "p95": 9.705729
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 147,
+        "median": 147,
+        "p95": 147
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 541482,
+        "median": 541482,
+        "p95": 541482
+      },
+      "camera": [
+        11.05,
+        10.5,
+        3.1499999999999995
+      ]
+    },
+    {
+      "id": "dungeon-1",
+      "shadowEveryFrame": false,
+      "actualWorld": "dungeon-1",
+      "quality": "medio",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 3.6383333335734074,
+        "median": 3.600000001490116,
+        "p95": 4.800000004470348
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 20.207262569840726,
+        "median": 16.600000001490116,
+        "p95": 18
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 8.81114246111111,
+        "median": 8.826354,
+        "p95": 10.586927
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 62,
+        "median": 61,
+        "p95": 66
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 59606.8,
+        "median": 51235,
+        "p95": 93094
+      },
+      "camera": [
+        5.25,
+        10.5,
+        17.35
+      ]
+    },
+    {
+      "id": "dungeon-1",
+      "shadowEveryFrame": true,
+      "actualWorld": "dungeon-1",
+      "quality": "medio",
+      "cpuSubmissionMs": {
+        "samples": 180,
+        "mean": 3.5538888888640536,
+        "median": 3.5999999940395355,
+        "p95": 4.899999998509884
+      },
+      "frameIntervalMs": {
+        "samples": 179,
+        "mean": 21.885474860335197,
+        "median": 16.700000002980232,
+        "p95": 17.899999998509884
+      },
+      "gpuRenderMs": {
+        "samples": 180,
+        "mean": 9.034663866666666,
+        "median": 8.947916,
+        "p95": 10.65302
+      },
+      "draws": {
+        "samples": 180,
+        "mean": 66,
+        "median": 66,
+        "p95": 66
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 93094,
+        "median": 93094,
+        "p95": 93094
+      },
+      "camera": [
+        5.25,
+        10.5,
+        17.35
+      ]
+    }
+  ],
+  "entries": [],
+  "errors": [],
+  "staticScene": true,
+  "idlePlayer": true,
+  "liveSimulation": false,
+  "hardware": {
+    "renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A7A8) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "timerQuery": true,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+    "timeScale": 1
+  },
+  "finished": "2026-09-30T02:30:45.223Z"
+}

@@ -1,0 +1,178 @@
+{
+  "initial": {
+    "world": "city",
+    "hemi": 0.85,
+    "key": 2.7,
+    "fog": "a6acbd",
+    "exposure": 1.15
+  },
+  "cemetery": {
+    "world": "dungeon-2",
+    "hemi": 0.55,
+    "key": 2.1,
+    "fog": "1a1518",
+    "exposure": 1.15
+  },
+  "returned": {
+    "world": "city",
+    "hemi": 0.85,
+    "key": 2.7,
+    "fog": "a6acbd",
+    "exposure": 1.15
+  },
+  "grass": {
+    "fullGrass": 2000,
+    "mediumGrass": 1300,
+    "lowGrass": 700,
+    "trianglesPerTuft": 4
+  },
+  "props": [
+    {
+      "name": "prop-fountain",
+      "meshes": 19,
+      "materialSlots": 19
+    },
+    {
+      "name": "prop-stall-1",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-weapon-rack",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-stall-bakery",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-stall-1",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-stall-2",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-stall-bakery",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wagon",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-bulletin-board",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    },
+    {
+      "name": "prop-wall",
+      "meshes": 1,
+      "materialSlots": 1
+    }
+  ],
+  "failures": [],
+  "errors": []
+}

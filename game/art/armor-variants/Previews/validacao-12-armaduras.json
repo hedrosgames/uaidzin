@@ -1,0 +1,103 @@
+{
+  "models": 12,
+  "classes": [
+    {
+      "classId": "TK",
+      "surfaces": 1,
+      "initialScale": [
+        0.0217,
+        0.0217,
+        0.0217
+      ],
+      "finalScale": [
+        0.0217,
+        0.0217,
+        0.0217
+      ],
+      "textureSizes": [
+        [
+          1254,
+          1254
+        ],
+        [
+          1254,
+          1254
+        ]
+      ]
+    },
+    {
+      "classId": "FM",
+      "surfaces": 1,
+      "initialScale": [
+        0.0218,
+        0.0218,
+        0.0218
+      ],
+      "finalScale": [
+        0.0218,
+        0.0218,
+        0.0218
+      ],
+      "textureSizes": [
+        [
+          1254,
+          1254
+        ],
+        [
+          1254,
+          1254
+        ]
+      ]
+    },
+    {
+      "classId": "BM",
+      "surfaces": 1,
+      "initialScale": [
+        0.0216,
+        0.0216,
+        0.0216
+      ],
+      "finalScale": [
+        0.0216,
+        0.0216,
+        0.0216
+      ],
+      "textureSizes": [
+        [
+          1254,
+          1254
+        ],
+        [
+          1254,
+          1254
+        ]
+      ]
+    },
+    {
+      "classId": "HT",
+      "surfaces": 1,
+      "initialScale": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "finalScale": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "textureSizes": [
+        [
+          1254,
+          1254
+        ],
+        [
+          1254,
+          1254
+        ]
+      ]
+    }
+  ],
+  "shaderFailures": 0,
+  "errors": []
+}

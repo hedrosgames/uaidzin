@@ -1,0 +1,82 @@
+{
+  "etapa": "Rodada 30/09 testada; aceite artístico pendente e refinamento facial do TK ainda parcial",
+  "ferramenta": "image_gen integrada",
+  "conceito": "conceito-aprovado.png",
+  "arquivos": [
+    {
+      "arquivo": "../../public/textures/city-painted/paving.webp",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "bytes": 141886,
+      "uso": "Piso geral com repetição espelhada e máscara de canteiros 256x256",
+      "prompt": "Create a production-ready seamless tileable hand-painted stone paving ALBEDO texture for the approved painterly fantasy RPG. Square 1024x1024. Strictly orthographic straight overhead flat texture filling the entire square edge to edge, NO perspective, NO scenery, NO text, NO border. About 9 to 11 irregular fitted stones across the width, medium-large loosely rectangular flagstones with gently chipped polygonal corners, natural staggered courses with a few smaller joining stones. Narrow restrained muted lavender-grey grout, never black thick outlines. Warm muted sandstone, dusty peach, pale desaturated clay, balanced with 30 percent cool dusty lavender-grey stones. Bright mid-value pigment, not white, not oversaturated orange. Clearly PAINTED like an animated fantasy background: each slab has 3-5 broad angular visible brush-shaped tonal patches with dry gouache edge accents, generous calm middle planes, selective small wear marks. No photographic grain, no tiny noise, no gritty speckles, no gradients making puffy rubber stones, no obvious deep relief. Neutral even diffuse illumination, no cast shadows, no directional scene lighting, no baked sunlight blobs, no ambient occlusion around every stone. No grass, plants, dirt patches or decoration. All four edges must wrap seamlessly horizontally and vertically; stones clipped at opposite edges continue precisely. Varied stone sizes and subtle hues avoid a visible repeated motif. Suitable for ground seen from an isometric game camera. Single texture only."
+    },
+    {
+      "arquivo": "../../public/textures/city-painted/plaza.webp",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "bytes": 184028,
+      "uso": "Praça, meio-fio e base da fonte; material compartilhado e coordenadas do mundo",
+      "prompt": "Create one square flat overhead hand-painted ALBEDO texture for a circular fountain plaza in a fantasy RPG. Input is MATERIAL AND PALETTE REFERENCE ONLY. Match its muted sandstone/peach/ochre and dusty lavender stone colors, flat broad brush strokes, discreet narrow grey-purple joints and softly chipped slab corners. Replace its straight irregular paving layout with CONCENTRIC CIRCULAR RINGS of stone slabs, centered precisely at image center (50%,50%). About 9 concentric courses between center and mid-edge, slabs ~0.7m wide in a plaza 12.8m across, rings have staggered angular seams. The entire square must be covered by radial paving continuing beyond all 4 edges and corners: NO isolated disk, no grass, no backdrop or margin, no transparency. The central area is plain small stone slabs, no decorative emblem. Asymmetry within individual slab outlines but circular courses maintained. Half warm neutral taupe/sandstone/peach stones, half muted dusty lavender grey. Brush-shaped color variations grouped into broad quiet planes, sparse wear, no grain or photographic noise. Strict orthographic top down, NO perspective, NO cast shadows, NO fountain or other objects, NO text, NO border, NO pattern drawn on stones. Even neutral diffuse lighting suitable as a game texture, no baked sunset. Single full-bleed texture, 1024 by 1024 pixels."
+    }
+  ],
+  "escopo": "Cidade, D1, cemitério, mundo compartilhado de D3–D8, quatro classes, NPCs e seleção 3D. D1 com três zonas retangulares de 4× a área anterior.",
+  "validacao": "Build, typecheck, smoke, 15 testes focados de armadura/save e nove regressões de armadura/escala/clipes passaram. 12 renders, três qualidades e transições sem erros. Seleção real carregou prata a partir de save. Suíte completa não declarada verde.",
+  "otimizacao": "Mapas WebP 512–1024; grama de 4–6 triângulos por tufo e setores com culling; personagens e armas sem micro-FBM, normal/roughness/AO maps ou reflexão procedural; sombras e luzes com orçamento; far 90. Amostra local de GPU em cenas estáticas, Intel UHD, 1440×900/DPR 1; não é FPS de combate nem comparação da branch anterior.",
+  "atlasPersonagens": "../armor-variants/manifesto.json; runtime usa public/textures/armor-painted/{classe}/{gold,silver,adamant}.webp",
+  "texturasGlobais": [
+    {
+      "arquivo": "../../public/textures/city-painted/field.webp",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "bytes": 180032,
+      "origem": "image_gen integrada",
+      "direcao": "Albedo repetível de campo em gouache, manchas largas de grama oliva e terra ocre, sem objetos, perspectiva, granulação fotográfica ou iluminação de cena",
+      "gerado": "C:/Users/Felipe/.codex/generated_images/01a0efa3-e1bc-7d60-bab0-c9ccd74cdd36/exec-5e7fdc11-3f79-44df-9052-296efcd079ce.png"
+    },
+    {
+      "arquivo": "../../public/textures/city-painted/grass.webp",
+      "bytes": 54118,
+      "uso": "Tufo pintado em cards com recorte alfa"
+    },
+    {
+      "arquivo": "../../public/textures/city-painted/stone.webp",
+      "bytes": 30220,
+      "uso": "Pedra pintada nos objetos e paredes"
+    },
+    {
+      "arquivo": "../../public/textures/city-painted/wood.webp",
+      "bytes": 26956,
+      "uso": "Madeira pintada nos objetos e cercas"
+    }
+  ],
+  "capturas": [
+    "global-final-city.png",
+    "global-final-dungeon-1.png",
+    "global-final-dungeon-2.png",
+    "global-final-dungeon-test.png",
+    "selecao-personagens-pintados.png",
+    "personagem-pintado-TK.png",
+    "personagem-pintado-FM.png",
+    "personagem-pintado-BM.png",
+    "personagem-pintado-HT.png",
+    "12-armaduras-runtime.png",
+    "selecao-armadura-salva.png"
+  ],
+  "relatorioCenas": "global-final.json",
+  "relatorioInvariantes": "invariantes-visuais.json",
+  "relatorioPersonagens": "personagens-pintados.json",
+  "relatorioDesempenho": "desempenho-local.json",
+  "comparacaoSombras": "sombras-comparacao.json",
+  "relatorioArmas": "armas-pintadas.json",
+  "pendenciaInvocacoes": "Invocações BM ainda usam cápsulas; fora do recorte desta rodada.",
+  "texturasTerrenoAtual": "texturas-terreno-v2.json",
+  "diagnosticoRostos": "diagnostico-rostos.json; pesos e bind sem defeito encontrado; TK conserva textura facial original ainda suavizada",
+  "antialias": "FXAA médio/alto; baixo sem pós-processamento. fxaa-comparacao.json e msaa-comparacao.json registram custo local, sem alegar FPS de combate."
+}

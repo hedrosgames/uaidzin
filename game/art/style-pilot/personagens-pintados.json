@@ -1,0 +1,65 @@
+{
+  "records": [
+    {
+      "classId": "TK",
+      "materials": [
+        {
+          "name": "TK_Material",
+          "atlas": true,
+          "profile": "painted-character"
+        }
+      ],
+      "scale": [
+        2.119732354251808,
+        2.119732354251808,
+        2.119732354251808
+      ]
+    },
+    {
+      "classId": "FM",
+      "materials": [
+        {
+          "name": "FM_Material",
+          "atlas": true,
+          "profile": "painted-character"
+        }
+      ],
+      "scale": [
+        2.1829677710409614,
+        2.1829677710409614,
+        2.1829677710409614
+      ]
+    },
+    {
+      "classId": "BM",
+      "materials": [
+        {
+          "name": "BM_Material",
+          "atlas": true,
+          "profile": "painted-character"
+        }
+      ],
+      "scale": [
+        2.12699518225339,
+        2.12699518225339,
+        2.12699518225339
+      ]
+    },
+    {
+      "classId": "HT",
+      "materials": [
+        {
+          "name": "HT_Material",
+          "atlas": true,
+          "profile": "painted-character"
+        }
+      ],
+      "scale": [
+        2.0007891053442983,
+        2.0007891053442983,
+        2.0007891053442983
+      ]
+    }
+  ],
+  "errors": []
+}

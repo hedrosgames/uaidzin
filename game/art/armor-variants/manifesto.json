@@ -1,0 +1,163 @@
+{
+  "status": "12 texturas completas; avaliacao visual do Felipe pendente",
+  "trocaNoJogoImplementada": false,
+  "pastaSolicitada": "G:/Meu Drive/UAIDZIN/Texturas/Armaduras-refinadas",
+  "sincronizacaoPastaSolicitada": "Pendente: unidade G indisponivel em 2026-09-29. Conjunto completo preservado nesta pasta local.",
+  "arquivos": [
+    {
+      "classe": "TK",
+      "variante": "dourada",
+      "arquivo": "TK/TK_dourada.jpg",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "sha256": "06bc7ee10cd93af786dc51648ea3bad0540c83f6c42781b596b6ba2f5170f2fa",
+      "origem": "atlas dourado atual do GLB, preservado",
+      "corDetalhes": null
+    },
+    {
+      "classe": "TK",
+      "variante": "prateada",
+      "arquivo": "TK/TK_prateada.png",
+      "dimensoes": [
+        1254,
+        1254
+      ],
+      "sha256": "5c6039cd5106028a2a15cd49c3ffd939a0637a846ae40579493a35332489c45e",
+      "origem": "edicao com gerador de imagens integrado",
+      "corDetalhes": null
+    },
+    {
+      "classe": "TK",
+      "variante": "adamant",
+      "arquivo": "TK/TK_adamant.png",
+      "dimensoes": [
+        1254,
+        1254
+      ],
+      "sha256": "04a7e8be080874060d73a96abb6bf35def9d5b4e848e6de4eef213d390ef564c",
+      "origem": "edicao com gerador de imagens integrado",
+      "corDetalhes": "azul vivo"
+    },
+    {
+      "classe": "FM",
+      "variante": "dourada",
+      "arquivo": "FM/FM_dourada.jpg",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "sha256": "d33b06d20264227f679af1ae5e83cb24cb663c506c8aac4deda1e03ff4024cf1",
+      "origem": "atlas dourado atual do GLB, preservado",
+      "corDetalhes": null
+    },
+    {
+      "classe": "FM",
+      "variante": "prateada",
+      "arquivo": "FM/FM_prateada.png",
+      "dimensoes": [
+        1254,
+        1254
+      ],
+      "sha256": "874f1f9b5c52a4db5d514b00e480833f23e37fe8873e0f36bebd12655efd4134",
+      "origem": "edicao com gerador de imagens integrado",
+      "corDetalhes": null
+    },
+    {
+      "classe": "FM",
+      "variante": "adamant",
+      "arquivo": "FM/FM_adamant.png",
+      "dimensoes": [
+        1254,
+        1254
+      ],
+      "sha256": "36bcbca29e2bf1e8189aadda9be5a380ac8bff17cda8cb3a73eefeaa366e1f0d",
+      "origem": "edicao com gerador de imagens integrado",
+      "corDetalhes": "azul gelo claro"
+    },
+    {
+      "classe": "BM",
+      "variante": "dourada",
+      "arquivo": "BM/BM_dourada.jpg",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "sha256": "545af2598cea42b1ea35cc93d444a7c468d144bc737d9bad08a4f34ee76b9686",
+      "origem": "atlas dourado atual do GLB, preservado",
+      "corDetalhes": null
+    },
+    {
+      "classe": "BM",
+      "variante": "prateada",
+      "arquivo": "BM/BM_prateada.png",
+      "dimensoes": [
+        1254,
+        1254
+      ],
+      "sha256": "e56c371fa70f582cedd23690473147c3d7f0a8b0c78d2302e74109910d604d72",
+      "origem": "edicao com gerador de imagens integrado",
+      "corDetalhes": null
+    },
+    {
+      "classe": "BM",
+      "variante": "adamant",
+      "arquivo": "BM/BM_adamant.png",
+      "dimensoes": [
+        1254,
+        1254
+      ],
+      "sha256": "0b7506315f8d60de0f9bee0b5950b35d53e2821788079a1a61758b7af618454a",
+      "origem": "edicao com gerador de imagens integrado",
+      "corDetalhes": "vermelho"
+    },
+    {
+      "classe": "HT",
+      "variante": "dourada",
+      "arquivo": "HT/HT_dourada.jpg",
+      "dimensoes": [
+        1024,
+        1024
+      ],
+      "sha256": "2e0aabdba54277404452b760ef0a7d21fef4d51fd66af002124aabf20f7c6557",
+      "origem": "atlas dourado atual do GLB, preservado",
+      "corDetalhes": null
+    },
+    {
+      "classe": "HT",
+      "variante": "prateada",
+      "arquivo": "HT/HT_prateada.png",
+      "dimensoes": [
+        1254,
+        1254
+      ],
+      "sha256": "f143f3cb795b0d5547e0e29ac091a369046b6b3eab2276e6c5df1a6228c8e7b8",
+      "origem": "edicao com gerador de imagens integrado",
+      "corDetalhes": null
+    },
+    {
+      "classe": "HT",
+      "variante": "adamant",
+      "arquivo": "HT/HT_adamant.png",
+      "dimensoes": [
+        1254,
+        1254
+      ],
+      "sha256": "d4b58a5539168d42051b32ee5204ed27fe36422f1aa242eff9a08cd1c5409983",
+      "origem": "edicao com gerador de imagens integrado",
+      "corDetalhes": "laranja"
+    }
+  ],
+  "orientacaoDeEdicao": "Editar apenas as placas de armadura do atlas da propria classe, mantendo posicao, orientacao e tamanho das ilhas UV, pele, olhos e cabelos. Prateada: prata acetinada/escovada, sulcos existentes e desgaste fino. Adamant: metal negro predominante, bordas em grafite e detalhes na cor da classe. Evitar plastico, borracha, chrome, texto, margens e novos elementos.",
+  "previsualizacao": {
+    "arquivo": "Previews/12-armaduras-lado-a-lado.png",
+    "tipo": "Captura dos modelos reais com as texturas aplicadas em uma cena isolada, mesma iluminacao.",
+    "escala": "Escala de PlayerView preservada sem recalibracao.",
+    "material": "Douradas usam o acabamento atual do jogo. Variantes usam material metalico com mascara derivada do atlas dourado para evitar pele metalica. Isso e apenas a previsualizacao, sem mudar o runtime.",
+    "texturas": {
+      "colorSpace": "sRGB",
+      "flipY": false
+    }
+  }
+}
