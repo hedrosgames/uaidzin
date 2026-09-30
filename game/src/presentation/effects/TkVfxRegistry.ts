@@ -8,6 +8,7 @@ import { BencaoVfxController } from "./tkSkills/bencao/BencaoVfx";
 import { CorteVfxController } from "./tkSkills/corte/CorteVfx";
 import { DesafioVfxController } from "./tkSkills/desafio/DesafioVfx";
 import { EscudoSagradoVfxController } from "./tkSkills/escudo-sagrado/EscudoSagradoVfx";
+import { ForceWaveVfxController } from "./tkSkills/force-wave/ForceWaveVfx";
 import { FuriaVfxController } from "./tkSkills/furia/FuriaVfx";
 import { DESCUIDADO_PALETTE } from "./tkSkills/furia/FuriaPalette";
 import { GolpeVfxController } from "./tkSkills/golpe/GolpeVfx";
@@ -34,6 +35,7 @@ export interface TkVfxControllerLike {
 }
 
 export interface TkVfxMap {
+  "force-wave": ForceWaveVfxController;
   golpe: GolpeVfxController;
   investida: InvestidaVfxController;
   corte: CorteVfxController;
@@ -73,6 +75,7 @@ export class TkVfxRegistry {
     private readonly lightPool?: TkLightPool,
   ) {
     this.factories = {
+      "force-wave": (s, lp) => new ForceWaveVfxController(s, {}, lp),
       golpe: (s, lp) => new GolpeVfxController(s, {}, lp),
       investida: (s, lp) => new InvestidaVfxController(s, {}, lp),
       corte: (s, lp) => new CorteVfxController(s, {}, lp),

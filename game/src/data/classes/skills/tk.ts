@@ -7,12 +7,12 @@ export const TK_FISICA: SkillDef[] = [
   defineSkill({
     id: "tk_fis_force_wave",
     name: "Force Wave",
-    desc: "Onda de força que atinge um inimigo à frente a média distância. Dano físico da arma.",
+    desc: "Onda branca de força que percorre até 2 m do personagem e atinge um inimigo. Dano físico da arma.",
     index: 0,
     kind: "damage",
     shape: "single",
     element: "physical",
-    range: 6.5,
+    range: 2,
     damageMultiplier: 1.25,
   }),
   defineSkill({

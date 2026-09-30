@@ -18,6 +18,7 @@ export type SkillVfxFamily =
 export type SkillVfxPassiveEvent = "learned" | "equip" | "proc";
 
 export type DedicatedSkillVfx =
+  | "force-wave"
   | "golpe"
   | "investida"
   | "corte"

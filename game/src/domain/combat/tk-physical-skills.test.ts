@@ -60,11 +60,11 @@ describe("TK físico comprado no runtime", () => {
     const s = setup("tk_fis_force_wave");
     const foes = [
       { id: "near", x: 0, z: 2, alive: true },
-      { id: "far", x: 0, z: 6, alive: true },
+      { id: "far", x: 0, z: 3, alive: true },
     ];
     expect(s.cast(0, -1, foes)?.resolved.hits).toEqual([{ id: "near", x: 0, z: 2, damage: 125 }]);
     s.controller.reset();
-    expect(s.cast(0, -1, [{ id: "outside", x: 0, z: 6.51, alive: true }])).toBeNull();
+    expect(s.cast(0, -1, [{ id: "outside", x: 0, z: 2.01, alive: true }])).toBeNull();
     expect(s.character.mp).toBe(994);
   });
 

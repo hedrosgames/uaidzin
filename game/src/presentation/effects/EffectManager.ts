@@ -268,6 +268,9 @@ export class EffectManager {
     }
     const target = input.target ?? input.center;
     switch (input.profile.dedicatedVfx) {
+      case "force-wave":
+        this.tkRegistry.get("force-wave").castForceWave(input.origin, target);
+        return;
       case "golpe":
         this.tkRegistry.get("golpe").castGolpe(input.origin, target.clone().sub(input.origin));
         if (input.origin.distanceTo(target) > DEFAULT_GOLPE_VFX_CONFIG.arcRadius) {
