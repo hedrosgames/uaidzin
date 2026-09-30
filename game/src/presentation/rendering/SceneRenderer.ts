@@ -572,7 +572,7 @@ export class SceneRenderer {
     this.keyLight.target.position.set(x, 0, z);
     this.keyLight.position.set(x + KEY_LIGHT_OFFSET.x, KEY_LIGHT_OFFSET.y, z + KEY_LIGHT_OFFSET.z);
     const now = performance.now();
-    const interval = city ? GRAPHICS_PRESETS[this.quality].shadowUpdateInterval * 1000 : 80;
+    const interval = city ? GRAPHICS_PRESETS[this.quality].shadowUpdateInterval * 1000 : 16;
     if (this.renderer.shadowMap.enabled && now - this.lastShadowUpdateAt >= interval) {
       this.renderer.shadowMap.needsUpdate = true;
       this.lastShadowUpdateAt = now;
