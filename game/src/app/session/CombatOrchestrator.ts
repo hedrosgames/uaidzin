@@ -209,6 +209,13 @@ export class CombatOrchestrator {
       const skill = cast.slot.skill;
       this.vOrigin.set(this.deps.player.x, 0, this.deps.player.z);
       const target = resolved.aim ? this.vTarget.set(resolved.aim.x, 0, resolved.aim.z) : null;
+      if (target && this.deps.progression.state.classId === "TK") {
+        const dx = target.x - this.deps.player.x;
+        const dz = target.z - this.deps.player.z;
+        if (dx * dx + dz * dz > 1e-8) {
+          this.deps.player.facing = Math.atan2(dx, dz);
+        }
+      }
       const center = skill.shape === "aoe" || !target ? this.vOrigin : target;
       const profile = getSkillVfxProfile(skill.id);
       if (profile) {
@@ -239,8 +246,13 @@ export class CombatOrchestrator {
           skill.id,
         );
       }
-      this.deps.renderer.playerView.playCast();
-      this.deps.lockFromAnim("cast", COMBAT_BALANCE.moveLock.skillFallback);
+      if (skill.id === "tk_fis_force_wave") {
+        const anim = this.deps.renderer.playerView.playAttack(1.5);
+        this.deps.lockFromAnim(anim, COMBAT_BALANCE.moveLock.attackFallback);
+      } else {
+        this.deps.renderer.playerView.playCast();
+        this.deps.lockFromAnim("cast", COMBAT_BALANCE.moveLock.skillFallback);
+      }
       const hpCap = Math.round(this.deps.character.maxHp * (1 + Math.max(0, frameMods.maxHpMul)));
       this.deps.character.heal(resolved.heal + resolved.lifesteal, hpCap);
       const fireBurstDeathDuration = cast.slot.skill.id === "tk_fis_fire_burst" ? 0.5 : undefined;

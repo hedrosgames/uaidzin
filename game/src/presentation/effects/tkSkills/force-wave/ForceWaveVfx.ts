@@ -1,13 +1,14 @@
 import {
   AdditiveBlending,
+  BufferGeometry,
   DoubleSide,
+  Float32BufferAttribute,
   Group,
   MathUtils,
   Mesh,
-  MeshBasicMaterial,
   PointLight,
   Scene,
-  TorusGeometry,
+  ShaderMaterial,
   Vector3,
 } from "three";
 import type { TkLightPool } from "../../TkLightPool";
@@ -16,11 +17,9 @@ export interface ForceWaveVfxConfig {
   travelDuration: number;
   fadeDuration: number;
   maxConcurrentCasts: number;
-  originHeight: number;
-  targetHeight: number;
-  radius: number;
-  thickness: number;
-  arcSpan: number;
+  groundHeight: number;
+  startWidth: number;
+  endWidth: number;
   lightPeak: number;
 }
 
@@ -28,52 +27,74 @@ export const DEFAULT_FORCE_WAVE_VFX_CONFIG: ForceWaveVfxConfig = {
   travelDuration: 0.16,
   fadeDuration: 0.12,
   maxConcurrentCasts: 4,
-  originHeight: 0.95,
-  targetHeight: 0.8,
-  radius: 0.78,
-  thickness: 0.075,
-  arcSpan: 2.55,
+  groundHeight: 0.12,
+  startWidth: 1.65,
+  endWidth: 0.16,
   lightPeak: 2.8,
 };
 
 type ForceWavePhase = "travel" | "fade";
 
 interface ForceWaveSharedResources {
-  waveGeometry: TorusGeometry;
-  waveMaterial: MeshBasicMaterial;
-  coreMaterial: MeshBasicMaterial;
+  geometry: BufferGeometry;
+  material: ShaderMaterial;
+}
+
+function createGeometry(startWidth: number, endWidth: number): BufferGeometry {
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new Float32BufferAttribute([
+    -startWidth * 0.5, 0, 0,
+    startWidth * 0.5, 0, 0,
+    -endWidth * 0.5, 0, 1,
+    endWidth * 0.5, 0, 1,
+  ], 3));
+  geometry.setAttribute("uv", new Float32BufferAttribute([
+    0, 0,
+    1, 0,
+    0, 1,
+    1, 1,
+  ], 2));
+  geometry.setIndex([0, 2, 1, 2, 3, 1]);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function createMaterial(): ShaderMaterial {
+  return new ShaderMaterial({
+    uniforms: {
+      opacity: { value: 0.82 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float opacity;
+      varying vec2 vUv;
+      void main() {
+        float sideFade = smoothstep(0.0, 0.16, vUv.x) * smoothstep(0.0, 0.16, 1.0 - vUv.x);
+        float lengthFade = mix(1.0, 0.48, vUv.y);
+        float alpha = opacity * sideFade * lengthFade;
+        gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    depthTest: true,
+    side: DoubleSide,
+    blending: AdditiveBlending,
+    toneMapped: false,
+  });
 }
 
 function createSharedResources(config: ForceWaveVfxConfig): ForceWaveSharedResources {
-  const waveGeometry = new TorusGeometry(
-    config.radius,
-    config.thickness,
-    8,
-    42,
-    config.arcSpan,
-  );
-  waveGeometry.rotateZ((Math.PI - config.arcSpan) / 2);
-  const waveMaterial = new MeshBasicMaterial({
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.78,
-    depthWrite: false,
-    depthTest: true,
-    side: DoubleSide,
-    blending: AdditiveBlending,
-    toneMapped: false,
-  });
-  const coreMaterial = new MeshBasicMaterial({
-    color: 0xffffff,
-    transparent: true,
-    opacity: 1,
-    depthWrite: false,
-    depthTest: true,
-    side: DoubleSide,
-    blending: AdditiveBlending,
-    toneMapped: false,
-  });
-  return { waveGeometry, waveMaterial, coreMaterial };
+  return {
+    geometry: createGeometry(config.startWidth, config.endWidth),
+    material: createMaterial(),
+  };
 }
 
 function finiteVector(vector: Vector3): boolean {
@@ -89,13 +110,10 @@ function finiteOr(value: number, fallback: number, minimum: number): number {
 
 class ForceWaveCast {
   private readonly root = new Group();
-  private readonly waveMaterial: MeshBasicMaterial;
-  private readonly coreMaterial: MeshBasicMaterial;
-  private readonly wave: Mesh<TorusGeometry, MeshBasicMaterial>;
-  private readonly core: Mesh<TorusGeometry, MeshBasicMaterial>;
+  private readonly material: ShaderMaterial;
+  private readonly wave: Mesh<BufferGeometry, ShaderMaterial>;
   private readonly direction = new Vector3();
-  private readonly start = new Vector3();
-  private readonly end = new Vector3();
+  private readonly distance: number;
   private readonly light: PointLight | null;
   private readonly isPooledLight: boolean;
   private elapsed = 0;
@@ -111,30 +129,21 @@ class ForceWaveCast {
     private readonly onDispose: (cast: ForceWaveCast) => void,
     private readonly lightPool?: TkLightPool,
   ) {
-    this.start.copy(origin);
-    this.end.copy(target);
     this.direction.copy(target).sub(origin);
     this.direction.y = 0;
-    if (this.direction.lengthSq() > 1e-8) this.direction.normalize();
-    else this.direction.set(0, 0, 1);
+    this.distance = Math.max(this.direction.length(), 0.0001);
+    this.direction.divideScalar(this.distance);
 
     this.root.name = "tk-force-wave-cast";
-    this.root.position.copy(this.start);
+    this.root.position.set(origin.x, this.config.groundHeight, origin.z);
     this.root.rotation.y = Math.atan2(this.direction.x, this.direction.z);
 
-    this.waveMaterial = shared.waveMaterial.clone();
-    this.coreMaterial = shared.coreMaterial.clone();
-    this.wave = new Mesh(shared.waveGeometry, this.waveMaterial);
-    this.wave.name = "tk-force-wave-crest";
+    this.material = shared.material.clone();
+    this.wave = new Mesh(shared.geometry, this.material);
+    this.wave.name = "tk-force-wave-cone";
     this.wave.renderOrder = 10;
-    this.wave.scale.set(0.92, 1, 0.92);
-
-    this.core = new Mesh(shared.waveGeometry, this.coreMaterial);
-    this.core.name = "tk-force-wave-core";
-    this.core.renderOrder = 11;
-    this.core.scale.set(0.76, 0.76, 0.76);
-
-    this.root.add(this.wave, this.core);
+    this.wave.scale.set(1, 1, 0.001);
+    this.root.add(this.wave);
     this.castRoot.add(this.root);
 
     if (this.lightPool) {
@@ -145,7 +154,7 @@ class ForceWaveCast {
       this.isPooledLight = false;
     }
     if (this.light) {
-      this.light.position.set(0, 0.1, 0);
+      this.light.position.set(0, 0.12, 0);
       this.root.add(this.light);
     }
   }
@@ -155,7 +164,7 @@ class ForceWaveCast {
   }
 
   getParticleCount(): number {
-    return 2;
+    return 1;
   }
 
   getState() {
@@ -164,48 +173,48 @@ class ForceWaveCast {
       elapsed: this.elapsed,
       position: this.root.position.toArray(),
       scale: this.wave.scale.toArray(),
-      opacity: this.waveMaterial.opacity,
+      opacity: this.material.uniforms.opacity.value as number,
+      distance: this.distance,
     };
   }
 
   update(deltaTime: number): void {
     if (this.disposed) return;
     this.elapsed += deltaTime;
-    const travelProgress = MathUtils.clamp(
-      this.elapsed / this.config.travelDuration,
-      0,
-      1,
-    );
-    const eased = 1 - Math.pow(1 - travelProgress, 3);
-    this.root.position.lerpVectors(this.start, this.end, eased);
-    const pulse = 1 + Math.sin(travelProgress * Math.PI) * 0.18;
-    this.wave.scale.setScalar((0.92 + travelProgress * 0.28) * pulse);
-    this.core.scale.setScalar(0.72 + travelProgress * 0.24);
-    this.waveMaterial.opacity = 0.78 - travelProgress * 0.14;
-    this.coreMaterial.opacity = 1 - travelProgress * 0.18;
-    if (this.light) {
-      this.light.intensity = this.config.lightPeak * Math.sin(travelProgress * Math.PI);
-    }
 
-    if (travelProgress < 1) return;
     if (this.phase === "travel") {
+      const progress = MathUtils.clamp(
+        this.elapsed / this.config.travelDuration,
+        0,
+        1,
+      );
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const length = Math.max(0.001, this.distance * eased);
+      this.wave.scale.z = length;
+      this.material.uniforms.opacity.value = 0.82 - progress * 0.12;
+      if (this.light) {
+        this.light.position.z = length;
+        this.light.intensity = this.config.lightPeak * Math.sin(progress * Math.PI);
+      }
+      if (progress < 1) return;
       this.phase = "fade";
       this.elapsed = 0;
       return;
     }
 
-    const fadeProgress = MathUtils.clamp(
+    const progress = MathUtils.clamp(
       this.elapsed / this.config.fadeDuration,
       0,
       1,
     );
-    const fade = 1 - fadeProgress;
-    this.wave.scale.setScalar(1.18 + fadeProgress * 0.38);
-    this.core.scale.setScalar(0.96 + fadeProgress * 0.22);
-    this.waveMaterial.opacity = 0.64 * fade * fade;
-    this.coreMaterial.opacity = 0.82 * fade * fade;
-    if (this.light) this.light.intensity = this.config.lightPeak * 0.45 * fade;
-    if (fadeProgress >= 1) this.dispose();
+    const fade = 1 - progress;
+    this.wave.scale.x = 1 + progress * 0.12;
+    this.material.uniforms.opacity.value = 0.7 * fade * fade;
+    if (this.light) {
+      this.light.position.z = this.distance;
+      this.light.intensity = this.config.lightPeak * 0.35 * fade;
+    }
+    if (progress >= 1) this.dispose();
   }
 
   dispose(): void {
@@ -218,8 +227,7 @@ class ForceWaveCast {
       this.root.remove(this.light);
       this.light.dispose();
     }
-    this.waveMaterial.dispose();
-    this.coreMaterial.dispose();
+    this.material.dispose();
     this.onDispose(this);
   }
 }
@@ -253,30 +261,20 @@ export class ForceWaveVfxController {
         DEFAULT_FORCE_WAVE_VFX_CONFIG.maxConcurrentCasts,
         1,
       )),
-      originHeight: finiteOr(
-        merged.originHeight,
-        DEFAULT_FORCE_WAVE_VFX_CONFIG.originHeight,
+      groundHeight: finiteOr(
+        merged.groundHeight,
+        DEFAULT_FORCE_WAVE_VFX_CONFIG.groundHeight,
         0,
       ),
-      targetHeight: finiteOr(
-        merged.targetHeight,
-        DEFAULT_FORCE_WAVE_VFX_CONFIG.targetHeight,
-        0,
-      ),
-      radius: finiteOr(
-        merged.radius,
-        DEFAULT_FORCE_WAVE_VFX_CONFIG.radius,
+      startWidth: finiteOr(
+        merged.startWidth,
+        DEFAULT_FORCE_WAVE_VFX_CONFIG.startWidth,
         0.1,
       ),
-      thickness: finiteOr(
-        merged.thickness,
-        DEFAULT_FORCE_WAVE_VFX_CONFIG.thickness,
-        0.01,
-      ),
-      arcSpan: MathUtils.clamp(
-        finiteOr(merged.arcSpan, DEFAULT_FORCE_WAVE_VFX_CONFIG.arcSpan, 0.2),
-        0.2,
-        Math.PI * 1.8,
+      endWidth: finiteOr(
+        merged.endWidth,
+        DEFAULT_FORCE_WAVE_VFX_CONFIG.endWidth,
+        0.02,
       ),
       lightPeak: finiteOr(
         merged.lightPeak,
@@ -292,11 +290,9 @@ export class ForceWaveVfxController {
   castForceWave(origin: Vector3, target: Vector3): void {
     if (this.disposed) throw new Error("ForceWaveVfxController descartado");
     if (!finiteVector(origin) || !finiteVector(target)) return;
-    const start = origin.clone();
-    start.y = Math.max(origin.y, this.config.originHeight);
-    const end = target.clone();
-    end.y = Math.max(target.y, this.config.targetHeight);
-    if (start.distanceToSquared(end) < 1e-8) return;
+    const horizontalTarget = target.clone();
+    horizontalTarget.y = origin.y;
+    if (origin.distanceToSquared(horizontalTarget) < 1e-8) return;
     if (this.casts.size >= this.config.maxConcurrentCasts) {
       const oldest = this.casts.values().next().value as ForceWaveCast | undefined;
       oldest?.dispose();
@@ -305,8 +301,8 @@ export class ForceWaveVfxController {
       this.castRoot,
       this.shared,
       this.config,
-      start,
-      end,
+      origin,
+      horizontalTarget,
       (finishedCast) => this.casts.delete(finishedCast),
       this.lightPool,
     );
@@ -352,9 +348,8 @@ export class ForceWaveVfxController {
     this.disposed = true;
     this.clear();
     this.scene.remove(this.castRoot);
-    this.shared.waveGeometry.dispose();
-    this.shared.waveMaterial.dispose();
-    this.shared.coreMaterial.dispose();
+    this.shared.geometry.dispose();
+    this.shared.material.dispose();
     this.castRoot.clear();
   }
 }
