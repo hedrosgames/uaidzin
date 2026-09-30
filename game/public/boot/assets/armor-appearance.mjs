@@ -11,5 +11,6 @@ export function resolveArmorAppearance(classId, defId) {
 
 export function armorAtlasUrl(classId, appearance = "gold") {
   const id = ["TK", "FM", "BM", "HT"].includes(classId) ? classId : "TK";
-  return `/textures/armor-painted/${id}/${normalizeArmorAppearance(appearance)}.webp`;
+  const variant = normalizeArmorAppearance(appearance);
+  return `/textures/armor-painted/${id}/${variant === "gold" ? "silver" : variant}.webp`;
 }

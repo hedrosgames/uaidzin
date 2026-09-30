@@ -14,7 +14,7 @@ describe("aparência de armadura", () => {
       for (const appearance of ["gold", "silver", "adamant"] as const) {
         const defId = `armor_chest_${classId.toLowerCase()}_${appearance}`;
         expect(resolveArmorAppearance(classId, defId)).toBe(appearance);
-        expect(armorAtlasUrl(classId, appearance)).toBe(`/textures/armor-painted/${classId}/${appearance}.webp`);
+        expect(armorAtlasUrl(classId, appearance)).toBe(`/textures/armor-painted/${classId}/${appearance === "gold" ? "silver" : appearance}.webp`);
       }
       expect(resolveArmorAppearance(classId)).toBe("gold");
       expect(resolveArmorAppearance(classId, "armadura_leve")).toBe("gold");
@@ -70,9 +70,9 @@ describe("aparência de armadura", () => {
   it("descarta a troca atrasada quando o jogador volta ao ouro", async () => {
     let finishSilver!: (texture: Texture) => void;
     const silver = new Promise<Texture>((resolve) => { finishSilver = resolve; });
-    const textureSpy = vi.spyOn(TextureLoader.prototype, "loadAsync").mockImplementation((url) =>
-      url.endsWith("/silver.webp") ? silver : Promise.resolve(new Texture()),
-    );
+    const textureSpy = vi.spyOn(TextureLoader.prototype, "loadAsync")
+      .mockResolvedValueOnce(new Texture())
+      .mockReturnValueOnce(silver);
     const loader = new GLTFLoader();
     const scene = new Group();
     scene.add(new Mesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial({ map: new Texture() })));

@@ -6,7 +6,8 @@ const atlases = new Map<string, Promise<Texture>>();
 
 export function loadPaintedCharacterAtlas(classId: string, appearance: ArmorAppearance = "gold"): Promise<Texture> {
   const url = armorAtlasUrl(classId, appearance);
-  const existing = atlases.get(url);
+  const key = `${classId}:${appearance}`;
+  const existing = atlases.get(key);
   if (existing) return existing;
   const pending = new TextureLoader().loadAsync(url).then((texture) => {
     texture.flipY = false;
@@ -16,6 +17,6 @@ export function loadPaintedCharacterAtlas(classId: string, appearance: ArmorAppe
     stampAnisotropy(texture);
     return texture;
   });
-  atlases.set(url, pending);
+  atlases.set(key, pending);
   return pending;
 }

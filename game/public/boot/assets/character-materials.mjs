@@ -27,7 +27,7 @@ float originalLuma = dot(originalPaint, vec3(0.2126, 0.7152, 0.0722));
 float originalGold = smoothstep(0.43, 0.59, originalPaint.g / max(originalPaint.r, 0.015))
   * (1.0 - smoothstep(0.43, 0.67, originalPaint.b / max(originalPaint.g, 0.015)))
   * smoothstep(0.025, 0.09, originalLuma);
-vec3 armorPigment = ${goldArmor ? "mix(vec3(0.095, 0.035, 0.017), vec3(1.0, 0.59, 0.12), smoothstep(0.06, 0.62, originalLuma)) * diffuse" : "diffuseColor.rgb"};
+vec3 armorPigment = ${goldArmor ? "mix(vec3(0.095, 0.029, 0.013), vec3(1.0, 0.52, 0.12), smoothstep(0.025, 0.58, dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722)))) * diffuse" : "diffuseColor.rgb"};
 diffuseColor.rgb = mix(originalPaint * diffuse, armorPigment, originalGold);` : ""}
 float pigmentLuma = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
 diffuseColor.rgb = mix(diffuseColor.rgb, vec3(pigmentLuma), 0.025);`);
@@ -37,9 +37,10 @@ diffuseColor.rgb = mix(diffuseColor.rgb, vec3(pigmentLuma), 0.025);`);
     }
     shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", `
 float paintedDaylight = clamp(dot(reflectedLight.directDiffuse, vec3(0.333)) / max(pigmentLuma, 0.02), 0.0, 1.0);
+${originalAtlas ? "outgoingLight += diffuseColor.rgb * vec3(0.24, 0.19, 0.16) * (1.0 - smoothstep(0.10, 0.60, paintedDaylight));" : ""}
 outgoingLight *= mix(vec3(0.93, 0.92, 1.04), vec3(1.055, 1.015, 0.96), smoothstep(0.06, 0.55, paintedDaylight));
 #include <opaque_fragment>`);
   };
-  material.customProgramCacheKey = () => originalAtlas ? `painted-character-armor-v8-${goldArmor}` : "painted-character-v4";
+  material.customProgramCacheKey = () => originalAtlas ? `painted-character-armor-v9-${goldArmor}` : "painted-character-v4";
   material.needsUpdate = true;
 }

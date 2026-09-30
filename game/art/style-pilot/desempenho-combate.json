@@ -13,7 +13,7 @@
   "qaChanges": [
     "TK level 2 through learnFirstSkill, first skill automatic",
     "HP/maxHP 100000 only in QA context",
-    "initial teleport near native spawn, auto move and auto attack enabled"
+    "initial teleport 6.4m from native spawn, physical mode/hunt mode, real KeyD movement and Digit1 skill requests"
   ],
   "limitations": [
     "Single local Intel UHD run; no before-branch baseline",
@@ -25,83 +25,96 @@
     {
       "world": "dungeon-1",
       "activeDungeon": "dungeon-1",
-      "durationMs": 4927.9000000059605,
-      "level": 3,
+      "durationMs": 3032.1000000089407,
+      "level": 2,
+      "combatModes": {
+        "attackMode": "physical",
+        "moveMode": "hunt",
+        "potion": false
+      },
+      "skillLoadout": [
+        {
+          "skillId": "tk_fis_force_wave",
+          "tree": "fisica",
+          "auto": true,
+          "index": 0
+        }
+      ],
       "activity": {
         "hits": 2,
-        "misses": 0,
-        "damageEvents": 2,
+        "misses": 1,
+        "damageEvents": 1,
         "skills": 0,
         "playerSwings": 2,
         "enemySwings": 2,
         "kills": 1,
-        "movingFrames": 39,
-        "distance": 5.316299999999994,
-        "enemyMovedFrames": 24,
+        "movingFrames": 58,
+        "distance": 5.316299999999995,
+        "enemyMovedFrames": 29,
         "aliveMin": 11,
         "aliveMax": 12,
         "fxCreated": 6
       },
       "cpuSubmissionMs": {
         "samples": 180,
-        "mean": 12.251666667395169,
-        "median": 12.399999991059303,
-        "p95": 21.200000002980232,
-        "max": 29
+        "mean": 5.884999999652306,
+        "median": 5.799999997019768,
+        "p95": 9,
+        "max": 10.400000005960464
       },
       "frameIntervalMs": {
         "samples": 179,
-        "mean": 27.46536312847497,
-        "median": 24.099999994039536,
-        "p95": 51.099999994039536,
-        "max": 159.40000000596046
+        "mean": 16.893854748603353,
+        "median": 16.700000002980232,
+        "p95": 20.200000002980232,
+        "max": 26.700000002980232
       },
       "gpuRenderMs": {
         "samples": 180,
-        "mean": 16.6321905,
-        "median": 15.030729,
-        "p95": 28.844218,
-        "max": 43.318281
+        "mean": 11.606601077777775,
+        "median": 11.531509,
+        "p95": 12.926874,
+        "max": 19.383177
       },
       "draws": {
         "samples": 180,
-        "mean": 76.08888888888889,
-        "median": 73,
-        "p95": 88,
-        "max": 88
+        "mean": 73.25,
+        "median": 71,
+        "p95": 86,
+        "max": 86
       },
       "triangles": {
         "samples": 180,
-        "mean": 57947.666666666664,
-        "median": 40060,
-        "p95": 100815,
-        "max": 109137
+        "mean": 52000.3,
+        "median": 39518,
+        "p95": 100329,
+        "max": 104795
       },
       "snapshot": {
         "mode": "DUNGEON",
-        "level": 3,
+        "level": 2,
         "evolution": "Mortal",
-        "hp": 106,
-        "maxHp": 106,
-        "mp": 79,
-        "maxMp": 79,
+        "hp": 100000,
+        "maxHp": 100000,
+        "mp": 71,
+        "maxMp": 71,
         "gold": 40,
         "invUsed": 0,
-        "playerX": -10.380176795531332,
-        "playerZ": -1.9325301520394507,
-        "playerFacing": -0.39072576988910346,
+        "playerX": -7.846242554562714,
+        "playerZ": -4.4411062654943105,
+        "playerFacing": -0.5727693449746506,
         "world": "dungeon-1",
         "classId": "TK",
         "playerName": "Thegn",
         "panelsOpen": false,
         "entered": true,
         "timerPhase": "active",
-        "timerRemaining": 592.0000999999933,
+        "timerRemaining": 594.7166999999943,
         "kills": 1,
         "enemiesAlive": 11,
-        "fxCount": 9,
-        "skillPoints": 1,
-        "unspentPoints": 10,
+        "fxCount": 8,
+        "skillPoints": 0,
+        "unspentPoints": 5,
         "skillSlots": 1,
         "timeScale": 1,
         "hasPlayerOutline": true,
@@ -112,97 +125,110 @@
         "moveLock": 0,
         "dropLogCount": 1
       },
-      "validCombat": true,
+      "validCombat": false,
       "gpuPending": 0
     },
     {
       "world": "dungeon-2",
       "activeDungeon": "dungeon-2",
-      "durationMs": 5797.20000000298,
-      "level": 3,
+      "durationMs": 3187.6000000089407,
+      "level": 2,
+      "combatModes": {
+        "attackMode": "physical",
+        "moveMode": "hunt",
+        "potion": false
+      },
+      "skillLoadout": [
+        {
+          "skillId": "tk_fis_force_wave",
+          "tree": "fisica",
+          "auto": true,
+          "index": 0
+        }
+      ],
       "activity": {
-        "hits": 1,
-        "misses": 2,
+        "hits": 3,
+        "misses": 1,
         "damageEvents": 16,
         "skills": 0,
-        "playerSwings": 1,
-        "enemySwings": 18,
+        "playerSwings": 3,
+        "enemySwings": 17,
         "kills": 0,
         "movingFrames": 0,
         "distance": 0,
-        "enemyMovedFrames": 0,
+        "enemyMovedFrames": 17,
         "aliveMin": 12,
         "aliveMax": 12,
-        "fxCreated": 19
+        "fxCreated": 23
       },
       "cpuSubmissionMs": {
         "samples": 180,
-        "mean": 17.059444443964296,
-        "median": 12.899999991059303,
-        "p95": 30.599999994039536,
-        "max": 131.6000000089407
+        "mean": 8.077222222586473,
+        "median": 6.799999997019768,
+        "p95": 11.5,
+        "max": 70.6000000089407
       },
       "frameIntervalMs": {
         "samples": 179,
-        "mean": 31.64972067037441,
-        "median": 28.599999994039536,
-        "p95": 59.69999998807907,
-        "max": 125.09999999403954
+        "mean": 17.770391061485814,
+        "median": 16.799999997019768,
+        "p95": 20.299999997019768,
+        "max": 75.40000000596046
       },
       "gpuRenderMs": {
         "samples": 180,
-        "mean": 17.918389094444443,
-        "median": 16.029791,
-        "p95": 32.165676,
-        "max": 53.812812
+        "mean": 11.95188049444445,
+        "median": 11.705104,
+        "p95": 13.864375,
+        "max": 15.176041
       },
       "draws": {
         "samples": 180,
-        "mean": 133.84444444444443,
-        "median": 116,
-        "p95": 198,
-        "max": 200
+        "mean": 121.62222222222222,
+        "median": 112,
+        "p95": 187,
+        "max": 190
       },
       "triangles": {
         "samples": 180,
-        "mean": 196910.55555555556,
-        "median": 141292,
-        "p95": 326920,
-        "max": 327218
+        "mean": 151676.1222222222,
+        "median": 118098,
+        "p95": 289111,
+        "max": 289511
       },
       "snapshot": {
         "mode": "DUNGEON",
-        "level": 3,
+        "level": 2,
         "evolution": "Mortal",
-        "hp": 99730,
+        "hp": 100000,
         "maxHp": 100000,
-        "mp": 79,
-        "maxMp": 79,
+        "mp": 71,
+        "maxMp": 71,
         "gold": 40,
         "invUsed": 0,
-        "playerX": -6.894150834939187,
-        "playerZ": -2.2532168176798733,
-        "playerFacing": -1.8498958000511663,
+        "playerX": -5.812038875924874,
+        "playerZ": 3.099262201479798,
+        "playerFacing": -0.6064439085368483,
         "world": "dungeon-2",
         "classId": "TK",
         "playerName": "Thegn",
         "panelsOpen": false,
         "entered": true,
         "timerPhase": "active",
-        "timerRemaining": 591.566799999996,
+        "timerRemaining": 594.9500999999944,
         "kills": 0,
         "enemiesAlive": 12,
-        "fxCount": 40,
-        "skillPoints": 1,
-        "unspentPoints": 10,
+        "fxCount": 42,
+        "skillPoints": 0,
+        "unspentPoints": 5,
         "skillSlots": 1,
         "timeScale": 1,
         "hasPlayerOutline": true,
         "playerGhostVisible": false,
         "playerDeadPose": false,
         "deathEmitCount": 0,
-        "autoAttackSwings": 1,
-        "moveLock": 0.917266637420653,
+        "autoAttackSwings": 5,
+        "moveLock": 0.5738444249471012,
         "dropLogCount": 0
       },
       "validCombat": false,
@@ -215,5 +241,5 @@
     "timerQuery": true,
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36"
   },
-  "finished": "2026-09-30T18:40:28.897Z"
+  "finished": "2026-09-30T21:44:38.088Z"
 }
