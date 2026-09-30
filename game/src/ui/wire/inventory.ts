@@ -19,9 +19,39 @@ export interface InventoryPanel {
   setVaultOpen(open: boolean): void;
 }
 
+type ItemDrag = {
+  uid: string;
+  action: "cancel" | "discard";
+  source: HTMLElement;
+  escaped: boolean;
+  dropped: boolean;
+};
+
+const GROUND_CANCEL = ".win, .confirm-layer, .overlay, .hint, .hud, .hud-tools, .player-frame, .dialog-host, [data-ui-block-click]";
+
 export function createInventoryPanel(container: HTMLElement, ctx: WireContext): InventoryPanel {
   let curBagPage = 0;
   let trashModeActive = false;
+  let itemDrag: ItemDrag | null = null;
+
+  function eventElement(target: EventTarget | null): Element | null {
+    return target instanceof Element ? target : null;
+  }
+
+  function isWorld(el: Element | null): boolean {
+    if (!el) return false;
+    return !el.closest(GROUND_CANCEL);
+  }
+
+  function hitAt(x: number, y: number, source: HTMLElement): Element | null {
+    const stack = document.elementsFromPoint(x, y);
+    for (const node of stack) {
+      if (!(node instanceof Element)) continue;
+      if (node === source || source.contains(node)) continue;
+      return node;
+    }
+    return null;
+  }
 
   function renderHtml(): string {
     return `
@@ -137,6 +167,41 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
 
     win.addEventListener("mouseleave", () => {
       ctx.hideItemTip();
+    });
+
+    document.addEventListener("dragover", (e) => {
+      if (!itemDrag) return;
+      if (!isWorld(eventElement(e.target))) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    });
+
+    document.addEventListener("drop", (e) => {
+      if (!itemDrag || itemDrag.dropped) return;
+      itemDrag.dropped = true;
+      if (!isWorld(eventElement(e.target))) {
+        itemDrag.action = "cancel";
+        return;
+      }
+      e.preventDefault();
+      itemDrag.action = "discard";
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && itemDrag) itemDrag.escaped = true;
+    });
+
+    document.addEventListener("dragend", (e) => {
+      const drag = itemDrag;
+      itemDrag = null;
+      drag?.source.classList.remove("is-dragging");
+      if (!drag || drag.escaped) return;
+      if (!drag.dropped && e.clientX !== 0 && e.clientY !== 0 && isWorld(hitAt(e.clientX, e.clientY, drag.source))) {
+        drag.action = "discard";
+      }
+      if (drag.action !== "discard") return;
+      ctx.api.discardItem(drag.uid);
+      ctx.syncFromGame();
     });
 
     win.addEventListener("dragover", (e) => {
@@ -328,26 +393,20 @@ export function createInventoryPanel(container: HTMLElement, ctx: WireContext): 
 
       const potionLike =
         it.slot === "consumable" || it.slot === "misc" || it.defId.startsWith("pocao_");
-      if (potionLike) {
-        cell.draggable = true;
-        cell.addEventListener("dragstart", (e) => {
-          e.dataTransfer?.setData(
-            "text/plain",
-            JSON.stringify({ kind: "potion", defId: it.defId, uid: it.uid }),
-          );
-          if (e.dataTransfer) e.dataTransfer.effectAllowed = "copy";
-        });
-      }
-      if (ENHANCE_MATERIALS.has(it.defId)) {
-        cell.draggable = true;
-        cell.addEventListener("dragstart", (e) => {
-          e.dataTransfer?.setData(
-            "text/plain",
-            JSON.stringify({ kind: "enhance-mat", defId: it.defId, uid: it.uid }),
-          );
-          if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-        });
-      }
+      const enhance = ENHANCE_MATERIALS.has(it.defId);
+      cell.draggable = true;
+      cell.addEventListener("dragstart", (e) => {
+        ctx.hideItemTip();
+        const payload = potionLike
+          ? { kind: "potion", defId: it.defId, uid: it.uid }
+          : enhance
+            ? { kind: "enhance-mat", defId: it.defId, uid: it.uid }
+            : { kind: "item", uid: it.uid };
+        e.dataTransfer?.setData("text/plain", JSON.stringify(payload));
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = "copyMove";
+        cell.classList.add("is-dragging");
+        itemDrag = { uid: it.uid, action: "cancel", source: cell, escaped: false, dropped: false };
+      });
 
       cell.addEventListener("click", () => {
         if (trashModeActive) {

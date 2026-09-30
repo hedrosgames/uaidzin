@@ -377,7 +377,8 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 .slot-ring.is-drop{
   outline:2px solid var(--gold);outline-offset:-2px;opacity:1;z-index:2;
 }
-.slot-ring.has-skill{opacity:1}
+.slot-ring.has-skill{opacity:1;cursor:grab}
+.slot-ring.is-dragging{opacity:.4}
 .slot-ring.has-skill .inner{border-color:var(--gold-dim)}
 .slot-ring.locked{
   opacity:.45;
@@ -470,6 +471,7 @@ input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:tex
 .doll .eq.is-bad,.doll-top .eq.is-bad{outline:2px solid #a33b3b;outline-offset:1px}
 .doll .eq.has,.doll-top .eq.has{cursor:grab}
 .cell.has{cursor:grab}
+.cell.is-dragging{opacity:.4}
 .cell.has:active,.doll .eq.has:active,.doll-top .eq.has:active{cursor:grabbing}
 .doll .eq .ico,.doll-top .eq .ico{
   width:28px;height:28px;display:block;object-fit:contain;pointer-events:none;

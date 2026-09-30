@@ -8,7 +8,61 @@ export interface SkillBarHud {
   sync(): void;
 }
 
+type BarDrag = {
+  from: number;
+  action: "cancel" | "swap" | "clear";
+  to: number;
+  source: HTMLElement;
+  escaped: boolean;
+  dropped: boolean;
+};
+
+const UI_CANCEL = ".win, .confirm-layer, .overlay, .hint, .hud-tools, .player-frame, .dialog-host, [data-ui-block-click]";
+
 export function createSkillBarHud(container: HTMLElement, ctx: WireContext): SkillBarHud {
+  let barDrag: BarDrag | null = null;
+  let blockDrag = false;
+
+  function eventElement(target: EventTarget | null): Element | null {
+    return target instanceof Element ? target : null;
+  }
+
+  function classify(el: Element | null): "slot" | "world" | "cancel" {
+    if (!el) return "cancel";
+    if (el.closest("#skillHud .slot-ring")) return "slot";
+    if (el.closest(UI_CANCEL) || el.closest("#skillHud")) return "cancel";
+    return "world";
+  }
+
+  function hitAt(x: number, y: number, source: HTMLElement): Element | null {
+    const stack = document.elementsFromPoint(x, y);
+    for (const node of stack) {
+      if (!(node instanceof Element)) continue;
+      if (node === source || source.contains(node)) continue;
+      return node;
+    }
+    return null;
+  }
+
+  function paintDrop(ring: Element | null): void {
+    const hud = container.querySelector("#skillHud");
+    hud?.querySelectorAll(".is-drop").forEach((node) => {
+      if (node !== ring) node.classList.remove("is-drop");
+    });
+    ring?.classList.add("is-drop");
+  }
+
+  function applyBarDrag(drag: BarDrag): void {
+    if (drag.escaped || drag.action === "cancel") return;
+    if (drag.action === "swap") {
+      if (drag.from === drag.to) return;
+      ctx.api.swapSkillSlots(drag.from, drag.to);
+    } else {
+      ctx.api.clearSkillSlot(drag.from);
+    }
+    ctx.syncFromGame();
+  }
+
   function renderHtml(): string {
     return `<div class="hud" id="skillHud" aria-label="Barra de skills"></div>`;
   }
@@ -17,13 +71,38 @@ export function createSkillBarHud(container: HTMLElement, ctx: WireContext): Ski
     const hud = container.querySelector<HTMLElement>("#skillHud");
     if (!hud) return;
 
+    hud.addEventListener("mousedown", (e) => {
+      blockDrag = !!eventElement(e.target)?.closest(".slot-auto");
+    });
+
+    hud.addEventListener("dragstart", (e) => {
+      if (blockDrag) {
+        e.preventDefault();
+        return;
+      }
+      const ring = eventElement(e.target)?.closest<HTMLElement>("#skillHud .slot-ring.has-skill");
+      if (!ring) return;
+      const from = Number(ring.dataset.bar);
+      if (!Number.isFinite(from)) return;
+      const slots = ctx.api.getSkillBar();
+      const skillId = slots[from]?.skillId;
+      if (!skillId) return;
+      e.dataTransfer?.setData(
+        "text/plain",
+        JSON.stringify({ kind: "bar-skill", fromIndex: from, skillId }),
+      );
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+      ring.classList.add("is-dragging");
+      barDrag = { from, action: "cancel", to: from, source: ring, escaped: false, dropped: false };
+    });
+
     hud.addEventListener("dragover", (e) => {
       const pot = (e.target as HTMLElement).closest<HTMLElement>(".pot-slot");
       const ring = (e.target as HTMLElement).closest<HTMLElement>(".slot-ring");
       const skillsWrap = (e.target as HTMLElement).closest<HTMLElement>(".hud-skills");
       if (!pot && !ring && !skillsWrap) return;
       e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      if (e.dataTransfer) e.dataTransfer.dropEffect = barDrag ? "move" : "copy";
       pot?.classList.add("is-drop");
       ring?.classList.add("is-drop");
     });
@@ -53,6 +132,17 @@ export function createSkillBarHud(container: HTMLElement, ctx: WireContext): Ski
           ctx.syncFromGame();
           return;
         }
+        if (data.kind === "bar-skill" && barDrag) {
+          const slotIdx = ring ? Number(ring.dataset.bar) : NaN;
+          barDrag.dropped = true;
+          if (ring && Number.isFinite(slotIdx) && slotIdx !== barDrag.from) {
+            barDrag.action = "swap";
+            barDrag.to = slotIdx;
+          } else {
+            barDrag.action = "cancel";
+          }
+          return;
+        }
         if (data.kind === "skill" && data.skillId) {
           if (!ring) {
             const wrap = (e.target as HTMLElement).closest<HTMLElement>(".hud-skills");
@@ -67,6 +157,70 @@ export function createSkillBarHud(container: HTMLElement, ctx: WireContext): Ski
       } catch {
         return;
       }
+    });
+
+    document.addEventListener("dragover", (e) => {
+      if (!barDrag) return;
+      const el = eventElement(e.target);
+      const kind = classify(el);
+      if (kind === "cancel") {
+        paintDrop(null);
+        return;
+      }
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      paintDrop(kind === "slot" ? el?.closest(".slot-ring") ?? null : null);
+    });
+
+    document.addEventListener("drop", (e) => {
+      if (!barDrag || barDrag.dropped) return;
+      const el = eventElement(e.target);
+      const kind = classify(el);
+      barDrag.dropped = true;
+      if (kind === "world") {
+        e.preventDefault();
+        barDrag.action = "clear";
+        return;
+      }
+      if (kind === "slot") {
+        e.preventDefault();
+        const slotIdx = Number(el?.closest<HTMLElement>(".slot-ring")?.dataset.bar);
+        if (Number.isFinite(slotIdx) && slotIdx !== barDrag.from) {
+          barDrag.action = "swap";
+          barDrag.to = slotIdx;
+        } else {
+          barDrag.action = "cancel";
+        }
+        return;
+      }
+      barDrag.action = "cancel";
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && barDrag) barDrag.escaped = true;
+    });
+
+    document.addEventListener("dragend", (e) => {
+      const drag = barDrag;
+      barDrag = null;
+      blockDrag = false;
+      paintDrop(null);
+      drag?.source.classList.remove("is-dragging");
+      if (!drag || drag.escaped) return;
+      if (!drag.dropped && e.clientX !== 0 && e.clientY !== 0) {
+        const kind = classify(hitAt(e.clientX, e.clientY, drag.source));
+        if (kind === "world") drag.action = "clear";
+        else if (kind === "slot") {
+          const slotIdx = Number(
+            hitAt(e.clientX, e.clientY, drag.source)?.closest<HTMLElement>(".slot-ring")?.dataset.bar,
+          );
+          if (Number.isFinite(slotIdx) && slotIdx !== drag.from) {
+            drag.action = "swap";
+            drag.to = slotIdx;
+          }
+        }
+      }
+      applyBarDrag(drag);
     });
 
     hud.addEventListener("contextmenu", (e) => {
@@ -148,8 +302,9 @@ export function createSkillBarHud(container: HTMLElement, ctx: WireContext): Ski
       const hasSkill = !!s?.skillId;
       const cls = hasSkill ? "slot-ring has-skill" : "slot-ring";
       const keyLabel = i === 9 ? "0" : String(i + 1);
+      const dragAttr = hasSkill ? " draggable=\"true\"" : "";
       skillsHtml += `
-        <div class="${cls}" data-bar="${i}" title="${hasSkill ? s.name : "Vazio (arraste habilidade)"}">
+        <div class="${cls}" data-bar="${i}"${dragAttr} title="${hasSkill ? s.name : "Vazio (arraste habilidade)"}">
           <div class="inner">
             ${hasSkill && s?.icon ? `<img src="${s.icon}" alt="${s.name}">` : ""}
             <div class="slot-cd" aria-hidden="true"></div>
