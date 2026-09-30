@@ -174,7 +174,7 @@ export class SkillLoadout {
       if (targetIndex < 0) return false;
     }
 
-    this.slots[targetIndex] = this.createSlot(found.skill, found.tree, false);
+    this.slots[targetIndex] = this.createSlot(found.skill, found.tree, true);
     this.syncPreferred();
     return true;
   }

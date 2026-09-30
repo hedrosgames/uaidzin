@@ -16,7 +16,6 @@ function setup(skillId: string) {
   TK_FISICA.forEach((_skill, index) => expect(tree.learn("fisica", index)).toBe(true));
   const loadout = new SkillLoadout(tree);
   loadout.assign(skillId, 0);
-  if (loadout.slots[0]) loadout.toggleAuto(0);
   const character = new CharacterModel({ maxHp: 1000, attack: 100, defense: 100 });
   character.maxMp = 1000;
   character.mp = 1000;
@@ -50,6 +49,12 @@ describe("TK físico comprado no runtime", () => {
       expect(s.character.mp).toBe(1000 - 2 * skill.mp);
     },
   );
+
+  it("skills ativas entram na barra com auto-cast ligado", () => {
+    const s = setup("tk_fis_force_wave");
+    expect(s.loadout.slots[0]?.auto).toBe(true);
+    expect(s.cast()?.slot.skill.id).toBe("tk_fis_force_wave");
+  });
 
   it("Force Wave atinge apenas o alvo mais próximo e respeita alcance", () => {
     const s = setup("tk_fis_force_wave");
