@@ -8,14 +8,14 @@
     "icon": "/assets/icons/items/pocao_menor.png",
     "sellValue": 4,
     "stackable": true,
-    "available": true
+    "available": false
   },
   {
     "id": "mat_ori",
     "name": "Poeira de Ori",
     "slot": "material",
     "rarity": "Comum",
-    "desc": "Material de reforço até +5.",
+    "desc": "Refina equipamento até +6. Arraste sobre a peça no inventário ou equipada.",
     "icon": "/assets/icons/items/mat_ori.png",
     "sellValue": 2,
     "stackable": true,
@@ -26,7 +26,7 @@
     "name": "Poeira de Lac",
     "slot": "material",
     "rarity": "Comum",
-    "desc": "Material de reforço de +6 a +10.",
+    "desc": "Refina equipamento de +7 até +9. Arraste sobre a peça no inventário ou equipada.",
     "icon": "/assets/icons/items/mat_lac.png",
     "sellValue": 8,
     "stackable": true,
@@ -112,7 +112,7 @@
     "desc": "Ataque +4",
     "icon": "/assets/icons/items/espada_curta.png",
     "weaponSet": "sword-shield",
-    "attackBonus": 4,
+    "attackBonus": 2,
     "defenseBonus": 0,
     "sellValue": 20,
     "available": true
@@ -125,7 +125,7 @@
     "desc": "Ataque +5",
     "icon": "/assets/icons/items/machado_leve.png",
     "weaponSet": "axe-shield",
-    "attackBonus": 5,
+    "attackBonus": 3,
     "defenseBonus": 0,
     "sellValue": 0,
     "available": true
@@ -138,7 +138,7 @@
     "desc": "Defesa +3",
     "icon": "/assets/icons/items/armadura_leve.png",
     "attackBonus": 0,
-    "defenseBonus": 3,
+    "defenseBonus": 2,
     "sellValue": 18,
     "available": true
   },
@@ -150,7 +150,7 @@
     "desc": "Defesa +2",
     "icon": "/assets/icons/items/capacete.png",
     "attackBonus": 0,
-    "defenseBonus": 2,
+    "defenseBonus": 1,
     "sellValue": 14,
     "available": true
   },
@@ -173,8 +173,8 @@
     "rarity": "Incomum",
     "desc": "Ataque +2 · Defesa +2",
     "icon": "/assets/icons/items/anel_ferro.png",
-    "attackBonus": 2,
-    "defenseBonus": 2,
+    "attackBonus": 1,
+    "defenseBonus": 1,
     "sellValue": 40,
     "available": true
   },
@@ -212,7 +212,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 10,
+    "defenseBonus": 5,
     "classId": "TK",
     "available": true
   },
@@ -226,7 +226,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 16,
+    "defenseBonus": 8,
     "classId": "TK",
     "available": true
   },
@@ -240,7 +240,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 23,
+    "defenseBonus": 12,
     "classId": "TK",
     "available": true
   },
@@ -254,7 +254,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 10,
+    "defenseBonus": 5,
     "classId": "FM",
     "available": true
   },
@@ -268,7 +268,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 16,
+    "defenseBonus": 8,
     "classId": "FM",
     "available": true
   },
@@ -282,7 +282,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 23,
+    "defenseBonus": 12,
     "classId": "FM",
     "available": true
   },
@@ -296,7 +296,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 10,
+    "defenseBonus": 5,
     "classId": "BM",
     "available": true
   },
@@ -310,7 +310,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 16,
+    "defenseBonus": 8,
     "classId": "BM",
     "available": true
   },
@@ -324,7 +324,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 23,
+    "defenseBonus": 12,
     "classId": "BM",
     "available": true
   },
@@ -338,7 +338,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 10,
+    "defenseBonus": 5,
     "classId": "HT",
     "available": true
   },
@@ -352,7 +352,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 16,
+    "defenseBonus": 8,
     "classId": "HT",
     "available": true
   },
@@ -366,7 +366,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 0,
-    "defenseBonus": 23,
+    "defenseBonus": 12,
     "classId": "HT",
     "available": true
   },
@@ -445,7 +445,7 @@
     "name": "Ouro",
     "slot": "currency",
     "rarity": "Comum",
-    "desc": "Moeda do reino.",
+    "desc": "Crédito direto na reserva de ouro; não ocupa slot da bolsa.",
     "icon": "/assets/icons/items/ouro.png",
     "sellValue": 1,
     "stackable": true,
@@ -503,7 +503,7 @@
     "stackable": true,
     "attackBonus": 0,
     "defenseBonus": 0,
-    "available": true
+    "available": false
   },
   {
     "id": "entry_d3",
@@ -649,64 +649,68 @@
   {
     "id": "book_01",
     "name": "Livro de Guerra",
-    "slot": "misc",
+    "slot": "consumable",
     "rarity": "Comum",
-    "desc": "Livro de Guerra; efeito aguardando definição.",
+    "desc": "Ensina a passiva Vida na linhagem Livros.",
     "icon": "/assets/icons/items/book_01.png",
     "sellValue": 1,
     "stackable": true,
     "attackBonus": 0,
     "defenseBonus": 0,
     "effect": {
-      "type": "composition_component"
+      "type": "learn_book",
+      "skillId": "book_hp"
     },
     "available": true
   },
   {
     "id": "book_02",
     "name": "Livro de Sabedoria",
-    "slot": "misc",
+    "slot": "consumable",
     "rarity": "Comum",
-    "desc": "Livro de Sabedoria; efeito aguardando definição.",
+    "desc": "Ensina a passiva Ouro na linhagem Livros.",
     "icon": "/assets/icons/items/book_02.png",
     "sellValue": 1,
     "stackable": true,
     "attackBonus": 0,
     "defenseBonus": 0,
     "effect": {
-      "type": "composition_component"
+      "type": "learn_book",
+      "skillId": "book_gold"
     },
     "available": true
   },
   {
     "id": "book_03",
     "name": "Livro de Bestiário",
-    "slot": "misc",
+    "slot": "consumable",
     "rarity": "Comum",
-    "desc": "Livro de Bestiário; efeito aguardando definição.",
+    "desc": "Ensina a passiva Experiência na linhagem Livros.",
     "icon": "/assets/icons/items/book_03.png",
     "sellValue": 1,
     "stackable": true,
     "attackBonus": 0,
     "defenseBonus": 0,
     "effect": {
-      "type": "composition_component"
+      "type": "learn_book",
+      "skillId": "book_xp"
     },
     "available": true
   },
   {
     "id": "book_04",
     "name": "Livro de Runas",
-    "slot": "misc",
+    "slot": "consumable",
     "rarity": "Comum",
-    "desc": "Livro de Runas; efeito aguardando definição.",
+    "desc": "Ensina a passiva Cooldown na linhagem Livros.",
     "icon": "/assets/icons/items/book_04.png",
     "sellValue": 1,
     "stackable": true,
     "attackBonus": 0,
     "defenseBonus": 0,
     "effect": {
-      "type": "composition_component"
+      "type": "learn_book",
+      "skillId": "book_cd"
     },
     "available": true
   },
@@ -907,7 +911,7 @@
     "name": "Gema Bless",
     "slot": "material",
     "rarity": "Comum",
-    "desc": "Gema Bless, referência visual de MMORPG; usos em composição/refino sem receita nova.",
+    "desc": "Refina equipamento de +10 até +12. Arraste sobre a peça no inventário ou equipada.",
     "icon": "/assets/icons/items/gema_bless.png",
     "sellValue": 1,
     "stackable": true,
@@ -923,7 +927,7 @@
     "name": "Gema Soul",
     "slot": "material",
     "rarity": "Comum",
-    "desc": "Gema Soul, referência visual de MMORPG; usos em composição/refino sem receita nova.",
+    "desc": "Refina equipamento de +13 até +15. Arraste sobre a peça no inventário ou equipada.",
     "icon": "/assets/icons/items/gema_soul.png",
     "sellValue": 1,
     "stackable": true,
@@ -939,7 +943,7 @@
     "name": "Gema Life",
     "slot": "material",
     "rarity": "Comum",
-    "desc": "Gema Life, referência visual de MMORPG; usos em composição/refino sem receita nova.",
+    "desc": "Aumenta o adicional da peça (até 10 níveis). Arraste sobre arma, armadura ou acessório.",
     "icon": "/assets/icons/items/gema_life.png",
     "sellValue": 1,
     "stackable": true,
@@ -975,8 +979,8 @@
     "icon": "/assets/icons/items/ring_01.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 2,
-    "defenseBonus": 3,
+    "attackBonus": 1,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -988,7 +992,7 @@
     "icon": "/assets/icons/items/ring_02.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 3,
+    "attackBonus": 2,
     "defenseBonus": 1,
     "available": true
   },
@@ -1002,7 +1006,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 1,
-    "defenseBonus": 2,
+    "defenseBonus": 1,
     "available": true
   },
   {
@@ -1014,8 +1018,8 @@
     "icon": "/assets/icons/items/ring_04.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 2,
-    "defenseBonus": 3,
+    "attackBonus": 1,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -1027,7 +1031,7 @@
     "icon": "/assets/icons/items/ring_05.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 3,
+    "attackBonus": 2,
     "defenseBonus": 1,
     "available": true
   },
@@ -1041,7 +1045,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 1,
-    "defenseBonus": 2,
+    "defenseBonus": 1,
     "available": true
   },
   {
@@ -1053,8 +1057,8 @@
     "icon": "/assets/icons/items/ring_07.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 2,
-    "defenseBonus": 3,
+    "attackBonus": 1,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -1066,7 +1070,7 @@
     "icon": "/assets/icons/items/ring_08.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 3,
+    "attackBonus": 2,
     "defenseBonus": 1,
     "available": true
   },
@@ -1080,7 +1084,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 1,
-    "defenseBonus": 3,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -1092,8 +1096,8 @@
     "icon": "/assets/icons/items/earring_02.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 2,
-    "defenseBonus": 2,
+    "attackBonus": 1,
+    "defenseBonus": 1,
     "available": true
   },
   {
@@ -1105,7 +1109,7 @@
     "icon": "/assets/icons/items/earring_03.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 3,
+    "attackBonus": 2,
     "defenseBonus": 1,
     "available": true
   },
@@ -1118,7 +1122,7 @@
     "icon": "/assets/icons/items/earring_04.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 4,
+    "attackBonus": 2,
     "defenseBonus": 0,
     "available": true
   },
@@ -1132,7 +1136,7 @@
     "sellValue": 1,
     "stackable": false,
     "attackBonus": 1,
-    "defenseBonus": 4,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -1144,8 +1148,8 @@
     "icon": "/assets/icons/items/necklace_02.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 2,
-    "defenseBonus": 3,
+    "attackBonus": 1,
+    "defenseBonus": 2,
     "available": true
   },
   {
@@ -1157,8 +1161,8 @@
     "icon": "/assets/icons/items/necklace_03.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 3,
-    "defenseBonus": 2,
+    "attackBonus": 2,
+    "defenseBonus": 1,
     "available": true
   },
   {
@@ -1170,7 +1174,7 @@
     "icon": "/assets/icons/items/necklace_04.png",
     "sellValue": 1,
     "stackable": false,
-    "attackBonus": 4,
+    "attackBonus": 2,
     "defenseBonus": 1,
     "available": true
   },
@@ -1770,7 +1774,7 @@
     "desc": "Peça individual Espada. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_sword.png",
     "sellValue": 10,
-    "attackBonus": 6,
+    "attackBonus": 3,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1785,7 +1789,7 @@
     "icon": "/assets/icons/items/weapon_shield.png",
     "sellValue": 10,
     "attackBonus": 0,
-    "defenseBonus": 5,
+    "defenseBonus": 3,
     "stackable": false,
     "available": true
   },
@@ -1797,7 +1801,7 @@
     "desc": "Peça individual Machado. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_axe.png",
     "sellValue": 10,
-    "attackBonus": 7,
+    "attackBonus": 4,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1811,7 +1815,7 @@
     "desc": "Peça individual Espadão. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_greatsword.png",
     "sellValue": 10,
-    "attackBonus": 9,
+    "attackBonus": 5,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1825,7 +1829,7 @@
     "desc": "Peça individual Cajado. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_staff.png",
     "sellValue": 10,
-    "attackBonus": 6,
+    "attackBonus": 3,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1839,7 +1843,7 @@
     "desc": "Peça individual Cajadão. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_greatstaff.png",
     "sellValue": 10,
-    "attackBonus": 8,
+    "attackBonus": 4,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1853,7 +1857,7 @@
     "desc": "Peça individual Arco. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_bow.png",
     "sellValue": 10,
-    "attackBonus": 7,
+    "attackBonus": 4,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1867,7 +1871,7 @@
     "desc": "Peça individual Manopla de Garras. Bônus provisório baseado nos equipamentos atuais em items.json.",
     "icon": "/assets/icons/items/weapon_glove.png",
     "sellValue": 10,
-    "attackBonus": 7,
+    "attackBonus": 4,
     "defenseBonus": 0,
     "stackable": false,
     "available": true,
@@ -1881,7 +1885,7 @@
     "desc": "Ataque +4",
     "icon": "/assets/icons/items/cajado_rustico.png",
     "weaponSet": "staff-shield",
-    "attackBonus": 4,
+    "attackBonus": 2,
     "defenseBonus": 0,
     "sellValue": 18,
     "available": true
@@ -1894,7 +1898,7 @@
     "desc": "Ataque +4",
     "icon": "/assets/icons/items/arco_curto.png",
     "weaponSet": "bow",
-    "attackBonus": 4,
+    "attackBonus": 2,
     "defenseBonus": 0,
     "sellValue": 18,
     "available": true
@@ -1907,7 +1911,7 @@
     "desc": "Defesa +2",
     "icon": "/assets/icons/items/touca_couro.png",
     "attackBonus": 0,
-    "defenseBonus": 2,
+    "defenseBonus": 1,
     "sellValue": 12,
     "available": true
   },
@@ -1919,16 +1923,16 @@
     "desc": "Defesa +3",
     "icon": "/assets/icons/items/tunica.png",
     "attackBonus": 0,
-    "defenseBonus": 3,
+    "defenseBonus": 2,
     "sellValue": 16,
     "available": true
   },
   {
     "id": "vela",
     "name": "Vela",
-    "slot": "misc",
+    "slot": "entry",
     "rarity": "Comum",
-    "desc": "Utilitário de exploração. Provisório.",
+    "desc": "Entrada da Dungeon 2. Consome ao entrar.",
     "icon": "/assets/icons/items/vela.png",
     "sellValue": 25,
     "stackable": true,
@@ -1937,12 +1941,16 @@
   {
     "id": "pena_fenix",
     "name": "Pena da Fênix",
-    "slot": "material",
+    "slot": "consumable",
     "rarity": "Raro",
-    "desc": "Material raro. Provisório.",
+    "desc": "Revive o personagem uma vez. Reutilizável após 10 minutos.",
     "icon": "/assets/icons/items/pena_fenix.png",
-    "sellValue": 40,
     "stackable": true,
-    "available": true
+    "available": true,
+    "effect": {
+      "type": "revive",
+      "cooldownSec": 600
+    },
+    "sellValue": 40
   }
 ]

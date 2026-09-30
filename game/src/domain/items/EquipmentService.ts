@@ -1,7 +1,11 @@
+import { WEAPON_SET_BY_ITEM } from "../../data/balance/economy";
+import { ITEM_CATALOG } from "../../data/items/item-catalog";
+import { lifeBonusesForItem } from "./item-life";
 import {
-  ECONOMY_BALANCE,
-  WEAPON_SET_BY_ITEM,
-} from "../../data/balance/economy";
+  itemPrimaryBonuses,
+  itemSecondaryBonuses,
+  refinePrimaryBonus,
+} from "./equip-stat-rules";
 import type { ItemInstance } from "./ItemModel";
 import type { InventoryService } from "../inventory/InventoryService";
 import type { CharacterModel } from "../character/CharacterModel";
@@ -83,29 +87,38 @@ export class EquipmentService {
     const weapon = this.equipped.weapon;
     if (!weapon) return null;
     if (weapon.weaponSet) return weapon.weaponSet;
-    return WEAPON_SET_BY_ITEM[weapon.defId] ?? null;
+    return ITEM_CATALOG[weapon.defId]?.weaponSet ?? WEAPON_SET_BY_ITEM[weapon.defId] ?? null;
   }
 
   recalcEquipBonus(classId?: string): void {
     let attack = 0;
     let defense = 0;
-    const rules = ECONOMY_BALANCE.refine.bonusBySlot;
+    let equipMaxHp = 0;
+    let equipCrit = 0;
+    let equipSpeed = 0;
     for (const slot of Object.keys(this.equipped) as EquipSlot[]) {
       const item = this.equipped[slot];
       if (!item) continue;
-      attack += item.attackBonus || 0;
-      defense += item.defenseBonus || 0;
-      const rule = rules[slot];
-      if (rule && item.refine > 0) {
-        if (rule.stat === "attack") {
-          attack += item.refine * rule.perLevel;
-        } else if (rule.stat === "defense") {
-          defense += item.refine * rule.perLevel;
-        }
-      }
+      const primary = itemPrimaryBonuses(item);
+      const refine = refinePrimaryBonus(item);
+      const secondary = itemSecondaryBonuses(item);
+      attack += primary.attack + refine.attack + secondary.attack;
+      defense += primary.defense + refine.defense + secondary.defense;
+      equipMaxHp += primary.hp + refine.hp;
+      equipCrit += secondary.crit;
+      equipSpeed += secondary.speed;
+      const life = lifeBonusesForItem(item);
+      attack += life.attack;
+      defense += life.defense;
+      equipMaxHp += life.hp;
+      equipCrit += life.crit;
+      equipSpeed += life.speed;
     }
     this.character.equipAttack = attack;
     this.character.equipDefense = defense;
+    this.character.equipMaxHp = equipMaxHp;
+    this.character.equipCrit = equipCrit;
+    this.character.equipSpeed = equipSpeed;
     this.weaponSet = this.getWeaponSet(classId);
   }
 

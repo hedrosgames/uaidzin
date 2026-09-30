@@ -1,6 +1,6 @@
+import { capMaxHp } from "../../data/balance/damage-caps";
 import { PROGRESSION_BALANCE, type EvolutionId } from "../../data/balance/progression";
-import { COMBAT_BALANCE } from "../../data/balance/combat";
-import { CLASSES, type ClassId } from "../../data/classes/class-definitions";
+import type { ClassId } from "../../data/classes/class-definitions";
 import { DUNGEONS_MORTAL } from "../../data/dungeons/dungeons-mortal";
 import type { CharacterModel } from "../character/CharacterModel";
 import type { SkillTreeService } from "../skills/SkillTreeService";
@@ -156,15 +156,14 @@ export class ProgressionService {
 
   recomputeCombatStats(): void {
     const a = this.character.attributes;
-    const primary = CLASSES[this.state.classId].primary;
-    const bonus = COMBAT_BALANCE.primary[primary];
-    const primaryValue = a[primary];
-    const extraAttack = Math.floor(primaryValue * (bonus.attackPerPoint ?? 0));
-    const extraHp = Math.floor(primaryValue * (bonus.hpPerPoint ?? 0));
     const growth = PROGRESSION_BALANCE.levelGrowth(this.state.level);
-    this.character.baseAttack = Math.floor((PROGRESSION_BALANCE.attackFromFor(a.FOR) + extraAttack) * growth);
-    this.character.baseDefense = PROGRESSION_BALANCE.defenseFromDes(a.DES);
-    const maxHp = Math.floor((PROGRESSION_BALANCE.maxHpFromCons(a.CONS) + extraHp) * growth);
+    this.character.baseAttack = Math.floor(PROGRESSION_BALANCE.attackFromAttributes(a.FOR, a.DES) * growth);
+    this.character.baseDefense = PROGRESSION_BALANCE.defenseFromAttributes(a.DES);
+    this.character.baseMagicAttack = Math.floor(PROGRESSION_BALANCE.magicAttackFromInt(a.INT) * growth);
+    this.character.baseAttackSpeed = PROGRESSION_BALANCE.attackSpeedFromDes(a.DES);
+    const maxHp = capMaxHp(
+      Math.floor(PROGRESSION_BALANCE.maxHpFromCons(a.CONS) * growth) + (this.character.equipMaxHp || 0),
+    );
     const ratio = this.character.maxHp > 0 ? this.character.hp / this.character.maxHp : 1;
     this.character.maxHp = maxHp;
     this.character.hp = this.character.isDead ? 0 : Math.max(1, Math.round(maxHp * Math.min(1, ratio)));

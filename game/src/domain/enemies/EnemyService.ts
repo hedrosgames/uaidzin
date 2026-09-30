@@ -1,6 +1,7 @@
 import { type EnemyArchetype } from "../../data/balance/combat";
 import { DUNGEON_BALANCE, dungeonArenaScale } from "../../data/balance/dungeon";
 import { DUNGEON_TEST, type DungeonDef } from "../../data/dungeons/dungeon-definitions";
+import { clampEnemyCritChance, clampEnemyEvasion } from "../../data/balance/combat-ratings";
 import { getMonsterDef } from "../../data/monsters/monster-definitions";
 import { EnemyModel } from "./EnemyModel";
 
@@ -28,7 +29,7 @@ export class EnemyService {
       const arena = def.arenas[arenaIndex];
       const scale = dungeonArenaScale(def.id, arenaIndex);
       for (const sp of arena.spawns) {
-        const enemy = this.makeEnemy(sp, scale);
+        const enemy = this.makeEnemy(sp, scale, arenaIndex);
         this.enemies.push(enemy);
         this.byId.set(enemy.id, enemy);
         if (enemy.alive) this.aliveList.push(enemy);
@@ -39,6 +40,7 @@ export class EnemyService {
   private makeEnemy(
     sp: SpawnPointDef,
     scale: { hpMultiplier: number; attackMultiplier: number; defenseMultiplier: number },
+    arenaIndex: number,
   ): EnemyModel {
     const lookupKey = sp.monsterId ?? sp.archetype ?? "fixed";
     const def = getMonsterDef(lookupKey);
@@ -70,6 +72,9 @@ export class EnemyService {
       maxHp,
       attack,
       defense,
+      evasion: clampEnemyEvasion(def.evasion ?? 0),
+      critChance: clampEnemyCritChance(def.critChance),
+      elementResists: def.elementResists,
       range: def.range,
       attackInterval: def.attackInterval,
       speed: def.speed,
@@ -80,7 +85,8 @@ export class EnemyService {
       aggroRadius: def.aggroRadius,
       respawnSeconds: respawnTime,
       isBoss,
-      xpReward: isBoss ? Math.round(def.xpReward * 3) : def.xpReward,
+      arenaIndex,
+      xpReward: def.xpReward,
       color: def.color,
       modelUrl: def.modelUrl,
       modelScale: def.modelScale,

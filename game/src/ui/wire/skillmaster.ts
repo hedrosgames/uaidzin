@@ -1,4 +1,4 @@
-import type { TreeId, WireSkillRow } from "../WireApi";
+import type { WireSkillRow } from "../WireApi";
 import type { WireContext } from "./types";
 
 export interface SkillMasterPanel {
@@ -52,16 +52,26 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
     const catalog = ctx.api.pullSkillCatalog();
     const goldCost = ctx.api.skillGoldCost(sk.idx);
     const gold = ctx.api.snapshotInventory().gold;
-    const pointsCost = ctx.api.skillPointsCost();
+    const pointsCost = ctx.api.skillPointsCost(sk.idx);
     const hasPoints = (catalog.skillPoints ?? 0) >= pointsCost;
     const canAffordGold = gold >= goldCost;
-    const eighthLocked = sk.idx === 7 && Boolean(catalog.eighthTree && catalog.eighthTree !== sk.tree);
+    const otherTreeLearned =
+      sk.idx === 7 &&
+      (["fisica", "controle", "magia"] as const).some((t) => {
+        if (t === sk.tree) return false;
+        return Object.values(catalog.skills).some((row) => row.tree === t && row.learned);
+      });
+    const eighthLocked =
+      sk.idx === 7 && (Boolean(catalog.eighthTree && catalog.eighthTree !== sk.tree) || otherTreeLearned);
     const prereqLearned = sk.idx === 0 || Boolean(catalog.skills[`${sk.tree}-${sk.idx}`]?.learned);
-    const canBuy = !sk.learned && hasPoints && canAffordGold && prereqLearned && !eighthLocked;
+    const isLivro = sk.tree === "livro";
+    const canBuy = !isLivro && !sk.learned && hasPoints && canAffordGold && prereqLearned && !eighthLocked;
 
     let btnHtml = "";
     if (sk.learned) {
       btnHtml = `<button type="button" class="inv-tool" disabled style="width:100%;margin-top:6px">Aprendida</button>`;
+    } else if (isLivro) {
+      btnHtml = `<button type="button" class="inv-tool" disabled style="width:100%;margin-top:6px">Use o livro no inventário</button>`;
     } else {
       btnHtml = `<button type="button" class="inv-tool sort" id="btnBuySkill" ${canBuy ? "" : "disabled"} style="width:100%;margin-top:6px">Comprar</button>`;
     }
@@ -86,7 +96,10 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
         <div class="desc">${sk.desc || ""}</div>
       </div>
       <div class="sm-detail-bottom">
-        <div class="cost-rows">
+        ${
+          isLivro
+            ? ""
+            : `<div class="cost-rows">
           <div class="cost-row ${!hasPoints && !sk.learned ? "is-bad" : ""}">
             <span class="lab">Pontos de Skill</span>
             <span class="val">${pointsCost}</span>
@@ -95,7 +108,8 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
             <span class="lab">Custo em Ouro</span>
             <span class="val">${goldCost.toLocaleString("pt-BR")}</span>
           </div>
-        </div>
+        </div>`
+        }
         ${btnHtml}
       </div>
     `;
@@ -116,14 +130,15 @@ export function createSkillMasterPanel(container: HTMLElement, ctx: WireContext)
     const treesContainer = win.querySelector<HTMLElement>("#smTrees");
     if (!treesContainer) return;
 
-    const treeNames: Record<TreeId, string> = {
+    const treeNames: Record<string, string> = {
       fisica: catalog.treeLabels?.fisica || "Física",
       controle: catalog.treeLabels?.controle || "Controle",
       magia: catalog.treeLabels?.magia || "Magia",
+      livro: catalog.treeLabels?.livro || "Livros",
     };
 
     let html = "";
-    for (const treeId of ["fisica", "controle", "magia"] as const) {
+    for (const treeId of catalog.trees ?? (["fisica", "controle", "magia"] as const)) {
       html += `<div class="tree-block" data-tree="${treeId}">`;
       html += `<div class="tree-h"><span>${treeNames[treeId]}</span></div>`;
       html += `<div class="sm-slots">`;

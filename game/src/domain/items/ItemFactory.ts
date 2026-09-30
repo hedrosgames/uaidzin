@@ -66,6 +66,7 @@ export function createEquipDrop(level: number, random: () => number = Math.rando
     rarity,
     slot,
     refine: 0,
+    life: 0,
     attackBonus: slot === "weapon" ? base * ECONOMY_BALANCE.weaponAttackMultiplier : base,
     defenseBonus: slot === "weapon" ? 0 : ECONOMY_BALANCE.equipDefenseBonus(base, ri),
     stack: 1,
@@ -145,6 +146,15 @@ export function createFromCatalog(defId: string, qty = 1): ItemInstance | null {
     slot === "weapon"
       ? COMBAT_BALANCE.weapon.byName[def.name as keyof typeof COMBAT_BALANCE.weapon.byName] || null
       : null;
+  const lifeAccessoryBase =
+    slot === "ring1" || slot === "ring2" || slot === "neck" || slot === "ear"
+      ? {
+          hp: 100,
+          crit: 4,
+          damage: Math.max(4, def.attackBonus ?? 4),
+          speed: 4,
+        }
+      : undefined;
   return {
     uid: nextItemUid(),
     defId: def.id,
@@ -152,8 +162,16 @@ export function createFromCatalog(defId: string, qty = 1): ItemInstance | null {
     rarity: (def.rarity as Rarity) || "Comum",
     slot,
     refine: 0,
+    life: 0,
+    lifeAccessoryBase,
     attackBonus: def.attackBonus ?? 0,
     defenseBonus: def.defenseBonus ?? 0,
+    hpBonus: def.hpBonus,
+    critBonus: def.critBonus,
+    speedBonus: def.speedBonus,
+    secondaryAttack: def.secondaryAttack,
+    secondaryDefense: def.secondaryDefense,
+    gearSet: def.gearSet,
     stack: def.stackable ? Math.max(1, Math.floor(qty)) : 1,
     sellValue: def.sellValue ?? 1,
     attackRange: reach?.attackRange,

@@ -55,7 +55,7 @@ Em 30/09 Felipe retomou a execução e delegou a direção visual ao agente prin
 6. Medir custo no mesmo viewport; redução de draws/triângulos não constitui medição de FPS em máquina real.
 7. Executar typecheck, smoke, verificações de portões, spawns, limites, shaders, transições e qualidades. Entregar capturas reais.
 
-Conclusão técnica exige testes verdes. Aprovação visual depende de Felipe. Sem commit/push neste pedido.
+Conclusão técnica exige testes verdes. Aprovação visual depende de Felipe. O pedido de 30/09 autoriza commit e merge local na main; push não foi solicitado.
 
 ## Resultado da verificação
 

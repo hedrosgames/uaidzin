@@ -143,6 +143,12 @@ export class AccountLock {
     window.addEventListener("pageshow", (event) => {
       if (event.persisted) void this.resume();
     });
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") void this.suspend();
+        else void this.resume();
+      });
+    }
   }
 
   current(): string | null {

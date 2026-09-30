@@ -1,3 +1,7 @@
+import type { CombatAttackMode } from "../domain/combat/combat-attack-mode";
+import { combatAttackModeLabel } from "../domain/combat/combat-attack-mode";
+import type { CombatMoveMode } from "../domain/combat/combat-move-mode";
+import { combatMoveModeLabel } from "../domain/combat/combat-move-mode";
 import type { HudModel, HudSkillSlot } from "./HudModel";
 
 export class SkillBarView {
@@ -13,7 +17,11 @@ export class SkillBarView {
     empty: boolean;
   }> = [];
   private readonly potCache: Array<{ defId: string; stack: number }> = [];
-  private autoCache = { attack: false, move: false, potion: false };
+  private autoCache: { attackMode: CombatAttackMode; moveMode: CombatMoveMode; potion: boolean } = {
+    attackMode: "physical",
+    moveMode: "off",
+    potion: false,
+  };
 
   constructor(_onSlotClick?: (slot: number) => void) {}
 
@@ -36,7 +44,7 @@ export class SkillBarView {
         this.cachedAutos = [];
       }
       this.potCache.length = 0;
-      this.autoCache = { attack: false, move: false, potion: false };
+      this.autoCache = { attackMode: "physical", moveMode: "off", potion: false };
       this.wireSlotCache.length = 0;
     }
   }
@@ -156,15 +164,31 @@ export class SkillBarView {
 
     for (const btn of this.cachedAutos) {
       const kind = btn.dataset.auto;
-      const on =
-        kind === "attack" ? model.autoAttack : kind === "move" ? model.autoMove : kind === "potion" ? model.autoPotion : false;
-      const prev =
-        kind === "attack" ? this.autoCache.attack : kind === "move" ? this.autoCache.move : this.autoCache.potion;
+      if (kind === "attack" && model) {
+        const mode = model.attackMode;
+        if (this.autoCache.attackMode === mode) continue;
+        this.autoCache.attackMode = mode;
+        btn.classList.remove("mode-off", "mode-physical", "mode-magic");
+        btn.classList.add(`mode-${mode}`);
+        btn.classList.toggle("is-on", mode !== "off");
+        btn.textContent = combatAttackModeLabel(mode);
+        continue;
+      }
+      if (kind === "move" && model) {
+        const mode = model.moveMode;
+        if (this.autoCache.moveMode === mode) continue;
+        this.autoCache.moveMode = mode;
+        btn.classList.remove("mode-off", "mode-anchor", "mode-hunt");
+        btn.classList.add(`mode-${mode}`);
+        btn.classList.toggle("is-on", mode !== "off");
+        btn.textContent = combatMoveModeLabel(mode);
+        continue;
+      }
+      const on = kind === "potion" ? model?.autoPotion : false;
+      const prev = kind === "potion" ? this.autoCache.potion : false;
       if (prev === on) continue;
-      if (kind === "attack") this.autoCache.attack = on;
-      else if (kind === "move") this.autoCache.move = on;
-      else if (kind === "potion") this.autoCache.potion = on;
-      btn.classList.toggle("is-on", on);
+      if (kind === "potion") this.autoCache.potion = !!on;
+      btn.classList.toggle("is-on", !!on);
     }
   }
 }

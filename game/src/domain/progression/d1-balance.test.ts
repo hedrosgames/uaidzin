@@ -9,9 +9,7 @@ function playerAt(level: number) {
   const character = new CharacterModel({ maxHp: 100, attack: 10, defense: 0 });
   const progression = new ProgressionService(character);
   progression.state.level = level;
-  const points = (level - 1) * 5;
-  character.attributes.CONS += (level - 1) * 2;
-  character.attributes.FOR += points - (level - 1) * 2;
+  character.attributes.FOR += (level - 1) * 5;
   progression.recomputeCombatStats();
   return character;
 }
@@ -26,7 +24,7 @@ function hits(hp: number, damage: number): number {
   return Math.ceil(hp / damage);
 }
 
-describe("balance D1 (TK sem equipamento, 2 CONS + 3 FOR por nível)", () => {
+describe("balance D1 (sem equipamento, +5 FOR por nível)", () => {
   const skeleton = monster("d1-a1-s1");
   const wolf = monster("d1-a2-w1");
   const fire = monster("d1-a3-g1");
@@ -60,7 +58,16 @@ describe("balance D1 (TK sem equipamento, 2 CONS + 3 FOR por nível)", () => {
     expect(fire.attack).toBeGreaterThan(wolf.attack);
   });
 
-  it("defesa não sobe distribuindo em CONS", () => {
-    expect(playerAt(40).defense).toBe(playerAt(1).defense);
+  it("defesa sobe com DES, não com CONS", () => {
+    const character = new CharacterModel({ maxHp: 100, attack: 10, defense: 0 });
+    const progression = new ProgressionService(character);
+    progression.recomputeCombatStats();
+    const before = character.defense;
+    character.attributes.CONS += 10;
+    progression.recomputeCombatStats();
+    expect(character.defense).toBe(before);
+    character.attributes.DES += 10;
+    progression.recomputeCombatStats();
+    expect(character.defense).toBeGreaterThan(before);
   });
 });

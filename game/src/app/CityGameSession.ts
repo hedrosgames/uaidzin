@@ -34,13 +34,19 @@ import { sellItem } from "../domain/economy/ShopService";
 import type { DungeonDef } from "../data/dungeons/dungeon-definitions";
 import { DUNGEON_TEST } from "../data/dungeons/dungeon-definitions";
 import { findDungeon } from "../data/dungeons/dungeons-mortal";
-import { type TreeId } from "../data/classes/class-definitions";
+import { CLASSES, type TreeId } from "../data/classes/class-definitions";
 import { SKILL_TRAINING } from "../data/balance/economy";
 import { isPotionDefId, resolveConsumableRestore } from "../data/balance/consumables";
 import { ITEM_CATALOG, resolveItemIcon } from "../data/items/item-catalog";
 import { SettingsPanel } from "../ui/SettingsPanel";
 import { isWeaponSetId } from "../presentation/player/WeaponRig";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
+import {
+  D1_GATE_Z,
+  D2_LEVEL_START,
+  d2ChaliceGrantXp,
+} from "../data/balance/xp-progression";
+import { canEngageEnemy } from "../domain/combat/CombatSpace";
 import type { BootCharacter } from "./BootFlow";
 import { PlayerController } from "../gameplay/PlayerController";
 import type { InputService } from "../gameplay/InputService";
@@ -57,10 +63,21 @@ import type { InteractableDef } from "../world/definitions";
 import { DungeonFlow, type LeaveReason } from "./session/DungeonFlow";
 import { InteractionController, INTERACT_RANGE } from "./session/InteractionController";
 import { CombatOrchestrator } from "./session/CombatOrchestrator";
+import { cycleCombatAttackMode, type CombatAttackMode } from "../domain/combat/combat-attack-mode";
+import {
+  AUTO_MOVE_HUNT_RANGE,
+  AUTO_MOVE_HUNT_STEP_METERS,
+  AUTO_MOVE_SIDE_METERS,
+  cycleCombatMoveMode,
+  type CombatMoveMode,
+} from "../domain/combat/combat-move-mode";
+import { GlobalKillGoldModifier } from "../domain/progression/GlobalKillGoldModifier";
+import { GlobalKillXpModifier } from "../domain/progression/GlobalKillXpModifier";
 import { RewardService } from "./session/RewardService";
 import { VaultTransfer } from "./session/VaultTransfer";
 import { SessionSnapshot } from "./session/SessionSnapshot";
 import { SessionDebug } from "../debug/SessionDebug";
+import type { ItemInstance } from "../domain/items/ItemModel";
 import type { DungeonEnterReason, DungeonEnterResult } from "./session/types";
 import { dungeonEnterMessage } from "./session/types";
 import { projectWalkTarget } from "../world/collision";
@@ -115,6 +132,8 @@ export class CityGameSession {
   readonly summons = new SummonRuntime();
   readonly enemyAi = new EnemyAI();
   readonly dungeonRun = new DungeonRun();
+  readonly globalKillXp = new GlobalKillXpModifier();
+  readonly globalKillGold = new GlobalKillGoldModifier();
   readonly effects: EffectManager;
   readonly enemyView: EnemyRuntimeView;
   private readonly summonView: SummonView;
@@ -137,7 +156,7 @@ export class CityGameSession {
   moveLock = 0;
   private dropLog: DropLogEntry[] = [];
   private dropLogSeq = 0;
-  private gateKills: number[] = [];
+  private gateKeys: boolean[] = [];
   pendingSkillSlot = -1;
   hadSave = false;
   saveUnreadable = false;
@@ -146,9 +165,12 @@ export class CityGameSession {
   autoAttackSwings = 0;
   progressState: SavePayload["progress"] = emptyProgress();
   potionSlots: [string | null, string | null, string | null] = [null, null, null];
-  autoAttack = true;
-  autoMove = false;
+  attackMode: CombatAttackMode = "physical";
+  moveMode: CombatMoveMode = "off";
+  private autoMoveAnchor: { x: number; z: number; perpX: number; perpZ: number } | null = null;
+  private autoMoveAnchorPhase = 0;
   autoPotion = false;
+  penaReviveCooldownSec = 0;
   private potionAutoCooldown = 0;
 
   private cachedWeaponReach: { attackRange: number; attackInterval: number } | null = null;
@@ -184,7 +206,20 @@ export class CityGameSession {
     );
     this.enemyView.bindEffects(this.effects);
     this.summonView = new SummonView(renderer.scene);
-    this.itemUse = new ItemUseService(this.inventory, this.character, this.buffs, (amount) => this.grantItemXp(amount));
+    this.itemUse = new ItemUseService(
+      this.inventory,
+      this.character,
+      this.buffs,
+      (amount, defId) => this.grantItemXp(amount, defId),
+      {
+        remainingSec: () => this.penaReviveCooldownSec,
+        start: (sec) => {
+          this.penaReviveCooldownSec = Math.max(0, sec);
+          this.saves.markDirty("options", "deferred");
+        },
+      },
+      (skillId) => this.learnBookFromItem(skillId),
+    );
 
     this.dungeonFlow = new DungeonFlow({
       inventory: this.inventory,
@@ -244,6 +279,8 @@ export class CityGameSession {
       addSessionXp: (amount) => {
         this.sessionXp += amount;
       },
+      globalKillXpMultiplier: () => this.globalKillXp.get(),
+      globalKillGoldMultiplier: () => this.globalKillGold.get(),
       onKill: (enemyId) => this.rollGateKey(enemyId),
     });
 
@@ -291,7 +328,8 @@ export class CityGameSession {
       onAutoAttackSwing: () => {
         this.autoAttackSwings += 1;
       },
-      isAutoAttackEnabled: () => this.autoAttack,
+      isAutoAttackEnabled: () => this.attackMode === "physical",
+      isAutoSkillBarEnabled: () => this.attackMode === "magic",
     });
 
     this.vaultTransfer = new VaultTransfer({
@@ -326,15 +364,18 @@ export class CityGameSession {
       refreshWeaponSetFromGear: () => this.refreshWeaponSetFromGear(),
       getHudOptions: () => ({
         potionSlots: [...this.potionSlots] as [string | null, string | null, string | null],
-        autoAttack: this.autoAttack,
-        autoMove: this.autoMove,
+        attackMode: this.attackMode,
+        moveMode: this.moveMode,
         autoPotion: this.autoPotion,
+        penaReviveCooldownSec: this.penaReviveCooldownSec,
       }),
       setHudOptions: (opts) => {
         this.potionSlots = [...opts.potionSlots] as [string | null, string | null, string | null];
-        this.autoAttack = opts.autoAttack;
-        this.autoMove = opts.autoMove;
+        this.attackMode = opts.attackMode;
+        this.moveMode = opts.moveMode;
+        if (this.moveMode !== "anchor") this.autoMoveAnchor = null;
         this.autoPotion = opts.autoPotion;
+        this.penaReviveCooldownSec = Math.max(0, opts.penaReviveCooldownSec || 0);
       },
     });
 
@@ -372,6 +413,7 @@ export class CityGameSession {
   }
 
   async enterWorld(id: WorldId): Promise<void> {
+    this.autoMoveAnchor = null;
     this.effects.clearSkillVfx();
     const world = this.worlds.switchTo(id);
     this.renderer.setWorldLook(id === "city" ? "city" : id === "dungeon-2" ? "cemetery" : id === "dungeon-test" ? "dungeon" : "field");
@@ -429,7 +471,7 @@ export class CityGameSession {
       this.dungeonRun.start(def, duration);
       this.enemies.spawnFromDungeon(def);
       world.gates?.reset();
-      this.gateKills = [];
+      this.gateKeys = [];
       this.skillLoadout.refresh();
       this.skill.reset();
       this.sessionXp = 0;
@@ -614,14 +656,15 @@ export class CityGameSession {
       const axes = this.controller.getMoveAxes();
       if (axes.x !== 0 || axes.z !== 0) this.interactions.clearPendingInteract();
       if (
-        this.autoMove &&
+        this.moveMode !== "off" &&
         inDungeon &&
         axes.x === 0 &&
         axes.z === 0 &&
         !click &&
         !this.character.isDead
       ) {
-        this.applyAutoMove();
+        if (this.moveMode === "anchor") this.applyAutoMoveAnchor();
+        else if (this.moveMode === "hunt") this.applyAutoMoveHunt();
       }
       const worldAxes = this.camera.toWorldMove(axes.x, axes.z);
       this.player.update(dt, worldAxes.x, worldAxes.z, world.boundary, world.collision);
@@ -629,6 +672,7 @@ export class CityGameSession {
 
     this.interactions.resolvePendingInteract();
     this.potionAutoCooldown = Math.max(0, this.potionAutoCooldown - dt);
+    this.penaReviveCooldownSec = Math.max(0, this.penaReviveCooldownSec - dt);
     if (this.autoPotion && !this.character.isDead) {
       this.tickAutoPotion();
     }
@@ -662,6 +706,7 @@ export class CityGameSession {
         return;
       }
       this.combat.updateCombat(dt);
+      this.tickDungeon1Gates();
     }
 
     const groundY = world.groundY(this.player.x, this.player.z);
@@ -727,8 +772,8 @@ export class CityGameSession {
       arenaHint: inDungeon ? this.currentArenaLabel() : null,
       skills: this.skill.slotStates(),
       potionSlots: this.buildPotionHudSlots(),
-      autoAttack: this.autoAttack,
-      autoMove: this.autoMove,
+      attackMode: this.attackMode,
+      moveMode: this.moveMode,
       autoPotion: this.autoPotion,
       drops: this.visibleDropLog(),
       weaponSet: this.renderer.playerView.getWeaponSet(),
@@ -757,14 +802,80 @@ export class CityGameSession {
     });
   }
 
-  private applyAutoMove(): void {
-    const targets = this.enemies.aliveTargets();
-    if (!targets.length) return;
+  private beginAutoMoveAnchor(): void {
+    const fx = Math.sin(this.player.facing);
+    const fz = Math.cos(this.player.facing);
+    this.autoMoveAnchor = {
+      x: this.player.x,
+      z: this.player.z,
+      perpX: fz,
+      perpZ: -fx,
+    };
+    this.autoMoveAnchorPhase = 0;
+  }
+
+  private autoMoveAnchorGoal(anchor: { x: number; z: number; perpX: number; perpZ: number }): {
+    x: number;
+    z: number;
+  } {
+    const side = AUTO_MOVE_SIDE_METERS;
+    const phase = this.autoMoveAnchorPhase % 4;
+    if (phase === 0) {
+      return { x: anchor.x + anchor.perpX * side, z: anchor.z + anchor.perpZ * side };
+    }
+    if (phase === 1) return { x: anchor.x, z: anchor.z };
+    if (phase === 2) {
+      return { x: anchor.x - anchor.perpX * side, z: anchor.z - anchor.perpZ * side };
+    }
+    return { x: anchor.x, z: anchor.z };
+  }
+
+  private steerTo(x: number, z: number): void {
+    const cur = this.player.moveTarget;
+    if (cur && Math.hypot(cur.x - x, cur.z - z) < 0.2) return;
+    this.player.setMoveTarget(x, z);
+  }
+
+  private applyAutoMoveAnchor(): void {
+    const world = this.worlds.getCurrent();
+    if (!world || this.interactions.pendingInteract) return;
+    if (!this.autoMoveAnchor) this.beginAutoMoveAnchor();
+    const anchor = this.autoMoveAnchor!;
+    const goal = this.autoMoveAnchorGoal(anchor);
+    const px = this.player.x;
+    const pz = this.player.z;
+    const dist = Math.hypot(goal.x - px, goal.z - pz);
+    if (dist < 0.35) {
+      this.autoMoveAnchorPhase += 1;
+      return;
+    }
+    const safe = projectWalkTarget(goal.x, goal.z, this.player.radius, world.collision, px, pz);
+    this.steerTo(safe.x, safe.z);
+  }
+
+  private applyAutoMoveHunt(): void {
+    if (this.interactions.pendingInteract) return;
+    const world = this.worlds.getCurrent();
+    const worldId = world?.id ?? "";
+    const collision = world?.collision;
+    const px = this.player.x;
+    const pz = this.player.z;
+    const targets = this.enemies.aliveTargets().filter((t) => {
+      const enemy = this.enemies.findById(t.id);
+      if (!enemy) return false;
+      const d = Math.hypot(enemy.x - px, enemy.z - pz);
+      if (d > AUTO_MOVE_HUNT_RANGE) return false;
+      return canEngageEnemy(worldId, px, pz, enemy.x, enemy.z, enemy.arenaIndex, collision);
+    });
+    if (!targets.length) {
+      this.player.clearMoveTarget();
+      return;
+    }
     let best = targets[0]!;
-    let bestDist = Math.hypot(best.x - this.player.x, best.z - this.player.z);
+    let bestDist = Math.hypot(best.x - px, best.z - pz);
     for (let i = 1; i < targets.length; i++) {
       const t = targets[i]!;
-      const d = Math.hypot(t.x - this.player.x, t.z - this.player.z);
+      const d = Math.hypot(t.x - px, t.z - pz);
       if (d < bestDist) {
         best = t;
         bestDist = d;
@@ -775,16 +886,13 @@ export class CityGameSession {
       this.player.clearMoveTarget();
       return;
     }
-    const world = this.worlds.getCurrent();
     if (!world) return;
-    const safe = projectWalkTarget(
-      best.x,
-      best.z,
-      this.player.radius,
-      world.collision,
-      this.player.x,
-      this.player.z,
-    );
+    const cur = this.player.moveTarget;
+    if (cur && Math.hypot(cur.x - px, cur.z - pz) > 0.45) return;
+    const step = Math.min(AUTO_MOVE_HUNT_STEP_METERS, Math.max(0, bestDist - reach));
+    const tx = px + ((best.x - px) / bestDist) * step;
+    const tz = pz + ((best.z - pz) / bestDist) * step;
+    const safe = projectWalkTarget(tx, tz, this.player.radius, world.collision, px, pz);
     this.player.setMoveTarget(safe.x, safe.z);
   }
 
@@ -812,16 +920,31 @@ export class CityGameSession {
   }
 
   private rollGateKey(enemyId: string): void {
+    if (this.activeDungeonId !== "dungeon-1") return;
     const gates = this.worlds.getCurrent()?.gates;
     const arenas = this.dungeonRun.getDef()?.arenas;
     if (!gates || !arenas) return;
     const zone = arenas.findIndex((arena) => arena.spawns.some((spawn) => spawn.id === enemyId));
     if (zone < 0 || zone >= gates.count || gates.isOpen(zone)) return;
-    this.gateKills[zone] = (this.gateKills[zone] ?? 0) + 1;
-    const guaranteed = this.gateKills[zone]! >= arenas[zone]!.spawns.length;
-    if (!guaranteed && Math.random() >= DUNGEON_BALANCE.gateKey.dropChance) return;
-    gates.open(zone);
-    this.pushDropLog(`Chave do Portão ${zone + 1} · portão aberto`, "item");
+    if (this.gateKeys[zone]) return;
+    if (Math.random() >= DUNGEON_BALANCE.gateKey.dropChance) return;
+    this.gateKeys[zone] = true;
+    this.pushDropLog(`Chave do Portão ${zone + 1}`, "item");
+  }
+
+  private tickDungeon1Gates(): void {
+    if (this.activeDungeonId !== "dungeon-1") return;
+    const gates = this.worlds.getCurrent()?.gates;
+    if (!gates) return;
+    const { openRadiusZ, openRadiusX } = DUNGEON_BALANCE.gateKey;
+    for (let i = 0; i < D1_GATE_Z.length; i++) {
+      if (!this.gateKeys[i] || gates.isOpen(i)) continue;
+      const gateZ = D1_GATE_Z[i]!;
+      if (Math.abs(this.player.z - gateZ) > openRadiusZ) continue;
+      if (Math.abs(this.player.x) > openRadiusX) continue;
+      gates.open(i);
+      this.pushDropLog(`Portão ${i + 1} aberto`, "item");
+    }
   }
 
   private currentArenaLabel(): string | null {
@@ -948,7 +1071,9 @@ export class CityGameSession {
   tryReset(): boolean {
     const ok = this.progression.reset();
     if (ok) {
-      this.saves.markDirty(["character", "skills"], "critical");
+      this.skillLoadout.refresh();
+      this.combat.invalidatePassives();
+      this.saves.markDirty(["character", "skills", "skillLoadout"], "critical");
       void this.saves.checkpoint();
     }
     return ok;
@@ -1025,6 +1150,36 @@ export class CityGameSession {
     this.skillLoadout.clearSlot(index);
   }
 
+  learnBookFromItem(skillId: string): boolean {
+    if (!this.skillTree.learnBookSkill(skillId)) return false;
+    const idx = CLASSES[this.skillTree.state.classId].trees.livro.findIndex((s) => s.id === skillId);
+    if (idx >= 0) this.onSkillLearned("livro", idx);
+    else {
+      this.combat.invalidatePassives();
+      this.saves.markDirty("skills", "deferred");
+    }
+    return true;
+  }
+
+  tryApplyEnhancementMaterial(materialUid: string, targetUid: string): { ok: boolean; kind?: string } {
+    const mat = this.inventory.items.find((i) => i.uid === materialUid);
+    if (!mat) return { ok: false };
+    const target =
+      this.inventory.items.find((i) => i.uid === targetUid) ||
+      (Object.values(this.equipment.equipped).find((i) => i?.uid === targetUid) as ItemInstance | undefined);
+    if (!target) return { ok: false };
+    const res = this.refinement.refineWithMaterial(target, mat.defId, Math.random, { skipGold: true });
+    if (!res.ok && res.kind === "none") return { ok: false };
+    if (res.kind === "refine" || res.kind === "life") {
+      this.equipment.onItemRefined(target);
+      this.progression.recomputeCombatStats();
+      this.saves.markDirty(["inventory", "equipment"], "critical");
+      void this.saves.checkpoint();
+      return { ok: res.ok, kind: res.kind };
+    }
+    return { ok: false };
+  }
+
   tryUseConsumable(uid: string): boolean {
     const item = this.inventory.items.find((i) => i.uid === uid);
     if (!item) return false;
@@ -1048,9 +1203,17 @@ export class CityGameSession {
     return true;
   }
 
-  private grantItemXp(amount: number): void {
-    const { levelsGained } = this.progression.addXp(amount);
-    this.sessionXp += amount;
+  private grantItemXp(amount: number, defId?: string): void {
+    let grant = amount;
+    if (defId?.startsWith("chalice_xp_")) {
+      const lv = this.progression.state.level;
+      grant =
+        lv >= D2_LEVEL_START
+          ? d2ChaliceGrantXp(lv)
+          : Math.max(1, Math.round(PROGRESSION_BALANCE.xpToLevel(lv) / 5));
+    }
+    const { levelsGained } = this.progression.addXp(grant);
+    this.sessionXp += grant;
     if (levelsGained <= 0) return;
     this.skillTree.grantSkillPoints(levelsGained);
     this.skillLoadout.refresh();
@@ -1075,15 +1238,20 @@ export class CityGameSession {
   }
 
   toggleCombatAuto(kind: "attack" | "move" | "potion"): boolean {
-    if (kind === "attack") this.autoAttack = !this.autoAttack;
-    else if (kind === "move") this.autoMove = !this.autoMove;
+    if (kind === "attack") this.attackMode = cycleCombatAttackMode(this.attackMode);
+    else if (kind === "move") {
+      const next = cycleCombatMoveMode(this.moveMode);
+      if (next === "anchor") this.beginAutoMoveAnchor();
+      else this.autoMoveAnchor = null;
+      this.moveMode = next;
+    }
     else this.autoPotion = !this.autoPotion;
     this.saves.markDirty("options", "deferred");
     return true;
   }
 
-  getCombatAutos(): { attack: boolean; move: boolean; potion: boolean } {
-    return { attack: this.autoAttack, move: this.autoMove, potion: this.autoPotion };
+  getCombatAutos(): { attackMode: CombatAttackMode; moveMode: CombatMoveMode; potion: boolean } {
+    return { attackMode: this.attackMode, moveMode: this.moveMode, potion: this.autoPotion };
   }
 
   getPotionBar(): Array<HudPotionSlot | null> {

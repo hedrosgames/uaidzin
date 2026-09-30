@@ -2,6 +2,7 @@ import { CLASSES, type TreeId } from "../data/classes/class-definitions";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
 import { SKILL_BALANCE } from "../data/balance/skills";
 import { resolveItemIcon, shopCatalogForUi, SKILL_TRAINING } from "../data/balance/economy";
+import { skillPurchasePointCost } from "../data/balance/skill-purchase";
 import { dungeonEnterMessage, type CityGameSession } from "../app/CityGameSession";
 import { buyFromShop, sellItem } from "../domain/economy/ShopService";
 import { saveVault } from "../persistence/SaveVault";
@@ -55,6 +56,7 @@ function toWireItem(it: ItemInstance): WireItem {
     slot: it.slot,
     rarity: it.rarity,
     refine: it.refine,
+    life: it.life || 0,
     attackBonus: it.attackBonus,
     defenseBonus: it.defenseBonus,
     stack: it.stack,
@@ -87,7 +89,7 @@ export function buildWireSkillCatalog(session: CityGameSession): WireSkillCatalo
         passive: sk.kind === "passive",
         mp: sk.mp ?? 0,
         cd: sk.cooldown ?? 0,
-        pointsCost: SKILL_TRAINING.pointsCost,
+        pointsCost: skillPurchasePointCost(i),
         goldCost: SKILL_TRAINING.goldCost(i),
         icon: skillIconPath(sk.id),
       };
@@ -485,6 +487,11 @@ export function createWireGameApi(
       }
       return { ...r, newRefine: item.refine };
     },
+    applyEnhancementMaterial: (materialUid: string, targetUid: string) => {
+      const r = session.tryApplyEnhancementMaterial(materialUid, targetUid);
+      if (r.ok || r.kind) notifyChanged();
+      return r;
+    },
 
     listEligible: (recipeId: string): WireComposerItem[] =>
       session.composition.listEligible(recipeId).map((it) => ({
@@ -492,6 +499,7 @@ export function createWireGameApi(
         defId: it.defId,
         name: it.name,
         refine: it.refine,
+    life: it.life || 0,
         rarity: it.rarity,
         slot: it.slot,
         attackBonus: it.attackBonus,
@@ -576,7 +584,7 @@ export function createWireGameApi(
     },
 
     resolveItemIcon: (defId: string, slot?: string, name?: string) => resolveItemIcon(defId, slot, name),
-    skillPointsCost: () => SKILL_TRAINING.pointsCost,
+    skillPointsCost: (index: number) => skillPurchasePointCost(index),
     skillGoldCost: (index: number) => SKILL_TRAINING.goldCost(index),
     canAffordSkill: (skillPoints: number, gold: number, pointsCost: number, goldCost: number) =>
       SKILL_TRAINING.canAfford(skillPoints, gold, pointsCost, goldCost),

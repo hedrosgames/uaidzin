@@ -69,6 +69,25 @@ describe("EquipmentService and CompositionService", () => {
     expect(character.equipAttack).toBe(10 + 9 * 2);
   });
 
+  it("refino não aumenta crit nem velocidade secundários", () => {
+    const inv = new InventoryService();
+    const character = new CharacterModel({ maxHp: 100, attack: 10, defense: 5 });
+    const eq = new EquipmentService(inv, character);
+    const weapon = createItem({
+      uid: "w2",
+      defId: "weapon_gear1_epico",
+      attackBonus: 8,
+      critBonus: 4,
+      speedBonus: 2,
+      refine: 5,
+    });
+    inv.add(weapon);
+    eq.equip("w2");
+    expect(character.equipAttack).toBe(8 + 5 * 2);
+    expect(character.equipCrit).toBe(4);
+    expect(character.equipSpeed).toBe(2);
+  });
+
   it("set de arma segue a peca equipada e sem arma nas maos fica vazio", () => {
     const inv = new InventoryService();
     const character = new CharacterModel({ maxHp: 100, attack: 10, defense: 5 });
@@ -89,5 +108,15 @@ describe("EquipmentService and CompositionService", () => {
     eq.unequip("weapon");
     expect(eq.getWeaponSet("TK")).toBeNull();
     expect(eq.weaponSet).toBeNull();
+  });
+
+  it("arma de conjunto sem weaponSet na instancia usa o catalogo", () => {
+    const inv = new InventoryService();
+    const character = new CharacterModel({ maxHp: 100, attack: 10, defense: 5 });
+    const eq = new EquipmentService(inv, character);
+    const weapon = createItem({ uid: "g1", defId: "weapon_gear2_comum", weaponSet: undefined });
+    inv.add(weapon);
+    eq.equip("g1");
+    expect(eq.getWeaponSet("TK")).toBe("greatsword");
   });
 });

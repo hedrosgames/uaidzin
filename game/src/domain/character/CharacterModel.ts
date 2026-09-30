@@ -1,3 +1,4 @@
+import { capMagicAttack, capMaxMp, capPhysicalAttack } from "../../data/balance/damage-caps";
 import { PROGRESSION_BALANCE } from "../../data/balance/progression";
 
 export interface CharacterAttributes {
@@ -20,11 +21,21 @@ export class CharacterModel {
   
   baseAttack: number;
   baseDefense: number;
+  baseMagicAttack = 0;
+  baseAttackSpeed = 0;
   equipAttack = 0;
+  equipMagicAttack = 0;
   equipDefense = 0;
+  equipMaxHp = 0;
+  equipCrit = 0;
+  equipSpeed = 0;
 
   get attack(): number {
-    return this.baseAttack + this.equipAttack;
+    return capPhysicalAttack(this.baseAttack + this.equipAttack);
+  }
+
+  get magicAttack(): number {
+    return capMagicAttack(this.baseMagicAttack + this.equipMagicAttack);
   }
 
   get defense(): number {
@@ -41,7 +52,7 @@ export class CharacterModel {
   }
 
   computeMaxMp(level: number, int: number): number {
-    return PROGRESSION_BALANCE.maxMpFromLevelInt(level, int);
+    return capMaxMp(PROGRESSION_BALANCE.maxMpFromLevelInt(level, int));
   }
 
   syncMaxMp(): void {

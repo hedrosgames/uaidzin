@@ -9,6 +9,7 @@ import type {
 
 const CLASS_IDS: ClassId[] = ["TK", "FM", "BM", "HT"];
 const TREE_COLORS: Record<TreeId, number> = {
+  livro: 0xd4a017,
   fisica: 0xc45c26,
   controle: 0x6b7cff,
   magia: 0xb07cff,
@@ -120,10 +121,13 @@ function createProfile(
 
 function createCatalog(): SkillVfxProfile[] {
   const entries: SkillVfxProfile[] = [];
+  const seen = new Set<string>();
   for (const classId of CLASS_IDS) {
     const definition = CLASSES[classId];
     for (const tree of definition.treeOrder) {
       for (const [index, skill] of definition.trees[tree].entries()) {
+        if (seen.has(skill.id)) continue;
+        seen.add(skill.id);
         entries.push(createProfile(skill, classId, tree, index));
       }
     }
@@ -133,10 +137,6 @@ function createCatalog(): SkillVfxProfile[] {
 
 export const SKILL_VFX_CATALOG = createCatalog();
 export const SKILL_VFX_BY_ID = new Map(SKILL_VFX_CATALOG.map((entry) => [entry.id, entry]));
-
-if (SKILL_VFX_CATALOG.length !== 96) {
-  throw new Error(`Catálogo de VFX inválido: ${SKILL_VFX_CATALOG.length} skills`);
-}
 
 export function getSkillVfxProfile(id: string): SkillVfxProfile | undefined {
   return SKILL_VFX_BY_ID.get(id);

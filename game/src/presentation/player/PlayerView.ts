@@ -374,10 +374,10 @@ export class PlayerView {
     else if (want === "run") this.syncRunTimeScale();
   }
 
-  playAttack(): "attack" | "cast" {
+  playAttack(attackSpeedMul = 1): "attack" | "cast" {
     const set = this.weaponRig.getSet() ?? this.weaponSet;
     const anim: "attack" | "cast" = set ? basicAnimForWeapon(set) : "attack";
-    this.playOneShot(anim);
+    this.playOneShot(anim, attackSpeedMul);
     return anim;
   }
 
@@ -743,10 +743,18 @@ export class PlayerView {
     );
   }
 
-  private playOneShot(name: PlayerAnim): void {
+  private playOneShot(name: PlayerAnim, attackSpeedMul?: number): void {
     if (!this.ready || (this.dead && name !== "death")) return;
     const action = this.actions.get(name);
     if (!action) return;
+    if (name === "attack" || name === "cast") {
+      const cap = COMBAT_BALANCE.attackAnimSpeedMax;
+      const floor = COMBAT_BALANCE.basicAttackSpeedFloor;
+      const scale = attackSpeedMul != null
+        ? Math.min(cap, Math.max(floor, attackSpeedMul))
+        : 1;
+      action.setEffectiveTimeScale(scale);
+    }
     this.play(name, false);
     const clip = action.getClip();
     const durationMs = Math.max(0.2, clip.duration / Math.max(action.timeScale, 0.01)) * 1000;

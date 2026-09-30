@@ -7,8 +7,16 @@ export interface ItemInstance {
   rarity: Rarity;
   slot: "weapon" | "head" | "armor" | "ring1" | "ring2" | "neck" | "ear" | "material" | "misc";
   refine: number;
+  life?: number;
+  lifeAccessoryBase?: { hp: number; crit: number; damage: number; speed: number };
   attackBonus: number;
   defenseBonus: number;
+  hpBonus?: number;
+  critBonus?: number;
+  speedBonus?: number;
+  secondaryAttack?: number;
+  secondaryDefense?: number;
+  gearSet?: 1 | 2 | 3;
   stack: number;
   sellValue: number;
   attackRange?: number;

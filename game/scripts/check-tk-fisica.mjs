@@ -57,8 +57,8 @@ try {
 
   await page.evaluate(() => {
     const s = window.__UAIDZIN__.session;
-    s.debug.addLevels(10);
-    s.inventory.gold = 50000;
+    s.debug.addLevels(250);
+    s.inventory.gold = 500000;
   });
   ok("Pontos e ouro concedidos para teste");
 
