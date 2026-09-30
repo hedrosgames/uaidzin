@@ -75,6 +75,7 @@ export class CombatOrchestrator {
   private cachedMods: CombatMods | null = null;
   private cachedPassives: ReturnType<typeof learnedPassives> | null = null;
   private modsStamp = "";
+  private pendingBasicAttack: { targetId: string; delay: number } | null = null;
   private readonly vOrigin = new Vector3();
   private readonly vTarget = new Vector3();
   private readonly vAim = new Vector3();
@@ -143,6 +144,15 @@ export class CombatOrchestrator {
     const speedMul = Math.max(COMBAT_BALANCE.basicAttackSpeedFloor, 1 + frameMods.attackSpeed);
     this.deps.attack.setReach(reach.attackRange, reach.attackInterval / speedMul);
 
+    if (this.pendingBasicAttack) {
+      this.pendingBasicAttack.delay -= dt;
+      if (this.pendingBasicAttack.delay <= 0) {
+        const targetId = this.pendingBasicAttack.targetId;
+        this.pendingBasicAttack = null;
+        this.resolveBasicAttack(targetId, frameMods);
+      }
+    }
+
     const hitTarget = this.deps.attack.tick(
       dt,
       this.deps.player.isMoving || this.deps.getMoveLock() > 0 || !this.deps.isAutoAttackEnabled(),
@@ -157,52 +167,14 @@ export class CombatOrchestrator {
         const dx = enemy.x - this.deps.player.x;
         const dz = enemy.z - this.deps.player.z;
         this.deps.player.facing = Math.atan2(dx, dz);
-        this.deps.effects.playAttackPulse(this.deps.renderer.playerMesh);
         const animSpeed = basicAttackAnimTimeScale(speedMul);
         const atkAnim = this.deps.renderer.playerView.playAttack(animSpeed);
         this.deps.onAutoAttackSwing();
         this.deps.lockFromAnim(atkAnim, COMBAT_BALANCE.moveLock.attackFallback);
-
-        if (enemy.alive && rollPlayerAttackHits(enemy.evasion)) {
-          let atk = this.deps.character.attack * frameMods.attackMul;
-          if (frameMods.stealth) atk *= this.deps.buffs.consumeStealth();
-          const critChance = frameMods.critChance + (this.deps.form.active ? frameMods.transformedCrit : 0);
-          const hitCount = basicAttackHitCount(attackSpeedMultiplierToPercent(speedMul));
-          const mesh = this.deps.enemyView.getMesh(enemy.id);
-          let killed = false;
-          let totalDamage = 0;
-          for (let i = 0; i < hitCount; i++) {
-            let dmg = calculateDamage(atk, enemy.defense);
-            const struck = rollCritStrike(dmg, critChance);
-            dmg = struck.damage + frameMods.damageFlat;
-            totalDamage += dmg;
-            killed = enemy.applyDamage(dmg);
-            const floatY = 1.4 + i * 0.18;
-            this.deps.effects.spawnDamageNumber(
-              enemy.x,
-              floatY,
-              enemy.z,
-              dmg,
-              struck.crit ? "enemyCrit" : "enemy",
-            );
-            if (killed) break;
-          }
-          this.deps.effects.playHitFlash(mesh);
-          this.deps.enemyView.playHit(enemy.id);
-          if (killed) {
-            this.deps.rewards.grantKillXp(enemy);
-            this.deps.enemyView.playDeath(enemy.id);
-            this.deps.effects.playDeath(mesh, 1.4);
-            this.deps.effects.hideHpBar(enemy.id);
-            this.deps.effects.spawnDamageNumber(enemy.x, 1.7, enemy.z, 0, "kill");
-            this.deps.enemies.onEnemyDeath(enemy);
-          }
-          this.deps.bus.emit("combat:hit", { targetId: enemy.id, damage: totalDamage, killed });
-        } else if (enemy.alive) {
-          this.deps.effects.spawnDamageNumber(enemy.x, 1.4, enemy.z, 0, "miss");
-          this.deps.bus.emit("combat:miss", { targetId: enemy.id });
-          this.deps.onCombatMiss();
-        }
+        this.pendingBasicAttack = {
+          targetId: enemy.id,
+          delay: Math.max(0.08, this.deps.renderer.playerView.getAnimDurationSec(atkAnim) * 0.45),
+        };
       }
     }
 
@@ -464,6 +436,53 @@ export class CombatOrchestrator {
     this.deps.bus.emit("combat:damage", { amount, hp: this.deps.character.hp });
     if (this.deps.character.isDead) {
       this.deps.onPlayerDeath();
+    }
+  }
+
+  private resolveBasicAttack(targetId: string, frameMods: CombatMods): void {
+    const enemy = this.deps.enemies.findById(targetId);
+    if (!enemy?.alive) return;
+    if (rollPlayerAttackHits(enemy.evasion)) {
+      let atk = this.deps.character.attack * frameMods.attackMul;
+      if (frameMods.stealth) atk *= this.deps.buffs.consumeStealth();
+      const critChance = frameMods.critChance + (this.deps.form.active ? frameMods.transformedCrit : 0);
+      const speedMul = Math.max(COMBAT_BALANCE.basicAttackSpeedFloor, 1 + frameMods.attackSpeed);
+      const hitCount = basicAttackHitCount(attackSpeedMultiplierToPercent(speedMul));
+      const mesh = this.deps.enemyView.getMesh(enemy.id);
+      let killed = false;
+      let totalDamage = 0;
+      this.deps.effects.playAttackPulse(mesh);
+      for (let i = 0; i < hitCount; i++) {
+        let dmg = calculateDamage(atk, enemy.defense);
+        const struck = rollCritStrike(dmg, critChance);
+        dmg = struck.damage + frameMods.damageFlat;
+        totalDamage += dmg;
+        killed = enemy.applyDamage(dmg);
+        const floatY = 1.4 + i * 0.18;
+        this.deps.effects.spawnDamageNumber(
+          enemy.x,
+          floatY,
+          enemy.z,
+          dmg,
+          struck.crit ? "enemyCrit" : "enemy",
+        );
+        if (killed) break;
+      }
+      this.deps.effects.playHitFlash(mesh);
+      this.deps.enemyView.playHit(enemy.id);
+      if (killed) {
+        this.deps.rewards.grantKillXp(enemy);
+        this.deps.enemyView.playDeath(enemy.id);
+        this.deps.effects.playDeath(mesh, 1.4);
+        this.deps.effects.hideHpBar(enemy.id);
+        this.deps.effects.spawnDamageNumber(enemy.x, 1.7, enemy.z, 0, "kill");
+        this.deps.enemies.onEnemyDeath(enemy);
+      }
+      this.deps.bus.emit("combat:hit", { targetId: enemy.id, damage: totalDamage, killed });
+    } else {
+      this.deps.effects.spawnDamageNumber(enemy.x, 1.4, enemy.z, 0, "miss");
+      this.deps.bus.emit("combat:miss", { targetId: enemy.id });
+      this.deps.onCombatMiss();
     }
   }
 }
