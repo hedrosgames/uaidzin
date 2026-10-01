@@ -10,4 +10,5 @@ export const BM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   bm_fis_presas_aco: { motif: "fang", color: 0xb3b5ad, accent: 0xf0d897, count: 2, scale: 0.48, spread: 0.45, spin: 0.5, lift: 1.3, motion: "ward", particleRate: 16 },
   bm_fis_tita: { motif: "crystal", color: 0x89734b, accent: 0xe3bb65, count: 8, scale: 0.65, spread: 1.35, spin: 0.4, lift: 1.5, motion: "totem", particleRate: 40 },
   bm_mag_dardo_igneo: { motif: "blade", color: 0xa34620, accent: 0xf8ba52, count: 3, scale: 0.42, spread: 0.18, spin: 1.4, lift: 0, motion: "trail", particleRate: 42 },
+  bm_mag_fenda_glacial: { motif: "crystal", color: 0x448ba0, accent: 0xbce1e5, count: 4, scale: 0.48, spread: 0.26, spin: 0.5, lift: 0.2, motion: "burst", particleRate: 30 },
 };
