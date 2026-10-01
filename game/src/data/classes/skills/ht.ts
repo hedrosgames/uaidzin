@@ -170,6 +170,7 @@ export const HT_MAGIA: SkillDef[] = [
   defineSkill({
     id: "ht_mag_flecha_arcana",
     name: "Flecha Arcana",
+    desc: "Flecha mágica contra um inimigo a até 8 m. Causa 115 % do ataque mágico.",
     index: 0,
     kind: "damage",
     shape: "single",
@@ -179,6 +180,7 @@ export const HT_MAGIA: SkillDef[] = [
   defineSkill({
     id: "ht_mag_flecha_ignea",
     name: "Flecha Ígnea",
+    desc: "Flecha de fogo contra um inimigo a até 8 m. Causa 130 % do ataque mágico e sofre a resistência a fogo do alvo.",
     index: 1,
     kind: "damage",
     shape: "single",
@@ -188,6 +190,7 @@ export const HT_MAGIA: SkillDef[] = [
   defineSkill({
     id: "ht_mag_flecha_glacial",
     name: "Flecha Glacial",
+    desc: "Flecha de gelo contra um inimigo a até 8 m. Causa 145 % do ataque mágico e reduz o movimento do alvo em 50 % por 3 s.",
     index: 2,
     kind: "damage",
     shape: "single",
@@ -198,6 +201,7 @@ export const HT_MAGIA: SkillDef[] = [
   defineSkill({
     id: "ht_mag_flecha_trovao",
     name: "Flecha de Trovão",
+    desc: "Flecha elétrica contra um inimigo a até 8 m. Causa 160 % do ataque mágico e tem 30 % de chance de atordoar por 1 s.",
     index: 3,
     kind: "damage",
     shape: "single",
@@ -208,6 +212,7 @@ export const HT_MAGIA: SkillDef[] = [
   defineSkill({
     id: "ht_mag_chuva_mistica",
     name: "Chuva Mística",
+    desc: "Chuva mágica ao redor do personagem. Causa 180 % do ataque mágico a todos os inimigos num raio de 3,8 m.",
     index: 4,
     kind: "damage",
     shape: "aoe",
@@ -218,6 +223,7 @@ export const HT_MAGIA: SkillDef[] = [
   defineSkill({
     id: "ht_mag_flecha_espectral",
     name: "Flecha Espectral",
+    desc: "Flecha de sombra contra um inimigo a até 8 m. Causa 185 % do ataque mágico e ignora 35 % da defesa.",
     index: 5,
     kind: "damage",
     shape: "single",
@@ -229,6 +235,7 @@ export const HT_MAGIA: SkillDef[] = [
   defineSkill({
     id: "ht_mag_vagalume",
     name: "Vagalume de Fogo",
+    desc: "Explosão de fogo ao redor do personagem. Causa 220 % do ataque mágico a todos os inimigos num raio de 3,6 m.",
     index: 6,
     kind: "damage",
     shape: "aoe",
@@ -239,6 +246,7 @@ export const HT_MAGIA: SkillDef[] = [
   defineSkill({
     id: "ht_mag_tempestade",
     name: "Tempestade do Caçador",
+    desc: "Tempestade elemental ao redor do personagem. Causa 260 % do ataque mágico a todos os inimigos num raio de 4,6 m. Só uma 8ª skill por personagem.",
     index: 7,
     kind: "damage",
     shape: "aoe",
