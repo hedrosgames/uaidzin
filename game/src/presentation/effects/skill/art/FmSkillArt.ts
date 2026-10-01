@@ -14,4 +14,5 @@ export const FM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   fm_ctrl_bencao: { motif: "shield", color: 0xba9147, accent: 0xf4e7bd, count: 4, scale: 0.66, spread: 0.82, spin: 0.6, lift: 1.0, motion: "ward", particleRate: 20 },
   fm_ctrl_purificacao: { motif: "spiral", color: 0xf0e2b8, accent: 0x80c4d5, count: 6, scale: 0.5, spread: 0.86, spin: -2.1, lift: 0.9, motion: "burst", particleRate: 32 },
   fm_ctrl_lanca_luz: { motif: "blade", color: 0xe4c174, accent: 0xfff3ce, count: 3, scale: 0.92, spread: 0.26, spin: 0.3, lift: 0.4, motion: "trail", particleRate: 34 },
+  fm_ctrl_vontade_divina: { motif: "wing", color: 0xdcb962, accent: 0xf4e9ce, count: 2, scale: 1.04, spread: 0.98, spin: 0.55, lift: 1.2, motion: "ward", particleRate: 24 },
 };
