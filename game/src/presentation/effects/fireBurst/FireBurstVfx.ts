@@ -182,12 +182,11 @@ class FireBurstCast {
     private readonly lightPool?: TkLightPool,
   ) {
     this.impactSystems = createFireBurstImpactSystems(shared.particleMaterials);
-    const phase = Math.random() * Math.PI * 2;
     for (let index = 0; index < FIRE_BURST_CHAIN_COUNT; index += 1) {
       const flightSystems = createFireBurstFlightSystems(shared.particleMaterials, config);
       this.chains.push(new FireBurstChain(
         castRoot, shared, flightSystems, origin, target,
-        phase + index * Math.PI * 2 / FIRE_BURST_CHAIN_COUNT + (Math.random() - 0.5) * 0.16,
+        Math.random() * Math.PI * 2,
         config.chainSpacing, config.chainMaxLinks,
       ));
       for (const system of flightSystems.all) system.play();

@@ -12,6 +12,7 @@ export interface HelixCurveOptions {
   turnsJitter: number;
   lateralFactor: number;
   verticalFactor: number;
+  peak: number;
 }
 
 export const DEFAULT_HELIX_OPTIONS: HelixCurveOptions = {
@@ -23,6 +24,7 @@ export const DEFAULT_HELIX_OPTIONS: HelixCurveOptions = {
   turnsJitter: 0.4,
   lateralFactor: 0.82,
   verticalFactor: 0.86,
+  peak: 0.5,
 };
 
 export function createHelixCurve(
@@ -45,10 +47,12 @@ export function createHelixCurve(
     merged.maxRadius,
   );
   const turns = merged.turns + Math.random() * merged.turnsJitter;
+  const peak = Math.min(0.85, Math.max(0.15, merged.peak));
   const points: Vector3[] = [];
   for (let index = 0; index <= merged.samples; index += 1) {
     const t = index / merged.samples;
-    const envelope = Math.sin(Math.PI * t);
+    const warped = Math.pow(t, Math.log(0.5) / Math.log(peak));
+    const envelope = Math.sin(Math.PI * warped);
     const angle = phase + t * Math.PI * 2 * turns;
     points.push(
       origin

@@ -29,7 +29,16 @@ export class FireBurstChain extends LinkProjectile {
         tipGeometry: resources.tipGeometry,
         tipMaterial: resources.tipMaterial,
       },
-      createHelixCurve(origin, target, phase),
+      createHelixCurve(origin, target, phase, {
+        radiusFactor: 0.05 + Math.random() * 0.42,
+        radiusJitter: 0.04,
+        maxRadius: 2.8,
+        turns: (Math.random() < 0.5 ? 1 : -1) * (0.15 + Math.random() * 1.7),
+        turnsJitter: 0.15,
+        lateralFactor: 0.25 + Math.random() * 1.05,
+        verticalFactor: (Math.random() * 2 - 0.85) * (0.35 + Math.random() * 0.9),
+        peak: 0.22 + Math.random() * 0.56,
+      }),
       phase,
       systems.all,
       {
