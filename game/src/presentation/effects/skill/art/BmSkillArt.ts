@@ -23,4 +23,5 @@ export const BM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   bm_ctrl_urso: { motif: "shield", color: 0x6b5239, accent: 0xd5b585, count: 5, scale: 0.62, spread: 0.85, spin: 0.3, lift: 1.1, motion: "totem", particleRate: 28 },
   bm_ctrl_tigre: { motif: "claw", color: 0xab742c, accent: 0xf0c175, count: 3, scale: 0.65, spread: 0.75, spin: 1.1, lift: 1.3, motion: "totem", particleRate: 30 },
   bm_ctrl_dragao: { motif: "wing", color: 0x94532a, accent: 0xf0b34d, count: 6, scale: 0.75, spread: 1.1, spin: 0.8, lift: 1.8, motion: "totem", particleRate: 42 },
+  bm_ctrl_vinculo: { motif: "spiral", color: 0x5e884d, accent: 0xc8d894, count: 2, scale: 0.4, spread: 0.65, spin: -0.8, lift: 1.2, motion: "ward", particleRate: 16 },
 };
