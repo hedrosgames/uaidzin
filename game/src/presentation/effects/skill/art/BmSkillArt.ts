@@ -8,4 +8,5 @@ export const BM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   bm_fis_garra_brutal: { motif: "claw", color: 0xc08957, accent: 0xf0d0a0, count: 3, scale: 0.72, spread: 0.35, spin: -1.6, lift: 0.2, motion: "burst", particleRate: 34 },
   bm_fis_ursao: { motif: "shield", color: 0x654c36, accent: 0xccab70, count: 6, scale: 0.65, spread: 1.05, spin: 0.25, lift: 1.1, motion: "totem", particleRate: 30 },
   bm_fis_presas_aco: { motif: "fang", color: 0xb3b5ad, accent: 0xf0d897, count: 2, scale: 0.48, spread: 0.45, spin: 0.5, lift: 1.3, motion: "ward", particleRate: 16 },
+  bm_fis_tita: { motif: "crystal", color: 0x89734b, accent: 0xe3bb65, count: 8, scale: 0.65, spread: 1.35, spin: 0.4, lift: 1.5, motion: "totem", particleRate: 40 },
 };
