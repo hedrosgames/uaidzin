@@ -42,15 +42,15 @@ export interface AuraVfxConfig {
 }
 
 export const DEFAULT_AURA_VFX_CONFIG: AuraVfxConfig = {
-  duration: 8,
+  duration: 3.5,
   activationDuration: 0.5,
   fadeDuration: 1.2,
   pulseInterval: 1,
   maxConcurrentCasts: 2,
   shimmerEmission: 14,
   moteCount: 14,
-  bodyRadius: 0.7,
-  ringRadius: 1.1,
+  bodyRadius: 2.8,
+  ringRadius: 3.4,
 };
 
 type AuraPhase = "activation" | "active" | "fade";
@@ -98,7 +98,7 @@ function createGroundRingMaterial(): ShaderMaterial {
       uTime: { value: 0 },
       uIntensity: { value: 0 },
       uPulseInterval: { value: 1 },
-      uColor: { value: new Color(0.83, 0.63, 0.09) },
+      uColor: { value: new Color(0.38, 0.76, 1) },
     },
     vertexShader: GROUND_RING_VERTEX,
     fragmentShader: GROUND_RING_FRAGMENT,
@@ -180,7 +180,7 @@ class AuraCast {
       transparent: true,
       depthWrite: false,
       blending: AdditiveBlending,
-      color: new Color(0.94, 0.78, 0.34),
+      color: new Color(0.5, 0.84, 1),
       opacity: 0,
     });
     this.halo = new Sprite(this.haloMaterial);
@@ -194,7 +194,7 @@ class AuraCast {
       transparent: true,
       depthWrite: false,
       blending: AdditiveBlending,
-      color: new Color(0.98, 0.88, 0.52),
+      color: new Color(0.78, 0.94, 1),
       opacity: 0,
     });
     for (let index = 0; index < config.moteCount; index += 1) {
@@ -205,7 +205,7 @@ class AuraCast {
       const fraction = index / Math.max(1, config.moteCount);
       this.motes.push({
         sprite,
-        radius: 0.5 + 0.28 * Math.abs(Math.sin(index * 2.3999632)),
+        radius: config.ringRadius * (0.28 + 0.22 * Math.abs(Math.sin(index * 2.3999632))),
         baseHeight: 0.3 + 1.4 * fraction,
         angularSpeed: (index % 2 === 0 ? 1 : -1) * (0.55 + 0.5 * Math.abs(Math.cos(index * 1.7))),
         bobFrequency: 0.9 + 0.7 * Math.abs(Math.sin(index * 3.1)),
@@ -216,10 +216,10 @@ class AuraCast {
     }
 
     if (this.lightPool) {
-      this.light = this.lightPool.acquire(0xd4a017, 5.5);
+      this.light = this.lightPool.acquire(0x71cfff, 7);
       this.isPooledLight = true;
     } else {
-      this.light = new PointLight(0xd4a017, 0, 5.5, 2);
+      this.light = new PointLight(0x71cfff, 0, 7, 2);
       this.isPooledLight = false;
     }
     if (this.light) this.castRoot.add(this.light);
@@ -272,7 +272,10 @@ class AuraCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.castRoot.remove(this.ring, this.halo);
     if (this.isPooledLight) {
       this.lightPool?.release(this.light);
@@ -303,7 +306,7 @@ class AuraCast {
     this.shimmerSystems.shimmer.emitter.visible = true;
     this.shimmerSystems.shimmer.restart();
     this.shimmerSystems.shimmer.play();
-    this.ring.scale.setScalar(0.3);
+    this.ring.scale.setScalar(0.3 * this.config.ringRadius / 1.1);
     this.ring.material.uniforms.uIntensity.value = 0;
   }
 
@@ -317,7 +320,7 @@ class AuraCast {
     const ease = 1 - Math.pow(1 - progress, 3);
     this.pulseTime += deltaTime;
     this.ring.material.uniforms.uTime.value = this.pulseTime;
-    this.ring.scale.setScalar(0.3 + ease * 0.7);
+    this.ring.scale.setScalar((0.3 + ease * 0.7) * this.config.ringRadius / 1.1);
     this.ring.material.uniforms.uIntensity.value = ease;
     this.haloMaterial.opacity = ease * 0.5;
     this.moteMaterial.opacity = ease * 0.85;
@@ -336,7 +339,7 @@ class AuraCast {
     const pulse = 0.5 + 0.5 * Math.sin((this.pulseTime * Math.PI * 2) / Math.max(this.config.pulseInterval, 0.05));
     this.ring.material.uniforms.uIntensity.value = 0.82 + pulse * 0.18;
     const breathe = 1 + Math.sin(this.pulseTime * 1.6) * 0.03;
-    this.ring.scale.setScalar(breathe);
+    this.ring.scale.setScalar(breathe * this.config.ringRadius / 1.1);
     this.haloMaterial.opacity = 0.38 + pulse * 0.2;
     this.halo.scale.setScalar(1.7 + pulse * 0.22);
     this.moteMaterial.opacity = 0.7 + pulse * 0.25;
@@ -361,7 +364,7 @@ class AuraCast {
     this.haloMaterial.opacity = 0.5 * fade;
     this.moteMaterial.opacity = 0.85 * fade;
     if (this.light) this.light.intensity = 1.1 * fade;
-    this.ring.scale.setScalar(1 + progress * 0.1);
+    this.ring.scale.setScalar((1 + progress * 0.1) * this.config.ringRadius / 1.1);
     this.updateMotes();
     if (this.fadeElapsed + 1e-9 >= this.config.fadeDuration) this.dispose();
   }

@@ -9,20 +9,20 @@ export interface AuraTextureSet {
 export function createAuraTextures(): AuraTextureSet {
   const halo = createTexture(256, 256, (context) => {
     drawRadialGlow(context, 128, 128, [
-      [0, "rgba(240,230,208,0.9)"],
-      [0.22, "rgba(212,160,23,0.66)"],
-      [0.48, "rgba(212,160,23,0.34)"],
-      [0.74, "rgba(120,88,18,0.14)"],
-      [1, "rgba(40,30,8,0)"],
+      [0, "rgba(220,248,255,0.94)"],
+      [0.22, "rgba(104,202,255,0.7)"],
+      [0.48, "rgba(64,154,238,0.38)"],
+      [0.74, "rgba(34,96,170,0.16)"],
+      [1, "rgba(8,30,58,0)"],
     ]);
   });
 
   const mote = createTexture(64, 64, (context) => {
     drawRadialGlow(context, 32, 32, [
-      [0, "rgba(255,246,224,1)"],
-      [0.2, "rgba(232,197,71,0.92)"],
-      [0.5, "rgba(212,160,23,0.56)"],
-      [1, "rgba(80,58,10,0)"],
+      [0, "rgba(238,252,255,1)"],
+      [0.2, "rgba(145,224,255,0.94)"],
+      [0.5, "rgba(69,163,238,0.62)"],
+      [1, "rgba(12,48,86,0)"],
     ]);
   });
 
