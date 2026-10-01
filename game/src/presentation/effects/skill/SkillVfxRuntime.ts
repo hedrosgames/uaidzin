@@ -51,6 +51,8 @@ import {
 import type { SkillVfxProfile, SkillVfxRequest } from "./SkillVfxTypes";
 import type { TkLightPool } from "../TkLightPool";
 import { skillVfxDuration } from "./SkillVfxTiming";
+import { getSkillArtwork } from "./art/SkillArtworkCatalog";
+import { SkillArtwork, SkillArtworkResources } from "./art/SkillArtwork";
 
 interface SkillVfxResources {
   textures: FireBurstTextureSet;
@@ -59,6 +61,7 @@ interface SkillVfxResources {
   ringGeometry: RingGeometry;
   beamGeometry: CylinderGeometry;
   arrowGeometry: ConeGeometry;
+  artwork: SkillArtworkResources;
 }
 
 interface SkillVfxCastOptions {
@@ -74,6 +77,7 @@ interface SkillVfxCastOptions {
 
 const UP = new Vector3(0, 1, 0);
 const FORWARD = new Vector3(0, 0, 1);
+const SEGMENT_DIRECTION = new Vector3();
 const MAX_SKILL_VFX_CASTS = 8;
 const FIXED_STEP = 1 / 60;
 
@@ -139,7 +143,7 @@ function createMotionSystem(
     startSpeed: new IntervalValue(directional ? 2.2 : 0.4, directional ? 5.4 : 1.2),
     startSize: new IntervalValue(directional ? 0.12 : 0.08, directional ? 0.28 : 0.22),
     startColor: new ConstantColor(new QuarksVector4(1, 1, 1, 1)),
-    emissionOverTime: new ConstantValue(directional ? 80 : 34),
+    emissionOverTime: new ConstantValue(getSkillArtwork(request.profile.id)?.particleRate ?? (directional ? 80 : 34)),
     emissionOverDistance: new ConstantValue(0),
     shape: directional
       ? new ConeEmitter({ radius: 0.045, thickness: 0.72, angle: 0.18 })
@@ -176,7 +180,7 @@ function createImpactSystem(request: SkillVfxRequest, material: MeshBasicMateria
     startSpeed: new IntervalValue(2.2, 5.8),
     startSize: new IntervalValue(0.06, 0.2),
     startColor: new ConstantColor(new QuarksVector4(1, 1, 1, 1)),
-    emissionOverTime: new ConstantValue(92),
+    emissionOverTime: new ConstantValue(getSkillArtwork(request.profile.id)?.particleRate ?? 92),
     emissionOverDistance: new ConstantValue(0),
     shape: new SphereEmitter({ radius: 0.16, thickness: 0.18 }),
     material,
@@ -201,7 +205,7 @@ function createAuraSystem(request: SkillVfxRequest, material: MeshBasicMaterial)
     startSpeed: new IntervalValue(1.4, 3.6),
     startSize: new IntervalValue(0.08, 0.24),
     startColor: new ConstantColor(new QuarksVector4(1, 1, 1, 1)),
-    emissionOverTime: new ConstantValue(48),
+    emissionOverTime: new ConstantValue(getSkillArtwork(request.profile.id)?.particleRate ?? 48),
     emissionOverDistance: new ConstantValue(0),
     shape: new ConeEmitter({ radius: 0.2, thickness: 0.72, angle: 0.32 }),
     material,
@@ -225,6 +229,7 @@ function createResources(): SkillVfxResources {
     ringGeometry: new RingGeometry(0.34, 0.5, 36),
     beamGeometry: new CylinderGeometry(0.035, 0.12, 1, 8, 1, true),
     arrowGeometry: new ConeGeometry(0.12, 0.44, 8),
+    artwork: new SkillArtworkResources(),
   };
 }
 
@@ -237,7 +242,7 @@ function positionSegment(
   start: Vector3,
   end: Vector3,
 ): void {
-  const direction = end.clone().sub(start);
+  const direction = SEGMENT_DIRECTION.subVectors(end, start);
   const length = Math.max(direction.length(), 0.001);
   mesh.position.copy(start).add(end).multiplyScalar(0.5);
   mesh.quaternion.setFromUnitVectors(UP, direction.normalize());
@@ -245,9 +250,12 @@ function positionSegment(
 }
 
 class GenericSkillVfxCast {
-  private readonly motion: ParticleSystem;
-  private readonly impact: ParticleSystem;
-  private readonly aura: ParticleSystem;
+  private readonly motion: ParticleSystem | null;
+  private readonly impact: ParticleSystem | null;
+  private readonly aura: ParticleSystem | null;
+  private readonly artwork: SkillArtwork | null;
+  private readonly scratchPoint = new Vector3();
+  private readonly scratchTangent = new Vector3();
   private readonly systems: ParticleSystem[];
   private readonly group = new Group();
   private readonly core: Mesh;
@@ -282,10 +290,12 @@ class GenericSkillVfxCast {
     this.lightPool = options.lightPool;
     this.origin = request.origin.clone();
     this.target = (request.target ?? request.center).clone();
-    this.impactPoint = (family === "aoe" ? request.center : this.target).clone();
+    this.impactPoint = (this.directional ? this.target : request.center).clone();
     this.curve = this.directional ? this.createCurve(request, castIndex) : null;
     this.group.name = `skill-vfx-${request.profile.id}`;
     root.add(this.group);
+    const art = getSkillArtwork(request.profile.id);
+    this.artwork = art ? new SkillArtwork(this.group, resources.artwork, art, this.radius, family === "aoe") : null;
 
     const coreMaterial = createAdditiveMeshMaterial(request.colorHex, 0.86);
     const ringMaterial = createAdditiveMeshMaterial(request.colorHex, 0.78);
@@ -312,33 +322,32 @@ class GenericSkillVfxCast {
     }
     this.group.add(this.core, this.ring, this.beam, this.arrow);
 
-    this.motion = createMotionSystem(request, resources.particleMaterials.trail, this.directional);
-    this.impact = createImpactSystem(request, resources.particleMaterials.fire);
-    this.aura = createAuraSystem(request, resources.particleMaterials.fire);
-    this.systems = [this.motion, this.impact, this.aura];
+    this.motion = this.directional ? createMotionSystem(request, resources.particleMaterials.trail, true) : null;
+    this.impact = this.directional || family === "aoe" ? createImpactSystem(request, resources.particleMaterials.fire) : null;
+    this.aura = !this.directional ? createAuraSystem(request, resources.particleMaterials.fire) : null;
+    this.systems = [this.motion, this.impact, this.aura].filter((system): system is ParticleSystem => system !== null);
     for (const system of this.systems) {
       scene.add(system.emitter);
       batch.addSystem(system);
     }
-    this.motion.play();
-    this.impact.pause();
-    this.impact.emitter.visible = false;
-    this.aura.pause();
-    this.aura.emitter.visible = false;
+    this.motion?.play();
+    if (this.impact) {
+      this.impact.pause();
+      this.impact.emitter.visible = false;
+    }
+    this.aura?.pause();
     if (!this.directional) {
-      this.motion.pause();
-      this.motion.emitter.visible = false;
-      this.aura.emitter.position.copy(this.origin);
-      this.aura.emitter.quaternion.setFromUnitVectors(FORWARD, UP);
-      this.aura.emitter.visible = true;
-      this.aura.restart();
-      this.aura.play();
-      this.ring.position.copy(this.origin);
-      this.core.position.copy(this.origin);
-      if (this.light) this.light.position.copy(this.origin);
+      this.aura!.emitter.position.copy(this.impactPoint);
+      this.aura!.emitter.quaternion.setFromUnitVectors(FORWARD, UP);
+      this.aura!.emitter.visible = true;
+      this.aura!.restart();
+      this.aura!.play();
+      this.ring.position.copy(this.impactPoint);
+      this.core.position.copy(this.impactPoint);
+      if (this.light) this.light.position.copy(this.impactPoint);
     } else {
-      this.motion.emitter.position.copy(this.origin);
-      this.motion.emitter.quaternion.setFromUnitVectors(FORWARD, FORWARD);
+      this.motion!.emitter.position.copy(this.origin);
+      this.motion!.emitter.quaternion.setFromUnitVectors(FORWARD, FORWARD);
     }
   }
 
@@ -362,6 +371,7 @@ class GenericSkillVfxCast {
     if (this.disposed) return;
     this.disposed = true;
     for (const system of this.systems) system.dispose();
+    this.artwork?.dispose();
     this.group.removeFromParent();
     if (this.isPooledLight) {
       this.lightPool?.release(this.light);
@@ -395,15 +405,17 @@ class GenericSkillVfxCast {
       this.ring.scale.setScalar(0.35 + (1 - fade) * 1.8);
       (this.ring.material as MeshBasicMaterial).opacity = 0.9 * fade;
       if (this.light) this.light.intensity = 4.2 * fade;
+      this.artwork?.update(this.elapsed, 1 - fade, this.impactPoint, undefined, true);
       if (fade <= 0) this.dispose();
       return;
     }
     const progress = MathUtils.clamp(this.elapsed / this.duration, 0, 1);
     const eased = 1 - Math.pow(1 - progress, 2);
-    const point = this.curve?.getPoint(eased, new Vector3()) ?? this.target;
-    const tangent = this.curve?.getTangent(eased, new Vector3()).normalize() ?? FORWARD;
-    this.motion.emitter.position.copy(point);
-    this.motion.emitter.quaternion.setFromUnitVectors(FORWARD, tangent);
+    const point = this.curve?.getPoint(eased, this.scratchPoint) ?? this.target;
+    const tangent = this.curve?.getTangent(eased, this.scratchTangent).normalize() ?? FORWARD;
+    this.motion!.emitter.position.copy(point);
+    this.motion!.emitter.quaternion.setFromUnitVectors(FORWARD, tangent);
+    this.artwork?.update(this.elapsed, progress, point, tangent);
     this.core.position.copy(point);
     this.core.scale.setScalar(0.82 + Math.sin(progress * Math.PI) * 0.34);
     if (this.beam.visible) positionSegment(this.beam, this.origin, point);
@@ -421,6 +433,7 @@ class GenericSkillVfxCast {
   private updateAoe(): void {
     if (this.elapsed >= 0.18 && this.phase !== "impact") this.triggerImpact();
     const impactProgress = MathUtils.clamp((this.elapsed - 0.18) / 0.54, 0, 1);
+    this.artwork?.update(this.elapsed, impactProgress, this.impactPoint, undefined, this.phase === "impact");
     if (this.phase === "impact") {
       const fade = Math.max(0, 1 - impactProgress);
       const targetScale = this.radius / 0.5;
@@ -434,6 +447,7 @@ class GenericSkillVfxCast {
 
   private updatePulse(): void {
     const progress = MathUtils.clamp(this.elapsed / this.duration, 0, 1);
+    this.artwork?.update(this.elapsed, progress, this.impactPoint, undefined, progress >= 0.75);
     this.ring.scale.setScalar(0.65 + progress * 1.9);
     const ringMaterial = this.ring.material as MeshBasicMaterial;
     ringMaterial.opacity = Math.max(0, 0.8 * (1 - progress));
@@ -445,11 +459,11 @@ class GenericSkillVfxCast {
   private triggerImpact(): void {
     if (this.phase === "impact") return;
     this.phase = "impact";
-    this.motion.endEmit();
-    this.impact.emitter.position.copy(this.impactPoint);
-    this.impact.emitter.visible = true;
-    this.impact.restart();
-    this.impact.play();
+    this.motion?.endEmit();
+    this.impact!.emitter.position.copy(this.impactPoint);
+    this.impact!.emitter.visible = true;
+    this.impact!.restart();
+    this.impact!.play();
     this.ring.visible = true;
     this.ring.position.copy(this.impactPoint);
     this.ring.scale.setScalar(0.35);
@@ -487,6 +501,10 @@ export class SkillVfxDirector {
 
   play(request: SkillVfxRequest): boolean {
     if (this.disposed || request.profile.family === "chain") return false;
+    const vectors = [request.origin, request.center, request.target].filter((value): value is Vector3 => value !== null);
+    if (vectors.some(value => !Number.isFinite(value.x) || !Number.isFinite(value.y) || !Number.isFinite(value.z))) return false;
+    if (![request.facing, request.range, request.radius, request.colorHex].every(Number.isFinite)) return false;
+    if (request.range < 0 || request.radius < 0) return false;
     if (this.casts.size >= MAX_SKILL_VFX_CASTS) {
       const oldest = this.casts.values().next().value as GenericSkillVfxCast | undefined;
       oldest?.dispose();
@@ -544,7 +562,7 @@ export class SkillVfxDirector {
     this.accumulator = Math.min(this.accumulator + frameDelta, 0.2);
     let stepCount = 0;
     while (this.accumulator >= FIXED_STEP && stepCount < 6) {
-      for (const cast of [...this.casts]) {
+      for (const cast of this.casts) {
         cast.update(FIXED_STEP);
         cast.prepareFrame();
       }
@@ -592,6 +610,7 @@ export class SkillVfxDirector {
     this.resources.ringGeometry.dispose();
     this.resources.beamGeometry.dispose();
     this.resources.arrowGeometry.dispose();
+    this.resources.artwork.dispose();
     disposeFireBurstParticleMaterials(this.resources.particleMaterials);
     disposeFireBurstTextures(this.resources.textures);
     this.root.clear();

@@ -22,9 +22,8 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { FireBurstVfxController } from "../fireBurst/FireBurstVfx";
+import { EffectManager } from "../EffectManager";
 import { getSkillVfxProfile, SKILL_VFX_CATALOG } from "./SkillVfxCatalog";
-import { SkillVfxDirector } from "./SkillVfxRuntime";
 import type { SkillVfxProfile, SkillVfxRequest } from "./SkillVfxTypes";
 
 const stage = requireElement<HTMLElement>("stage");
@@ -102,8 +101,7 @@ const caster = createFigure(0x365b82, -3.7);
 const target = createFigure(0x7d2f2f, 3.7);
 const origin = new Vector3(-3.45, 1.05, 0);
 const targetPosition = new Vector3(3.7, 0.95, 0);
-const fireBurst = new FireBurstVfxController(scene);
-const director = new SkillVfxDirector(scene);
+const effects = new EffectManager(stage, scene);
 const composer = new EffectComposer(renderer);
 const bloomPass = new UnrealBloomPass(new Vector2(1600, 900), 0.52, 0.38, 0.84);
 const outputPass = new OutputPass();
@@ -112,9 +110,10 @@ composer.addPass(bloomPass);
 composer.addPass(outputPass);
 
 let selectedId = "tk_fis_fire_burst";
-let paused = false;
+let paused = new URLSearchParams(window.location.search).get("qa") === "1";
 let disposed = false;
 let previousTime = performance.now();
+let animationFrame: number | null = null;
 
 function createCard(profile: SkillVfxProfile): HTMLButtonElement {
   const button = document.createElement("button");
@@ -159,41 +158,37 @@ function playSelected(): void {
   if (!profile || disposed) return;
   const directional = profile.family !== "buff" && profile.family !== "heal" && profile.family !== "transform" && profile.family !== "summon" && profile.family !== "passive";
   const target = directional ? targetPosition : null;
-  const center = profile.shape === "aoe" || !target ? origin : target;
-  if (profile.family === "chain") {
-    fireBurst.castFireBurst(origin, targetPosition);
-  } else {
-    const hitCount = Math.min(profile.skill.hits ?? 1, 7);
-    const hits = Array.from({ length: hitCount }, (_, hitIndex) => ({
-      id: "lab-target",
-      x: targetPosition.x,
-      z: targetPosition.z,
-      damage: 1,
-      hitIndex,
-    }));
-    const request: SkillVfxRequest = {
-      profile,
-      origin,
-      target,
-      center,
-      colorHex: profile.colorHex,
-      facing: 0,
-      range: profile.range,
-      radius: profile.radius,
-      hits,
-      hasHeal: profile.kind === "heal",
-      hasBuff: profile.kind === "buff",
-      hasTransform: profile.kind === "transform",
-      hasSummon: profile.kind === "summon",
-    };
-    director.play(request);
-  }
+  const center = profile.shape === "aoe" || profile.shape === "self" || !target ? origin : target;
+  const hitCount = profile.kind === "damage" ? Math.min(profile.skill.hits ?? 1, 7) : 0;
+  const hits = Array.from({ length: hitCount }, (_, hitIndex) => ({
+    id: "lab-target",
+    x: targetPosition.x,
+    z: targetPosition.z,
+    damage: 1,
+    hitIndex,
+  }));
+  const request: SkillVfxRequest = {
+    profile,
+    origin,
+    target,
+    center,
+    colorHex: profile.colorHex,
+    facing: Math.atan2(targetPosition.x - origin.x, targetPosition.z - origin.z),
+    range: profile.range,
+    radius: profile.radius,
+    hits,
+    hasHeal: profile.kind === "heal",
+    hasBuff: profile.kind === "buff",
+    hasTransform: profile.kind === "transform",
+    hasSummon: profile.kind === "summon",
+  };
+  effects.dispatchSkillVfx(request);
+  renderFrame();
 }
 
 function updateHud(): void {
-  const active = director.getActiveCastCount() + fireBurst.getActiveCastCount();
-  const particles = director.getParticleCount() + fireBurst.getParticleCount();
-  const phase = fireBurst.getPhase() !== "idle" ? fireBurst.getPhase() : director.getActiveCastCount() > 0 ? "skill" : "idle";
+  const { active, particles } = effects.getSkillVfxState();
+  const phase = active > 0 ? "skill" : "idle";
   stateElement.textContent = phase;
   particleElement.textContent = String(particles);
   castElement.textContent = String(active);
@@ -220,25 +215,34 @@ function fitStage(): void {
 }
 
 function tick(now: number): void {
-  if (disposed) return;
+  animationFrame = null;
+  if (disposed || paused) return;
   const delta = Math.min((now - previousTime) / 1000, 0.1);
   previousTime = now;
-  if (!paused) {
-    fireBurst.update(delta, stage.clientWidth, stage.clientHeight);
-    director.update(delta, stage.clientWidth, stage.clientHeight);
-    caster.position.y = Math.sin(now / 620) * 0.025;
-    target.position.y = Math.sin(now / 740 + 1.4) * 0.018;
-  }
+  effects.update(delta, camera, stage.clientWidth, stage.clientHeight);
+  caster.position.y = Math.sin(now / 620) * 0.025;
+  target.position.y = Math.sin(now / 740 + 1.4) * 0.018;
+  renderFrame();
+  animationFrame = requestAnimationFrame(tick);
+}
+
+function renderFrame(): void {
+  if (disposed) return;
   updateHud();
   composer.render();
-  requestAnimationFrame(tick);
+}
+
+function clearEffects(): void {
+  effects.clearSkillVfx();
+  renderFrame();
 }
 
 function dispose(): void {
   if (disposed) return;
   disposed = true;
-  fireBurst.dispose();
-  director.dispose();
+  if (animationFrame !== null) cancelAnimationFrame(animationFrame);
+  animationFrame = null;
+  effects.dispose();
   const geometries = new WeakSet<object>();
   const materials = new WeakSet<object>();
   scene.traverse((object) => {
@@ -262,14 +266,17 @@ function dispose(): void {
 
 filterInput.addEventListener("input", renderList);
 playButton.addEventListener("click", playSelected);
-clearButton.addEventListener("click", () => {
-  fireBurst.clear();
-  director.clear();
+clearButton.addEventListener("click", clearEffects);
+window.addEventListener("resize", () => {
+  fitStage();
+  renderFrame();
 });
-window.addEventListener("resize", fitStage);
 window.addEventListener("pagehide", dispose, { once: true });
 
 const api = {
+  scene,
+  renderer,
+  camera,
   count: SKILL_VFX_CATALOG.length,
   profiles: SKILL_VFX_CATALOG.map((profile) => ({
     id: profile.id,
@@ -280,34 +287,49 @@ const api = {
   })),
   select: selectProfile,
   play: playSelected,
-  clear: () => {
-    fireBurst.clear();
-    director.clear();
+  clear: clearEffects,
+  setTarget: (x: number, y: number, z: number): boolean => {
+    if (![x, y, z].every(Number.isFinite) || disposed) return false;
+    targetPosition.set(x, y, z);
+    target.position.set(x, Math.max(0, y - 0.95), z);
+    renderFrame();
+    return true;
   },
   setPaused: (value: boolean) => {
     paused = value;
     previousTime = performance.now();
+    if (paused && animationFrame !== null) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+    } else if (!paused && !disposed && animationFrame === null) {
+      animationFrame = requestAnimationFrame(tick);
+    }
   },
   advance: (seconds: number) => {
+    if (!Number.isFinite(seconds) || seconds < 0 || disposed) return;
     let remaining = Math.max(0, seconds);
     while (remaining > 0) {
       const step = Math.min(remaining, 0.05);
-      fireBurst.update(step, stage.clientWidth, stage.clientHeight);
-      director.update(step, stage.clientWidth, stage.clientHeight);
+      effects.update(step, camera, stage.clientWidth, stage.clientHeight);
       remaining -= step;
     }
     updateHud();
   },
   getState: () => ({
     phase: stateElement.textContent,
-    active: director.getActiveCastCount() + fireBurst.getActiveCastCount(),
-    particles: director.getParticleCount() + fireBurst.getParticleCount(),
+    ...effects.getSkillVfxState(),
+    paused,
+    origin: origin.toArray(),
+    target: targetPosition.toArray(),
+    memory: { ...renderer.info.memory, programs: renderer.info.programs?.length ?? 0 },
+    renderCalls: renderer.info.render.frame,
   }),
+  render: renderFrame,
   dispose,
 };
 Object.assign(window, { __UAIDZIN_SKILL_VFX__: api });
 
 fitStage();
 selectProfile(selectedId);
-requestAnimationFrame(tick);
+if (!paused) animationFrame = requestAnimationFrame(tick);
 document.body.dataset.ready = "true";

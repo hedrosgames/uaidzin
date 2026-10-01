@@ -9,6 +9,7 @@ import { SummonRuntime } from "../../domain/combat/SummonRuntime";
 import { EnemyModel } from "../../domain/enemies/EnemyModel";
 import { SkillTreeService } from "../../domain/skills/SkillTreeService";
 import { CombatOrchestrator, type CombatOrchestratorDeps } from "./CombatOrchestrator";
+import { positionBlocked, segmentBlocked } from "../../world/collision";
 
 const classIds: ClassId[] = ["BM", "HT", "FM"];
 const entries = classIds.flatMap(classId => ["fisica", "controle", "magia"].flatMap(tree =>
@@ -104,6 +105,33 @@ describe("Disparo das skills de BM, HT e FM no runtime", () => {
     expect(s.dispatch).not.toHaveBeenCalled();
     expect(s.summons.actors).toHaveLength(0);
     expect(s.emit.mock.calls.filter(call => call[0] === "skill:used")).toHaveLength(0);
+  });
+
+  it.each(CLASSES.BM.trees.controle.filter(skill => skill.kind === "summon"))(
+    "$name nasce no lado acessível de uma parede",
+    skill => {
+      const s = setup("BM", skill);
+      s.world.collision.boxes.push({ minX: -2, maxX: 2, minZ: 1.2, maxZ: 1.6 } as never);
+      s.update(0);
+      s.combat.advancePendingActions(0.46);
+      expect(s.summons.actors.length).toBeGreaterThan(0);
+      for (const actor of s.summons.actors) {
+        expect(positionBlocked(actor.x, actor.z, 0.28, s.world.collision)).toBe(false);
+        expect(segmentBlocked(0, 0, actor.x, actor.z, s.world.collision, 0.28)).toBe(false);
+      }
+    },
+  );
+
+  it("Investida Bestial empurra até a parede sem atravessá-la", () => {
+    const s = setup("BM", CLASSES.BM.trees.fisica[3]);
+    s.world.collision.boxes.push({ minX: -2, maxX: 2, minZ: 2.9, maxZ: 3.1 } as never);
+    s.update(0);
+    s.combat.advancePendingActions(2);
+    expect(s.enemy.hp).toBeLessThan(10000);
+    expect(s.enemy.z).toBeGreaterThan(1.8);
+    expect(s.enemy.z).toBeLessThan(2.4);
+    expect(positionBlocked(s.enemy.x, s.enemy.z, 0.5, s.world.collision)).toBe(false);
+    expect(segmentBlocked(0, 1.8, s.enemy.x, s.enemy.z, s.world.collision, 0.5)).toBe(false);
   });
 
   it("impacto avança enquanto um painel impede novos ataques", () => {

@@ -39,7 +39,7 @@ import { dungeon1ArenaFromZ } from "../../data/balance/xp-progression";
 import type { AttackTarget } from "../../domain/combat/AttackController";
 import type { ResolvedSkill } from "../../domain/combat/SkillCasting";
 import { skillVfxImpactDelay } from "../../presentation/effects/skill/SkillVfxTiming";
-import { segmentBlocked } from "../../world/collision";
+import { positionBlocked, segmentBlocked } from "../../world/collision";
 
 export interface CombatOrchestratorDeps {
   enemies: EnemyService;
@@ -185,6 +185,14 @@ export class CombatOrchestrator {
       if (pending.cast) {
         this.deps.skill.applyCasterEffects(pending.cast, this.deps.buffs, this.deps.form,
           this.deps.summons, this.deps.player.x, this.deps.player.z);
+        if (pending.resolved.summons) {
+          for (const actor of this.deps.summons.actors) {
+            if (!pending.resolved.summons.some(spec => spec.id === actor.kind)) continue;
+            const point = this.safeDisplacement(this.deps.player.x, this.deps.player.z, actor.x, actor.z, 0.28);
+            actor.x = point.x;
+            actor.z = point.z;
+          }
+        }
         this.invalidateMods();
       }
       this.applySkillImpact(pending.resolved, pending.skillId);
@@ -538,7 +546,14 @@ export class CombatOrchestrator {
     for (const plan of resolved.enemyEffects) {
       const enemy = this.deps.enemies.findById(plan.id);
       if (!enemy?.alive || !liveTargets.has(enemy.id)) continue;
+      const fromX = enemy.x;
+      const fromZ = enemy.z;
       enemy.applySkillStatus(plan.effect, plan.dotDps, plan.effect.dotSec, this.deps.player.x, this.deps.player.z);
+      if (plan.effect.knock && this.deps.progression.state.classId !== "TK") {
+        const point = this.safeDisplacement(fromX, fromZ, enemy.x, enemy.z, 0.5);
+        enemy.x = point.x;
+        enemy.z = point.z;
+      }
     }
     const cap = Math.round(this.deps.character.maxHp * (1 + Math.max(0, this.getCombatMods().maxHpMul)));
     const lifesteal = plannedDamage > 0 ? Math.round(resolved.lifesteal * dealt / plannedDamage) : 0;
@@ -565,6 +580,21 @@ export class CombatOrchestrator {
     if (this.deps.character.isDead) {
       this.deps.onPlayerDeath();
     }
+  }
+
+  private safeDisplacement(fromX: number, fromZ: number, toX: number, toZ: number, radius: number): { x: number; z: number } {
+    const collision = this.deps.worlds.getCurrent()?.collision;
+    if (!collision || !segmentBlocked(fromX, fromZ, toX, toZ, collision, radius)) return { x: toX, z: toZ };
+    const steps = Math.max(1, Math.ceil(Math.hypot(toX - fromX, toZ - fromZ) / 0.12));
+    const point = { x: fromX, z: fromZ };
+    for (let i = 1; i <= steps; i++) {
+      const x = fromX + (toX - fromX) * i / steps;
+      const z = fromZ + (toZ - fromZ) * i / steps;
+      if (positionBlocked(x, z, radius, collision)) break;
+      point.x = x;
+      point.z = z;
+    }
+    return point;
   }
 
   private resolveBasicAttack(targetId: string, frameMods: CombatMods): void {
