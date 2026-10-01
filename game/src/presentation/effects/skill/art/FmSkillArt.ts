@@ -6,4 +6,5 @@ export const FM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   fm_fis_furia_combate: { motif: "blade", color: 0xc66336, accent: 0xf5bb63, count: 4, scale: 0.56, spread: 0.88, spin: 2.4, lift: 0.85, motion: "orbit", particleRate: 30 },
   fm_fis_guarda_solida: { motif: "shield", color: 0x657c90, accent: 0xd7bb74, count: 3, scale: 0.82, spread: 0.84, spin: 0.45, lift: 0.75, motion: "ward", particleRate: 16 },
   fm_fis_conversao_vital: { motif: "spiral", color: 0x8251bc, accent: 0x79ccab, count: 5, scale: 0.45, spread: 0.62, spin: 2.8, lift: 0.9, motion: "orbit", particleRate: 28 },
+  fm_fis_mestre_arco: { motif: "arrow", color: 0x9b8050, accent: 0xf2ddb1, count: 2, scale: 0.56, spread: 0.4, spin: 0.3, lift: 1.1, motion: "totem", particleRate: 12 },
 };
