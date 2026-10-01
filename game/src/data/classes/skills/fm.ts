@@ -86,6 +86,7 @@ export const FM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "fm_ctrl_cura",
     name: "Cura",
+    desc: "Recupera 22% do HP máximo. A cura aumenta com poder de cura e especialização White Mage.",
     index: 0,
     kind: "heal",
     healRatio: 0.22,
@@ -93,6 +94,7 @@ export const FM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "fm_ctrl_julgamento",
     name: "Julgamento Sagrado",
+    desc: "Atinge o inimigo mais próximo a até 8 m com 1,3× o ataque mágico. Dano sagrado.",
     index: 1,
     kind: "damage",
     shape: "single",
@@ -102,6 +104,7 @@ export const FM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "fm_ctrl_bencao",
     name: "Bênção",
+    desc: "Por 14 s, defesa +20% e resistência mágica +15%.",
     index: 2,
     kind: "buff",
     buff: { id: "fm_bless", sec: 14, stat: "defense", magnitude: 0.2 },
@@ -110,6 +113,7 @@ export const FM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "fm_ctrl_purificacao",
     name: "Purificação",
+    desc: "Recupera 16% do HP máximo e remove efeitos negativos. A cura aumenta com poder de cura e especialização White Mage.",
     index: 3,
     kind: "heal",
     healRatio: 0.16,
@@ -118,6 +122,7 @@ export const FM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "fm_ctrl_lanca_luz",
     name: "Lança de Luz",
+    desc: "Atinge o inimigo mais próximo a até 8 m com 1,9× o ataque mágico. Dano sagrado.",
     index: 4,
     kind: "damage",
     shape: "single",
@@ -128,6 +133,7 @@ export const FM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "fm_ctrl_vontade_divina",
     name: "Vontade Divina",
+    desc: "Por 12 s, poder mágico +24% e poder de cura +25%.",
     index: 5,
     kind: "buff",
     buff: { id: "fm_divine_will", sec: 12, stat: "magicPower", magnitude: 0.24 },
@@ -136,6 +142,7 @@ export const FM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "fm_ctrl_castigo",
     name: "Castigo Celestial",
+    desc: "Atinge o inimigo mais próximo a até 8 m com 1,7× o ataque mágico. Dano sagrado +65% se o alvo tiver até 40% de HP.",
     index: 6,
     kind: "damage",
     shape: "single",
@@ -148,6 +155,7 @@ export const FM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "fm_ctrl_graca_ceu",
     name: "Graça do Céu",
+    desc: "Atinge inimigos num raio de 4,2 m com 1,6× o ataque mágico sagrado e recupera 20% do HP máximo. Só uma 8ª skill por personagem.",
     index: 7,
     kind: "damage",
     shape: "aoe",
