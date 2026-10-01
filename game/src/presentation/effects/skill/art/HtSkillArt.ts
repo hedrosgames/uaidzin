@@ -18,4 +18,5 @@ export const HT_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   ht_ctrl_duas_maos: { motif: "blade", color: 0xc9a26c, accent: 0xe5d6b9, count: 2, scale: 0.38, spread: 0.65, spin: 0.7, lift: 0.6, motion: "ward", particleRate: 16 },
   ht_ctrl_invisibilidade: { motif: "rune", color: 0x57476d, accent: 0x8995ac, count: 3, scale: 0.18, spread: 0.75, spin: -0.35, lift: 0.5, motion: "ward", particleRate: 10 },
   ht_mag_flecha_arcana: { motif: "arrow", color: 0xb07cff, accent: 0xe8d7ff, count: 1, scale: 0.36, spread: 0.16, spin: 0.6, lift: 0.12, motion: "trail", particleRate: 34 },
+  ht_mag_flecha_ignea: { motif: "arrow", color: 0xe25822, accent: 0xffca6c, count: 1, scale: 0.38, spread: 0.2, spin: 0.8, lift: 0.14, motion: "trail", particleRate: 42 },
 };
