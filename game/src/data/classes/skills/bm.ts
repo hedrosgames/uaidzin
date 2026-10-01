@@ -86,6 +86,7 @@ export const BM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "bm_mag_dardo_igneo",
     name: "Dardo Ígneo",
+    desc: "Lança fogo contra um inimigo a até 8 m, causando dano mágico de fogo.",
     index: 0,
     kind: "damage",
     shape: "single",
@@ -95,6 +96,7 @@ export const BM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "bm_mag_fenda_glacial",
     name: "Fenda Glacial",
+    desc: "Atinge um inimigo a até 8 m com dano mágico de gelo e reduz sua velocidade de movimento em 50 % por 3,2 s.",
     index: 1,
     kind: "damage",
     shape: "single",
@@ -105,6 +107,7 @@ export const BM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "bm_mag_escarpa",
     name: "Escarpa Sísmica",
+    desc: "Abala todos os inimigos num raio de 3,5 m ao redor do personagem com dano mágico de terra.",
     index: 2,
     kind: "damage",
     shape: "aoe",
@@ -115,6 +118,7 @@ export const BM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "bm_mag_voz_trovao",
     name: "Voz do Trovão",
+    desc: "Atinge um inimigo a até 8 m com dano mágico de raio. Tem 35 % de chance de atordoar por 1,2 s.",
     index: 3,
     kind: "damage",
     shape: "single",
@@ -126,6 +130,7 @@ export const BM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "bm_mag_manto",
     name: "Manto Elemental",
+    desc: "Fortalece o poder elemental por 12 s: poder mágico +22 % e resistência mágica +20 %.",
     index: 4,
     kind: "buff",
     buff: { id: "bm_mantle_power", sec: 12, stat: "magicPower", magnitude: 0.22 },
@@ -134,6 +139,7 @@ export const BM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "bm_mag_corrente_agua",
     name: "Corrente de Água",
+    desc: "Atinge todos os inimigos num raio de 3,8 m com dano mágico de água e reduz sua velocidade de movimento em 45 % por 3 s.",
     index: 5,
     kind: "damage",
     shape: "aoe",
@@ -145,6 +151,7 @@ export const BM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "bm_mag_muralha",
     name: "Muralha de Rocha",
+    desc: "Ergue uma proteção por 12 s: defesa +28 % e reflexão de 22 % do dano recebido.",
     index: 6,
     kind: "buff",
     buff: { id: "bm_rock_def", sec: 12, stat: "defense", magnitude: 0.28 },
@@ -153,6 +160,7 @@ export const BM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "bm_mag_furia_quatro",
     name: "Fúria dos Quatro",
+    desc: "Atinge todos os inimigos num raio de 4,4 m com dano mágico elemental de 2,7 vezes o poder mágico. Só uma 8ª árvore por personagem.",
     index: 7,
     kind: "damage",
     shape: "aoe",
