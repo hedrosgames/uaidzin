@@ -17,6 +17,7 @@ const TREE_COLORS: Record<TreeId, number> = {
 
 const SKILL_COLOR_OVERRIDES: Record<string, number> = {
   tk_fis_atk_descuidado: 0xb88640,
+  tk_fis_mestre_dual: 0x9fb6c9,
   tk_fis_fury: 0xd63a20,
   tk_fis_death_stab: 0x4aa8ff,
 };
