@@ -24,7 +24,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { FuriaVfxController } from "./FuriaVfx";
+import { FuryVfxController } from "../fury/FuryVfx";
 
 const stage = requireElement<HTMLElement>("stage");
 const canvas = requireElement<HTMLCanvasElement>("gl");
@@ -117,7 +117,7 @@ function createFigure(color: number, x: number): Group {
 const caster = createFigure(0x365b82, 0);
 createFigure(0x4a4038, 5.4);
 const auraCenter = new Vector3(0, 0, 0);
-const vfx = new FuriaVfxController(scene);
+const vfx = new FuryVfxController(scene);
 const directions = [
   new Vector3(0, 0, 0),
   new Vector3(-5.4, 0, 0),
@@ -143,7 +143,7 @@ let disposed = false;
 
 function castFuria(): void {
   if (disposed) return;
-  vfx.castFuria(auraCenter);
+  vfx.castFuria(auraCenter, undefined, caster);
   nextLoopCast = performance.now() / 1000 + 1.2;
 }
 

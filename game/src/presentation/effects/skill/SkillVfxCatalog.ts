@@ -18,7 +18,7 @@ const TREE_COLORS: Record<TreeId, number> = {
 const SKILL_COLOR_OVERRIDES: Record<string, number> = {
   tk_fis_atk_descuidado: 0xb88640,
   tk_fis_fury: 0xd63a20,
-  tk_fis_death_stab: 0x4aa8ff,
+  tk_fis_death_stab: 0xf1f1ee,
 };
 
 export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
@@ -41,6 +41,7 @@ export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
   tk_fis_force_wave: "force-wave",
   tk_fis_death_stab: "death-stab",
   tk_fis_earthquake: "earthquake",
+  tk_fis_fury: "furia",
 };
 
 export const FM_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {

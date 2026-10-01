@@ -332,6 +332,13 @@ export class PlayerView {
   getWeaponRig(): WeaponRig {
     return this.weaponRig;
   }
+  getAttackPoint(out: Vector3): Vector3 {
+    const hand = this.model?.getObjectByName("mixamorigRightHand")
+      ?? this.model?.getObjectByName("mixamorig:RightHand");
+    if (hand) return hand.getWorldPosition(out);
+    this.root.updateWorldMatrix(true, false);
+    return this.root.localToWorld(out.set(0, 1.05, 0.35));
+  }
 
   setArmorAuraEnabled(on: boolean): void {
     if (this.armorAura.isEnabled() === on) return;

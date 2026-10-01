@@ -12,6 +12,7 @@ import { EarthquakeVfxController } from "./tkSkills/earthquake/EarthquakeVfx";
 import { EscudoSagradoVfxController } from "./tkSkills/escudo-sagrado/EscudoSagradoVfx";
 import { ForceWaveVfxController } from "./tkSkills/force-wave/ForceWaveVfx";
 import { FuriaVfxController } from "./tkSkills/furia/FuriaVfx";
+import { FuryVfxController } from "./tkSkills/fury/FuryVfx";
 import { DESCUIDADO_PALETTE } from "./tkSkills/furia/FuriaPalette";
 import { GolpeVfxController } from "./tkSkills/golpe/GolpeVfx";
 import { GuardaVfxController } from "./tkSkills/guarda/GuardaVfx";
@@ -45,7 +46,7 @@ export interface TkVfxMap {
   corte: CorteVfxController;
   machado: MachadoVfxController;
   quebra: QuebraVfxController;
-  furia: FuriaVfxController;
+  furia: FuryVfxController;
   descuidado: FuriaVfxController;
   avalanche: AvalancheVfxController;
   bencao: BencaoVfxController;
@@ -87,7 +88,7 @@ export class TkVfxRegistry {
       corte: (s, lp) => new CorteVfxController(s, {}, lp),
       machado: (s, lp) => new MachadoVfxController(s, {}, lp),
       quebra: (s, lp) => new QuebraVfxController(s, {}, lp),
-      furia: (s, lp) => new FuriaVfxController(s, {}, lp),
+      furia: (s, lp) => new FuryVfxController(s, {}, lp),
       descuidado: (s, lp) => new FuriaVfxController(s, { palette: DESCUIDADO_PALETTE }, lp),
       avalanche: (s, lp) => new AvalancheVfxController(s, {}, lp),
       bencao: (s, lp) => new BencaoVfxController(s, {}, lp),

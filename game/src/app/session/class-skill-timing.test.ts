@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Vector3 } from "three";
 import { CLASSES, type ClassId, type SkillDef } from "../../data/classes/class-definitions";
 import { CharacterModel } from "../../domain/character/CharacterModel";
 import { BuffService } from "../../domain/character/BuffService";
@@ -215,5 +216,30 @@ describe("Disparo das skills de BM, HT e FM no runtime", () => {
     expect(s.combat.getCombatMods().attackMul).toBeCloseTo(1.2);
     s.buffs.add({ id: "power", remainingSec: 1, stacks: 1, stat: "attack", magnitude: 0.5 });
     expect(s.combat.getCombatMods().attackMul).toBeCloseTo(1.5);
+  });
+});
+
+describe("Origem visual da Force Wave", () => {
+  beforeEach(() => vi.spyOn(Math, "random").mockReturnValue(0.9));
+  afterEach(() => vi.restoreAllMocks());
+
+  it("captura a mão e o alvo no frame do disparo, sem alterar custo nem dano", () => {
+    const skill = CLASSES.TK.trees.fisica.find(entry => entry.id === "tk_fis_force_wave")!;
+    const s = setup("TK", skill);
+    const hand = new Vector3(0.2, 1.2, 0.4);
+    const attackPoint = vi.fn((out: Vector3) => out.copy(hand));
+    s.deps.renderer.playerView.getAttackPoint = attackPoint;
+    s.update(0);
+    expect(attackPoint).not.toHaveBeenCalled();
+    expect(s.character.mp).toBe(1000 - skill.mp);
+    hand.set(0.35, 1.1, 0.6);
+    s.enemy.x = 0.25;
+    s.combat.advancePendingActions(0.46);
+    expect(attackPoint).toHaveBeenCalledOnce();
+    const request = s.dispatch.mock.calls[0]![0];
+    expect(request.origin.toArray()).toEqual(hand.toArray());
+    expect(request.target.toArray()).toEqual([0.25, 0.9, 1.8]);
+    expect(s.enemy.hp).toBe(9875);
+    expect(s.character.mp).toBe(1000 - skill.mp);
   });
 });

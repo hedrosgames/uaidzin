@@ -173,6 +173,20 @@ export class CombatOrchestrator {
       pending.delay -= dt;
       if (pending.delay > 0) continue;
       if (pending.dispatchVfx && pending.request) {
+        if (pending.skillId === "tk_fis_death_stab") {
+          const attackPoint = new Vector3();
+          if (this.deps.renderer.playerView.getWeaponRig().getAttackPoint(attackPoint)) {
+            pending.request.attackPoint = attackPoint;
+          }
+        }
+        if (pending.skillId === "tk_fis_force_wave") {
+          this.deps.renderer.playerView.getAttackPoint(pending.request.origin);
+          const hit = pending.resolved.hits[0];
+          const enemy = hit ? this.deps.enemies.findById(hit.id) : undefined;
+          if (enemy) {
+            pending.request.target?.set(enemy.x, 0.9 * (enemy.modelScale > 0 ? enemy.modelScale : 1), enemy.z);
+          }
+        }
         this.deps.effects.dispatchSkillVfx(pending.request);
       }
       if (pending.impactDelayAfterVfx > 0) {

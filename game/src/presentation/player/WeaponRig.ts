@@ -188,6 +188,19 @@ export class WeaponRig {
     return this.attachments.map((a) => a.visual);
   }
 
+  getAttackPoint(result: Vector3): boolean {
+    const attachment = this.attachments.find(({ visual }) => visual.name.startsWith("weapon-right-"))
+      ?? this.attachments.find(({ visual }) => !visual.name.endsWith("shield"));
+    if (!attachment) return false;
+    const id = attachment.visual.name.replace(/^weapon-(right|left)-/, "") as WeaponModelId;
+    const spec = MODEL_SPECS[id];
+    if (!spec) return false;
+    attachment.visual.updateWorldMatrix(true, false);
+    result.set(0, spec.length * (1 - spec.grip), 0);
+    attachment.visual.localToWorld(result);
+    return true;
+  }
+
   get currentSet(): WeaponSetId | null {
     return this.currentSetId;
   }

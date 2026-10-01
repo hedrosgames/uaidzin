@@ -273,7 +273,7 @@ export class EffectManager {
         this.tkRegistry.get("force-wave").castForceWave(input.origin, target);
         return;
       case "death-stab":
-        this.tkRegistry.get("death-stab").castDeathStab(input.origin, target);
+        this.tkRegistry.get("death-stab").castDeathStab(input.origin, target, input.attackPoint);
         return;
       case "earthquake":
         this.tkRegistry.get("earthquake").castEarthquake(input.origin, input.radius || input.range);
@@ -315,7 +315,7 @@ export class EffectManager {
         this.tkRegistry.get("quebra").castQuebra(target);
         return;
       case "furia":
-        this.tkRegistry.get("furia").castFuria(input.center);
+        this.tkRegistry.get("furia").castFuria(input.center, undefined, this.sceneRoot.getObjectByName("PlayerRoot"));
         return;
       case "descuidado":
         this.tkRegistry.get("descuidado").castFuria(input.center);

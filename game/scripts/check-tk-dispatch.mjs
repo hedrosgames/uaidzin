@@ -23,11 +23,13 @@ function createCanvas() {
     "quadraticCurveTo", "bezierCurveTo", "fill", "stroke", "fillRect", "strokeRect",
     "clearRect", "save", "restore", "translate", "rotate", "scale", "setTransform",
     "drawImage", "putImageData", "setLineDash",
+    "transform", "clip",
   ]) context[name] = () => {};
   canvas.getContext = () => context;
   return canvas;
 }
 
+globalThis.Path2D = class {};
 globalThis.document = {
   createElement(name) {
     if (name === "canvas") return createCanvas();
@@ -108,8 +110,10 @@ function assertNoNan(rootObj) {
 
 const activeSkills = TK_FISICA.filter((s) => s.kind !== "passive");
 assert(activeSkills.length === 6, `Esperadas 6 skills ativas na física, encontrado ${activeSkills.length}`);
+const selectedSkill = process.argv[3];
+assert(!selectedSkill || activeSkills.some(skill => skill.id === selectedSkill), `Skill ativa desconhecida: ${selectedSkill}`);
 
-for (const skill of activeSkills) {
+for (const skill of activeSkills.filter(skill => !selectedSkill || skill.id === selectedSkill)) {
   const profile = getSkillVfxProfile(skill.id);
   assert(profile, `Perfil de VFX não encontrado para skill ${skill.id}`);
 
@@ -162,4 +166,4 @@ for (const skill of activeSkills) {
 }
 
 effectManager.dispose();
-console.log(`OK: check-tk-dispatch ${treeArg} completado com sucesso.`);
+console.log(`OK: check-tk-dispatch ${treeArg}${selectedSkill ? ` ${selectedSkill}` : ""} completado com sucesso.`);

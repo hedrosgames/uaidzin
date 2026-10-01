@@ -86,6 +86,7 @@ export interface SkillVfxHit {
 export interface SkillVfxRequest {
   profile: SkillVfxProfile;
   origin: Vector3;
+  attackPoint?: Vector3;
   target: Vector3 | null;
   center: Vector3;
   colorHex: number;
