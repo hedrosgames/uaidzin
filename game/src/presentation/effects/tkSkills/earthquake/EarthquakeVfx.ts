@@ -80,7 +80,7 @@ function createSharedResources(): EarthquakeSharedResources {
   const particleMaterials = createAvalancheParticleMaterials(textures);
   const ringGeometry = new TorusGeometry(1, 0.075, 8, 64);
   const ringMaterial = new MeshBasicMaterial({
-    color: 0xb08a55,
+    color: 0xc49a63,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -90,7 +90,7 @@ function createSharedResources(): EarthquakeSharedResources {
   });
   const bandGeometry = new RingGeometry(0.74, 1, 64);
   const bandMaterial = new MeshBasicMaterial({
-    color: 0x705538,
+    color: 0x66513b,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -295,8 +295,8 @@ class EarthquakeCast {
     const scale = Math.max(0.01, frontRadius);
     this.ring.scale.setScalar(scale);
     this.band.scale.setScalar(scale);
-    this.ring.material.opacity = 0.9 * (1 - progress * 0.28);
-    this.band.material.opacity = 0.42 * Math.min(1, progress * 5) * (1 - progress * 0.35);
+    this.ring.material.opacity = 0.84 * (1 - progress * 0.28);
+    this.band.material.opacity = 0.36 * Math.min(1, progress * 5) * (1 - progress * 0.35);
 
     if (this.light) {
       this.light.intensity = 1.5 + Math.sin(progress * Math.PI) * 3.2;
