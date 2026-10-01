@@ -16,4 +16,5 @@ export const FM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   fm_ctrl_lanca_luz: { motif: "blade", color: 0xe4c174, accent: 0xfff3ce, count: 3, scale: 0.92, spread: 0.26, spin: 0.3, lift: 0.4, motion: "trail", particleRate: 34 },
   fm_ctrl_vontade_divina: { motif: "wing", color: 0xdcb962, accent: 0xf4e9ce, count: 2, scale: 1.04, spread: 0.98, spin: 0.55, lift: 1.2, motion: "ward", particleRate: 24 },
   fm_ctrl_castigo: { motif: "star", color: 0xd49b3e, accent: 0xffe4a0, count: 5, scale: 0.7, spread: 0.66, spin: 2.6, lift: 1.9, motion: "rain", particleRate: 38 },
+  fm_ctrl_graca_ceu: { motif: "wing", color: 0xe9d49a, accent: 0xbde5d8, count: 8, scale: 0.76, spread: 2.0, spin: 0.7, lift: 2.0, motion: "rain", particleRate: 42 },
 };
