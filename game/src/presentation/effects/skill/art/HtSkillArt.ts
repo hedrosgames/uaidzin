@@ -13,4 +13,5 @@ export const HT_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   ht_ctrl_mais_um_golpe: { motif: "blade", color: 0xc69451, accent: 0xf0e6d0, count: 2, scale: 0.32, spread: 0.65, spin: 3, lift: 0.55, motion: "orbit", particleRate: 28 },
   ht_ctrl_presa_ferida: { motif: "fang", color: 0xa33b3b, accent: 0xf18a64, count: 3, scale: 0.3, spread: 0.36, spin: 0.5, lift: 0.1, motion: "trail", particleRate: 36 },
   ht_ctrl_dodge: { motif: "wing", color: 0x829cad, accent: 0xd4dfe5, count: 2, scale: 0.28, spread: 0.8, spin: 1.8, lift: 0.55, motion: "ward", particleRate: 14 },
+  ht_ctrl_rugido: { motif: "claw", color: 0xc86d38, accent: 0xe9b85b, count: 6, scale: 0.3, spread: 1.1, spin: 0.8, lift: 0.45, motion: "burst", particleRate: 38 },
 };
