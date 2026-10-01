@@ -348,9 +348,14 @@ export class EffectManager {
       case "aura":
         this.tkRegistry.get("aura").castAura(input.center);
         return;
-      case "escudo-sagrado":
-        this.tkRegistry.get("escudo-sagrado").castEscudo(input.origin, target.clone().sub(input.origin));
+      case "escudo-sagrado": {
+        const direction = target.clone().sub(input.origin);
+        if (direction.lengthSq() < 1e-8) {
+          direction.set(Math.sin(input.facing), 0, Math.cos(input.facing));
+        }
+        this.tkRegistry.get("escudo-sagrado").castEscudo(input.origin, direction);
         return;
+      }
       case "julgamento":
         this.tkRegistry.get("julgamento").castJulgamento(target);
         return;
