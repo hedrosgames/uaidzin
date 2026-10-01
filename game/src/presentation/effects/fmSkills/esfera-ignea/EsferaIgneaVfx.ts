@@ -124,15 +124,15 @@ function createSharedResources(): EsferaIgneaSharedResources {
     color: 0x1d120c,
     emissiveMap: textures.coreFissure,
     emissive: 0xff7a1a,
-    emissiveIntensity: 0.62,
+    emissiveIntensity: 0.46,
     roughness: 0.74,
     metalness: 0.28,
     flatShading: true,
   });
-  const heartGeometry = new SphereGeometry(1, 16, 12);
+  const heartGeometry = new SphereGeometry(1, 12, 8);
   const heartMaterialTemplate = new MeshBasicMaterial({
     map: textures.hotCore,
-    color: 0xfff0c0,
+    color: 0xffd790,
     transparent: true,
     opacity: 0.9,
     depthWrite: false,
@@ -144,7 +144,7 @@ function createSharedResources(): EsferaIgneaSharedResources {
     map: textures.shellBand,
     color: 0x8f7038,
     emissive: 0xff7a1a,
-    emissiveIntensity: 0.34,
+    emissiveIntensity: 0.22,
     roughness: 0.3,
     metalness: 0.9,
   });
@@ -157,7 +157,7 @@ function createSharedResources(): EsferaIgneaSharedResources {
     roughness: 0.46,
     metalness: 0.66,
   });
-  const flashGeometry = new SphereGeometry(1, 18, 14);
+  const flashGeometry = new SphereGeometry(1, 14, 10);
   const flashMaterialTemplate = new MeshBasicMaterial({
     map: textures.hotCore,
     color: 0xfff2c4,
@@ -256,6 +256,8 @@ class EsferaIgneaCast {
   private readonly debrisCount: number;
   private readonly head = new Vector3();
   private readonly tangent = new Vector3();
+  private readonly reverseTangent = new Vector3();
+  private readonly emitterOrientation = new Quaternion();
   private readonly flightDuration: number;
   private phase: CastPhase = "charge";
   private phaseElapsed = 0;
@@ -527,7 +529,7 @@ class EsferaIgneaCast {
     this.heart.position.copy(this.head);
     this.core.scale.setScalar(this.config.coreRadius * grow);
     this.heart.scale.setScalar(this.config.coreRadius * grow * 1.25);
-    this.heartMaterial.opacity = 0.68 + Math.sin(this.elapsed * 22) * 0.1;
+    this.heartMaterial.opacity = 0.58 + Math.sin(this.elapsed * 22) * 0.08;
     for (let index = 0; index < this.shells.length; index += 1) {
       const shell = this.shells[index];
       shell.position.copy(this.head);
@@ -537,9 +539,11 @@ class EsferaIgneaCast {
       shell.scale.setScalar(this.config.shellRadius * grow * wobble);
     }
     this.tail.update(eased, this.elapsed);
-    for (const system of [this.flightSystems.envelope, this.flightSystems.embers, this.flightSystems.orbiters]) {
-      system.emitter.quaternion.setFromUnitVectors(FORWARD, this.tangent.clone().negate());
-    }
+    this.reverseTangent.copy(this.tangent).negate();
+    this.emitterOrientation.setFromUnitVectors(FORWARD, this.reverseTangent);
+    this.flightSystems.envelope.emitter.quaternion.copy(this.emitterOrientation);
+    this.flightSystems.embers.emitter.quaternion.copy(this.emitterOrientation);
+    this.flightSystems.orbiters.emitter.quaternion.copy(this.emitterOrientation);
     this.light.position.copy(this.head);
     this.light.intensity = 1.8 + Math.sin(linear * Math.PI) * 2.6 + launchPop * 2.4;
     for (const system of this.flightSystems.all) {
@@ -553,9 +557,11 @@ class EsferaIgneaCast {
     this.phaseElapsed = 0;
     this.head.copy(this.target);
     for (const system of this.flightSystems.all) system.endEmit();
+    this.reverseTangent.copy(this.tangent).negate();
+    this.emitterOrientation.setFromUnitVectors(FORWARD, this.reverseTangent);
     for (const system of this.impactSystems.all) {
       system.emitter.position.copy(this.target);
-      system.emitter.quaternion.setFromUnitVectors(FORWARD, this.tangent.clone().negate());
+      system.emitter.quaternion.copy(this.emitterOrientation);
       system.emitter.visible = true;
       system.restart();
       system.play();
@@ -588,13 +594,13 @@ class EsferaIgneaCast {
     const fade = Math.pow(1 - progress, 2);
     const overshoot = 1 + Math.sin(Math.min(progress * 2.4, 1) * Math.PI) * 0.32;
     this.flash.scale.setScalar(this.config.coreRadius * (0.6 + Math.min(progress * 5, 1) * 1.7));
-    this.flashMaterial.opacity = fade * 0.95;
+    this.flashMaterial.opacity = fade * 0.72;
     this.flash.visible = progress < 0.9;
-    this.ring.scale.setScalar(0.2 + progress * 2.6);
+    this.ring.scale.setScalar(0.2 + Math.sqrt(progress) * 2.6);
     this.ringMaterial.opacity = fade * 0.6;
     this.ring.visible = progress < 1;
     this.scorch.scale.setScalar(0.2 + progress * 1.5 * overshoot);
-    this.scorchMaterial.opacity = fade * 0.95;
+    this.scorchMaterial.opacity = Math.sqrt(1 - progress) * 0.82;
     this.scorch.visible = progress < 1;
     for (let index = 0; index < this.shells.length; index += 1) {
       const shell = this.shells[index];
@@ -693,7 +699,7 @@ export class EsferaIgneaVfxController {
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;
@@ -741,7 +747,7 @@ export class EsferaIgneaVfxController {
   }
 
   private updateFrame(deltaTime: number, width: number, height: number): void {
-    for (const cast of [...this.casts]) {
+    for (const cast of this.casts) {
       cast.update(deltaTime);
       cast.prepareFrame();
     }
