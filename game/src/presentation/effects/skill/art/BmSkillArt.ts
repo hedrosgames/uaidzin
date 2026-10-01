@@ -12,4 +12,5 @@ export const BM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   bm_mag_dardo_igneo: { motif: "blade", color: 0xa34620, accent: 0xf8ba52, count: 3, scale: 0.42, spread: 0.18, spin: 1.4, lift: 0, motion: "trail", particleRate: 42 },
   bm_mag_fenda_glacial: { motif: "crystal", color: 0x448ba0, accent: 0xbce1e5, count: 4, scale: 0.48, spread: 0.26, spin: 0.5, lift: 0.2, motion: "burst", particleRate: 30 },
   bm_mag_escarpa: { motif: "crystal", color: 0x776044, accent: 0xcaa76c, count: 7, scale: 0.72, spread: 0.88, spin: 0.2, lift: 0.9, motion: "burst", particleRate: 30 },
+  bm_mag_voz_trovao: { motif: "bolt", color: 0xb69c53, accent: 0xffe6a2, count: 5, scale: 0.36, spread: 0.28, spin: 1.8, lift: 0, motion: "trail", particleRate: 44 },
 };
