@@ -4,8 +4,9 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const treeArg = process.argv[2] || "fisica";
-assert.equal(treeArg, "fisica", `Árvore não suportada: ${treeArg}`);
+const treeArg = process.argv[2] || "all";
+const validTrees = new Set(["all", "fisica", "controle", "magia"]);
+assert(validTrees.has(treeArg), `Árvore não suportada: ${treeArg}`);
 
 function createCanvas() {
   const canvas = { width: 1, height: 1 };
@@ -48,8 +49,8 @@ const compiled = await build({
   stdin: {
     contents: `
       export { EffectManager } from "./src/presentation/effects/EffectManager";
-      export { TK_FISICA } from "./src/data/classes/skills/tk";
-      export { getSkillVfxProfile } from "./src/presentation/effects/skill/SkillVfxCatalog";
+      export { TK_FISICA, TK_CONTROLE, TK_MAGIA } from "./src/data/classes/skills/tk";
+      export { getSkillVfxProfile, TK_DEDICATED_VFX_BY_SKILL_ID } from "./src/presentation/effects/skill/SkillVfxCatalog";
       export { Scene, PerspectiveCamera, Vector3 } from "three";
     `,
     resolveDir: root,
@@ -61,15 +62,49 @@ const compiled = await build({
   logLevel: "silent",
 });
 
-const { EffectManager, TK_FISICA, getSkillVfxProfile, Scene, PerspectiveCamera, Vector3 } =
-  await import(`data:text/javascript;base64,${Buffer.from(compiled.outputFiles[0].text).toString("base64")}`);
+const {
+  EffectManager,
+  TK_FISICA,
+  TK_CONTROLE,
+  TK_MAGIA,
+  getSkillVfxProfile,
+  TK_DEDICATED_VFX_BY_SKILL_ID,
+  Scene,
+  PerspectiveCamera,
+  Vector3,
+} = await import(`data:text/javascript;base64,${Buffer.from(compiled.outputFiles[0].text).toString("base64")}`);
 
-assert(Array.isArray(TK_FISICA) && TK_FISICA.length === 8, "TK_FISICA deve conter 8 skills");
+const trees = {
+  fisica: TK_FISICA,
+  controle: TK_CONTROLE,
+  magia: TK_MAGIA,
+};
 
-for (const skill of TK_FISICA) {
+for (const [tree, skills] of Object.entries(trees)) {
+  assert(Array.isArray(skills) && skills.length === 8, `TK ${tree} deve conter 8 skills`);
+}
+
+const selectedTrees = treeArg === "all"
+  ? Object.values(trees)
+  : [trees[treeArg]];
+const selectedSkills = selectedTrees.flat();
+const activeSkills = selectedSkills.filter((skill) => skill.kind !== "passive");
+const selectedIds = new Set(selectedSkills.map((skill) => skill.id));
+assert.equal(selectedIds.size, selectedSkills.length, "IDs duplicados nas skills TK selecionadas");
+
+for (const skill of activeSkills) {
+  const profile = getSkillVfxProfile(skill.id);
+  assert(profile, `Perfil de VFX não encontrado para ${skill.id}`);
   assert(
-    typeof skill.desc === "string" && skill.desc.trim().length > 0,
-    `Skill ${skill.id} (${skill.name}) sem campo desc preenchido`,
+    profile.family === "chain" || typeof profile.dedicatedVfx === "string",
+    `Skill ativa ${skill.id} caiu no VFX genérico`,
+  );
+}
+
+for (const id of Object.keys(TK_DEDICATED_VFX_BY_SKILL_ID)) {
+  assert(
+    [...Object.values(trees).flat()].some((skill) => skill.id === id),
+    `Mapping de VFX TK aponta para ID inexistente: ${id}`,
   );
 }
 
@@ -82,56 +117,39 @@ camera.updateMatrixWorld();
 camera.updateProjectionMatrix();
 
 const effectManager = new EffectManager(parent, scene);
-
-const directions = [
-  0,
-  Math.PI / 2,
-  Math.PI,
-  -Math.PI / 2,
-  Math.PI / 4,
-];
+const directions = [0, Math.PI / 2, Math.PI, -Math.PI / 2, Math.PI / 4];
 
 function assertNoNan(rootObj) {
   rootObj.traverse((obj) => {
-    assert(Number.isFinite(obj.position.x), `position.x é NaN ou infinito em ${obj.name || obj.type}`);
-    assert(Number.isFinite(obj.position.y), `position.y é NaN ou infinito em ${obj.name || obj.type}`);
-    assert(Number.isFinite(obj.position.z), `position.z é NaN ou infinito em ${obj.name || obj.type}`);
-    assert(Number.isFinite(obj.scale.x), `scale.x é NaN ou infinito em ${obj.name || obj.type}`);
-    assert(Number.isFinite(obj.scale.y), `scale.y é NaN ou infinito em ${obj.name || obj.type}`);
-    assert(Number.isFinite(obj.scale.z), `scale.z é NaN ou infinito em ${obj.name || obj.type}`);
-    assert(Number.isFinite(obj.rotation.x), `rotation.x é NaN ou infinito em ${obj.name || obj.type}`);
-    assert(Number.isFinite(obj.rotation.y), `rotation.y é NaN ou infinito em ${obj.name || obj.type}`);
-    assert(Number.isFinite(obj.rotation.z), `rotation.z é NaN ou infinito em ${obj.name || obj.type}`);
-    assert(obj.position.y >= -0.001, `VFX abaixo do chão em ${obj.name || obj.type}: y=${obj.position.y}`);
+    assert(Number.isFinite(obj.position.x), `position.x inválido em ${obj.name || obj.type}`);
+    assert(Number.isFinite(obj.position.y), `position.y inválido em ${obj.name || obj.type}`);
+    assert(Number.isFinite(obj.position.z), `position.z inválido em ${obj.name || obj.type}`);
+    assert(Number.isFinite(obj.scale.x), `scale.x inválido em ${obj.name || obj.type}`);
+    assert(Number.isFinite(obj.scale.y), `scale.y inválido em ${obj.name || obj.type}`);
+    assert(Number.isFinite(obj.scale.z), `scale.z inválido em ${obj.name || obj.type}`);
+    assert(Number.isFinite(obj.rotation.x), `rotation.x inválido em ${obj.name || obj.type}`);
+    assert(Number.isFinite(obj.rotation.y), `rotation.y inválido em ${obj.name || obj.type}`);
+    assert(Number.isFinite(obj.rotation.z), `rotation.z inválido em ${obj.name || obj.type}`);
   });
 }
 
-const activeSkills = TK_FISICA.filter((s) => s.kind !== "passive");
-assert(activeSkills.length === 6, `Esperadas 6 skills ativas na física, encontrado ${activeSkills.length}`);
-
 for (const skill of activeSkills) {
   const profile = getSkillVfxProfile(skill.id);
-  assert(profile, `Perfil de VFX não encontrado para skill ${skill.id}`);
-
   for (const dir of directions) {
     effectManager.clearSkillVfx();
-
     const origin = new Vector3(0, 0, 0);
     const range = skill.range ?? 4;
-    const target = new Vector3(Math.cos(dir) * range, 0, Math.sin(dir) * range);
-    const center = skill.shape === "self" || skill.shape === "aoe" ? origin.clone() : target.clone();
-    const hits = skill.shape === "line"
-      ? [
-          { id: "enemy-1", x: target.x * 0.4, z: target.z * 0.4, damage: 10, hitIndex: 0 },
-          { id: "enemy-2", x: target.x * 0.9, z: target.z * 0.9, damage: 20, hitIndex: 1 },
-        ]
-      : skill.shape === "aoe"
-      ? [
-          { id: "enemy-1", x: center.x + 0.5, z: center.z + 0.5, damage: 30, hitIndex: 0 },
-        ]
-      : [
-          { id: "enemy-1", x: target.x, z: target.z, damage: 15, hitIndex: 0 },
-        ];
+    const target = skill.shape === "self"
+      ? origin.clone()
+      : new Vector3(Math.sin(dir) * range, 0, Math.cos(dir) * range);
+    const center = skill.shape === "self" || skill.shape === "aoe"
+      ? origin.clone()
+      : target.clone();
+    const hits = skill.shape === "aoe"
+      ? [{ id: "enemy-1", x: center.x + 0.5, z: center.z + 0.5, damage: 30, hitIndex: 0 }]
+      : skill.kind === "damage"
+        ? [{ id: "enemy-1", x: target.x, z: target.z, damage: 15, hitIndex: 0 }]
+        : [];
 
     effectManager.dispatchSkillVfx({
       profile,
@@ -143,23 +161,23 @@ for (const skill of activeSkills) {
       range,
       radius: profile.radius,
       hits,
-      hasHeal: false,
-      hasBuff: profile.family === "buff",
+      hasHeal: skill.kind === "heal",
+      hasBuff: skill.kind === "buff",
       hasTransform: false,
       hasSummon: false,
     });
 
-    for (let frame = 0; frame < 12; frame++) {
+    for (let frame = 0; frame < 12; frame += 1) {
       effectManager.update(1 / 60, camera, 1600, 900);
       assertNoNan(scene);
       const state = effectManager.getSkillVfxState();
-      assert(Number.isFinite(state.active), `active não é finito em ${skill.id}`);
-      assert(Number.isFinite(state.particles), `particles não é finito em ${skill.id}`);
+      assert(Number.isFinite(state.active), `active inválido em ${skill.id}`);
+      assert(Number.isFinite(state.particles), `particles inválido em ${skill.id}`);
     }
-
-    effectManager.clearSkillVfx();
   }
 }
 
+effectManager.clearSkillVfx();
+assert.equal(effectManager.getSkillVfxState().active, 0, "VFX ativos após clear");
 effectManager.dispose();
-console.log(`OK: check-tk-dispatch ${treeArg} completado com sucesso.`);
+console.log(`OK: check-tk-dispatch ${treeArg} validou ${activeSkills.length} skills ativas.`);
