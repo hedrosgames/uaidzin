@@ -171,6 +171,7 @@ export const FM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "fm_mag_esfera_ignea",
     name: "Esfera Ígnea",
+    desc: "Atinge o inimigo mais próximo a até 8 m com 1,15× o ataque mágico. Dano de fogo.",
     index: 0,
     kind: "damage",
     shape: "single",
@@ -180,6 +181,7 @@ export const FM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "fm_mag_lanca_glacial",
     name: "Lança Glacial",
+    desc: "Atinge o inimigo mais próximo a até 8 m com 1,3× o ataque mágico de gelo e reduz o movimento dele em 50% por 3,2 s.",
     index: 1,
     kind: "damage",
     shape: "single",
@@ -190,6 +192,7 @@ export const FM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "fm_mag_choque_vital",
     name: "Choque Vital",
+    desc: "Atinge o inimigo mais próximo a até 8 m com 1,55× o ataque mágico. Dano de raio.",
     index: 2,
     kind: "damage",
     shape: "single",
@@ -200,6 +203,7 @@ export const FM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "fm_mag_picada",
     name: "Picada Peçonhenta",
+    desc: "Atinge o inimigo mais próximo a até 8 m com 1,6× o ataque mágico de veneno. Por 5 s, causa por segundo mais 40% do dano inicial.",
     index: 3,
     kind: "damage",
     shape: "single",
@@ -210,6 +214,7 @@ export const FM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "fm_mag_tempestade_brasa",
     name: "Tempestade de Brasa",
+    desc: "Atinge todos os inimigos num raio de 3,6 m com 1,8× o ataque mágico. Dano de fogo.",
     index: 4,
     kind: "damage",
     shape: "aoe",
@@ -220,6 +225,7 @@ export const FM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "fm_mag_sombra_corrosiva",
     name: "Sombra Corrosiva",
+    desc: "Atinge o inimigo mais próximo a até 8 m com 2× o ataque mágico de sombra, ignorando 30% da defesa.",
     index: 5,
     kind: "damage",
     shape: "single",
@@ -230,6 +236,7 @@ export const FM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "fm_mag_nevasca",
     name: "Nevasca",
+    desc: "Atinge inimigos num raio de 3,8 m com 2,2× o ataque mágico de gelo e reduz o movimento deles em 55% por 3,5 s.",
     index: 6,
     kind: "damage",
     shape: "aoe",
@@ -241,6 +248,7 @@ export const FM_MAGIA: SkillDef[] = [
   defineSkill({
     id: "fm_mag_colapso",
     name: "Colapso Elemental",
+    desc: "Atinge todos os inimigos num raio de 4,4 m com 2,7× o ataque mágico. Dano elemental misto. Só uma 8ª skill por personagem.",
     index: 7,
     kind: "damage",
     shape: "aoe",
