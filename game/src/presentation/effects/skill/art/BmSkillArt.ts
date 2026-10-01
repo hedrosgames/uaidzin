@@ -15,4 +15,5 @@ export const BM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   bm_mag_voz_trovao: { motif: "bolt", color: 0xb69c53, accent: 0xffe6a2, count: 5, scale: 0.36, spread: 0.28, spin: 1.8, lift: 0, motion: "trail", particleRate: 44 },
   bm_mag_manto: { motif: "rune", color: 0x876842, accent: 0xe5c381, count: 4, scale: 0.45, spread: 1, spin: 0.7, lift: 1.1, motion: "ward", particleRate: 24 },
   bm_mag_corrente_agua: { motif: "spiral", color: 0x387b99, accent: 0x99d5df, count: 6, scale: 0.55, spread: 0.9, spin: -1.8, lift: 0.4, motion: "orbit", particleRate: 34 },
+  bm_mag_muralha: { motif: "shield", color: 0x675541, accent: 0xbba273, count: 6, scale: 0.72, spread: 1.15, spin: 0.1, lift: 0.65, motion: "ward", particleRate: 22 },
 };
