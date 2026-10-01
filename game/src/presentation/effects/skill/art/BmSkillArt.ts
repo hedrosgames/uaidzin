@@ -18,4 +18,5 @@ export const BM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   bm_mag_muralha: { motif: "shield", color: 0x675541, accent: 0xbba273, count: 6, scale: 0.72, spread: 1.15, spin: 0.1, lift: 0.65, motion: "ward", particleRate: 22 },
   bm_mag_furia_quatro: { motif: "star", color: 0x8b6943, accent: 0xeed078, count: 8, scale: 0.58, spread: 1, spin: 1.7, lift: 0.9, motion: "burst", particleRate: 48 },
   bm_ctrl_condor: { motif: "wing", color: 0x87784c, accent: 0xe0cb8d, count: 2, scale: 0.75, spread: 0.65, spin: 0.5, lift: 1.6, motion: "totem", particleRate: 26 },
+  bm_ctrl_lobo: { motif: "fang", color: 0x6f8052, accent: 0xcbd69a, count: 4, scale: 0.52, spread: 0.72, spin: 0.6, lift: 1, motion: "totem", particleRate: 26 },
 };
