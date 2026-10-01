@@ -21,4 +21,5 @@ export const FM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   fm_mag_tempestade_brasa: { motif: "orb", color: 0xc75b24, accent: 0xffbb58, count: 10, scale: 0.68, spread: 1.8, spin: 1.7, lift: 2.2, motion: "rain", particleRate: 48 },
   fm_mag_sombra_corrosiva: { motif: "blade", color: 0x65417f, accent: 0xbb6a9f, count: 3, scale: 0.88, spread: 0.3, spin: -1.8, lift: 0.4, motion: "trail", particleRate: 26 },
   fm_mag_nevasca: { motif: "crystal", color: 0x73a7c9, accent: 0xd6eaff, count: 12, scale: 0.58, spread: 1.9, spin: 1.3, lift: 2.4, motion: "rain", particleRate: 54 },
+  fm_mag_colapso: { motif: "orb", color: 0x9e6bc6, accent: 0xe7c472, count: 8, scale: 1.08, spread: 2.2, spin: -3.0, lift: 1.25, motion: "burst", particleRate: 60 },
 };
