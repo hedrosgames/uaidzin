@@ -316,6 +316,7 @@ export class CityGameSession {
         this.lastCombatMissAt = Date.now();
       },
       onPlayerDeath: () => {
+        this.combat.clearPendingActions();
         this.renderer.playerView.playDeath();
         this.form.clear();
         this.summons.clear();
@@ -423,6 +424,7 @@ export class CityGameSession {
 
   async enterWorld(id: WorldId): Promise<void> {
     this.autoMoveAnchor = null;
+    this.combat.clearPendingActions();
     this.effects.clearSkillVfx();
     const world = this.worlds.switchTo(id);
     this.renderer.setWorldLook(id === "city" ? "city" : id === "dungeon-2" ? "cemetery" : id === "dungeon-test" ? "dungeon" : "field");
@@ -664,6 +666,8 @@ export class CityGameSession {
     this.character.regenMp(4 * dt);
     this.buffs.tick(dt);
     this.form.advance(dt);
+    this.combat.advancePendingActions(dt);
+    this.summonView.sync(this.summons.actors);
 
     const frameMods = this.combat.getCombatMods();
     this.player.speedScale = 1 + frameMods.moveSpeed;
@@ -786,10 +790,10 @@ export class CityGameSession {
           this.pushHud(true);
           return;
         }
-        this.combat.updateCombat(dt);
+        this.combat.updateCombat(dt, false, false);
         this.tickDungeon1Gates();
       } else {
-        this.combat.updateCombat(dt, true);
+        this.combat.updateCombat(dt, true, false);
       }
     }
 

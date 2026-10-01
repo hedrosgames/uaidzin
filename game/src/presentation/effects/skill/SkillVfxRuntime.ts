@@ -50,6 +50,7 @@ import {
 } from "../fireBurst/FireBurstTextures";
 import type { SkillVfxProfile, SkillVfxRequest } from "./SkillVfxTypes";
 import type { TkLightPool } from "../TkLightPool";
+import { skillVfxDuration } from "./SkillVfxTiming";
 
 interface SkillVfxResources {
   textures: FireBurstTextureSet;
@@ -231,18 +232,6 @@ function directionalFamily(family: SkillVfxProfile["family"]): boolean {
   return family === "projectile" || family === "arrow" || family === "line" || family === "melee";
 }
 
-function durationFor(family: SkillVfxProfile["family"]): number {
-  if (family === "projectile") return 0.58;
-  if (family === "arrow") return 0.5;
-  if (family === "line") return 0.44;
-  if (family === "melee") return 0.3;
-  if (family === "aoe") return 0.72;
-  if (family === "passive") return 0.64;
-  if (family === "transform") return 1.05;
-  if (family === "summon") return 0.92;
-  return 0.86;
-}
-
 function positionSegment(
   mesh: Mesh,
   start: Vector3,
@@ -287,7 +276,7 @@ class GenericSkillVfxCast {
     const family = request.profile.family;
     this.directional = directionalFamily(family);
     this.family = family;
-    this.duration = durationFor(family);
+    this.duration = skillVfxDuration(family);
     this.radius = Math.max(0.5, request.radius);
     this.onDispose = options.onDispose;
     this.lightPool = options.lightPool;
@@ -398,6 +387,17 @@ class GenericSkillVfxCast {
   }
 
   private updateDirectional(): void {
+    if (this.phase === "impact") {
+      const fade = Math.max(0, 1 - (this.elapsed - this.duration) / 0.7);
+      this.core.visible = false;
+      this.beam.visible = false;
+      this.arrow.visible = false;
+      this.ring.scale.setScalar(0.35 + (1 - fade) * 1.8);
+      (this.ring.material as MeshBasicMaterial).opacity = 0.9 * fade;
+      if (this.light) this.light.intensity = 4.2 * fade;
+      if (fade <= 0) this.dispose();
+      return;
+    }
     const progress = MathUtils.clamp(this.elapsed / this.duration, 0, 1);
     const eased = 1 - Math.pow(1 - progress, 2);
     const point = this.curve?.getPoint(eased, new Vector3()) ?? this.target;

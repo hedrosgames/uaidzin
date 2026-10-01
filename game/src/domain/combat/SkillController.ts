@@ -64,9 +64,10 @@ export class SkillController {
     weaponSet: string | null,
     autoBuffs = false,
     blockDamage = false,
+    options: { deferEffects?: boolean; actionLocked?: boolean } = {},
   ): SkillCast | null {
     this.loadout.tick(dt);
-    if (!this.character || !this.tree) return null;
+    if (!this.character || !this.tree || this.character.isDead || options.actionLocked) return null;
     const manual = manualSlotIndex >= 0;
     if (moving && !manual) return null;
     const mods = buildCombatMods(buffs.active, learnedPassives(this.tree), weaponSet, form);
@@ -116,24 +117,38 @@ export class SkillController {
       const mul = buffs.consumeStealth();
       for (const hit of resolved.hits) hit.damage = Math.max(1, Math.round(hit.damage * mul));
     }
+    this.loadout.use(slot);
+    const cast = { slot, resolved, mods };
+    if (!options.deferEffects) this.applyCasterEffects(cast, buffs, form, summons, px, pz);
+    return cast;
+  }
+
+  applyCasterEffects(
+    cast: SkillCast,
+    buffs: BuffService,
+    form: FormState,
+    summons: SummonRuntime,
+    px: number,
+    pz: number,
+  ): void {
+    if (!this.character || !this.tree || this.character.isDead) return;
+    const { resolved, mods, slot } = cast;
     for (const buff of resolved.buffs) buffs.add(buff);
     if (resolved.cleanse) buffs.cleanse();
     if (resolved.transform) form.apply(resolved.transform);
-    if (resolved.summons) {
-      const specs = resolved.summons;
-      specs.forEach((spec, index) => {
-        const angle = (Math.PI * 2 * index) / specs.length;
-        summons.spawn(
-          spec,
-          this.character!.attack * mods.attackMul * specEffectiveness,
-          px + Math.sin(angle) * 1.4,
-          pz + Math.cos(angle) * 1.4,
-          mods.summonPower,
-        );
-      });
-    }
-    this.loadout.use(slot);
-    return { slot, resolved, mods };
+    const specs = resolved.summons;
+    if (!specs) return;
+    const effectiveness = specializationEffectivenessForTree(slot.tree, this.tree.state.specialization);
+    specs.forEach((spec, index) => {
+      const angle = (Math.PI * 2 * index) / specs.length;
+      summons.spawn(
+        spec,
+        this.character!.attack * mods.attackMul * effectiveness,
+        px + Math.sin(angle) * 1.4,
+        pz + Math.cos(angle) * 1.4,
+        mods.summonPower,
+      );
+    });
   }
 
   slotStates(buffs?: BuffService): Array<{ key: number; name: string; cdRatio: number; cdLeft: number; ready: boolean; auto: boolean }> {

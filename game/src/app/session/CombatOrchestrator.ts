@@ -2,7 +2,7 @@ import { Vector3 } from "three";
 import { COMBAT_BALANCE } from "../../data/balance/combat";
 import { applyPlayerCombatRatings } from "../../data/balance/combat-ratings";
 import { buildCombatMods, type CombatMods } from "../../domain/combat/CombatMods";
-import { learnedPassives, type SkillController } from "../../domain/combat/SkillController";
+import { learnedPassives, type SkillCast, type SkillController } from "../../domain/combat/SkillController";
 import { calculateDamage } from "../../domain/combat/DamageCalculator";
 import { rollHitSimple, rollPlayerAttackHits } from "../../domain/combat/HitChanceCalculator";
 import { getSkillVfxProfile } from "../../presentation/effects/skill/SkillVfxCatalog";
@@ -38,6 +38,8 @@ import { canEngageEnemy } from "../../domain/combat/CombatSpace";
 import { dungeon1ArenaFromZ } from "../../data/balance/xp-progression";
 import type { AttackTarget } from "../../domain/combat/AttackController";
 import type { ResolvedSkill } from "../../domain/combat/SkillCasting";
+import { skillVfxImpactDelay } from "../../presentation/effects/skill/SkillVfxTiming";
+import { segmentBlocked } from "../../world/collision";
 
 export interface CombatOrchestratorDeps {
   enemies: EnemyService;
@@ -85,7 +87,7 @@ export class CombatOrchestrator {
     dispatchVfx: boolean;
     delay: number;
     impactDelayAfterVfx: number;
-    hpCap: number;
+    cast?: SkillCast;
   }> = [];
   private readonly vOrigin = new Vector3();
   private readonly vTarget = new Vector3();
@@ -95,6 +97,12 @@ export class CombatOrchestrator {
 
   invalidateMods(): void {
     this.cachedMods = null;
+  }
+
+  clearPendingActions(): void {
+    this.pendingBasicAttack = null;
+    this.pendingSkillImpacts.length = 0;
+    this.invalidateMods();
   }
 
   invalidatePassives(): void {
@@ -111,7 +119,8 @@ export class CombatOrchestrator {
 
   getCombatMods(): CombatMods {
     const character = this.deps.character;
-    const stamp = `${this.deps.buffs.active.length}|${character.attributes.DES}|${character.equipCrit}|${character.equipSpeed}|${character.baseAttackSpeed}`;
+    const buffStamp = this.deps.buffs.active.map(buff => `${buff.id}:${buff.stat}:${buff.magnitude}`).join("|");
+    const stamp = `${buffStamp}|${this.deps.form.active}:${this.deps.form.id}|${this.deps.equipment.getWeaponSet(this.deps.progression.state.classId)}|${character.attributes.DES}|${character.equipCrit}|${character.equipSpeed}|${character.baseAttackSpeed}`;
     if (stamp !== this.modsStamp) {
       this.modsStamp = stamp;
       this.cachedMods = null;
@@ -145,22 +154,17 @@ export class CombatOrchestrator {
     });
   }
 
-  updateCombat(dt: number, blockDamage = false): void {
-    this.deps.enemies.updateRespawns(dt);
-    const worldId = this.deps.worlds.getCurrent()?.id ?? "";
-    const playerArena = worldId === "dungeon-1" ? dungeon1ArenaFromZ(this.deps.player.z) : undefined;
-    const targets = this.combatTargets(worldId);
-    const reach = this.deps.getWeaponReach();
-    const frameMods = this.getCombatMods();
-    const speedMul = Math.max(COMBAT_BALANCE.basicAttackSpeedFloor, 1 + frameMods.attackSpeed);
-    this.deps.attack.setReach(reach.attackRange, reach.attackInterval / speedMul);
-
+  advancePendingActions(dt: number): void {
+    if (this.deps.character.isDead) {
+      this.clearPendingActions();
+      return;
+    }
     if (this.pendingBasicAttack) {
       this.pendingBasicAttack.delay -= dt;
       if (this.pendingBasicAttack.delay <= 0) {
         const targetId = this.pendingBasicAttack.targetId;
         this.pendingBasicAttack = null;
-        this.resolveBasicAttack(targetId, frameMods);
+        this.resolveBasicAttack(targetId, this.getCombatMods());
       }
     }
 
@@ -173,13 +177,30 @@ export class CombatOrchestrator {
       }
       if (pending.impactDelayAfterVfx > 0) {
         pending.dispatchVfx = false;
-        pending.delay = pending.impactDelayAfterVfx;
+        pending.delay += pending.impactDelayAfterVfx;
         pending.impactDelayAfterVfx = 0;
-        continue;
+        if (pending.delay > 0) continue;
       }
       this.pendingSkillImpacts.splice(i, 1);
-      this.applySkillImpact(pending.resolved, pending.skillId, pending.hpCap);
+      if (pending.cast) {
+        this.deps.skill.applyCasterEffects(pending.cast, this.deps.buffs, this.deps.form,
+          this.deps.summons, this.deps.player.x, this.deps.player.z);
+        this.invalidateMods();
+      }
+      this.applySkillImpact(pending.resolved, pending.skillId);
     }
+  }
+
+  updateCombat(dt: number, blockDamage = false, advanceActions = true): void {
+    this.deps.enemies.updateRespawns(dt);
+    if (advanceActions) this.advancePendingActions(dt);
+    const worldId = this.deps.worlds.getCurrent()?.id ?? "";
+    const playerArena = worldId === "dungeon-1" ? dungeon1ArenaFromZ(this.deps.player.z) : undefined;
+    const targets = this.combatTargets(worldId);
+    const reach = this.deps.getWeaponReach();
+    const frameMods = this.getCombatMods();
+    const speedMul = Math.max(COMBAT_BALANCE.basicAttackSpeedFloor, 1 + frameMods.attackSpeed);
+    this.deps.attack.setReach(reach.attackRange, reach.attackInterval / speedMul);
 
     let hitTarget: AttackTarget | null = null;
     const clickId = this.deps.consumeClickAttack();
@@ -244,6 +265,7 @@ export class CombatOrchestrator {
       this.deps.renderer.playerView.getWeaponSet(),
       this.deps.isAutoAttackEnabled(),
       blockDamage,
+      { deferEffects: this.deps.progression.state.classId !== "TK", actionLocked: this.deps.getMoveLock() > 0 },
     );
 
     if (cast) {
@@ -252,7 +274,7 @@ export class CombatOrchestrator {
       this.vOrigin.set(this.deps.player.x, 0, this.deps.player.z);
       const target = resolved.aim ? this.vTarget.set(resolved.aim.x, 0, resolved.aim.z) : null;
       const weaponAttackSkill = skill.kind === "damage" && skill.power === "weapon";
-      if (target && weaponAttackSkill) {
+      if (target && (weaponAttackSkill || this.deps.progression.state.classId !== "TK")) {
         const dx = target.x - this.deps.player.x;
         const dz = target.z - this.deps.player.z;
         if (dx * dx + dz * dz > 1e-8) {
@@ -265,7 +287,7 @@ export class CombatOrchestrator {
         0,
         this.deps.player.z + Math.cos(facing) * Math.max(1, skill.range),
       );
-      const center = skill.shape === "aoe" || !target ? this.vOrigin : aimPoint;
+      const center = skill.shape === "aoe" || skill.shape === "self" || !target ? this.vOrigin : aimPoint;
       const profile = getSkillVfxProfile(skill.id);
       let request: SkillVfxRequest | null = null;
       if (profile) {
@@ -285,8 +307,24 @@ export class CombatOrchestrator {
           hasSummon: resolved.summons != null,
         };
       }
-      const hpCap = Math.round(this.deps.character.maxHp * (1 + Math.max(0, frameMods.maxHpMul)));
-      if (weaponAttackSkill) {
+      if (this.deps.progression.state.classId !== "TK") {
+        let anim: "attack" | "cast";
+        if (weaponAttackSkill) anim = this.deps.renderer.playerView.playAttack(1);
+        else {
+          this.deps.renderer.playerView.playCast(1);
+          anim = "cast";
+        }
+        this.deps.lockFromAnim(anim, COMBAT_BALANCE.moveLock.skillFallback);
+        this.pendingSkillImpacts.push({
+          skillId: skill.id,
+          resolved,
+          request,
+          dispatchVfx: request !== null,
+          delay: Math.max(0.08, this.deps.renderer.playerView.getAnimDurationSec(anim) * 0.45),
+          impactDelayAfterVfx: request ? skillVfxImpactDelay(request) : 0,
+          cast,
+        });
+      } else if (weaponAttackSkill) {
         const attackSpeed = skill.id === "tk_fis_force_wave" ? 1.5 : 1;
         const anim = this.deps.renderer.playerView.playAttack(attackSpeed);
         this.deps.lockFromAnim(anim, COMBAT_BALANCE.moveLock.attackFallback);
@@ -297,7 +335,6 @@ export class CombatOrchestrator {
           dispatchVfx: request !== null,
           delay: Math.max(0.08, this.deps.renderer.playerView.getAnimDurationSec(anim) * 0.45),
           impactDelayAfterVfx: skill.id === "tk_fis_fire_burst" ? 0.5 : 0,
-          hpCap,
         });
       } else {
         if (request) {
@@ -315,19 +352,24 @@ export class CombatOrchestrator {
         }
         const anim = this.deps.renderer.playerView.playAttack(1);
         this.deps.lockFromAnim(anim, COMBAT_BALANCE.moveLock.skillFallback);
-        this.applySkillImpact(resolved, skill.id, hpCap);
+        this.applySkillImpact(resolved, skill.id);
       }
     }
 
     const strikes = this.deps.summons.tick(
       dt,
-      this.deps.enemies.enemies.map((enemy) => ({
+      targets.map((target) => this.deps.enemies.findById(target.id)!).map((enemy) => ({
         id: enemy.id,
         x: enemy.x,
         z: enemy.z,
         alive: enemy.alive,
         defense: enemy.defense,
       })),
+      this.deps.player,
+      this.getCombatMods().summonPower,
+      this.deps.worlds.getCurrent()?.collision
+        ? (fromX, fromZ, toX, toZ) => !segmentBlocked(fromX, fromZ, toX, toZ, this.deps.worlds.getCurrent()!.collision!, 0.28)
+        : undefined,
     );
     for (const strike of strikes) {
       const enemy = this.deps.enemies.findById(strike.id);
@@ -347,7 +389,7 @@ export class CombatOrchestrator {
       }
       if (strike.splash > 0) {
         for (const other of this.deps.enemies.enemies) {
-          if (!other.alive || other.id === enemy.id) continue;
+          if (!other.alive || other.id === enemy.id || !targets.some(target => target.id === other.id)) continue;
           if (Math.hypot(other.x - enemy.x, other.z - enemy.z) > strike.splash) continue;
           const splashDmg = Math.max(1, Math.round(strike.damage * 0.55));
           if (!rollPlayerAttackHits(other.evasion)) {
@@ -440,6 +482,7 @@ export class CombatOrchestrator {
         continue;
       }
       let dmg = calculateDamage(enemy.attack, this.deps.character.defense * frameMods.defenseMul);
+      if (enemy.archetype === "ranged" && enemy.modelUrl?.includes("skeleton-special")) dmg *= 1 - frameMods.magicResist;
       dmg = Math.max(1, Math.round(dmg * (1 - frameMods.damageReduction)));
       const struck = rollCritStrike(dmg, enemy.critChance);
       this.hurtPlayer(struck.damage, struck.crit);
@@ -460,13 +503,17 @@ export class CombatOrchestrator {
     this.deps.rewards.flushFrameCheckpoint();
   }
 
-  private applySkillImpact(resolved: ResolvedSkill, skillId: string, hpCap: number): void {
-    this.deps.character.heal(resolved.heal + resolved.lifesteal, hpCap);
+  private applySkillImpact(resolved: ResolvedSkill, skillId: string): void {
+    const worldId = this.deps.worlds.getCurrent()?.id ?? "";
+    const liveTargets = new Set(this.combatTargets(worldId).map(target => target.id));
+    const plannedDamage = resolved.hits.reduce((sum, hit) => sum + hit.damage, 0);
+    let dealt = 0;
     const deathDuration = skillId === "tk_fis_fire_burst" ? 0.5 : 1.4;
     const seen = new Set<string>();
     for (const hit of resolved.hits) {
       const enemy = this.deps.enemies.findById(hit.id);
-      if (!enemy?.alive) continue;
+      if (!enemy?.alive || !liveTargets.has(enemy.id)) continue;
+      dealt += Math.min(enemy.hp, hit.damage);
       const killed = enemy.applyDamage(hit.damage);
       const mesh = this.deps.enemyView.getMesh(enemy.id);
       if (!seen.has(enemy.id)) {
@@ -490,9 +537,12 @@ export class CombatOrchestrator {
     }
     for (const plan of resolved.enemyEffects) {
       const enemy = this.deps.enemies.findById(plan.id);
-      if (!enemy?.alive) continue;
+      if (!enemy?.alive || !liveTargets.has(enemy.id)) continue;
       enemy.applySkillStatus(plan.effect, plan.dotDps, plan.effect.dotSec, this.deps.player.x, this.deps.player.z);
     }
+    const cap = Math.round(this.deps.character.maxHp * (1 + Math.max(0, this.getCombatMods().maxHpMul)));
+    const lifesteal = plannedDamage > 0 ? Math.round(resolved.lifesteal * dealt / plannedDamage) : 0;
+    this.deps.character.heal(resolved.heal + lifesteal, cap);
     this.deps.bus.emit("skill:used", {
       skillId,
       targetId: resolved.hits[0]?.id ?? "self",

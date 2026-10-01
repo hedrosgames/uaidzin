@@ -159,6 +159,7 @@ export const BM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "bm_ctrl_condor",
     name: "Invocar Condor",
+    desc: "Invoca um condor que acompanha o personagem e ataca à distância, com alcance de 7 m e intervalo de 1,15 s.",
     index: 0,
     kind: "summon",
     summon: condor,
@@ -166,6 +167,7 @@ export const BM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "bm_ctrl_lobo",
     name: "Invocar Lobo",
+    desc: "Invoca um lobo que acompanha o personagem, persegue inimigos e ataca a até 1,8 m a cada 0,9 s.",
     index: 1,
     kind: "summon",
     summon: lobo,
@@ -173,6 +175,7 @@ export const BM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "bm_ctrl_chamado_boss",
     name: "Chamado do Boss",
+    desc: "Fortalece as invocações por 14 s: ataque +35 % e vida máxima +17,5 %.",
     index: 2,
     kind: "buff",
     buff: { id: "bm_boss_call", sec: 14, stat: "summonPower", magnitude: 0.35 },
@@ -180,6 +183,7 @@ export const BM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "bm_ctrl_urso",
     name: "Invocar Urso",
+    desc: "Invoca um urso resistente que acompanha o personagem, persegue inimigos e ataca a até 1,8 m a cada 1,25 s.",
     index: 3,
     kind: "summon",
     summon: urso,
@@ -187,6 +191,7 @@ export const BM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "bm_ctrl_tigre",
     name: "Invocar Tigre",
+    desc: "Invoca um tigre que acompanha o personagem, persegue inimigos e ataca a até 1,8 m a cada 0,7 s.",
     index: 4,
     kind: "summon",
     summon: tigre,
@@ -194,6 +199,7 @@ export const BM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "bm_ctrl_dragao",
     name: "Invocar Dragão",
+    desc: "Invoca um dragão que ataca a até 4,6 m a cada 1,35 s. O golpe também causa dano em inimigos num raio de 2,2 m do alvo.",
     index: 5,
     kind: "summon",
     summon: dragao,
@@ -201,6 +207,7 @@ export const BM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "bm_ctrl_vinculo",
     name: "Vínculo Vital",
+    desc: "Passiva. O personagem recebe 50 % do dano dirigido às suas invocações. Não entra na barra.",
     index: 6,
     kind: "passive",
     passive: { id: "summonLink", magnitude: 0.5 },
@@ -208,6 +215,7 @@ export const BM_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "bm_ctrl_exercito",
     name: "Exército Primordial",
+    desc: "Invoca condor, lobo e tigre juntos. Uma criatura viva de cada tipo; repetir a invocação restaura sua vida. Só uma 8ª árvore por personagem.",
     index: 7,
     kind: "summon",
     pack: [condor, lobo, tigre],
