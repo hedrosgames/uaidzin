@@ -6,12 +6,14 @@ import { requireElement } from "./dom";
 import type { LabCard } from "./LabCard";
 import { ModelViewer } from "./ModelViewer";
 import { MonsterCard, type MonsterCardState } from "./MonsterCard";
+import { MountPreviewCard, type MountPreviewCardState } from "./MountPreviewCard";
 import { MOUNT_FILE_LABEL, MountStore } from "./MountStore";
 
 export interface LabApiState {
   ready: boolean;
   characters: CharacterCardState[];
   monsters: MonsterCardState[];
+  mounts: MountPreviewCardState[];
 }
 
 export interface LabApi {
@@ -24,10 +26,12 @@ export class ModelLab {
   private readonly store = new MountStore();
   private readonly characters: CharacterCard[] = [];
   private readonly monsters: MonsterCard[] = [];
+  private readonly mounts: MountPreviewCard[] = [];
   private readonly weaponAll: HTMLSelectElement;
   private readonly animAll: HTMLSelectElement;
   private readonly charsNote: HTMLElement;
   private readonly monstersNote: HTMLElement;
+  private readonly mountsNote: HTMLElement;
   private readonly statusEl: HTMLElement;
   private catalog: LabCatalog | null = null;
   private activeClipId = IDLE_CLIP_ID;
@@ -40,6 +44,7 @@ export class ModelLab {
     this.animAll = requireElement(document, "#anim-all", HTMLSelectElement);
     this.charsNote = requireElement(document, "#chars-note", HTMLElement);
     this.monstersNote = requireElement(document, "#monsters-note", HTMLElement);
+    this.mountsNote = requireElement(document, "#mounts-note", HTMLElement);
     this.statusEl = requireElement(document, "#lab-status", HTMLElement);
   }
 
@@ -50,6 +55,7 @@ export class ModelLab {
     await this.store.load();
     this.buildCharacters(catalog);
     this.buildMonsters(catalog);
+    this.buildMounts(catalog);
     this.buildToolbar(catalog);
     this.bindTabs();
     this.observeVisibility();
@@ -87,6 +93,22 @@ export class ModelLab {
     }
   }
 
+  private buildMounts(catalog: LabCatalog): void {
+    const section = requireElement(document, "#view-mounts", HTMLElement);
+    const tab = document.querySelector('.tab[data-tab="mounts"]');
+    if (!catalog.mountClips.length) {
+      section.hidden = true;
+      if (tab instanceof HTMLElement) tab.hidden = true;
+      this.mountsNote.textContent = "Sem GLB de montaria no disco";
+      return;
+    }
+    const grid = requireElement(document, "#mount-grid", HTMLElement);
+    const card = new MountPreviewCard(catalog.mountClips);
+    this.mounts.push(card);
+    grid.append(card.element);
+    void card.mount().catch(() => card.setStatus("Falha ao carregar montaria TK"));
+  }
+
   private buildToolbar(catalog: LabCatalog): void {
     for (const set of catalog.weaponSets) {
       this.weaponAll.append(new Option(set.label, set.id));
@@ -111,6 +133,10 @@ export class ModelLab {
     const withModel = catalog.monsters.filter((entry) => entry.modelUrl !== "").length;
     const clips = catalog.monsterClips?.clips.length ?? 0;
     this.monstersNote.textContent = `${catalog.monsters.length} monstros · ${withModel} com GLB de malha · ${clips} clipes no disco`;
+    const mountClips = catalog.mountClips.length;
+    this.mountsNote.textContent = mountClips
+      ? `TK montado · ${mountClips} clipes (cilindro estático)`
+      : "Copie tk-mount-cylinder.glb para public/models/mounts/";
   }
 
   private bindTabs(): void {
@@ -199,11 +225,11 @@ export class ModelLab {
   }
 
   private allCards(): AnyCard[] {
-    return [...this.characters, ...this.monsters];
+    return [...this.characters, ...this.monsters, ...this.mounts];
   }
 
   private writeStatus(catalog: LabCatalog): void {
-    const cards = catalog.classes.length + catalog.monsters.length;
+    const cards = catalog.classes.length + catalog.monsters.length + this.mounts.length;
     this.statusEl.textContent = `${cards} cards · ajustes gravam em ${MOUNT_FILE_LABEL}`;
   }
 
@@ -213,6 +239,7 @@ export class ModelLab {
     if (!document.hidden) {
       for (const card of this.characters) card.update(dt);
       for (const card of this.monsters) card.update(dt);
+      for (const card of this.mounts) card.update(dt);
     }
     requestAnimationFrame(this.tick);
   };
@@ -224,6 +251,7 @@ export class ModelLab {
         ready: this.characters.length > 0 && this.characters.every((card) => card.state().ready),
         characters: this.characters.map((card) => card.state()),
         monsters: this.monsters.map((card) => card.state()),
+        mounts: this.mounts.map((card) => card.state()),
       }),
     };
   }

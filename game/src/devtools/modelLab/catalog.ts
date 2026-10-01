@@ -42,12 +42,25 @@ export interface WeaponSetDef {
 export interface LabCatalog {
   classes: ClassDef[];
   humanClips: ClipDef[];
+  mountClips: ClipDef[];
   monsterClips: ClipSetDef | null;
   monsters: MonsterEntry[];
   weaponSets: WeaponSetDef[];
 }
 
 export const IDLE_CLIP_ID = "idle";
+
+export const MOUNT_MODEL_URL = "/models/mounts/tk-mount-cylinder.glb";
+
+export const MOUNT_CLIP_ORDER: Array<[string, string]> = [
+  ["mount_idle", "Montaria idle"],
+  ["mount_walk", "Montaria caminhada"],
+  ["mount_attack", "Montaria ataque"],
+];
+
+export const MOUNT_LAB_CLIP_COMPANIONS: Record<string, readonly string[]> = {
+  mount_walk: ["seat_mount_walk"],
+};
 
 const CLASS_DEFS: ClassDef[] = [
   { id: "TK", label: "Thegn Knight", modelUrl: "/models/player/TK/TK.glb" },
@@ -161,6 +174,12 @@ function buildClipDefs(
   return clips;
 }
 
+function buildMountClips(models: string[]): ClipDef[] {
+  const hasModel = models.includes(MOUNT_MODEL_URL);
+  if (!hasModel) return [];
+  return MOUNT_CLIP_ORDER.map(([id, label]) => ({ id, label, url: MOUNT_MODEL_URL }));
+}
+
 function buildMonsterClips(models: string[]): ClipSetDef | null {
   const clips = buildClipDefs(
     MONSTER_ANIM_ROOT,
@@ -199,6 +218,7 @@ export function buildCatalog(models: string[]): LabCatalog {
   return {
     classes: CLASS_DEFS.map((def) => ({ ...def })),
     humanClips: buildClipDefs(HUMAN_ANIM_ROOT, HUMAN_CLIP_ORDER, models, humanClipUrl, true),
+    mountClips: buildMountClips(models),
     monsterClips: buildMonsterClips(models),
     monsters: buildMonsters(models),
     weaponSets: WEAPON_SET_IDS.map((id) => ({ id, label: WEAPON_SET_LABEL[id] })),
