@@ -374,7 +374,6 @@ export class SeloVfxController {
       depthTest: true,
       side: DoubleSide,
       blending: AdditiveBlending,
-      blending: AdditiveBlending,
       toneMapped: false,
     });
     this.outerMaterial = new MeshBasicMaterial({
@@ -393,6 +392,7 @@ export class SeloVfxController {
       transparent: true,
       opacity: 0,
       depthWrite: false,
+      blending: AdditiveBlending,
       toneMapped: false,
     });
     this.batchedRenderer.name = "selo-batched-renderer";
