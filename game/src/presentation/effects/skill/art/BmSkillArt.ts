@@ -20,4 +20,5 @@ export const BM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   bm_ctrl_condor: { motif: "wing", color: 0x87784c, accent: 0xe0cb8d, count: 2, scale: 0.75, spread: 0.65, spin: 0.5, lift: 1.6, motion: "totem", particleRate: 26 },
   bm_ctrl_lobo: { motif: "fang", color: 0x6f8052, accent: 0xcbd69a, count: 4, scale: 0.52, spread: 0.72, spin: 0.6, lift: 1, motion: "totem", particleRate: 26 },
   bm_ctrl_chamado_boss: { motif: "rune", color: 0x996d37, accent: 0xf1c76f, count: 5, scale: 0.5, spread: 1.1, spin: 1.4, lift: 1.2, motion: "orbit", particleRate: 32 },
+  bm_ctrl_urso: { motif: "shield", color: 0x6b5239, accent: 0xd5b585, count: 5, scale: 0.62, spread: 0.85, spin: 0.3, lift: 1.1, motion: "totem", particleRate: 28 },
 };
