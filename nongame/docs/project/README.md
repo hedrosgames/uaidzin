@@ -4,7 +4,7 @@ Runtime: `game/`. Login e seleção: `game/public/boot/`.
 
 **Mapa canônico para agentes:** [`../../../AGENTS.md`](../../../AGENTS.md).
 
-GDD (capítulos + builder): cópia de referência em `C:\Users\Felipe\Desktop\uaidzin-gdd`. Não tratar `nongame/gdd/` no repo como fonte se a pasta ainda existir por engano.
+GDD (capítulos + builder): cópia de referência em `C:\Users\Felipe\Desktop\uaidzin-gdd`.
 
 ## Project
 
@@ -26,11 +26,8 @@ Matriz viva de sets/idle: `game/src/presentation/player/weapon-set-catalog.json`
 | [`../../game/docs/THREEJS-DEVTOOLS-MCP.md`](../../game/docs/THREEJS-DEVTOOLS-MCP.md) | MCP Three.js (dev) |
 | [`../../game/assets-source/organized/manifest.json`](../../game/assets-source/organized/manifest.json) | Índice Mixamo |
 
-## Visual legado
+## Visual
 
 | Caminho | Papel |
 |---|---|
-| [`../../../visual/fire-burst-art/`](../../../visual/fire-burst-art/) | Arte 2D Fire Burst |
-| [`../visual/vfx/bola-de-fogo.html`](../visual/vfx/bola-de-fogo.html) | Estudo HTML |
-
-`visual/telas/` e pastas antigas em `nongame/backup/` ou docs de project apagados do mapa **não** entram no fluxo de trabalho — só consulta histórica se o Felipe pedir.
+| [`../../../Planos/VFX Skills/`](../../../Planos/VFX%20Skills/) | Fonte de verdade dos briefs VFX por skill |

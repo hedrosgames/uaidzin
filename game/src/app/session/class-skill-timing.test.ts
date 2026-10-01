@@ -245,6 +245,44 @@ describe("Origem visual da Force Wave", () => {
   });
 });
 
+describe("Campo de Gelo preserva a mecânica", () => {
+  beforeEach(() => vi.spyOn(Math, "random").mockReturnValue(0.9));
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each([3.39, 3.4, 3.41])("mantém centro, impacto imediato e limite em %s m", distance => {
+    const skill = CLASSES.TK.trees.magia.find(entry => entry.id === "tk_mag_campo_gelo")!;
+    const s = setup("TK", skill);
+    s.deps.player.x = 4;
+    s.deps.player.z = -2;
+    s.enemy.x = 4;
+    s.enemy.z = -2 + distance;
+    s.update(0);
+    expect(s.dispatch).toHaveBeenCalledOnce();
+    const request = s.dispatch.mock.calls[0]![0];
+    expect(request.profile.dedicatedVfx).toBe("campo-gelo");
+    expect(request.center.toArray()).toEqual([4, 0, -2]);
+    expect(request.radius).toBe(3.4);
+    expect(s.character.mp).toBe(1000 - skill.mp);
+    expect(skill.cooldown).toBe(2);
+    if (distance <= 3.4) {
+      expect(request.hits).toHaveLength(1);
+      expect(s.enemy.hp).toBe(10000 - request.hits[0].damage);
+      expect(s.enemy.slowFactor).toBe(0.55);
+      expect(s.enemy.slowTimer).toBe(3.5);
+      s.enemy.tickStatus(3.5);
+      expect(s.enemy.slowFactor).toBe(1);
+    } else {
+      expect(request.hits).toHaveLength(0);
+      expect(s.enemy.hp).toBe(10000);
+      expect(s.enemy.slowTimer).toBe(0);
+    }
+    const hp = s.enemy.hp;
+    s.combat.advancePendingActions(4);
+    expect(s.enemy.hp).toBe(hp);
+    expect(s.dispatch).toHaveBeenCalledOnce();
+  });
+});
+
 describe("Lâmina de Energia sincronizada", () => {
   beforeEach(() => vi.spyOn(Math, "random").mockReturnValue(0.9));
   afterEach(() => vi.restoreAllMocks());

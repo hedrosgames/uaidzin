@@ -30,7 +30,16 @@ function createCanvas() {
   return canvas;
 }
 
-globalThis.Path2D = class {};
+globalThis.Path2D = class {
+  moveTo() {}
+  lineTo() {}
+  closePath() {}
+  bezierCurveTo() {}
+  quadraticCurveTo() {}
+  arc() {}
+  ellipse() {}
+  rect() {}
+};
 globalThis.document = {
   createElement(name) {
     if (name === "canvas") return createCanvas();

@@ -5,6 +5,7 @@ import { AvalancheVfxController } from "./tkSkills/avalanche/AvalancheVfx";
 import { AuraVfxController } from "./tkSkills/aura/AuraVfx";
 import { BastiaoVfxController } from "./tkSkills/bastiao/BastiaoVfx";
 import { BencaoVfxController } from "./tkSkills/bencao/BencaoVfx";
+import { CampoGeloVfxController } from "./tkSkills/campo-gelo/CampoGeloVfx";
 import { CorteVfxController } from "./tkSkills/corte/CorteVfx";
 import { DesafioVfxController } from "./tkSkills/desafio/DesafioVfx";
 import { DeathStabVfxController } from "./tkSkills/death-stab/DeathStabVfx";
@@ -46,6 +47,7 @@ export interface TkVfxMap {
   investida: InvestidaVfxController;
   corte: CorteVfxController;
   "lamina-energia": LaminaEnergiaVfxController;
+  "campo-gelo": CampoGeloVfxController;
   machado: MachadoVfxController;
   quebra: QuebraVfxController;
   furia: FuryVfxController;
@@ -89,6 +91,7 @@ export class TkVfxRegistry {
       investida: (s, lp) => new InvestidaVfxController(s, {}, lp),
       corte: (s, lp) => new CorteVfxController(s, {}, lp),
       "lamina-energia": (s, lp) => new LaminaEnergiaVfxController(s, {}, lp),
+      "campo-gelo": (s, lp) => new CampoGeloVfxController(s, {}, lp),
       machado: (s, lp) => new MachadoVfxController(s, {}, lp),
       quebra: (s, lp) => new QuebraVfxController(s, {}, lp),
       furia: (s, lp) => new FuryVfxController(s, {}, lp),

@@ -23,12 +23,13 @@ const SKILL_COLOR_OVERRIDES: Record<string, number> = {
   tk_fis_fury: 0xd63a20,
   tk_fis_death_stab: 0xf1f1ee,
   tk_mag_lamina_energia: 0xffecc8,
+  tk_mag_campo_gelo: 0x9ddfff,
 };
 
 export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
   tk_ctrl_sustain: "bencao",
   tk_mag_mana_burn: "selo",
-  tk_mag_campo_gelo: "aura",
+  tk_mag_campo_gelo: "campo-gelo",
   tk_mag_moon_ray: "julgamento",
   tk_mag_death_stab: "luz",
   tk_mag_circulo_morte: "tribunal",

@@ -25,6 +25,7 @@ export type DedicatedSkillVfx =
   | "investida"
   | "corte"
   | "lamina-energia"
+  | "campo-gelo"
   | "machado"
   | "quebra"
   | "furia"

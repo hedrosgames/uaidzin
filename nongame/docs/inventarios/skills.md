@@ -5,7 +5,7 @@ Documento de discovery. Depois de ler isto, dá para listar **todas as skills** 
 **Fontes:** GDD `12-skills-builds-e-equipamentos.md` · I10 (`docs/inventarios/classes.md`) · `game/src/data/classes/class-definitions.ts` · `game/src/data/balance/skills.ts` · `SkillLoadout` / `SkillController` · wire `visual/telas/03-wire-paineis-cidade.html` · `DECISOES-DESIGN.md` (SKILLS).  
 **Conflito GDD × grill:** o grill vence.
 
-**Catálogo VFX derivado:** `game/vfx/skills-manifest.json` e `game/vfx/uaidzin_skill_catalog.js` são gerados a partir da mesma fonte canônica e preservam os 96 IDs reais; o catálogo não substitui este inventário de regras.
+**Catálogo VFX derivado:** `game/vfx/skills-manifest.json` e `game/vfx/uaidzin_skill_catalog.js` são gerados a partir da mesma fonte canônica de skills; a direção visual do catálogo lê `Planos/VFX Skills/`. O catálogo não substitui este inventário de regras.
 
 ---
 

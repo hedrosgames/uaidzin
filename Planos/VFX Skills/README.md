@@ -1,8 +1,10 @@
 # VFX Skills — briefs de produção
 
-Coleção de briefs profissionais para **todas as 100 skills/perfis atuais** do UAIDZIN: 96 skills de classe e 4 Livros compartilhados.
+**Fonte de verdade** da direção visual de VFX no UAIDZIN.
 
-Fontes: `game/vfx/skills-manifest.json`, `game/vfx/skills-vfx-brief.md`, `game/src/data/classes/skills/*.ts` e `nongame/docs/project/VFX-KIT-FIREBURST.md`.
+Coleção de briefs profissionais para **todas as 100 skills/perfis atuais**: 96 skills de classe e 4 Livros compartilhados.
+
+Contrato mecânico vem de `game/src/data/classes/skills/*.ts` / `game/vfx/skills-manifest.json`. Disciplina de pipeline: `nongame/docs/project/VFX-KIT-FIREBURST.md`. Qualquer prompt, studio ou catálogo derivado deve ler estes briefs — não há segundo banco de prompts paralelos.
 
 Cada arquivo é autocontido: contrato mecânico, conceito autoral, layers, movimento 3D, timing, scale/alpha, Quarks, sprite sheets, performance, cleanup e QA. Os briefs não alteram balance.
 

@@ -265,14 +265,13 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
-        fireBurst: path.resolve(__dirname, "vfx/fire-burst.html"),
-        fireBurst3d: path.resolve(__dirname, "vfx/fire-burst-3d.html"),
         tkGolpe: path.resolve(__dirname, "vfx/tk-golpe.html"),
         tkForceWave: path.resolve(__dirname, "vfx/tk-force-wave.html"),
         tkDeathStab: path.resolve(__dirname, "vfx/tk-death-stab.html"),
         tkInvestida: path.resolve(__dirname, "vfx/tk-investida.html"),
         tkCorte: path.resolve(__dirname, "vfx/tk-corte.html"),
         tkLaminaEnergia: path.resolve(__dirname, "vfx/tk-lamina-energia.html"),
+        tkCampoGelo: path.resolve(__dirname, "vfx/tk-campo-gelo.html"),
         tkMachado: path.resolve(__dirname, "vfx/tk-machado.html"),
         tkQuebra: path.resolve(__dirname, "vfx/tk-quebra.html"),
         tkFuria: path.resolve(__dirname, "vfx/tk-furia.html"),

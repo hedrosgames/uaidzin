@@ -354,6 +354,9 @@ export class EffectManager {
       case "aura":
         this.tkRegistry.get("aura").castAura(input.center);
         return;
+      case "campo-gelo":
+        this.tkRegistry.get("campo-gelo").castCampoGelo(input.center, input.radius);
+        return;
       case "escudo-sagrado": {
         const direction = target.clone().sub(input.origin);
         if (direction.lengthSq() < 1e-8) {

@@ -2,7 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
-import { SKILL_PROMPTS } from "./vfx/prompts-data.mjs";
 import { v1 } from "../vfx/lab/proposals-v1.js";
 import { v2 } from "../vfx/lab/proposals-v2.js";
 import { v3 } from "../vfx/lab/proposals-v3.js";
@@ -11,8 +10,99 @@ const SKILL_PROPOSALS = { v1, v2, v3 };
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const gameDir = path.resolve(scriptDir, "..");
+const repoRoot = path.resolve(gameDir, "..");
+const planosRoot = path.join(repoRoot, "Planos", "VFX Skills");
 const outputPath = path.join(gameDir, "vfx", "uaidzin_skill_catalog.js");
 const moduleCache = new Map();
+
+const DEFAULT_PALETTE = {
+  primary: "#d4a017",
+  secondary: "#c45c26",
+  emissive: "#fff3cc",
+};
+
+const MOTIF_PALETTES = {
+  fire: { primary: "#ff4500", secondary: "#ffa500", emissive: "#ffffff" },
+  ice: { primary: "#38bdf8", secondary: "#0284c7", emissive: "#ffffff" },
+  "moon-ray": { primary: "#60a5fa", secondary: "#1d4ed8", emissive: "#ffffff" },
+  holy: { primary: "#f6dfae", secondary: "#d4a017", emissive: "#ffffff" },
+  water: { primary: "#22d3ee", secondary: "#0284c7", emissive: "#e0f2fe" },
+  earth: { primary: "#8c6239", secondary: "#d4a017", emissive: "#f4d080" },
+  poison: { primary: "#22c55e", secondary: "#15803d", emissive: "#bbf7d0" },
+  shadow: { primary: "#7c3aed", secondary: "#4c1d95", emissive: "#e9d5ff" },
+  wind: { primary: "#94a3b8", secondary: "#64748b", emissive: "#e2e8f0" },
+  arrow: { primary: "#c084fc", secondary: "#7e22ce", emissive: "#ffffff" },
+  restoration: { primary: "#86efac", secondary: "#d4a017", emissive: "#ffffff" },
+  physical: { primary: "#d4a017", secondary: "#c45c26", emissive: "#fff3cc" },
+};
+
+function walkMarkdownFiles(dir, out = []) {
+  if (!fs.existsSync(dir)) return out;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkMarkdownFiles(full, out);
+    else if (entry.isFile() && entry.name.endsWith(".md") && entry.name !== "README.md") out.push(full);
+  }
+  return out;
+}
+
+function parsePlanosBrief(markdown) {
+  const direction = markdown.match(/Direção autoral:\s*\*\*([^*]+)\*\*\.\s*([^\n]+)/);
+  const forma = markdown.match(/Forma-chave:\s*\*\*([^*]+)\*\*/);
+  const sequence = markdown.match(/Sequência autoral inicial:\s*\*\*([^*]+)\*\*/);
+  const heading = markdown.match(/^#\s+(.+?)\s+—/m);
+  const bookDirection = markdown.match(/## DIREÇÃO VISUAL\r?\n\r?\n([^\r\n]+)/);
+  const paletteBlock = markdown.match(/Paleta:\r?\n((?:- .+\r?\n)+)/);
+  const paletteLabels = paletteBlock
+    ? paletteBlock[1]
+        .split(/\r?\n/)
+        .map((line) => line.replace(/^- /, "").replace(/;$/, "").trim())
+        .filter(Boolean)
+    : [];
+  return {
+    artTitle: direction?.[1]?.trim() ?? heading?.[1]?.trim() ?? null,
+    brief:
+      (forma?.[1] ?? direction?.[2] ?? bookDirection?.[1] ?? "").trim() || null,
+    sequence: sequence?.[1]?.replace(/\.\s*$/, "").trim() || null,
+    paletteLabels,
+  };
+}
+
+function loadPlanosBriefs() {
+  const map = new Map();
+  for (const file of walkMarkdownFiles(planosRoot)) {
+    const id = path.basename(file, ".md");
+    const parsed = parsePlanosBrief(fs.readFileSync(file, "utf8"));
+    map.set(id, {
+      ...parsed,
+      relativePath: path.relative(planosRoot, file).split(path.sep).join("/"),
+    });
+  }
+  return map;
+}
+
+const PLANOS_BRIEFS = loadPlanosBriefs();
+
+function paletteFor(skill, motif) {
+  return MOTIF_PALETTES[motif] ?? MOTIF_PALETTES[skill.element] ?? DEFAULT_PALETTE;
+}
+
+function timelineFromPlanos(brief, skill) {
+  if (brief?.sequence) {
+    return {
+      cast: "Abertura conforme brief em Planos/VFX Skills.",
+      action: brief.sequence,
+      impact: "Impacto/estado no âncora mecânica correta.",
+      fade: "Dissipação limpa sem emissão contínua.",
+    };
+  }
+  return {
+    cast: "Concentração do efeito no caster.",
+    action: `Aplicação ${skill.kind}/${skill.shape}.`,
+    impact: "Resposta visual no alvo ou na área.",
+    fade: "Dissipação controlada dos elementos residuais.",
+  };
+}
 
 function resolveTypeScriptModule(basePath) {
   const candidates = [basePath, `${basePath}.ts`, path.join(basePath, "index.ts")];
@@ -123,6 +213,7 @@ function implementationState(skill) {
 }
 
 function makeVersions(skillId) {
+  const planos = PLANOS_BRIEFS.get(skillId);
   const definitions = [
     {
       id: "v1",
@@ -154,13 +245,24 @@ function makeVersions(skillId) {
   ];
   return definitions.map((definition) => {
     const proposal = SKILL_PROPOSALS[definition.id].find((entry) => entry.id === skillId);
-    if (!proposal) throw new Error(`Proposta visual ausente: ${skillId} ${definition.id}`);
+    if (proposal) {
+      return {
+        ...definition,
+        artTitle: proposal.title,
+        brief: proposal.description,
+        technique: proposal.technique,
+        layers: proposal.layers,
+      };
+    }
+    if (!planos?.brief && !planos?.artTitle) {
+      throw new Error(`Brief VFX ausente para versão: ${skillId} ${definition.id}`);
+    }
     return {
       ...definition,
-      artTitle: proposal.title,
-      brief: proposal.description,
-      technique: proposal.technique,
-      layers: proposal.layers,
+      artTitle: planos.artTitle ?? skillId,
+      brief: planos.brief ?? "Estudo visual do brief em Planos/VFX Skills.",
+      technique: "Three.js · geometria animada · partículas instanciadas",
+      layers: [],
     };
   });
 }
@@ -219,26 +321,22 @@ for (const [classId, classDef] of Object.entries(CLASSES)) {
         transform: skill.transform ?? null,
         weaponAny: skill.weaponAny ?? null,
         description: null,
-        visual: {
-          archetype,
-          motif,
-          state: implementationState(skill),
-          artTitle: SKILL_PROPOSALS.v1.find((entry) => entry.id === skill.id)?.title ?? skill.name,
-          brief: SKILL_PROPOSALS.v1.find((entry) => entry.id === skill.id)?.description ?? SKILL_PROMPTS[skill.id]?.concept ?? "Direção visual baseada no arquétipo e nos dados reais da skill.",
-          palette: SKILL_PROMPTS[skill.id]?.colors ?? {
-            primary: "#d4a017",
-            secondary: "#c45c26",
-            emissive: "#fff3cc",
-          },
-          timeline: SKILL_PROMPTS[skill.id]?.timeline ?? {
-            cast: "Concentração do efeito no caster.",
-            action: "Aplicação conforme a forma e o elemento da skill.",
-            impact: "Resposta visual no alvo ou na área.",
-            fade: "Dissipação controlada dos elementos residuais.",
-          },
-          generationPrompt: SKILL_PROMPTS[skill.id]?.promptText ?? "",
-          versions: makeVersions(skill.id),
-        },
+        visual: (() => {
+          const planos = PLANOS_BRIEFS.get(skill.id);
+          return {
+            archetype,
+            motif,
+            state: implementationState(skill),
+            artTitle: planos?.artTitle ?? skill.name,
+            brief: planos?.brief ?? "Brief ausente em Planos/VFX Skills.",
+            palette: paletteFor(skill, motif),
+            timeline: timelineFromPlanos(planos, skill),
+            sourceBrief: planos?.relativePath
+              ? `Planos/VFX Skills/${planos.relativePath}`
+              : `Planos/VFX Skills/${skill.id}.md`,
+            versions: makeVersions(skill.id),
+          };
+        })(),
         gameplay: {
           projectile:
             skill.kind === "damage" &&
@@ -255,9 +353,9 @@ for (const [classId, classDef] of Object.entries(CLASSES)) {
 }
 
 const skillIds = new Set(skills.map((skill) => skill.id));
-const missingPromptIds = [...skillIds].filter((id) => !SKILL_PROMPTS[id]);
-if (missingPromptIds.length > 0) {
-  throw new Error(`Direção visual ausente: ${missingPromptIds.join(", ")}`);
+const missingPlanosIds = [...skillIds].filter((id) => !PLANOS_BRIEFS.has(id));
+if (missingPlanosIds.length > 0) {
+  throw new Error(`Brief VFX ausente em Planos/VFX Skills: ${missingPlanosIds.join(", ")}`);
 }
 
 const counts = {
@@ -271,6 +369,7 @@ const counts = {
 const catalog = {
   schemaVersion: 1,
   source: "game/src/data/classes/class-definitions.ts",
+  visualSource: "Planos/VFX Skills",
   counts,
   classes,
   skills,

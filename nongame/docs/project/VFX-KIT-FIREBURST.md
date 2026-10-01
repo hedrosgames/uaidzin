@@ -1,6 +1,6 @@
 # VFX Kit — padrão FireBurstUAID
 
-Fonte de qualidade: `FireBurstUAID` (lab `/vfx/fire-burst.html`), aprovado tecnicamente em 24/09/2026 e aguardando validação do Felipe. Este doc é o material de produção para replicar essa qualidade nas outras skills, começando pelo TK.
+Fonte de qualidade: `FireBurstVfx` em `game/src/presentation/effects/fireBurst/` (efeito de gameplay via `EffectManager`), aprovado tecnicamente em 24/09/2026 e aguardando validação do Felipe. Este doc é o material de produção para replicar essa qualidade nas outras skills, começando pelo TK.
 
 Não descreve regra de jogo (dano/mana/CD ficam no grill). Só pipeline, parâmetros e gate de qualidade.
 
@@ -28,7 +28,7 @@ Uma skill nova no padrão FireBurstUAID usa: curva do kit + `LinkProjectile` com
 4. **Partículas com three.quarks** — `ParticleSystem` por função (rastro, faísca, impacto, pluma), materiais compartilhados, `autoDestroy: false`, `restart()`/`endEmit()` no ciclo. Chama procedural em atlas 4×4 (`FrameOverLife` + `uTileCount/vTileCount` + `blendTiles`), nunca fumaça preta nem fundo opaco.
 5. **Texturas procedurais** — classe própria por textura (ex.: `FireBurstFlameTexture.ts`), canvas determinístico, sRGB, LinearFilter, ClampToEdge, sem mipmap. Reutilizar as de `FireBurstTextures.ts` quando a paleta servir.
 6. **Lab standalone** — HTML em `game/vfx/` + `demo.ts` com entrada no `vite.config.ts`: OrbitControls, grid, seletor de direção, pausa, velocidade, `?qa=1` pausado, API `window.__*__` com `cast/advance/setTarget/getState/clear/render/dispose`.
-7. **QA via CDP** — script `game/scripts/check-<vfx>.mjs` no formato de `check-fire-chain.mjs`: direções múltiplas (incluindo acima/abaixo/zero), duração exata, limpeza (0 casts/partículas/sistemas), memória estável em ciclos, coordenada inválida recusada, limite de concorrência, integração `EffectManager`, shaders sem erro, typecheck + build.
+7. **QA via CDP** — script `game/scripts/check-<vfx>.mjs` no formato dos checks de skill VFX: direções múltiplas (incluindo acima/abaixo/zero), duração exata, limpeza (0 casts/partículas/sistemas), memória estável em ciclos, coordenada inválida recusada, limite de concorrência, integração `EffectManager`, shaders sem erro, typecheck + build.
 
 ## Parâmetros de referência do FireBurstUAID
 
