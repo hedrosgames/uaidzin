@@ -10,4 +10,5 @@ export const FM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   fm_fis_ponto_critico: { motif: "star", color: 0xd4a017, accent: 0xfff0c7, count: 4, scale: 0.48, spread: 0.76, spin: 1.4, lift: 1.3, motion: "orbit", particleRate: 20 },
   fm_fis_negacao_vida: { motif: "rune", color: 0x6d3c90, accent: 0xb78da8, count: 8, scale: 0.78, spread: 1.9, spin: -0.9, lift: 0.2, motion: "ward", particleRate: 36 },
   fm_ctrl_cura: { motif: "star", color: 0xe6c873, accent: 0xb8ead7, count: 5, scale: 0.46, spread: 0.64, spin: 0.7, lift: 1.2, motion: "totem", particleRate: 26 },
+  fm_ctrl_julgamento: { motif: "rune", color: 0xe3c071, accent: 0xfff1c7, count: 3, scale: 0.68, spread: 0.42, spin: 1.8, lift: 0.7, motion: "trail", particleRate: 28 },
 };
