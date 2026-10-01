@@ -6,4 +6,5 @@ export const HT_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   ht_fis_mira_aguia: { motif: "star", color: 0xd4a017, accent: 0xf0e6d0, count: 4, scale: 0.24, spread: 0.55, spin: 0.6, lift: 0.85, motion: "ward", particleRate: 20 },
   ht_fis_tiro_congelante: { motif: "arrow", color: 0x7ec8e3, accent: 0xe7f7ff, count: 1, scale: 0.38, spread: 0.16, spin: 0.2, lift: 0.1, motion: "trail", particleRate: 36 },
   ht_fis_sentinela: { motif: "shield", color: 0x759b88, accent: 0xd4a017, count: 4, scale: 0.26, spread: 0.75, spin: 0.4, lift: 0.7, motion: "ward", particleRate: 18 },
+  ht_fis_flecha_rasante: { motif: "arrow", color: 0xc98940, accent: 0xf8df9b, count: 1, scale: 0.46, spread: 0.1, spin: 1.2, lift: 0.06, motion: "trail", particleRate: 40 },
 };
