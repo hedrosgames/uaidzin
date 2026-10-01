@@ -19,6 +19,7 @@ const SKILL_COLOR_OVERRIDES: Record<string, number> = {
   tk_fis_atk_descuidado: 0xb88640,
   tk_fis_mestre_dual: 0x9fb6c9,
   tk_fis_increase_critical: 0xffc24a,
+  tk_ctrl_divine_armor: 0xe4c86a,
   tk_fis_fury: 0xd63a20,
   tk_fis_death_stab: 0x4aa8ff,
 };
