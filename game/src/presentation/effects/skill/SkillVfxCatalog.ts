@@ -24,7 +24,7 @@ const SKILL_COLOR_OVERRIDES: Record<string, number> = {
 };
 
 export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
-  tk_mag_1: "bencao",
+  tk_ctrl_sustain: "bencao",
   tk_mag_2: "selo",
   tk_mag_3: "aura",
   tk_mag_4: "escudo-sagrado",
