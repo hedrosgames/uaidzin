@@ -381,8 +381,8 @@ export class PlayerView {
     return anim;
   }
 
-  playCast(): void {
-    this.playOneShot("cast");
+  playCast(castSpeedMul = 1): void {
+    this.playOneShot("cast", castSpeedMul);
   }
 
   playHit(): void {
@@ -748,7 +748,9 @@ export class PlayerView {
     const action = this.actions.get(name);
     if (!action) return;
     if (name === "attack" || name === "cast") {
-      const cap = COMBAT_BALANCE.attackAnimSpeedMax;
+      const cap = name === "cast"
+        ? COMBAT_BALANCE.skillCastAnimSpeedMax
+        : COMBAT_BALANCE.attackAnimSpeedMax;
       const floor = COMBAT_BALANCE.basicAttackSpeedFloor;
       const scale = attackSpeedMul != null
         ? Math.min(cap, Math.max(floor, attackSpeedMul))

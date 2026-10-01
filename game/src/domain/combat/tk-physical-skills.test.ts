@@ -79,21 +79,30 @@ describe("TK físico comprado no runtime", () => {
     expect(s.cast(0, -1, [{ id: "outside", x: 0, z: 6.01, alive: true }], 100)).toBeNull();
   });
 
-  it.each([
-    ["tk_fis_earthquake", 6, 170],
-    ["tk_fis_fire_burst", 4.4, 260],
-  ] as const)("%s aplica dano da arma a todos no raio e ignora resistência mágica", (id, radius, damage) => {
-    const s = setup(id);
+  it("Earthquake aplica dano da arma a todos no raio de 6 m", () => {
+    const s = setup("tk_fis_earthquake");
     s.character.baseMagicAttack = 1;
     const foes = [
-      { id: "front", x: 0, z: radius, alive: true },
-      { id: "back", x: 0, z: -radius, alive: true },
-      { id: "outside", x: 0, z: radius + 0.01, alive: true },
+      { id: "front", x: 0, z: 6, alive: true },
+      { id: "back", x: 0, z: -6, alive: true },
+      { id: "outside", x: 0, z: 6.01, alive: true },
       { id: "dead", x: 0, z: 1, alive: false },
     ];
     const hits = s.cast(0, -1, foes, 0, 0.9)?.resolved.hits;
     expect(hits?.map(hit => hit.id)).toEqual(["front", "back"]);
-    expect(hits?.map(hit => hit.damage)).toEqual([damage, damage]);
+    expect(hits?.map(hit => hit.damage)).toEqual([170, 170]);
+  });
+
+  it("Fire Burst atinge apenas um alvo a até 4,4 m", () => {
+    const s = setup("tk_fis_fire_burst");
+    s.character.baseMagicAttack = 1;
+    const foes = [
+      { id: "near", x: 0, z: 3, alive: true },
+      { id: "edge", x: 0, z: 4.4, alive: true },
+      { id: "outside", x: 0, z: 4.41, alive: true },
+    ];
+    const hits = s.cast(0, -1, foes, 0, 0.9)?.resolved.hits;
+    expect(hits).toEqual([{ id: "near", x: 0, z: 3, damage: 260 }]);
   });
 
   it.each([

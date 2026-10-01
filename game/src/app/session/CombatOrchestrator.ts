@@ -84,6 +84,7 @@ export class CombatOrchestrator {
     request: SkillVfxRequest | null;
     dispatchVfx: boolean;
     delay: number;
+    impactDelayAfterVfx: number;
     hpCap: number;
   }> = [];
   private readonly vOrigin = new Vector3();
@@ -167,10 +168,16 @@ export class CombatOrchestrator {
       const pending = this.pendingSkillImpacts[i]!;
       pending.delay -= dt;
       if (pending.delay > 0) continue;
-      this.pendingSkillImpacts.splice(i, 1);
       if (pending.dispatchVfx && pending.request) {
         this.deps.effects.dispatchSkillVfx(pending.request);
       }
+      if (pending.impactDelayAfterVfx > 0) {
+        pending.dispatchVfx = false;
+        pending.delay = pending.impactDelayAfterVfx;
+        pending.impactDelayAfterVfx = 0;
+        continue;
+      }
+      this.pendingSkillImpacts.splice(i, 1);
       this.applySkillImpact(pending.resolved, pending.skillId, pending.hpCap);
     }
 
@@ -243,7 +250,9 @@ export class CombatOrchestrator {
       const skill = cast.slot.skill;
       this.vOrigin.set(this.deps.player.x, 0, this.deps.player.z);
       const target = resolved.aim ? this.vTarget.set(resolved.aim.x, 0, resolved.aim.z) : null;
-      if (target && this.deps.progression.state.classId === "TK") {
+      const weaponAttackSkill = skill.kind === "damage" && skill.power === "weapon";
+      const fastPhysicalBuff = skill.id === "tk_fis_atk_descuidado" || skill.id === "tk_fis_fury";
+      if (target && weaponAttackSkill) {
         const dx = target.x - this.deps.player.x;
         const dz = target.z - this.deps.player.z;
         if (dx * dx + dz * dz > 1e-8) {
@@ -271,21 +280,20 @@ export class CombatOrchestrator {
         };
       }
       const hpCap = Math.round(this.deps.character.maxHp * (1 + Math.max(0, frameMods.maxHpMul)));
-      if (skill.id === "tk_fis_force_wave") {
-        const anim = this.deps.renderer.playerView.playAttack(1.5);
+
+      if (weaponAttackSkill) {
+        const attackSpeed = skill.id === "tk_fis_force_wave" ? 1.5 : 1;
+        const anim = this.deps.renderer.playerView.playAttack(attackSpeed);
         this.deps.lockFromAnim(anim, COMBAT_BALANCE.moveLock.attackFallback);
-        if (request) {
-          this.pendingSkillImpacts.push({
-            skillId: skill.id,
-            resolved,
-            request,
-            dispatchVfx: true,
-            delay: Math.max(0.08, this.deps.renderer.playerView.getAnimDurationSec(anim) * 0.45),
-            hpCap,
-          });
-        } else {
-          this.applySkillImpact(resolved, skill.id, hpCap);
-        }
+        this.pendingSkillImpacts.push({
+          skillId: skill.id,
+          resolved,
+          request,
+          dispatchVfx: request !== null,
+          delay: Math.max(0.08, this.deps.renderer.playerView.getAnimDurationSec(anim) * 0.45),
+          impactDelayAfterVfx: skill.id === "tk_fis_fire_burst" ? 0.5 : 0,
+          hpCap,
+        });
       } else {
         if (request) {
           this.deps.effects.dispatchSkillVfx(request);
@@ -300,20 +308,10 @@ export class CombatOrchestrator {
             skill.id,
           );
         }
-        this.deps.renderer.playerView.playCast();
+        const castSpeed = fastPhysicalBuff ? 2 : 1;
+        this.deps.renderer.playerView.playCast(castSpeed);
         this.deps.lockFromAnim("cast", COMBAT_BALANCE.moveLock.skillFallback);
-        if (skill.id === "tk_fis_fire_burst") {
-          this.pendingSkillImpacts.push({
-            skillId: skill.id,
-            resolved,
-            request,
-            dispatchVfx: false,
-            delay: 0.5,
-            hpCap,
-          });
-        } else {
-          this.applySkillImpact(resolved, skill.id, hpCap);
-        }
+        this.applySkillImpact(resolved, skill.id, hpCap);
       }
     }
 

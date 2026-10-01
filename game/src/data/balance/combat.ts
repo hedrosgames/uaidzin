@@ -3,6 +3,7 @@ export const COMBAT_BALANCE = {
   critMultiplier: 2,
   minDamage: 1,
   attackAnimSpeedMax: 1.5,
+  skillCastAnimSpeedMax: 2,
   basicAttackBonusHitChance: 0.2,
   basicAttackSpeedFloor: 0.4,
   moveLock: {
