@@ -4,7 +4,7 @@ UAIDZIN é um RPG 3D de farm no navegador feito com Three.js, Vite e TypeScript.
 
 - Runtime: `game/`
 - Documentação ativa: `nongame/docs/`
-- Build gerada: `game/dist/` — nunca editar à mão.
+- Build gerada: `game/dist/` — não editar à mão.
 
 ## Fonte de verdade
 
