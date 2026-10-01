@@ -11,6 +11,7 @@ export const BM_FISICA: SkillDef[] = [
   defineSkill({
     id: "bm_fis_lobo_guerreiro",
     name: "Lobo Guerreiro",
+    desc: "Assume a forma de lobo por 18 s: ataque +18 %, defesa −8 % e velocidade de ataque +28 %.",
     index: 0,
     kind: "transform",
     transform: { id: "lobo", sec: 18, attack: 1.18, defense: 0.92, hp: 1, scale: 1.08, attackSpeed: 0.28 },
@@ -18,6 +19,7 @@ export const BM_FISICA: SkillDef[] = [
   defineSkill({
     id: "bm_fis_couro_fera",
     name: "Couro de Fera",
+    desc: "Reforça a pele por 14 s: defesa +22 % e vida máxima +18 %.",
     index: 1,
     kind: "buff",
     buff: { id: "bm_hide_def", sec: 14, stat: "defense", magnitude: 0.22 },
@@ -26,6 +28,7 @@ export const BM_FISICA: SkillDef[] = [
   defineSkill({
     id: "bm_fis_furia_selvagem",
     name: "Fúria Selvagem",
+    desc: "Desperta a fúria por 12 s: ataque +22 % e velocidade de ataque +24 %.",
     index: 2,
     kind: "buff",
     buff: { id: "bm_wild_atk", sec: 12, stat: "attack", magnitude: 0.22 },
@@ -34,6 +37,7 @@ export const BM_FISICA: SkillDef[] = [
   defineSkill({
     id: "bm_fis_investida",
     name: "Investida Bestial",
+    desc: "Atinge um inimigo a até 4,5 m com dano físico e o empurra 1,8 m para longe do personagem.",
     index: 3,
     kind: "damage",
     shape: "single",
@@ -44,6 +48,7 @@ export const BM_FISICA: SkillDef[] = [
   defineSkill({
     id: "bm_fis_garra_brutal",
     name: "Garra Brutal",
+    desc: "Rasga um inimigo a até 2,6 m com dano físico de 1,7 vezes o ataque da arma.",
     index: 4,
     kind: "damage",
     shape: "single",
@@ -54,6 +59,7 @@ export const BM_FISICA: SkillDef[] = [
   defineSkill({
     id: "bm_fis_ursao",
     name: "Ursão Ancião",
+    desc: "Assume a forma de urso por 18 s: ataque +12 %, defesa +42 % e vida máxima +35 %.",
     index: 5,
     kind: "transform",
     transform: { id: "urso", sec: 18, attack: 1.12, defense: 1.42, hp: 1.35, scale: 1.24 },
@@ -61,6 +67,7 @@ export const BM_FISICA: SkillDef[] = [
   defineSkill({
     id: "bm_fis_presas_aco",
     name: "Presas de Aço",
+    desc: "Passiva. Enquanto transformado, chance de crítico +18 % em ataques básicos e skills. Não entra na barra.",
     index: 6,
     kind: "passive",
     passive: { id: "transformedCrit", magnitude: 0.18 },
@@ -68,6 +75,7 @@ export const BM_FISICA: SkillDef[] = [
   defineSkill({
     id: "bm_fis_tita",
     name: "Titã Primordial",
+    desc: "Assume a forma de titã por 14 s: ataque +42 %, defesa +35 %, vida máxima +40 % e velocidade de ataque +12 %. Só uma 8ª árvore por personagem.",
     index: 7,
     kind: "transform",
     transform: { id: "tita", sec: 14, attack: 1.42, defense: 1.35, hp: 1.4, scale: 1.42, attackSpeed: 0.12 },
