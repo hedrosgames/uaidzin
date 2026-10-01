@@ -114,12 +114,12 @@ describe("TK físico comprado no runtime", () => {
     expect(skill.cooldown).toBe(10);
     expect(s.cast(0, 0, [])?.slot.skill.id).toBe(id);
     expect(s.buffs.active.find((buff) => buff.id === buffId)?.remainingSec).toBe(40);
-    expect(s.controller.slotStates(s.buffs)[0]?.cdLeft).toBe(10);
+    expect(s.controller.slotStates()[0]?.cdLeft).toBe(10);
     s.loadout.tick(9.9);
     expect(s.cast(0, 0, [])).toBeNull();
-    expect(s.controller.slotStates(s.buffs)[0]?.ready).toBe(false);
+    expect(s.controller.slotStates()[0]?.ready).toBe(false);
     s.loadout.tick(0.2);
-    expect(s.controller.slotStates(s.buffs)[0]?.ready).toBe(true);
+    expect(s.controller.slotStates()[0]?.ready).toBe(true);
     expect(s.cast(0, 0, [])?.slot.skill.id).toBe(id);
     expect(s.buffs.active.find((buff) => buff.id === buffId)?.remainingSec).toBe(40);
   });

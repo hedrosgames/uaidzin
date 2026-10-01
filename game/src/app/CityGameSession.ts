@@ -34,7 +34,7 @@ import { sellItem } from "../domain/economy/ShopService";
 import type { DungeonDef } from "../data/dungeons/dungeon-definitions";
 import { DUNGEON_TEST } from "../data/dungeons/dungeon-definitions";
 import { findDungeon } from "../data/dungeons/dungeons-mortal";
-import { CLASSES, type TreeId } from "../data/classes/class-definitions";
+import { CLASSES, type ClassId, type TreeId } from "../data/classes/class-definitions";
 import { SKILL_TRAINING } from "../data/balance/economy";
 import { isPotionDefId, resolveConsumableRestore } from "../data/balance/consumables";
 import { ITEM_CATALOG, resolveItemIcon } from "../data/items/item-catalog";
@@ -96,6 +96,30 @@ export interface DropLogEntry {
 export type { SessionHud } from "./session/types";
 export type { DungeonEnterReason, DungeonEnterResult };
 export { dungeonEnterMessage };
+
+type BuffHudMeta = { label: string; icon: string };
+
+const BUFF_HUD_META_BY_CLASS = new Map<ClassId, Map<string, BuffHudMeta>>();
+
+function buffHudMetaFor(classId: ClassId): Map<string, BuffHudMeta> {
+  const cached = BUFF_HUD_META_BY_CLASS.get(classId);
+  if (cached) return cached;
+  const meta = new Map<string, BuffHudMeta>();
+  const trees = CLASSES[classId].trees;
+  for (const tree of Object.keys(trees) as TreeId[]) {
+    for (const skill of trees[tree]) {
+      for (const spec of [skill.buff, skill.extraBuff]) {
+        if (!spec || meta.has(spec.id)) continue;
+        meta.set(spec.id, {
+          label: skill.name,
+          icon: `/assets/icons/skills/${skill.id}.png`,
+        });
+      }
+    }
+  }
+  BUFF_HUD_META_BY_CLASS.set(classId, meta);
+  return meta;
+}
 
 export class CityGameSession {
   readonly player = new PlayerRuntime();
@@ -316,6 +340,7 @@ export class CityGameSession {
         this.lastCombatMissAt = Date.now();
       },
       onPlayerDeath: () => {
+        this.combat.resetPendingActions();
         this.renderer.playerView.playDeath();
         this.form.clear();
         this.summons.clear();
@@ -423,6 +448,9 @@ export class CityGameSession {
 
   async enterWorld(id: WorldId): Promise<void> {
     this.autoMoveAnchor = null;
+    this.combat.resetPendingActions();
+    this.clickAttackId = null;
+    this.hitStop = 0;
     this.effects.clearSkillVfx();
     const world = this.worlds.switchTo(id);
     this.renderer.setWorldLook(id === "city" ? "city" : id === "dungeon-2" ? "cemetery" : id === "dungeon-test" ? "dungeon" : "field");
@@ -854,7 +882,7 @@ export class CityGameSession {
           : null,
       kills: this.dungeonRun.getKills(),
       arenaHint: inDungeon ? this.currentArenaLabel() : null,
-      skills: this.skill.slotStates(this.buffs),
+      skills: this.skill.slotStates(),
       potionSlots: this.buildPotionHudSlots(),
       activeBuffs: this.buildBuffHudSlots(),
       attackMode: this.attackMode,
@@ -872,26 +900,16 @@ export class CityGameSession {
   }
 
   private buildBuffHudSlots(): HudBuffSlot[] {
-    const classId = this.skillTree.state.classId;
-    const trees = CLASSES[classId].trees;
-    const labelByBuffId = new Map<string, string>();
-    const iconByBuffId = new Map<string, string>();
-    for (const tree of Object.keys(trees) as TreeId[]) {
-      for (const skill of trees[tree]) {
-        for (const spec of [skill.buff, skill.extraBuff]) {
-          if (!spec) continue;
-          if (!labelByBuffId.has(spec.id)) labelByBuffId.set(spec.id, skill.name);
-          if (!iconByBuffId.has(spec.id)) iconByBuffId.set(spec.id, `/assets/icons/skills/${skill.id}.png`);
-        }
-      }
-    }
-    const seen = new Set<string>();
+    const meta = buffHudMetaFor(this.skillTree.state.classId);
     const out: HudBuffSlot[] = [];
     for (const buff of this.buffs.active) {
-      const icon = iconByBuffId.get(buff.id);
-      if (!icon || seen.has(buff.id)) continue;
-      seen.add(buff.id);
-      out.push({ icon, label: labelByBuffId.get(buff.id) ?? buff.id, remainingSec: buff.remainingSec });
+      const entry = meta.get(buff.id);
+      if (!entry) continue;
+      out.push({
+        icon: entry.icon,
+        label: entry.label,
+        remainingSec: buff.remainingSec,
+      });
     }
     return out;
   }

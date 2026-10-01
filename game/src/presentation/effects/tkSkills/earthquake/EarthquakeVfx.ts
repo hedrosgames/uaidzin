@@ -240,8 +240,17 @@ class EarthquakeCast {
   }
 
   prepareFrame(): void {
-    for (const system of this.systems) {
+    for (const system of this.waveDust) {
       system.emitter.updateWorldMatrix(true, false);
+    }
+    for (const impact of this.impacts) {
+      if (!impact.triggered) continue;
+      for (const system of impact.systems.all) {
+        system.emitter.updateWorldMatrix(true, false);
+      }
+    }
+    if (this.phase === "aftermath") {
+      this.linger.emitter.updateWorldMatrix(true, false);
     }
   }
 
@@ -321,7 +330,10 @@ class EarthquakeCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.castRoot.remove(this.root);
     if (this.pooledLight) {
       this.lightPool?.release(this.light);

@@ -269,7 +269,10 @@ class FireBurstCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     for (const chain of this.chains) chain.dispose();
     this.castRoot.remove(this.shock, this.flash);
     if (this.isPooledLight) {

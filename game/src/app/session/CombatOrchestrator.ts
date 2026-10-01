@@ -93,6 +93,11 @@ export class CombatOrchestrator {
 
   constructor(private readonly deps: CombatOrchestratorDeps) {}
 
+  resetPendingActions(): void {
+    this.pendingBasicAttack = null;
+    this.pendingSkillImpacts.length = 0;
+  }
+
   invalidateMods(): void {
     this.cachedMods = null;
   }
