@@ -374,6 +374,38 @@ async function runChecks(browser) {
     "aba de personagens desmarcada",
   );
 
+  const mountGlb = path.join(ROOT, "game/public/models/mounts/tk-mount-cylinder.glb");
+  const mountTab = page.locator('.tab[data-tab="mounts"]');
+  if (fs.existsSync(mountGlb) && (await mountTab.isVisible())) {
+    await mountTab.click();
+    await page.waitForFunction(
+      () => window.__MODEL_LAB__?.state().mounts?.some((card) => card.ready) === true,
+      null,
+      { timeout: 90000 },
+    );
+    const mountState = await page.evaluate(() => window.__MODEL_LAB__.state().mounts);
+    check(mountState.length === 1, "1 card de montaria");
+    check(mountState[0].clips.length === 3, "3 clipes de montaria na UI");
+    check(mountState[0].clip === "mount_idle", "montaria começa em mount_idle");
+    check(await page.locator("#view-mounts").isVisible(), "aba Montarias abre");
+    await page.locator('.card-mount .clip-chip[data-clip="mount_walk"]').click();
+    await page.waitForFunction(
+      () => window.__MODEL_LAB__.state().mounts[0]?.clip === "mount_walk",
+      null,
+      { timeout: 10000 },
+    );
+    await page.locator('.card-mount .clip-chip[data-clip="mount_attack"]').click();
+    await page.waitForFunction(
+      () => window.__MODEL_LAB__.state().mounts[0]?.clip === "mount_attack",
+      null,
+      { timeout: 10000 },
+    );
+    const mountCanvas = page.locator(".card-mount .card-stage canvas");
+    const mountFrame = await mountCanvas.screenshot();
+    await page.waitForTimeout(700);
+    check(!mountFrame.equals(await mountCanvas.screenshot()), "animação rodando no card de montaria");
+  }
+
   check(consoleErrors.length === 0, "sem erro de console", consoleErrors.slice(0, 2).join(" | "));
 }
 

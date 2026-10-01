@@ -493,6 +493,7 @@
       <nav class="tabs" role="tablist">
         <button type="button" class="tab active" data-tab="chars" role="tab" aria-selected="true">Personagens</button>
         <button type="button" class="tab" data-tab="monsters" role="tab" aria-selected="false">Monstros</button>
+        <button type="button" class="tab" data-tab="mounts" role="tab" aria-selected="false">Montarias</button>
       </nav>
       <div class="top-right"><span id="lab-status"></span></div>
     </header>
@@ -517,6 +518,14 @@
           <span class="toolbar-note" id="monsters-note"></span>
         </div>
         <div class="grid" id="monster-grid"></div>
+      </section>
+
+      <section class="view" id="view-mounts" role="tabpanel">
+        <div class="toolbar">
+          <span class="field">Prévia TK montado</span>
+          <span class="toolbar-note" id="mounts-note"></span>
+        </div>
+        <div class="grid" id="mount-grid"></div>
       </section>
     </main>
 
@@ -568,6 +577,27 @@
             <button type="button" class="btn cam-frente" aria-pressed="false">Frente</button>
             <button type="button" class="btn cam-arma" aria-pressed="false">Arma</button>
             <button type="button" class="btn toggle-adjust" aria-pressed="false">Ajustar arma</button>
+          </div>
+        </footer>
+        <p class="card-status"></p>
+      </article>
+    </template>
+
+    <template id="tpl-mount">
+      <article class="card card-mount">
+        <header class="card-head">
+          <span class="card-tag"></span>
+          <div class="card-id"><span class="card-name"></span><span class="card-sub"></span></div>
+        </header>
+        <div class="card-body">
+          <div class="card-stage"></div>
+        </div>
+        <div class="clips-title">Animações de montaria</div>
+        <div class="clips"></div>
+        <footer class="card-bar">
+          <div class="card-tools">
+            <button type="button" class="btn cam-corpo" aria-pressed="true">Corpo</button>
+            <button type="button" class="btn cam-frente" aria-pressed="false">Frente</button>
           </div>
         </footer>
         <p class="card-status"></p>

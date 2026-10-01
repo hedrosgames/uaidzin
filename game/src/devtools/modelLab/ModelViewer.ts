@@ -96,6 +96,7 @@ export class ModelViewer {
   private mixer: AnimationMixer | null = null;
   private model: Object3D | null = null;
   private currentAction: AnimationAction | null = null;
+  private companionActions: AnimationAction[] = [];
   private focusTargets: Object3D[] = [];
   private preset: CameraPreset = "corpo";
   private azimuth = 0.62;
@@ -159,6 +160,34 @@ export class ModelViewer {
     return model;
   }
 
+  async mountEmbeddedClips(url: string, targetHeight: number | null): Promise<Object3D> {
+    const template = await loadTemplate(url);
+    const model = instantiateModel(template);
+    this.pivot.clear();
+    this.actions.clear();
+    this.currentAction = null;
+    this.pivot.add(model);
+    this.model = model;
+    this.mixer = new AnimationMixer(model);
+
+    for (const source of template.animations) {
+      const clip = source.clone();
+      const id = clip.name.trim() || IDLE_CLIP_ID;
+      clip.name = id;
+      this.actions.set(id, this.mixer.clipAction(clip));
+    }
+    const poseAction = this.actions.get("mount_idle") ?? [...this.actions.values()][0] ?? null;
+    if (poseAction && this.mixer) {
+      poseAction.play();
+      poseAction.time = 0;
+      for (let i = 0; i < 24; i++) this.mixer.update(1 / 30);
+      poseAction.stop();
+    }
+    this.normalizeModel(model, targetHeight, poseAction !== null);
+    this.setCameraPreset(this.preset);
+    return model;
+  }
+
   bindClip(id: string, clip: AnimationClip): void {
     if (!this.mixer) return;
     const existing = this.actions.get(id);
@@ -173,9 +202,17 @@ export class ModelViewer {
     this.actions.set(id, this.mixer.clipAction(owned));
   }
 
-  playClip(id: string): boolean {
+  private stopCompanionActions(): void {
+    for (const action of this.companionActions) {
+      action.stop();
+    }
+    this.companionActions = [];
+  }
+
+  playClip(id: string, companionIds: readonly string[] = []): boolean {
     const next = this.actions.get(id);
     if (!next || !this.mixer) return false;
+    this.stopCompanionActions();
     const prev = this.currentAction;
     next.reset();
     next.setLoop(LoopRepeat, Infinity);
@@ -187,6 +224,18 @@ export class ModelViewer {
     else next.fadeIn(0.06);
     next.play();
     this.currentAction = next;
+    for (const companionId of companionIds) {
+      const companion = this.actions.get(companionId);
+      if (!companion) continue;
+      companion.reset();
+      companion.setLoop(LoopRepeat, Infinity);
+      companion.clampWhenFinished = false;
+      companion.enabled = true;
+      companion.setEffectiveTimeScale(1);
+      companion.setEffectiveWeight(1);
+      companion.play();
+      this.companionActions.push(companion);
+    }
     return true;
   }
 
