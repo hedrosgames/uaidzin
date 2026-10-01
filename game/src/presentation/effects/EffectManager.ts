@@ -366,7 +366,7 @@ export class EffectManager {
         this.tkRegistry.get("purificar").castPurificar(target);
         return;
       case "tribunal":
-        this.tkRegistry.get("tribunal").castTribunal(target);
+        this.tkRegistry.get("tribunal").castTribunal(input.center);
         return;
       case "provocacao":
         this.tkRegistry.get("provocacao").castProvocacao(input.center);

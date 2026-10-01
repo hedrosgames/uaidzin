@@ -62,7 +62,7 @@ export const DEFAULT_TRIBUNAL_VFX_CONFIG: TribunalVfxConfig = {
   finalDuration: 0.3,
   cleanupDelay: 0.95,
   maxConcurrentCasts: 2,
-  circleRadius: 2.3,
+  circleRadius: 4.2,
   pillarHeight: 9,
   pillarRadius: 0.34,
   stoneRise: 0.42,
@@ -466,7 +466,10 @@ class TribunalCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     for (const pillar of this.pillars) {
       for (const system of pillar.systems.all) system.dispose();
       for (const system of pillar.touchdown.all) system.dispose();

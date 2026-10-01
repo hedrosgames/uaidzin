@@ -32,7 +32,7 @@ export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
   tk_mag_moon_ray: "julgamento",
   tk_mag_death_stab: "luz",
   tk_mag_7: "purificar",
-  tk_mag_8: "tribunal",
+  tk_mag_circulo_morte: "tribunal",
   tk_ctrl_taunt: "provocacao",
   tk_ctrl_parry: "postura",
   tk_ctrl_fear: "rugido",
