@@ -53,8 +53,8 @@ export const DEFAULT_RUGIDO_VFX_CONFIG: RugidoVfxConfig = {
   dustEmission: 95,
   emberCount: 26,
   chestHeight: 1.25,
-  waveRadius: 4.8,
-  waveRadiusSecondary: 3.6,
+  waveRadius: 3.8,
+  waveRadiusSecondary: 2.75,
 };
 
 export type RugidoCastPhase = "roar";
@@ -321,7 +321,10 @@ class RugidoCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.castRoot.remove(this.ring, this.ringSecondary, this.shell, this.flash);
     if (this.isPooledLight) {
       this.lightPool?.release(this.light);

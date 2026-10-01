@@ -34,7 +34,7 @@ export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
   tk_mag_8: "tribunal",
   tk_ctrl_taunt: "provocacao",
   tk_ctrl_parry: "postura",
-  tk_ctrl_3: "rugido",
+  tk_ctrl_fear: "rugido",
   tk_ctrl_imunity: "escudo-sagrado",
   tk_ctrl_5: "ancora",
   tk_ctrl_6: "desafio",
