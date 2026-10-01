@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Vector3 } from "three";
 import { CLASSES, type ClassId, type SkillDef } from "../../data/classes/class-definitions";
 import { CharacterModel } from "../../domain/character/CharacterModel";
 import { BuffService } from "../../domain/character/BuffService";
@@ -10,6 +11,7 @@ import { EnemyModel } from "../../domain/enemies/EnemyModel";
 import { SkillTreeService } from "../../domain/skills/SkillTreeService";
 import { CombatOrchestrator, type CombatOrchestratorDeps } from "./CombatOrchestrator";
 import { positionBlocked, segmentBlocked } from "../../world/collision";
+import { skillVfxImpactDelay } from "../../presentation/effects/skill/SkillVfxTiming";
 
 const classIds: ClassId[] = ["BM", "HT", "FM"];
 const entries = classIds.flatMap(classId => ["fisica", "controle", "magia"].flatMap(tree =>
@@ -215,5 +217,96 @@ describe("Disparo das skills de BM, HT e FM no runtime", () => {
     expect(s.combat.getCombatMods().attackMul).toBeCloseTo(1.2);
     s.buffs.add({ id: "power", remainingSec: 1, stacks: 1, stat: "attack", magnitude: 0.5 });
     expect(s.combat.getCombatMods().attackMul).toBeCloseTo(1.5);
+  });
+});
+
+describe("Origem visual da Force Wave", () => {
+  beforeEach(() => vi.spyOn(Math, "random").mockReturnValue(0.9));
+  afterEach(() => vi.restoreAllMocks());
+
+  it("captura a mão e o alvo no frame do disparo, sem alterar custo nem dano", () => {
+    const skill = CLASSES.TK.trees.fisica.find(entry => entry.id === "tk_fis_force_wave")!;
+    const s = setup("TK", skill);
+    const hand = new Vector3(0.2, 1.2, 0.4);
+    const attackPoint = vi.fn((out: Vector3) => out.copy(hand));
+    s.deps.renderer.playerView.getAttackPoint = attackPoint;
+    s.update(0);
+    expect(attackPoint).not.toHaveBeenCalled();
+    expect(s.character.mp).toBe(1000 - skill.mp);
+    hand.set(0.35, 1.1, 0.6);
+    s.enemy.x = 0.25;
+    s.combat.advancePendingActions(0.46);
+    expect(attackPoint).toHaveBeenCalledOnce();
+    const request = s.dispatch.mock.calls[0]![0];
+    expect(request.origin.toArray()).toEqual(hand.toArray());
+    expect(request.target.toArray()).toEqual([0.25, 0.9, 1.8]);
+    expect(s.enemy.hp).toBe(9875);
+    expect(s.character.mp).toBe(1000 - skill.mp);
+  });
+});
+
+describe("Lâmina de Energia sincronizada", () => {
+  beforeEach(() => vi.spyOn(Math, "random").mockReturnValue(0.9));
+  afterEach(() => vi.restoreAllMocks());
+
+  function prepare(distance = 3, weaponAvailable = true) {
+    const skill = CLASSES.TK.trees.magia.find(entry => entry.id === "tk_mag_lamina_energia")!;
+    const s = setup("TK", skill);
+    const socket = new Vector3(0.12, 1.1, 0.25);
+    const weaponPoint = vi.fn((out: Vector3) => {
+      out.copy(socket);
+      return weaponAvailable;
+    });
+    const handPoint = vi.fn((out: Vector3) => out.copy(socket));
+    s.deps.renderer.playerView.getWeaponRig = () => ({ getAttackPoint: weaponPoint }) as never;
+    s.deps.renderer.playerView.getAttackPoint = handPoint;
+    s.enemy.z = distance;
+    return { ...s, skill, socket, weaponPoint, handPoint };
+  }
+
+  it.each([0.4, 3, 8])("espera o disparo e a chegada a %s m, mantendo custo e dano", distance => {
+    const s = prepare(distance);
+    s.update(0);
+    expect(s.character.mp).toBe(1000 - s.skill.mp);
+    expect(s.enemy.hp).toBe(10000);
+    expect(s.weaponPoint).not.toHaveBeenCalled();
+    s.combat.advancePendingActions(0.4);
+    expect(s.dispatch).not.toHaveBeenCalled();
+    s.socket.y = 1.25;
+    s.combat.advancePendingActions(0.05);
+    expect(s.weaponPoint).toHaveBeenCalledOnce();
+    expect(s.handPoint).not.toHaveBeenCalled();
+    const request = s.dispatch.mock.calls[0]![0];
+    expect(request.profile.dedicatedVfx).toBe("lamina-energia");
+    expect(request.attackPoint.toArray()).toEqual(s.socket.toArray());
+    expect(request.target.toArray()).toEqual([0, 0.9, distance]);
+    const delay = skillVfxImpactDelay(request);
+    s.combat.advancePendingActions(delay - 0.001);
+    expect(s.enemy.hp).toBe(10000);
+    s.combat.advancePendingActions(0.002);
+    expect(s.enemy.hp).toBe(10000 - request.hits[0].damage);
+    expect(s.character.mp).toBe(1000 - s.skill.mp);
+    expect(s.skill.cooldown).toBe(2);
+  });
+
+  it("usa a mão quando não há arma e cancela o voo ao trocar de mundo", () => {
+    const s = prepare(3, false);
+    s.update(0);
+    s.combat.advancePendingActions(0.45);
+    expect(s.handPoint).toHaveBeenCalledOnce();
+    expect(s.dispatch).toHaveBeenCalledOnce();
+    s.combat.clearPendingActions();
+    s.combat.advancePendingActions(2);
+    expect(s.enemy.hp).toBe(10000);
+  });
+
+  it("preserva disparo manual vazio sem atingir além de 8 m", () => {
+    const s = prepare(8.01);
+    s.update(0);
+    s.combat.advancePendingActions(2);
+    expect(s.character.mp).toBe(1000 - s.skill.mp);
+    expect(s.dispatch).toHaveBeenCalledOnce();
+    expect(s.dispatch.mock.calls[0]![0].hits).toHaveLength(0);
+    expect(s.enemy.hp).toBe(10000);
   });
 });

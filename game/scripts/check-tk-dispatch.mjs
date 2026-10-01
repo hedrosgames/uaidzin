@@ -24,11 +24,13 @@ function createCanvas() {
     "quadraticCurveTo", "bezierCurveTo", "fill", "stroke", "fillRect", "strokeRect",
     "clearRect", "save", "restore", "translate", "rotate", "scale", "setTransform",
     "drawImage", "putImageData", "setLineDash",
+    "transform", "clip",
   ]) context[name] = () => {};
   canvas.getContext = () => context;
   return canvas;
 }
 
+globalThis.Path2D = class {};
 globalThis.document = {
   createElement(name) {
     if (name === "canvas") return createCanvas();
@@ -133,7 +135,10 @@ function assertNoNan(rootObj) {
   });
 }
 
-for (const skill of activeSkills) {
+const selectedSkill = process.argv[3];
+assert(!selectedSkill || activeSkills.some(skill => skill.id === selectedSkill), `Skill ativa desconhecida: ${selectedSkill}`);
+
+for (const skill of activeSkills.filter(skill => !selectedSkill || skill.id === selectedSkill)) {
   const profile = getSkillVfxProfile(skill.id);
   for (const dir of directions) {
     effectManager.clearSkillVfx();
@@ -180,4 +185,4 @@ for (const skill of activeSkills) {
 effectManager.clearSkillVfx();
 assert.equal(effectManager.getSkillVfxState().active, 0, "VFX ativos após clear");
 effectManager.dispose();
-console.log(`OK: check-tk-dispatch ${treeArg} validou ${activeSkills.length} skills ativas.`);
+console.log(`OK: check-tk-dispatch ${treeArg}${selectedSkill ? ` ${selectedSkill}` : ""} validou ${selectedSkill ? 1 : activeSkills.length} skills ativas.`);

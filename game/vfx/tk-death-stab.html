@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FuryUAID · Buff do TK</title>
+  <title>UAIDZIN — Death Stab do TK</title>
   <style>
     :root {
       --bg0: #100c08;
@@ -17,8 +17,8 @@
       --ink: #f0e6d0;
       --ink-dim: #b8a88c;
       --ink-mute: #7a6b58;
-      --fury: #d63a20;
-      --fury-hot: #ff9a5a;
+      --fire: #ff7a1a;
+      --fire-hot: #fff275;
       --font-display: Georgia, "Palatino Linotype", serif;
       --font-ui: "Segoe UI", Tahoma, system-ui, sans-serif;
       --font-num: ui-monospace, Consolas, monospace;
@@ -74,7 +74,8 @@
       overflow: hidden;
       transform-origin: center center;
       background:
-        radial-gradient(circle at 50% 34%, rgba(120, 32, 14, 0.26), transparent 34%),
+        radial-gradient(circle at 22% 28%, rgba(88, 42, 16, 0.28), transparent 30%),
+        radial-gradient(circle at 78% 30%, rgba(96, 28, 14, 0.24), transparent 32%),
         linear-gradient(180deg, #1c1510 0%, #100c08 72%);
     }
 
@@ -137,7 +138,7 @@
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      text-shadow: 0 2px 12px rgba(214, 58, 32, 0.32);
+      text-shadow: 0 2px 12px rgba(255, 122, 26, 0.28);
     }
 
     .title p {
@@ -194,9 +195,9 @@
 
     button.primary {
       min-width: 150px;
-      border-color: var(--fury);
-      background: linear-gradient(180deg, #6e1d10, #3a0f08);
-      color: var(--fury-hot);
+      border-color: var(--fire);
+      background: linear-gradient(180deg, #73300f, #3d1909);
+      color: var(--fire-hot);
       font-weight: 700;
       letter-spacing: 0.05em;
       text-transform: uppercase;
@@ -218,12 +219,12 @@
     .speed input {
       grid-column: 1 / -1;
       width: 100%;
-      accent-color: var(--fury);
+      accent-color: var(--fire);
     }
 
     .speed span {
       font-family: var(--font-num);
-      color: var(--fury-hot);
+      color: var(--fire-hot);
       text-align: right;
     }
 
@@ -266,18 +267,18 @@
     }
 
     #phase {
-      color: var(--fury-hot);
+      color: var(--fire-hot);
     }
   </style>
 </head>
 <body>
   <div class="viewport">
     <main class="stage" id="stage">
-      <canvas id="gl" aria-label="Visualização da Fúria do TK"></canvas>
+      <canvas id="gl" aria-label="Visualização do Death Stab do TK"></canvas>
       <section class="hud">
         <div class="title">
-          <h1>FuryUAID</h1>
-          <p>Thegn Knight · Impulso físico · Atlas de 16 quadros · tk_fis_fury</p>
+          <h1>DeathStabUAID</h1>
+          <p>Thegn Knight · Estocada e vento cortante</p>
         </div>
         <div class="bottom">
           <div class="controls">
@@ -285,13 +286,13 @@
             <button type="button" id="loop" aria-pressed="true">Repetição: ligada</button>
             <button type="button" id="pause" aria-pressed="false">Pausar</button>
             <button type="button" id="reset-camera">Câmera</button>
-            <select id="target-direction" aria-label="Posição da aura">
-              <option value="0">Centro</option>
-              <option value="1">Esquerda</option>
-              <option value="2">Frente</option>
+            <select id="target-direction" aria-label="Direção do golpe">
+              <option value="0">Frente</option>
+              <option value="1">Direita</option>
+              <option value="2">Esquerda</option>
               <option value="3">Atrás</option>
-              <option value="4">Diagonal atrás</option>
-              <option value="5">Diagonal frente</option>
+              <option value="4">Diagonal frente</option>
+              <option value="5">Diagonal atrás</option>
             </select>
             <label class="speed" for="speed">
               Velocidade
@@ -309,7 +310,7 @@
               <strong id="particles">0</strong>
             </div>
             <div class="metric">
-              <span>Auras</span>
+              <span>Lanços</span>
               <strong id="casts">0</strong>
             </div>
           </div>
@@ -317,6 +318,7 @@
       </section>
     </main>
   </div>
-  <script type="module" src="/src/presentation/effects/tkSkills/furia/demo.ts"></script>
+  <script type="module" src="/src/presentation/effects/tkSkills/death-stab/demo.ts"></script>
 </body>
 </html>
+

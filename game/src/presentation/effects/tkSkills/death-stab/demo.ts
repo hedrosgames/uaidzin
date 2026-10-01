@@ -24,7 +24,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { FuryVfxController } from "../fury/FuryVfx";
+import { DeathStabVfxController } from "./DeathStabVfx";
 
 const stage = requireElement<HTMLElement>("stage");
 const canvas = requireElement<HTMLCanvasElement>("gl");
@@ -62,13 +62,13 @@ scene.background = new Color(0x100c08);
 scene.fog = new Fog(0x100c08, 13, 30);
 
 const camera = new PerspectiveCamera(42, 16 / 9, 0.1, 80);
-camera.position.set(0, 4.6, 9.6);
-camera.lookAt(0, 0.9, 0);
+camera.position.set(0, 4.6, 8.4);
+camera.lookAt(0, 1.15, 0);
 const controls = new OrbitControls(camera, canvas);
-controls.target.set(0, 0.9, 0);
+controls.target.set(0, 1.15, 0);
 controls.enableDamping = true;
 controls.minDistance = 4;
-controls.maxDistance = 26;
+controls.maxDistance = 24;
 controls.maxPolarAngle = Math.PI / 2 - 0.05;
 controls.update();
 controls.saveState();
@@ -91,7 +91,7 @@ const grid = new GridHelper(24, 24, 0x6d5637, 0x463824);
 grid.position.y = 0.012;
 scene.add(grid);
 
-function createFigure(color: number, x: number): Group {
+function createFigure(color: number): Group {
   const group = new Group();
   const material = new MeshStandardMaterial({
     color,
@@ -109,26 +109,28 @@ function createFigure(color: number, x: number): Group {
   );
   base.position.y = 0.06;
   group.add(base, body, head);
-  group.position.set(x, 0, 0);
   scene.add(group);
   return group;
 }
 
-const caster = createFigure(0x365b82, 0);
-createFigure(0x4a4038, 5.4);
-const auraCenter = new Vector3(0, 0, 0);
-const vfx = new FuryVfxController(scene);
+const caster = createFigure(0x365b82);
+const enemy = createFigure(0x7d2f2f);
+const playerOrigin = new Vector3(0, 0, 0);
+const targetPosition = new Vector3(3.8, 0, 0);
+enemy.position.copy(targetPosition);
+
+const vfx = new DeathStabVfxController(scene);
 const directions = [
-  new Vector3(0, 0, 0),
-  new Vector3(-5.4, 0, 0),
-  new Vector3(0, 0, 4.5),
-  new Vector3(0, 0, -4.5),
-  new Vector3(3.4, 0, -3.4),
-  new Vector3(-3.4, 0, 3.4),
+  new Vector3(0, 0, 2.6),
+  new Vector3(2.6, 0, 0),
+  new Vector3(-2.6, 0, 0),
+  new Vector3(0, 0, -2.6),
+  new Vector3(1.9, 0, 1.9),
+  new Vector3(-1.9, 0, -1.9),
 ];
 
 const composer = new EffectComposer(renderer);
-const bloomPass = new UnrealBloomPass(new Vector2(1600, 900), 0.38, 0.3, 0.94);
+const bloomPass = new UnrealBloomPass(new Vector2(1600, 900), 0.35, 0.3, 0.95);
 const outputPass = new OutputPass();
 composer.addPass(new RenderPass(scene, camera));
 composer.addPass(bloomPass);
@@ -141,18 +143,17 @@ let previousTime = performance.now();
 let simulationPaused = !looping;
 let disposed = false;
 
-function castFuria(): void {
-  if (disposed) return;
-  vfx.castFuria(auraCenter, undefined, caster);
+function castDeathStab(): void {
+  if (disposed || vfx.getActiveCastCount() > 0) return;
+  vfx.castDeathStab(playerOrigin, targetPosition);
   nextLoopCast = performance.now() / 1000 + 1.2;
 }
 
 function setTarget(x: number, y: number, z: number): void {
   if (disposed || ![x, y, z].every(Number.isFinite)) return;
   vfx.clear();
-  auraCenter.set(x, y, z);
-  caster.position.x = x;
-  caster.position.z = z;
+  targetPosition.set(x, y, z);
+  enemy.position.set(x, 0, z);
 }
 
 function setPaused(value: boolean): void {
@@ -185,13 +186,7 @@ function fitStage(): void {
 function updateHud(): void {
   const phase = vfx.getPhase();
   phaseLabel.textContent =
-    phase === "idle"
-      ? "pronta"
-      : phase === "activation"
-        ? "ativação"
-        : phase === "active"
-          ? "fúria ativa"
-          : "desvanecendo";
+    phase === "idle" ? "pronta" : phase === "travel" ? "rajadas" : phase === "impact" ? "impacto" : "vento residual";
   particlesLabel.textContent = String(vfx.getParticleCount());
   castsLabel.textContent = String(vfx.getActiveCastCount());
 }
@@ -204,8 +199,9 @@ function tick(now: number): void {
   if (!simulationPaused) {
     vfx.update(delta, stage.clientWidth, stage.clientHeight);
     const seconds = now / 1000;
+    caster.position.y = Math.sin(seconds * 2.1) * 0.012;
     if (looping && vfx.getActiveCastCount() === 0 && seconds >= nextLoopCast) {
-      castFuria();
+      castDeathStab();
     }
   }
   controls.update();
@@ -248,7 +244,7 @@ const eventOptions = { signal: listeners.signal };
 castButton.addEventListener("click", () => {
   vfx.clear();
   setPaused(false);
-  castFuria();
+  castDeathStab();
 }, eventOptions);
 loopButton.addEventListener("click", () => {
   if (disposed) return;
@@ -267,14 +263,15 @@ targetSelect.addEventListener("change", () => {
   if (!direction) return;
   setTarget(direction.x, direction.y, direction.z);
   setPaused(false);
-  castFuria();
+  castDeathStab();
 }, eventOptions);
 resetCameraButton.addEventListener("click", () => controls.reset(), eventOptions);
 window.addEventListener("resize", fitStage, eventOptions);
 window.addEventListener("pagehide", dispose, { ...eventOptions, once: true });
 
 const api = {
-  cast: castFuria,
+  cast: castDeathStab,
+  setTarget,
   setPaused: (value: boolean) => {
     if (disposed) return;
     setPaused(value);
@@ -298,10 +295,10 @@ const api = {
     phase: vfx.getPhase(),
     particles: vfx.getParticleCount(),
     casts: vfx.getActiveCastCount(),
-    auras: vfx.getCastStates(),
+    castStates: vfx.getCastStates(),
     paused: simulationPaused,
     speed,
-    target: auraCenter.toArray(),
+    target: targetPosition.toArray(),
     memory: { ...renderer.info.memory },
     systems: vfx.getSystems().length,
     particleSystems: vfx.getSystems().map((system, index) => ({
@@ -313,14 +310,14 @@ const api = {
       waitEmitting: system.emissionState.waitEmiting,
     })),
   }),
-  setTarget,
   scene,
   camera,
   renderer,
+  controller: vfx,
   render: () => composer.render(),
   dispose,
 };
-Object.assign(window, { __UAIDZIN_TK_FURIA__: api });
+Object.assign(window, { __UAIDZIN_TK_DEATH_STAB__: api });
 
 fitStage();
 setPaused(simulationPaused);
@@ -329,3 +326,4 @@ loopButton.setAttribute("aria-pressed", String(looping));
 updateHud();
 requestAnimationFrame(tick);
 document.body.dataset.ready = "true";
+

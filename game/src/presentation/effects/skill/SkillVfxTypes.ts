@@ -24,6 +24,7 @@ export type DedicatedSkillVfx =
   | "golpe"
   | "investida"
   | "corte"
+  | "lamina-energia"
   | "machado"
   | "quebra"
   | "furia"
@@ -86,6 +87,7 @@ export interface SkillVfxHit {
 export interface SkillVfxRequest {
   profile: SkillVfxProfile;
   origin: Vector3;
+  attackPoint?: Vector3;
   target: Vector3 | null;
   center: Vector3;
   colorHex: number;

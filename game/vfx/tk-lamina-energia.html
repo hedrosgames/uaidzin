@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LâminaEnergiaUAID · Fio de alvorada</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #100c08; color: #f0e6d0; font: 14px/1.5 system-ui, sans-serif; user-select: none; }
+    #gl { display: block; width: 100vw; height: 100vh; }
+    aside { position: fixed; top: 16px; left: 16px; width: min(310px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 18px; background: #241c14ed; border: 1px solid #695138; border-top: 3px solid #d4a017; }
+    h1 { margin: 4px 0 2px; font-size: 21px; font-weight: 600; }
+    p { margin: 0 0 14px; color: #c6b89e; }
+    small { color: #d4a017; letter-spacing: .1em; text-transform: uppercase; font-size: 10px; }
+    .buttons { display: flex; gap: 6px; margin-bottom: 12px; }
+    button, select { border: 1px solid #695138; border-radius: 2px; color: #f0e6d0; background: #100c08; padding: 7px; font: inherit; }
+    button { cursor: pointer; flex: 1; }
+    button:hover, button:focus-visible { border-color: #d4a017; }
+    #cast { background: #77521b; }
+    label { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; }
+    select { max-width: 170px; }
+    input { accent-color: #d4a017; }
+    #scrub { width: 100%; margin: 12px 0; }
+    #state { border-top: 1px solid #695138; padding-top: 10px; color: #ffebbd; font-size: 12px; }
+    .foot { display: block; margin-top: 10px; font-size: 11px; color: #a99a80; }
+  </style>
+</head>
+<body>
+  <canvas id="gl" aria-label="Prévia 3D da Lâmina de Energia"></canvas>
+  <aside>
+    <small>TK · Magia · 01</small>
+    <h1>LâminaEnergiaUAID</h1>
+    <p>Fio de alvorada</p>
+    <div class="buttons">
+      <button id="cast">Disparar</button>
+      <button id="pause" aria-pressed="false">Pausar</button>
+      <button id="clear">Limpar</button>
+    </div>
+    <label>Câmera
+      <select id="view">
+        <option value="iso">Isométrica</option>
+        <option value="third">Terceira pessoa</option>
+        <option value="top">Superior</option>
+        <option value="side">Lateral</option>
+      </select>
+    </label>
+    <label>Alvo
+      <select id="direction">
+        <option value="0">Frente · 4 m</option>
+        <option value="1">Esquerda</option>
+        <option value="2">Atrás</option>
+        <option value="3">Acima</option>
+        <option value="4">Abaixo</option>
+        <option value="5">Próximo</option>
+        <option value="6">Alcance · 8 m</option>
+      </select>
+    </label>
+    <label>Velocidade
+      <select id="speed"><option value="1">1×</option><option value="0.5">0,5×</option><option value="0.25">0,25×</option></select>
+    </label>
+    <label>Repetir<input id="loop" type="checkbox" checked></label>
+    <input id="scrub" aria-label="Tempo do efeito em milissegundos" type="range" min="0" max="650" step="1" value="0">
+    <div id="state" role="status">Pronta</div>
+    <span class="foot">tk_mag_lamina_energia · aprovação visual pendente</span>
+  </aside>
+  <script type="module" src="/src/presentation/effects/tkSkills/lamina-energia/demo.ts"></script>
+</body>
+</html>

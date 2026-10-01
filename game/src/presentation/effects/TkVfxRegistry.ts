@@ -12,11 +12,13 @@ import { EarthquakeVfxController } from "./tkSkills/earthquake/EarthquakeVfx";
 import { EscudoSagradoVfxController } from "./tkSkills/escudo-sagrado/EscudoSagradoVfx";
 import { ForceWaveVfxController } from "./tkSkills/force-wave/ForceWaveVfx";
 import { FuriaVfxController } from "./tkSkills/furia/FuriaVfx";
+import { FuryVfxController } from "./tkSkills/fury/FuryVfx";
 import { DESCUIDADO_PALETTE } from "./tkSkills/furia/FuriaPalette";
 import { GolpeVfxController } from "./tkSkills/golpe/GolpeVfx";
 import { GuardaVfxController } from "./tkSkills/guarda/GuardaVfx";
 import { InvestidaVfxController } from "./tkSkills/investida/InvestidaVfx";
 import { JulgamentoVfxController } from "./tkSkills/julgamento/JulgamentoVfx";
+import { LaminaEnergiaVfxController } from "./tkSkills/lamina-energia/LaminaEnergiaVfx";
 import { LuzVfxController } from "./tkSkills/luz/LuzVfx";
 import { MachadoVfxController } from "./tkSkills/machado/MachadoVfx";
 import { MuralhaVfxController } from "./tkSkills/muralha/MuralhaVfx";
@@ -43,9 +45,10 @@ export interface TkVfxMap {
   golpe: GolpeVfxController;
   investida: InvestidaVfxController;
   corte: CorteVfxController;
+  "lamina-energia": LaminaEnergiaVfxController;
   machado: MachadoVfxController;
   quebra: QuebraVfxController;
-  furia: FuriaVfxController;
+  furia: FuryVfxController;
   descuidado: FuriaVfxController;
   avalanche: AvalancheVfxController;
   bencao: BencaoVfxController;
@@ -85,9 +88,10 @@ export class TkVfxRegistry {
       golpe: (s, lp) => new GolpeVfxController(s, {}, lp),
       investida: (s, lp) => new InvestidaVfxController(s, {}, lp),
       corte: (s, lp) => new CorteVfxController(s, {}, lp),
+      "lamina-energia": (s, lp) => new LaminaEnergiaVfxController(s, {}, lp),
       machado: (s, lp) => new MachadoVfxController(s, {}, lp),
       quebra: (s, lp) => new QuebraVfxController(s, {}, lp),
-      furia: (s, lp) => new FuriaVfxController(s, {}, lp),
+      furia: (s, lp) => new FuryVfxController(s, {}, lp),
       descuidado: (s, lp) => new FuriaVfxController(s, { palette: DESCUIDADO_PALETTE }, lp),
       avalanche: (s, lp) => new AvalancheVfxController(s, {}, lp),
       bencao: (s, lp) => new BencaoVfxController(s, {}, lp),

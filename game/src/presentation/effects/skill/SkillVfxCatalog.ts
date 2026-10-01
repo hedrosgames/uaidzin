@@ -21,7 +21,8 @@ const SKILL_COLOR_OVERRIDES: Record<string, number> = {
   tk_fis_increase_critical: 0xffc24a,
   tk_ctrl_divine_armor: 0xe4c86a,
   tk_fis_fury: 0xd63a20,
-  tk_fis_death_stab: 0x4aa8ff,
+  tk_fis_death_stab: 0xf1f1ee,
+  tk_mag_lamina_energia: 0xffecc8,
 };
 
 export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
@@ -43,7 +44,7 @@ export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
   tk_fis_death_stab: "death-stab",
   tk_fis_fury: "furia",
   tk_fis_earthquake: "earthquake",
-  tk_mag_lamina_energia: "corte",
+  tk_mag_lamina_energia: "lamina-energia",
   tk_mag_fire_slash: "golpe",
 };
 

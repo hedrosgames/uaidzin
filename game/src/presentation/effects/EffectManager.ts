@@ -17,6 +17,7 @@ import { EsferaIgneaVfxController } from "./fmSkills/esfera-ignea/EsferaIgneaVfx
 import { LancaGlacialVfxController } from "./fmSkills/lanca-glacial/LancaGlacialVfx";
 import { ChoqueVitalVfxController } from "./fmSkills/choque-vital/ChoqueVitalVfx";
 import { DEFAULT_GOLPE_VFX_CONFIG } from "./tkSkills/golpe/GolpeVfx";
+import { laminaEnergiaEndpoints } from "./tkSkills/lamina-energia/LaminaEnergiaTiming";
 import { FireBurstVfxController } from "./fireBurst/FireBurstVfx";
 import { getSkillVfxProfile } from "./skill/SkillVfxCatalog";
 import { SkillVfxDirector } from "./skill/SkillVfxRuntime";
@@ -289,7 +290,7 @@ export class EffectManager {
         this.tkRegistry.get("force-wave").castForceWave(input.origin, target);
         return;
       case "death-stab":
-        this.tkRegistry.get("death-stab").castDeathStab(input.origin, target);
+        this.tkRegistry.get("death-stab").castDeathStab(input.origin, target, input.attackPoint);
         return;
       case "earthquake":
         this.tkRegistry.get("earthquake").castEarthquake(input.origin, input.radius || input.range);
@@ -324,6 +325,11 @@ export class EffectManager {
       case "corte":
         this.tkRegistry.get("corte").castCorte(input.origin, target);
         return;
+      case "lamina-energia": {
+        const points = laminaEnergiaEndpoints(input.origin, target, input.attackPoint);
+        this.tkRegistry.get("lamina-energia").castLaminaEnergia(points.origin, points.target);
+        return;
+      }
       case "machado":
         this.tkRegistry.get("machado").castMachado(target);
         return;
@@ -331,7 +337,7 @@ export class EffectManager {
         this.tkRegistry.get("quebra").castQuebra(target);
         return;
       case "furia":
-        this.tkRegistry.get("furia").castFuria(input.center);
+        this.tkRegistry.get("furia").castFuria(input.center, undefined, this.sceneRoot.getObjectByName("PlayerRoot"));
         return;
       case "descuidado":
         this.tkRegistry.get("descuidado").castFuria(input.center);

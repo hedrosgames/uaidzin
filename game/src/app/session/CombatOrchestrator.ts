@@ -173,6 +173,35 @@ export class CombatOrchestrator {
       pending.delay -= dt;
       if (pending.delay > 0) continue;
       if (pending.dispatchVfx && pending.request) {
+        if (pending.skillId === "tk_fis_death_stab") {
+          const attackPoint = new Vector3();
+          if (this.deps.renderer.playerView.getWeaponRig().getAttackPoint(attackPoint)) {
+            pending.request.attackPoint = attackPoint;
+          }
+        }
+        if (pending.skillId === "tk_fis_force_wave") {
+          this.deps.renderer.playerView.getAttackPoint(pending.request.origin);
+          const hit = pending.resolved.hits[0];
+          const enemy = hit ? this.deps.enemies.findById(hit.id) : undefined;
+          if (enemy) {
+            pending.request.target?.set(enemy.x, 0.9 * (enemy.modelScale > 0 ? enemy.modelScale : 1), enemy.z);
+          }
+        }
+        if (pending.skillId === "tk_mag_lamina_energia") {
+          const attackPoint = new Vector3();
+          if (!this.deps.renderer.playerView.getWeaponRig().getAttackPoint(attackPoint)) {
+            this.deps.renderer.playerView.getAttackPoint(attackPoint);
+          }
+          pending.request.attackPoint = attackPoint;
+          const hit = pending.resolved.hits[0];
+          const enemy = hit ? this.deps.enemies.findById(hit.id) : undefined;
+          if (enemy) {
+            pending.request.target?.set(enemy.x, 0.9 * (enemy.modelScale > 0 ? enemy.modelScale : 1), enemy.z);
+          } else if (pending.request.target) {
+            pending.request.target.y = attackPoint.y;
+          }
+          pending.impactDelayAfterVfx = skillVfxImpactDelay(pending.request);
+        }
         this.deps.effects.dispatchSkillVfx(pending.request);
       }
       if (pending.impactDelayAfterVfx > 0) {
@@ -282,7 +311,8 @@ export class CombatOrchestrator {
       this.vOrigin.set(this.deps.player.x, 0, this.deps.player.z);
       const target = resolved.aim ? this.vTarget.set(resolved.aim.x, 0, resolved.aim.z) : null;
       const weaponAttackSkill = skill.kind === "damage" && skill.power === "weapon";
-      if (target && (weaponAttackSkill || this.deps.progression.state.classId !== "TK")) {
+      const energyBlade = skill.id === "tk_mag_lamina_energia";
+      if (target && (weaponAttackSkill || energyBlade || this.deps.progression.state.classId !== "TK")) {
         const dx = target.x - this.deps.player.x;
         const dz = target.z - this.deps.player.z;
         if (dx * dx + dz * dz > 1e-8) {
@@ -332,7 +362,7 @@ export class CombatOrchestrator {
           impactDelayAfterVfx: request ? skillVfxImpactDelay(request) : 0,
           cast,
         });
-      } else if (weaponAttackSkill) {
+      } else if (weaponAttackSkill || energyBlade) {
         const attackSpeed = skill.id === "tk_fis_force_wave" ? 1.5 : 1;
         const anim = this.deps.renderer.playerView.playAttack(attackSpeed);
         this.deps.lockFromAnim(anim, COMBAT_BALANCE.moveLock.attackFallback);

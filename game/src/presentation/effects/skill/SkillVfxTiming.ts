@@ -2,6 +2,7 @@ import type { SkillVfxFamily, SkillVfxRequest } from "./SkillVfxTypes";
 import { DEFAULT_ESFERA_IGNEA_VFX_CONFIG } from "../fmSkills/esfera-ignea/EsferaIgneaVfx";
 import { DEFAULT_LANCA_GLACIAL_VFX_CONFIG } from "../fmSkills/lanca-glacial/LancaGlacialVfx";
 import { DEFAULT_CHOQUE_VITAL_VFX_CONFIG } from "../fmSkills/choque-vital/ChoqueVitalVfx";
+import { LAMINA_ENERGIA_TIMING, laminaEnergiaEndpoints, laminaEnergiaFlightDuration } from "../tkSkills/lamina-energia/LaminaEnergiaTiming";
 
 export function skillVfxDuration(family: SkillVfxFamily): number {
   if (family === "projectile") return 0.58;
@@ -17,6 +18,10 @@ export function skillVfxDuration(family: SkillVfxFamily): number {
 
 export function skillVfxImpactDelay(request: SkillVfxRequest): number {
   const dedicated = request.profile.dedicatedVfx;
+  if (dedicated === "lamina-energia") {
+    const points = laminaEnergiaEndpoints(request.origin, request.target ?? request.center, request.attackPoint);
+    return LAMINA_ENERGIA_TIMING.releaseDuration + laminaEnergiaFlightDuration(points.origin.distanceTo(points.target));
+  }
   const config = dedicated === "esfera-ignea" ? DEFAULT_ESFERA_IGNEA_VFX_CONFIG
     : dedicated === "lanca-glacial" ? DEFAULT_LANCA_GLACIAL_VFX_CONFIG
     : dedicated === "choque-vital" ? DEFAULT_CHOQUE_VITAL_VFX_CONFIG : null;
