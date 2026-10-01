@@ -211,7 +211,7 @@ export function buildCityWorld(): BuiltWorld {
   const fountainProp = spawnCityProp(group, { id: "fountain", x: 0, z: 0, scale: fountainScale, quarterTurns: 0 }, (root) => {
     fountainWater.attach(root);
   });
-  occluders.push(fountainProp);
+  fountainProp.userData.occlusionIgnore = true;
   const fountainFoot = cityPropFootprint("fountain", fountainScale, 0);
   const fountainPad = 0.08;
   collision.boxes.push(
@@ -280,12 +280,6 @@ export function buildCityWorld(): BuiltWorld {
     collision.circles.push({ x: def.x, z: def.z, r: def.kind === "chest" ? 0.55 : 0.4 });
   }
   group.add(buildCityVegetation(collision, CITY_INTERACTABLES));
-  BRAZIER_SPOTS.forEach(([bx, bz], i) => {
-    const brazier = createBrazier(`brazier-${i}`, bx, bz, undefined, true);
-    group.add(brazier.group);
-    tickables.push(brazier);
-    collision.circles.push({ x: bx, z: bz, r: BRAZIER_RADIUS });
-  });
   const embers = createAmbientEmbers(EMBER_COUNT, size / 2 - 2);
   group.add(embers.points);
   tickables.push(embers);
