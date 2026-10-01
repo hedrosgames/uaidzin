@@ -132,8 +132,8 @@ function createSharedResources(): LancaGlacialSharedResources {
     map: textures.iceBlade,
     emissiveMap: textures.iceFissure,
     emissive: 0x9fd4ec,
-    emissiveIntensity: 0.88,
-    color: 0xbfdcec,
+    emissiveIntensity: 0.62,
+    color: 0x9bbfd4,
     roughness: 0.16,
     metalness: 0.08,
     flatShading: true,
@@ -156,7 +156,7 @@ function createSharedResources(): LancaGlacialSharedResources {
     roughness: 0.66,
     metalness: 0.74,
   });
-  const heartGeometry = new SphereGeometry(1, 14, 10);
+  const heartGeometry = new SphereGeometry(1, 12, 8);
   const heartMaterialTemplate = new MeshBasicMaterial({
     map: textures.coldCore,
     color: 0xdff2ff,
@@ -295,6 +295,8 @@ class LancaGlacialCast {
   private burstAge = 0;
   private readonly head = new Vector3();
   private readonly tangent = new Vector3();
+  private readonly reverseTangent = new Vector3();
+  private readonly emitterOrientation = new Quaternion();
   private readonly flightDuration: number;
   private readonly orientation = new Quaternion();
   private readonly side = new Vector3();
@@ -582,7 +584,7 @@ class LancaGlacialCast {
     this.haft.quaternion.copy(this.orientation);
     this.heart.position.copy(this.head).addScaledVector(this.tangent, 0.16 * this.config.bladeRadius);
     this.heart.scale.setScalar(this.config.bladeRadius * grow * 0.95);
-    this.heartMaterial.opacity = 0.62 + Math.sin(this.elapsed * 20) * 0.1;
+    this.heartMaterial.opacity = 0.5 + Math.sin(this.elapsed * 20) * 0.08;
     this.collar.position.copy(this.head).addScaledVector(this.tangent, -0.16 * this.config.bladeRadius);
     this.collar.quaternion.copy(this.orientation);
     this.collar.rotateX(Math.PI / 2);
@@ -608,9 +610,11 @@ class LancaGlacialCast {
     for (const system of this.flightSystems.all) {
       system.emitter.position.copy(this.head);
     }
-    for (const system of [this.flightSystems.mantle, this.flightSystems.glints, this.flightSystems.orbiters]) {
-      system.emitter.quaternion.setFromUnitVectors(FORWARD, this.tangent.clone().negate());
-    }
+    this.reverseTangent.copy(this.tangent).negate();
+    this.emitterOrientation.setFromUnitVectors(FORWARD, this.reverseTangent);
+    this.flightSystems.mantle.emitter.quaternion.copy(this.emitterOrientation);
+    this.flightSystems.glints.emitter.quaternion.copy(this.emitterOrientation);
+    this.flightSystems.orbiters.emitter.quaternion.copy(this.emitterOrientation);
     if (this.phaseElapsed >= this.flightDuration) this.triggerImpact();
   }
 
@@ -620,9 +624,11 @@ class LancaGlacialCast {
     this.phaseStartedAt = this.elapsed;
     this.head.copy(this.target);
     for (const system of this.flightSystems.all) system.endEmit();
+    this.reverseTangent.copy(this.tangent).negate();
+    this.emitterOrientation.setFromUnitVectors(FORWARD, this.reverseTangent);
     for (const system of this.impactSystems.all) {
       system.emitter.position.copy(this.target);
-      system.emitter.quaternion.setFromUnitVectors(FORWARD, this.tangent.clone().negate());
+      system.emitter.quaternion.copy(this.emitterOrientation);
       system.emitter.visible = true;
       system.restart();
       system.play();
@@ -670,13 +676,13 @@ class LancaGlacialCast {
     const progress = MathUtils.clamp(this.phaseElapsed / this.config.impactDuration, 0, 1);
     const fade = Math.pow(1 - progress, 2);
     this.flash.scale.setScalar(this.config.bladeRadius * (1 + Math.min(progress * 6, 1) * 2.4));
-    this.flashMaterial.opacity = fade * 0.92;
+    this.flashMaterial.opacity = fade * 0.74;
     this.flash.visible = progress < 0.85;
-    this.fracture.scale.setScalar(0.2 + progress * 2.2);
+    this.fracture.scale.setScalar(0.2 + Math.sqrt(progress) * 2.2);
     this.fractureMaterial.opacity = fade * 0.9;
     this.fracture.visible = progress < 1;
     this.frost.scale.setScalar(0.2 + progress * 1.8);
-    this.frostMaterial.opacity = fade * 0.8;
+    this.frostMaterial.opacity = Math.sqrt(1 - progress) * 0.68;
     this.frost.visible = progress < 1;
     this.burstAge += deltaTime;
     for (let index = 0; index < this.shards.length; index += 1) {
@@ -778,7 +784,7 @@ export class LancaGlacialVfxController {
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;
@@ -826,7 +832,7 @@ export class LancaGlacialVfxController {
   }
 
   private updateFrame(deltaTime: number, width: number, height: number): void {
-    for (const cast of [...this.casts]) {
+    for (const cast of this.casts) {
       cast.update(deltaTime);
       cast.prepareFrame();
     }
