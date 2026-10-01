@@ -10,4 +10,5 @@ export const HT_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   ht_fis_instinto: { motif: "fang", color: 0xd4a017, accent: 0x9dc487, count: 3, scale: 0.22, spread: 0.6, spin: 1.4, lift: 0.6, motion: "orbit", particleRate: 16 },
   ht_fis_rapid_hit: { motif: "arrow", color: 0xd5b873, accent: 0xf0e6d0, count: 7, scale: 0.28, spread: 0.42, spin: 0.4, lift: 0.16, motion: "trail", particleRate: 56 },
   ht_ctrl_garra: { motif: "claw", color: 0xc45c26, accent: 0xf0c391, count: 3, scale: 0.32, spread: 0.38, spin: 1.6, lift: 0.1, motion: "burst", particleRate: 32 },
+  ht_ctrl_mais_um_golpe: { motif: "blade", color: 0xc69451, accent: 0xf0e6d0, count: 2, scale: 0.32, spread: 0.65, spin: 3, lift: 0.55, motion: "orbit", particleRate: 28 },
 };
