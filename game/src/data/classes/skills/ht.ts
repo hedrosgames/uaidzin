@@ -92,6 +92,7 @@ export const HT_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "ht_ctrl_garra",
     name: "Garra Cortante",
+    desc: "Golpe físico da arma contra um inimigo a até 2,5 m. Causa 125 % do ataque.",
     index: 0,
     kind: "damage",
     shape: "single",
@@ -102,6 +103,7 @@ export const HT_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "ht_ctrl_mais_um_golpe",
     name: "Mais Um Golpe",
+    desc: "Velocidade de ataque +30 % por 10 s.",
     index: 1,
     kind: "buff",
     buff: { id: "ht_extra_swing", sec: 10, stat: "attackSpeed", magnitude: 0.3 },
@@ -109,6 +111,7 @@ export const HT_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "ht_ctrl_presa_ferida",
     name: "Presa Ferida",
+    desc: "Golpe físico contra um inimigo a até 2,6 m. Causa 145 % do ataque e sangramento por 5 s, com dano por segundo igual a 40 % do dano do golpe.",
     index: 2,
     kind: "damage",
     shape: "single",
@@ -119,6 +122,7 @@ export const HT_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "ht_ctrl_dodge",
     name: "Dodge",
+    desc: "Passiva. Chance de esquiva +10 %. Não entra na barra.",
     index: 3,
     kind: "passive",
     passive: { id: "evasion", magnitude: 0.1 },
@@ -126,6 +130,7 @@ export const HT_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "ht_ctrl_rugido",
     name: "Rugido Selvagem",
+    desc: "Ataque +20 % e velocidade de ataque +18 % por 12 s.",
     index: 4,
     kind: "buff",
     buff: { id: "ht_roar_atk", sec: 12, stat: "attack", magnitude: 0.2 },
@@ -134,6 +139,7 @@ export const HT_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "ht_ctrl_roubo_vital",
     name: "Roubo Vital",
+    desc: "Golpe físico contra um inimigo a até 2,6 m. Causa 200 % do ataque e recupera vida igual a 45 % do dano causado.",
     index: 5,
     kind: "damage",
     shape: "single",
@@ -144,6 +150,7 @@ export const HT_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "ht_ctrl_duas_maos",
     name: "Poder das Duas Mãos",
+    desc: "Passiva. Ataque +24 % com espada de duas mãos ou bastão de duas mãos. Não entra na barra.",
     index: 6,
     kind: "passive",
     passive: { id: "twoHand", magnitude: 0.24 },
@@ -152,6 +159,7 @@ export const HT_CONTROLE: SkillDef[] = [
   defineSkill({
     id: "ht_ctrl_invisibilidade",
     name: "Invisibilidade",
+    desc: "Oculta sua presença dos inimigos por 5 s. O próximo golpe que acerta encerra o efeito e causa 70 % de dano adicional. Só uma 8ª skill por personagem.",
     index: 7,
     kind: "buff",
     buff: { id: "ht_stealth", sec: 5, stat: "stealth", magnitude: 1, nextHitMul: 1.7 },
