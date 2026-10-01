@@ -398,7 +398,7 @@ export class SceneRenderer {
     this.renderer.shadowMap.enabled = enabled;
     this.keyLight.castShadow = enabled;
     this.playerBlobShadow.visible = !enabled;
-    this.applyShadowFrustum(this.worldLook === "city" ? 24 : extent, mapSize);
+    this.applyShadowFrustum(extent, mapSize);
     if (enabled) this.renderer.shadowMap.needsUpdate = true;
   }
 
@@ -448,7 +448,7 @@ export class SceneRenderer {
     this.keyLight.intensity = look.key;
     this.keyLight.shadow.intensity = look.shadow;
     const profile = GRAPHICS_PRESETS[this.quality];
-    this.applyShadowFrustum(city ? 24 : profile.shadowHalfExtent, profile.shadowMapSize);
+    this.applyShadowFrustum(profile.shadowHalfExtent, profile.shadowMapSize);
     const fogColor = look.fog;
     this.scene.background = new Color(fogColor);
     const fog = this.scene.fog as FogExp2 | null;
@@ -565,14 +565,17 @@ export class SceneRenderer {
 
   private followKeyLight(): void {
     const p = this.playerMesh.position;
-    const city = this.worldLook === "city";
-    const x = city ? 0 : p.x;
-    const z = city ? 0 : p.z;
+    const profile = GRAPHICS_PRESETS[this.quality];
+    const texelSize = profile.shadows
+      ? profile.shadowHalfExtent * 2 / profile.shadowMapSize
+      : 0;
+    const x = texelSize > 0 ? Math.round(p.x / texelSize) * texelSize : p.x;
+    const z = texelSize > 0 ? Math.round(p.z / texelSize) * texelSize : p.z;
     this.skyDome.position.set(p.x, 0, p.z);
     this.keyLight.target.position.set(x, 0, z);
     this.keyLight.position.set(x + KEY_LIGHT_OFFSET.x, KEY_LIGHT_OFFSET.y, z + KEY_LIGHT_OFFSET.z);
     const now = performance.now();
-    const interval = city ? GRAPHICS_PRESETS[this.quality].shadowUpdateInterval * 1000 : 16;
+    const interval = profile.shadowUpdateInterval * 1000;
     if (this.renderer.shadowMap.enabled && now - this.lastShadowUpdateAt >= interval) {
       this.renderer.shadowMap.needsUpdate = true;
       this.lastShadowUpdateAt = now;
