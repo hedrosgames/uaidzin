@@ -20,4 +20,5 @@ export const HT_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   ht_mag_flecha_arcana: { motif: "arrow", color: 0xb07cff, accent: 0xe8d7ff, count: 1, scale: 0.36, spread: 0.16, spin: 0.6, lift: 0.12, motion: "trail", particleRate: 34 },
   ht_mag_flecha_ignea: { motif: "arrow", color: 0xe25822, accent: 0xffca6c, count: 1, scale: 0.38, spread: 0.2, spin: 0.8, lift: 0.14, motion: "trail", particleRate: 42 },
   ht_mag_flecha_glacial: { motif: "crystal", color: 0x7ec8e3, accent: 0xe7f7ff, count: 3, scale: 0.24, spread: 0.28, spin: 1.2, lift: 0.12, motion: "trail", particleRate: 36 },
+  ht_mag_flecha_trovao: { motif: "bolt", color: 0xd0b0ff, accent: 0xf7efb3, count: 3, scale: 0.3, spread: 0.22, spin: 1.8, lift: 0.1, motion: "trail", particleRate: 46 },
 };
