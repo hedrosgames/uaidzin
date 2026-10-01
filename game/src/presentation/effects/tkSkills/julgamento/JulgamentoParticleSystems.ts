@@ -3,6 +3,7 @@ import {
   ApplyForce,
   ColorOverLife,
   ConeEmitter,
+  Gradient,
   ConstantColor,
   ConstantValue,
   IntervalValue,
@@ -14,7 +15,6 @@ import {
 } from "three.quarks";
 import {
   createAdditiveMaterial,
-  createFireGradient,
   createShrink,
   createTurbulence,
 } from "../../vfxKit/quarkFx";
@@ -37,6 +37,23 @@ export interface JulgamentoParticleConfig {
   trailEmission: number;
   sparkBurstCount: number;
   plumeBurstCount: number;
+}
+
+function createMoonGradient(): Gradient {
+  return new Gradient(
+    [
+      [new QuarksVector3(0.96, 1, 1), 0],
+      [new QuarksVector3(0.68, 0.86, 1), 0.38],
+      [new QuarksVector3(0.38, 0.58, 0.9), 0.74],
+      [new QuarksVector3(0.12, 0.18, 0.36), 1],
+    ],
+    [
+      [1, 0],
+      [0.88, 0.4],
+      [0.42, 0.78],
+      [0, 1],
+    ],
+  );
 }
 
 export function createJulgamentoParticleMaterials(
@@ -62,7 +79,7 @@ export function createJulgamentoImpactSystems(
     startSpeed: new IntervalValue(0.4, 1.6),
     startSize: new IntervalValue(0.2, 0.42),
     startRotation: new IntervalValue(-1.2, 1.2),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.94, 0.78, 0.7)),
+    startColor: new ConstantColor(new QuarksVector4(0.8, 0.92, 1, 0.76)),
     emissionOverTime: new ConstantValue(config.trailEmission),
     emissionOverDistance: new ConstantValue(0),
     shape: new ConeEmitter({
@@ -89,7 +106,7 @@ export function createJulgamentoImpactSystems(
     startSpeed: new IntervalValue(3.4, 8.2),
     startSize: new IntervalValue(0.05, 0.15),
     startRotation: new IntervalValue(-Math.PI, Math.PI),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.9, 0.62, 0.95)),
+    startColor: new ConstantColor(new QuarksVector4(0.86, 0.95, 1, 0.96)),
     emissionOverTime: new ConstantValue(0),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [
@@ -110,7 +127,7 @@ export function createJulgamentoImpactSystems(
     worldSpace: true,
     renderOrder: 10,
     behaviors: [
-      new ColorOverLife(createFireGradient()),
+      new ColorOverLife(createMoonGradient()),
       createShrink(1),
       new ApplyForce(new QuarksVector3(0, -9.2, 0), new ConstantValue(1)),
       createTurbulence(0.7),
@@ -124,7 +141,7 @@ export function createJulgamentoImpactSystems(
     startLife: new IntervalValue(0.22, 0.52),
     startSpeed: new IntervalValue(2.2, 5.8),
     startSize: new IntervalValue(0.7, 1.3),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.86, 0.6, 0.85)),
+    startColor: new ConstantColor(new QuarksVector4(0.68, 0.84, 1, 0.88)),
     emissionOverTime: new ConstantValue(0),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [
