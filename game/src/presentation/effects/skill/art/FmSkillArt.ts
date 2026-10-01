@@ -18,4 +18,5 @@ export const FM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   fm_ctrl_castigo: { motif: "star", color: 0xd49b3e, accent: 0xffe4a0, count: 5, scale: 0.7, spread: 0.66, spin: 2.6, lift: 1.9, motion: "rain", particleRate: 38 },
   fm_ctrl_graca_ceu: { motif: "wing", color: 0xe9d49a, accent: 0xbde5d8, count: 8, scale: 0.76, spread: 2.0, spin: 0.7, lift: 2.0, motion: "rain", particleRate: 42 },
   fm_mag_picada: { motif: "fang", color: 0x75a842, accent: 0xd2e87d, count: 4, scale: 0.65, spread: 0.24, spin: 1.8, lift: 0.35, motion: "trail", particleRate: 30 },
+  fm_mag_tempestade_brasa: { motif: "orb", color: 0xc75b24, accent: 0xffbb58, count: 10, scale: 0.68, spread: 1.8, spin: 1.7, lift: 2.2, motion: "rain", particleRate: 48 },
 };
