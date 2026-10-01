@@ -155,11 +155,12 @@ export class EffectManager {
   }
 
   spawnDamageNumber(x: number, y: number, z: number, amount: number, kind: DmgKind): void {
+    if (kind === "kill") return;
     this.count += 1;
     this.frame += 1;
     const el = document.createElement("div");
     el.className = `dmg-number dmg-${kind}`;
-    el.textContent = kind === "kill" ? "KO" : kind === "miss" ? "MISS" : String(Math.round(amount));
+    el.textContent = kind === "miss" ? "MISS" : String(Math.round(amount));
     this.overlay.appendChild(el);
     this.floating.push({
       el,

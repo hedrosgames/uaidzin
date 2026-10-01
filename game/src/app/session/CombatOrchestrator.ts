@@ -145,7 +145,7 @@ export class CombatOrchestrator {
     });
   }
 
-  updateCombat(dt: number): void {
+  updateCombat(dt: number, blockDamage = false): void {
     this.deps.enemies.updateRespawns(dt);
     const worldId = this.deps.worlds.getCurrent()?.id ?? "";
     const playerArena = worldId === "dungeon-1" ? dungeon1ArenaFromZ(this.deps.player.z) : undefined;
@@ -243,6 +243,7 @@ export class CombatOrchestrator {
       this.deps.summons,
       this.deps.renderer.playerView.getWeaponSet(),
       this.deps.isAutoAttackEnabled(),
+      blockDamage,
     );
 
     if (cast) {
@@ -259,14 +260,20 @@ export class CombatOrchestrator {
           this.deps.player.facing = Math.atan2(dx, dz);
         }
       }
-      const center = skill.shape === "aoe" || !target ? this.vOrigin : target;
+      const facing = this.deps.player.facing;
+      const aimPoint = target ?? this.vAim.set(
+        this.deps.player.x + Math.sin(facing) * Math.max(1, skill.range),
+        0,
+        this.deps.player.z + Math.cos(facing) * Math.max(1, skill.range),
+      );
+      const center = skill.shape === "aoe" || !target ? this.vOrigin : aimPoint;
       const profile = getSkillVfxProfile(skill.id);
       let request: SkillVfxRequest | null = null;
       if (profile) {
         request = {
           profile,
           origin: this.vOrigin.clone(),
-          target: target ? target.clone() : null,
+          target: aimPoint.clone(),
           center: center.clone(),
           colorHex: profile.colorHex,
           facing: this.deps.player.facing,
@@ -280,7 +287,6 @@ export class CombatOrchestrator {
         };
       }
       const hpCap = Math.round(this.deps.character.maxHp * (1 + Math.max(0, frameMods.maxHpMul)));
-
       if (weaponAttackSkill) {
         const attackSpeed = skill.id === "tk_fis_force_wave" ? 1.5 : 1;
         const anim = this.deps.renderer.playerView.playAttack(attackSpeed);

@@ -1093,7 +1093,7 @@ textarea,
   left: 0;
   font-family: var(--font-num);
   font-weight: 700;
-  font-size: 16px;
+  font-size: 32px;
   color: #ff6b4a;
   text-shadow: 0 1px 2px #000, 0 0 8px rgba(0, 0, 0, 0.6);
   will-change: transform, opacity;
@@ -1101,7 +1101,7 @@ textarea,
 
 .dmg-enemyCrit {
   color: #fff6d0;
-  font-size: 24px;
+  font-size: 48px;
   text-shadow:
     0 0 14px rgba(255, 228, 140, 0.95),
     0 0 6px rgba(255, 180, 60, 0.85),
@@ -1110,12 +1110,12 @@ textarea,
 
 .dmg-player {
   color: var(--blood-hi);
-  font-size: 18px;
+  font-size: 36px;
 }
 
 .dmg-playerCrit {
   color: #fff0c8;
-  font-size: 26px;
+  font-size: 52px;
   text-shadow:
     0 0 14px rgba(255, 228, 140, 0.95),
     0 0 6px rgba(255, 180, 60, 0.85),
@@ -1124,7 +1124,7 @@ textarea,
 
 .dmg-skill {
   color: var(--gold-hi);
-  font-size: 22px;
+  font-size: 44px;
 }
 
 .dmg-kill {

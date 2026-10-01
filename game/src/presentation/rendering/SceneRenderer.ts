@@ -396,6 +396,7 @@ export class SceneRenderer {
 
   private applyShadowsPreset(enabled: boolean, mapSize: number, extent: number): void {
     this.renderer.shadowMap.enabled = enabled;
+    this.renderer.shadowMap.autoUpdate = this.worldLook !== "city";
     this.keyLight.castShadow = enabled;
     this.playerBlobShadow.visible = !enabled;
     this.applyShadowFrustum(extent, mapSize);
@@ -457,6 +458,7 @@ export class SceneRenderer {
       fog.density = look.density;
     }
     this.renderer.toneMappingExposure = look.exposure;
+    this.renderer.shadowMap.autoUpdate = dungeon;
     this.skyDome.visible = !dungeon;
     const sky = this.skyDome.material as ShaderMaterial;
     (sky.uniforms.zenith!.value as Color).set(kind === "cemetery" ? 0x7886ac : SKY_ZENITH);
@@ -574,6 +576,9 @@ export class SceneRenderer {
     this.skyDome.position.set(p.x, 0, p.z);
     this.keyLight.target.position.set(x, 0, z);
     this.keyLight.position.set(x + KEY_LIGHT_OFFSET.x, KEY_LIGHT_OFFSET.y, z + KEY_LIGHT_OFFSET.z);
+    this.keyLight.target.updateMatrixWorld(true);
+    this.keyLight.updateMatrixWorld(true);
+    this.keyLight.shadow.camera.updateMatrixWorld(true);
     const now = performance.now();
     const interval = profile.shadowUpdateInterval * 1000;
     if (this.renderer.shadowMap.enabled && now - this.lastShadowUpdateAt >= interval) {

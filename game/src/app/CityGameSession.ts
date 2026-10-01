@@ -752,16 +752,20 @@ export class CityGameSession {
       return;
     }
 
-    if (inDungeon && !this.panel.isOpen() && !uiBlocked) {
-      const expired = this.dungeonRun.tick(dt);
-      if (expired) {
-        this.finishDungeon("timer");
-        this.renderer.render(this.camera.camera);
-        this.pushHud(true);
-        return;
+    if (!this.panel.isOpen() && !uiBlocked && !this.character.isDead) {
+      if (inDungeon) {
+        const expired = this.dungeonRun.tick(dt);
+        if (expired) {
+          this.finishDungeon("timer");
+          this.renderer.render(this.camera.camera);
+          this.pushHud(true);
+          return;
+        }
+        this.combat.updateCombat(dt);
+        this.tickDungeon1Gates();
+      } else {
+        this.combat.updateCombat(dt, true);
       }
-      this.combat.updateCombat(dt);
-      this.tickDungeon1Gates();
     }
 
     const groundY = world.groundY(this.player.x, this.player.z);

@@ -63,6 +63,7 @@ export class SkillController {
     summons: SummonRuntime,
     weaponSet: string | null,
     autoBuffs = false,
+    blockDamage = false,
   ): SkillCast | null {
     this.loadout.tick(dt);
     if (!this.character || !this.tree) return null;
@@ -74,10 +75,10 @@ export class SkillController {
       equipCritPercent: this.character.equipCrit,
     });
     const slot = manual
-      ? this.manualSlot(manualSlotIndex, mods, buffs)
-      : autoSkillsFromBar
+      ? this.manualSlot(manualSlotIndex, mods, buffs, blockDamage)
+      : autoSkillsFromBar && !blockDamage
         ? this.autoSlot(mods, buffs, form, summons, targets, px, pz, facing, false)
-        : autoBuffs
+        : autoBuffs || (autoSkillsFromBar && blockDamage)
           ? this.autoSlot(mods, buffs, form, summons, targets, px, pz, facing, true)
           : null;
     if (!slot) return null;
@@ -186,10 +187,11 @@ export class SkillController {
     this.loadout.resetCooldowns();
   }
 
-  private manualSlot(index: number, mods: CombatMods, buffs: BuffService): LoadoutSlot | null {
+  private manualSlot(index: number, mods: CombatMods, buffs: BuffService, blockDamage: boolean): LoadoutSlot | null {
     if (index < 0 || index >= this.loadout.slots.length) return null;
     const slot = this.loadout.slots[index];
     if (!slot || !(slot.cd <= 0) || slot.skill.kind === "passive") return null;
+    if (blockDamage && slot.skill.kind === "damage") return null;
     if (this.buffRecastBlock(slot.skill, buffs) > 0) return null;
     if (!this.affordable(slot, mods)) return null;
     return slot;
