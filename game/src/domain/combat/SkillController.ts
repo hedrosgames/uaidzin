@@ -62,19 +62,24 @@ export class SkillController {
     form: FormState,
     summons: SummonRuntime,
     weaponSet: string | null,
+    autoBuffs = false,
   ): SkillCast | null {
     this.loadout.tick(dt);
-    if (moving || !this.character || !this.tree) return null;
+    if (!this.character || !this.tree) return null;
+    const manual = manualSlotIndex >= 0;
+    if (moving && !manual) return null;
     const mods = buildCombatMods(buffs.active, learnedPassives(this.tree), weaponSet, form);
     applyPlayerCombatRatings(mods, {
       des: this.character.attributes.DES,
       equipCritPercent: this.character.equipCrit,
     });
-    const slot = manualSlotIndex >= 0
+    const slot = manual
       ? this.manualSlot(manualSlotIndex, mods, buffs)
       : autoSkillsFromBar
-        ? this.autoSlot(mods, buffs, form, summons, targets, px, pz, facing)
-        : null;
+        ? this.autoSlot(mods, buffs, form, summons, targets, px, pz, facing, false)
+        : autoBuffs
+          ? this.autoSlot(mods, buffs, form, summons, targets, px, pz, facing, true)
+          : null;
     if (!slot) return null;
     const cost = Math.max(0, Math.round(slot.skill.mp * mods.mpCostMul));
     if (!this.character.spendMp(cost)) return null;
@@ -99,6 +104,7 @@ export class SkillController {
       transformed: form.active,
       treeColor: TREE_COLOR[slot.tree],
       specEffectiveness,
+      allowNoTarget: manual,
     });
     if (!resolved) {
       this.character.regenMp(cost);
@@ -198,15 +204,17 @@ export class SkillController {
     px: number,
     pz: number,
     facing: number,
+    onlyBuffs: boolean,
   ): LoadoutSlot | null {
     const hpRatio = this.character && this.character.maxHp > 0 ? this.character.hp / this.character.maxHp : 1;
     let best: LoadoutSlot | null = null;
     let bestScore = -1;
     for (const slot of this.loadout.slots) {
-      if (!slot || !slot.auto || !(slot.cd <= 0)) continue;
+      if (!slot || !(slot.cd <= 0)) continue;
+      if (!onlyBuffs && !slot.auto) continue;
       if (this.buffRecastBlock(slot.skill, buffs) > 0) continue;
       if (!this.affordable(slot, mods)) continue;
-      if (!this.autoUseful(slot, hpRatio, buffs, form, summons, targets, px, pz, facing)) continue;
+      if (!this.autoUseful(slot, hpRatio, buffs, form, summons, targets, px, pz, facing, onlyBuffs)) continue;
       const score = this.autoScore(slot, hpRatio);
       if (score > bestScore) {
         best = slot;
@@ -239,8 +247,11 @@ export class SkillController {
     px: number,
     pz: number,
     facing: number,
+    onlyBuffs: boolean,
   ): boolean {
     const skill = slot.skill;
+    if (onlyBuffs && skill.kind !== "buff") return false;
+    if (!onlyBuffs && !slot.auto) return false;
     if (skill.kind === "heal") return hpRatio <= SKILL_BALANCE.healAutoHpRatio;
     if (skill.kind === "buff") {
       const window = skill.recastWindowSec ?? 1;

@@ -87,6 +87,7 @@ export function buildWireSkillCatalog(session: CityGameSession): WireSkillCatalo
         desc: sk.desc ?? (sk.kind === "passive" ? "Passiva" : sk.name),
         learned: session.skillTree.hasSkill(sk.id),
         passive: sk.kind === "passive",
+        role: sk.kind === "passive" ? "passive" : sk.kind === "buff" ? "buff" : "active",
         mp: sk.mp ?? 0,
         cd: sk.cooldown ?? 0,
         pointsCost: skillPurchasePointCost(i),

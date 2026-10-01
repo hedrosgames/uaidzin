@@ -26,5 +26,5 @@ export function combatAttackModeLabel(mode: CombatAttackMode): string {
 export function combatAttackModeTitle(mode: CombatAttackMode): string {
   if (mode === "off") return "Combate automático desligado";
   if (mode === "magic") return "Auto: skills da barra (buffs só sem buff ativo)";
-  return "Auto: ataque físico";
+  return "Auto: ataque físico e buffs da barra";
 }

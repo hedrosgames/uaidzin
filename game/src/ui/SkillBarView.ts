@@ -88,14 +88,6 @@ export class SkillBarView {
         cache.empty = false;
         ring.classList.add("has-skill");
       }
-      const isAuto = Boolean(s.auto);
-      if (cache.auto !== isAuto) {
-        cache.auto = isAuto;
-        const chk = ring.querySelector<HTMLInputElement>("input[type='checkbox']");
-        if (chk && chk.checked !== isAuto) {
-          chk.checked = isAuto;
-        }
-      }
       const pct = Math.max(0, Math.min(100, Math.round(s.cdRatio * 100)));
       const sec = !s.ready && s.cdLeft > 0 ? s.cdLeft.toFixed(1) : "";
       if (cache.ready !== s.ready || cache.pct !== pct || cache.sec !== sec) {

@@ -83,7 +83,7 @@ export function createWireShell(
     closeConfirm: () => dialogMgr.closeConfirm(),
     openPortalConfirm: (pOpts: PortalConfirmOpts) => dialogMgr.openPortalConfirm(pOpts),
     closePortalConfirm: () => dialogMgr.closePortalConfirm(),
-    showSkillTip: (el, t, s, m, d, ico) => tooltipMgr.showSkillTip(el, t, s, m, d, ico),
+    showSkillTip: (el, t, s, m, d, ico, role) => tooltipMgr.showSkillTip(el, t, s, m, d, ico, role),
     hideSkillTip: () => tooltipMgr.hideSkillTip(),
     showItemTip: (el, item, acts) => tooltipMgr.showItemTip(el, item, acts),
     hideItemTip: () => tooltipMgr.hideItemTip(),

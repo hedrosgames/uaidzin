@@ -111,6 +111,7 @@ export function resolveSkill(input: {
   transformed: boolean;
   treeColor: number;
   specEffectiveness: number;
+  allowNoTarget?: boolean;
 }): ResolvedSkill | null {
   const specMul = Number.isFinite(input.specEffectiveness) && input.specEffectiveness > 0
     ? input.specEffectiveness
@@ -119,7 +120,7 @@ export function resolveSkill(input: {
   const picked = selectSkillTargets(skill, input.targets, input.px, input.pz, input.facing);
   const needsFoe = skill.kind === "damage" || (skill.enemy != null && skill.shape !== "self");
   const canSelf = (skill.healRatio ?? 0) > 0 || skill.kind === "buff" || skill.kind === "heal" || skill.kind === "transform" || skill.kind === "summon";
-  if (needsFoe && picked.length === 0 && !canSelf) return null;
+  if (needsFoe && picked.length === 0 && !canSelf && !input.allowNoTarget) return null;
 
   const crit = rollCrit(input.mods, input.transformed);
   const hits: SkillHitPlan[] = [];

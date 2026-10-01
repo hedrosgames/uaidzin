@@ -511,6 +511,7 @@ export class GameApp {
     if (loaded.status === "absent") {
       this.session.applyBootCharacter(character);
     }
+    this.session.grantPotionPackOnce();
     try {
       const view = this.currentViewModel();
       const wireApi = createWireGameApi(this.session, {

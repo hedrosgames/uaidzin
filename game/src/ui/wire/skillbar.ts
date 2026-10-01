@@ -21,7 +21,6 @@ const UI_CANCEL = ".win, .confirm-layer, .overlay, .hint, .hud-tools, .player-fr
 
 export function createSkillBarHud(container: HTMLElement, ctx: WireContext): SkillBarHud {
   let barDrag: BarDrag | null = null;
-  let blockDrag = false;
 
   function eventElement(target: EventTarget | null): Element | null {
     return target instanceof Element ? target : null;
@@ -71,15 +70,7 @@ export function createSkillBarHud(container: HTMLElement, ctx: WireContext): Ski
     const hud = container.querySelector<HTMLElement>("#skillHud");
     if (!hud) return;
 
-    hud.addEventListener("mousedown", (e) => {
-      blockDrag = !!eventElement(e.target)?.closest(".slot-auto");
-    });
-
     hud.addEventListener("dragstart", (e) => {
-      if (blockDrag) {
-        e.preventDefault();
-        return;
-      }
       const ring = eventElement(e.target)?.closest<HTMLElement>("#skillHud .slot-ring.has-skill");
       if (!ring) return;
       const from = Number(ring.dataset.bar);
@@ -203,7 +194,6 @@ export function createSkillBarHud(container: HTMLElement, ctx: WireContext): Ski
     document.addEventListener("dragend", (e) => {
       const drag = barDrag;
       barDrag = null;
-      blockDrag = false;
       paintDrop(null);
       drag?.source.classList.remove("is-dragging");
       if (!drag || drag.escaped) return;
@@ -261,16 +251,6 @@ export function createSkillBarHud(container: HTMLElement, ctx: WireContext): Ski
           ctx.api.usePotionSlot(slotIdx);
           ctx.syncFromGame();
         }
-        return;
-      }
-      const autoEl = (e.target as HTMLElement).closest<HTMLElement>(".slot-auto");
-      if (autoEl) {
-        e.stopPropagation();
-        const slotIdx = Number(autoEl.dataset.slot);
-        if (Number.isFinite(slotIdx)) {
-          ctx.api.toggleSkillAuto(slotIdx);
-          ctx.syncFromGame();
-        }
       }
     });
   }
@@ -310,7 +290,6 @@ export function createSkillBarHud(container: HTMLElement, ctx: WireContext): Ski
             <div class="slot-cd" aria-hidden="true"></div>
             <span class="slot-cd-sec" aria-hidden="true"></span>
             <span class="slot-key">${keyLabel}</span>
-            ${hasSkill ? `<label class="slot-auto" data-slot="${i}"><input type="checkbox" ${s.auto ? "checked" : ""}><span>A</span></label>` : ""}
           </div>
         </div>
       `;

@@ -70,6 +70,7 @@ export interface CombatOrchestratorDeps {
   onAutoAttackSwing: () => void;
   isAutoAttackEnabled: () => boolean;
   isAutoSkillBarEnabled: () => boolean;
+  consumeClickAttack: () => string | null;
 }
 
 export class CombatOrchestrator {
@@ -173,7 +174,19 @@ export class CombatOrchestrator {
       this.applySkillImpact(pending.resolved, pending.skillId, pending.hpCap);
     }
 
-    const hitTarget = this.deps.attack.tick(
+    let hitTarget: AttackTarget | null = null;
+    const clickId = this.deps.consumeClickAttack();
+    if (clickId && this.deps.getMoveLock() <= 0 && !this.deps.player.isMoving) {
+      const clicked = this.deps.enemies.findById(clickId);
+      if (clicked?.alive) {
+        hitTarget = this.deps.attack.tryManual(
+          { id: clicked.id, x: clicked.x, z: clicked.z, alive: true },
+          this.deps.player.x,
+          this.deps.player.z,
+        );
+      }
+    }
+    if (!hitTarget) hitTarget = this.deps.attack.tick(
       dt,
       this.deps.player.isMoving || this.deps.getMoveLock() > 0 || !this.deps.isAutoAttackEnabled(),
       targets,
@@ -222,6 +235,7 @@ export class CombatOrchestrator {
       this.deps.form,
       this.deps.summons,
       this.deps.renderer.playerView.getWeaponSet(),
+      this.deps.isAutoAttackEnabled(),
     );
 
     if (cast) {

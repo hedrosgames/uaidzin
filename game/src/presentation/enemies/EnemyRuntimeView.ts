@@ -11,6 +11,7 @@ import {
   Mesh,
   MeshStandardMaterial,
   Object3D,
+  Raycaster,
   SkinnedMesh,
   Vector3,
   VectorKeyframeTrack,
@@ -450,6 +451,25 @@ export class EnemyRuntimeView {
     return this.meshes.get(id);
   }
 
+  pickId(raycaster: Raycaster): string | null {
+    const roots: Object3D[] = [];
+    for (const ctrl of this.controllers.values()) {
+      const root = ctrl.model ?? ctrl.mesh;
+      if (root.visible) roots.push(root);
+    }
+    if (roots.length === 0) return null;
+    const hits = raycaster.intersectObjects(roots, true);
+    for (const hit of hits) {
+      let obj: Object3D | null = hit.object;
+      while (obj) {
+        const id = obj.userData.enemyId as string | undefined;
+        if (id) return id;
+        obj = obj.parent;
+      }
+    }
+    return null;
+  }
+
   getController(id: string): EnemyInstanceController | undefined {
     return this.controllers.get(id);
   }
@@ -483,6 +503,7 @@ export class EnemyRuntimeView {
       placeholderMat,
     );
     placeholderMesh.position.y = 0.55 * scale;
+    placeholderMesh.userData.enemyId = enemy.id;
     placeholderMesh.userData.occlusionIgnore = true;
     placeholderMesh.userData.baseScale = placeholderMesh.scale.clone();
 
@@ -659,6 +680,7 @@ export class EnemyRuntimeView {
             }
           });
 
+          instance.userData.enemyId = enemy.id;
           ctrl.model = instance;
           ctrl.baseX = posX;
           ctrl.baseY = posY;

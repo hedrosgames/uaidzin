@@ -111,7 +111,7 @@ export function createSkillsPanel(container: HTMLElement, ctx: WireContext): Ski
         if (sk.learned) meta["Estado"] = "Aprendida";
         else meta["Estado"] = "Não aprendida";
         const treeLabel = (treeNames as Record<string, string>)[sk.tree] || sk.tree;
-        ctx.showSkillTip(slotEl, sk.name, treeLabel, meta, sk.desc || "", sk.icon);
+        ctx.showSkillTip(slotEl, sk.name, treeLabel, meta, sk.desc || "", sk.icon, sk.role);
       });
 
       slotEl.addEventListener("mouseleave", () => {

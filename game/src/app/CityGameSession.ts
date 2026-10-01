@@ -1,4 +1,4 @@
-import { Vector3 } from "three";
+import { Raycaster, Vector2, Vector3 } from "three";
 import { resolveArmorAppearance } from "../../public/boot/assets/armor-appearance.mjs";
 import { dungeon1ZoneIndex } from "../world/Dungeon1Layout";
 import { COMBAT_BALANCE } from "../data/balance/combat";
@@ -38,6 +38,7 @@ import { CLASSES, type TreeId } from "../data/classes/class-definitions";
 import { SKILL_TRAINING } from "../data/balance/economy";
 import { isPotionDefId, resolveConsumableRestore } from "../data/balance/consumables";
 import { ITEM_CATALOG, resolveItemIcon } from "../data/items/item-catalog";
+import { createFromCatalog } from "../domain/items/ItemFactory";
 import { SettingsPanel } from "../ui/SettingsPanel";
 import { isWeaponSetId } from "../presentation/player/WeaponRig";
 import { PROGRESSION_BALANCE } from "../data/balance/progression";
@@ -157,6 +158,9 @@ export class CityGameSession {
   private dropLog: DropLogEntry[] = [];
   private dropLogSeq = 0;
   private gateKeys: boolean[] = [];
+  private clickAttackId: string | null = null;
+  private readonly clickRaycaster = new Raycaster();
+  private readonly clickNdc = new Vector2();
   pendingSkillSlot = -1;
   hadSave = false;
   saveUnreadable = false;
@@ -330,6 +334,11 @@ export class CityGameSession {
       },
       isAutoAttackEnabled: () => this.attackMode === "physical",
       isAutoSkillBarEnabled: () => this.attackMode === "magic",
+      consumeClickAttack: () => {
+        const id = this.clickAttackId;
+        this.clickAttackId = null;
+        return id;
+      },
     });
 
     this.vaultTransfer = new VaultTransfer({
@@ -528,6 +537,33 @@ export class CityGameSession {
     return this.snapshot.loadSave();
   }
 
+  private pickClickedEnemy(ndcX: number, ndcY: number): string | null {
+    this.clickNdc.set(ndcX, ndcY);
+    this.clickRaycaster.setFromCamera(this.clickNdc, this.camera.camera);
+    return this.enemyView.pickId(this.clickRaycaster);
+  }
+
+  grantPotionPackOnce(): void {
+    const profile = this.saveService.getProfileId() || "local";
+    const key = `uaidzin.potionPack500.${profile}`;
+    try {
+      if (localStorage.getItem(key) === "1") return;
+    } catch {
+      return;
+    }
+    const item = createFromCatalog("pocao_vida_mana", 500);
+    if (!item) return;
+    const res = this.inventory.add(item);
+    if (res.added <= 0) return;
+    try {
+      localStorage.setItem(key, "1");
+    } catch {
+      return;
+    }
+    this.saves.markDirty("inventory", "critical");
+    void this.saves.checkpoint();
+  }
+
   applyBootCharacter(character: BootCharacter): void {
     this.snapshot.applyBootCharacter(character);
   }
@@ -613,6 +649,30 @@ export class CityGameSession {
     const click = this.controller.consumeClickMove();
     if (click) {
       if (this.panel.isOpen() || uiBlocked) this.input.triggerAction("ui.escape");
+      const enemyId = this.pickClickedEnemy(click.ndcX, click.ndcY);
+      if (enemyId) {
+        const enemy = this.enemies.findById(enemyId);
+        const worldId = world.id;
+        const engage =
+          !!enemy?.alive &&
+          canEngageEnemy(worldId, this.player.x, this.player.z, enemy.x, enemy.z, enemy.arenaIndex, world.collision);
+        if (enemy && engage) {
+          const reach = this.weaponReach().attackRange;
+          const dist = Math.hypot(enemy.x - this.player.x, enemy.z - this.player.z);
+          if (!locked && dist <= reach) this.clickAttackId = enemy.id;
+          else if (!locked) {
+            const safe = projectWalkTarget(
+              enemy.x,
+              enemy.z,
+              this.player.radius,
+              world.collision,
+              this.player.x,
+              this.player.z,
+            );
+            this.player.setMoveTarget(safe.x, safe.z);
+          }
+        }
+      } else {
       const meshHit = this.interactions.pickInteractableByRay(click.ndcX, click.ndcY, world.interactables);
       if (meshHit) {
         if (!locked || this.player.distanceTo(meshHit.x, meshHit.z) <= INTERACT_RANGE) {
@@ -639,6 +699,7 @@ export class CityGameSession {
             this.player.setMoveTarget(safe.x, safe.z);
           }
         }
+      }
       }
     }
 

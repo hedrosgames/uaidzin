@@ -29,9 +29,11 @@ export class EconomyService {
     monsterId?: string,
     globalGoldMultiplier = 1,
   ): KillLootResult {
+    if (this.dungeonIndex === 1) {
+      return { gold: 0, droppedItem: null, lostItem: null };
+    }
     const key = isBoss ? "boss" : archetype;
     let gold = Number.isFinite(ECONOMY_BALANCE.goldPerKill[key]) ? ECONOMY_BALANCE.goldPerKill[key] : 2;
-    if (this.dungeonIndex === 1) gold *= 10;
     if (!Number.isFinite(gold) || gold < 0) gold = 0;
     gold = applyGlobalKillGoldMultiplier(gold, globalGoldMultiplier);
     this.inventory.gold += gold;

@@ -9,6 +9,7 @@ export interface TooltipManager {
     meta: Record<string, string>,
     desc: string,
     iconSrc?: string,
+    role?: "active" | "passive" | "buff",
   ): void;
   hideSkillTip(): void;
   showItemTip(nearEl: HTMLElement, item: WireItem, actsHtml?: string): void;
@@ -95,13 +96,17 @@ export function createTooltipManager(container: HTMLElement): TooltipManager {
     meta: Record<string, string>,
     desc: string,
     iconSrc?: string,
+    role?: "active" | "passive" | "buff",
   ): void {
     const tip = container.querySelector<HTMLElement>("#skillTip");
     if (!tip) return;
     const metaHtml = Object.entries(meta)
       .map(([k, v]) => `<div><span class="lab">${k}</span> <b>${v}</b></div>`)
       .join("");
+    const roleLabel = role === "passive" ? "Passiva" : role === "buff" ? "Buff" : "Ativa";
+    const roleClass = role === "passive" ? "is-passive" : role === "buff" ? "is-buff" : "is-active";
     tip.innerHTML = `
+      <span class="role ${roleClass}">${roleLabel}</span>
       <div class="th">
         ${iconSrc ? `<img src="${iconSrc}" alt="">` : ""}
         <div>

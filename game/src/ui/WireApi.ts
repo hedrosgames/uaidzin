@@ -43,6 +43,7 @@ export interface WireSkillRow {
   desc: string;
   learned: boolean;
   passive?: boolean;
+  role: "active" | "passive" | "buff";
   mp: number;
   cd: number;
   pointsCost: number;

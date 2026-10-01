@@ -39,7 +39,7 @@ export interface WireContext {
   closeConfirm(): void;
   openPortalConfirm(opts: PortalConfirmOpts): void;
   closePortalConfirm(): void;
-  showSkillTip(el: HTMLElement, title: string, sub: string, meta: Record<string, string>, desc: string, iconSrc?: string): void;
+  showSkillTip(el: HTMLElement, title: string, sub: string, meta: Record<string, string>, desc: string, iconSrc?: string, role?: "active" | "passive" | "buff"): void;
   hideSkillTip(): void;
   showItemTip(el: HTMLElement, item: WireItem, actsHtml?: string): void;
   hideItemTip(): void;
