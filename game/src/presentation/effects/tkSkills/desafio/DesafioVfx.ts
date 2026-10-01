@@ -46,9 +46,9 @@ export interface DesafioVfxConfig {
 }
 
 export const DEFAULT_DESAFIO_VFX_CONFIG: DesafioVfxConfig = {
-  aimDuration: 0.6,
-  holdDuration: 0.6,
-  cleanupDelay: 0.3,
+  aimDuration: 0.16,
+  holdDuration: 0.12,
+  cleanupDelay: 0.36,
   maxConcurrentCasts: 3,
   originHeight: 1.12,
   targetHeight: 0.95,
@@ -164,7 +164,7 @@ class DesafioCast {
       this.beamDirection,
     );
     this.core = new Mesh(shared.coreGeometry, new MeshBasicMaterial({
-      color: 0xffd9c4,
+      color: 0xd8ffc8,
       transparent: true,
       opacity: 0.95,
       depthWrite: false,
@@ -177,7 +177,7 @@ class DesafioCast {
     this.core.renderOrder = 11;
     this.sheath = new Mesh(shared.sheathGeometry, new MeshBasicMaterial({
       map: shared.textures.beam,
-      color: 0xd46a5a,
+      color: 0x63d447,
       transparent: true,
       opacity: 0.7,
       depthWrite: false,
@@ -198,7 +198,7 @@ class DesafioCast {
 
     const markMaterial = new MeshBasicMaterial({
       map: shared.textures.beam,
-      color: 0xd46a5a,
+      color: 0x63d447,
       transparent: true,
       opacity: 0.85,
       depthWrite: false,
@@ -232,7 +232,7 @@ class DesafioCast {
 
     this.halo = new Mesh(shared.haloGeometry, new MeshBasicMaterial({
       map: shared.textures.beam,
-      color: 0xd46a5a,
+      color: 0x63d447,
       transparent: true,
       opacity: 0,
       depthWrite: false,
@@ -247,7 +247,7 @@ class DesafioCast {
 
     this.glow = new Sprite(new SpriteMaterial({
       map: shared.textures.glow,
-      color: 0xd46a5a,
+      color: 0x63d447,
       transparent: true,
       opacity: 0,
       depthWrite: false,
@@ -259,10 +259,11 @@ class DesafioCast {
     this.castGroup.add(this.glow);
 
     this.flash = new Mesh(shared.flashGeometry, new MeshBasicMaterial({
-      color: 0xffcdb0,
+      color: 0xcaffb6,
       transparent: true,
       opacity: 0,
       depthWrite: false,
+      blending: AdditiveBlending,
       toneMapped: false,
     }));
     this.flash.name = "tk-desafio-flash";
@@ -271,10 +272,10 @@ class DesafioCast {
     this.castGroup.add(this.flash);
 
     if (this.lightPool) {
-      this.light = this.lightPool.acquire(0xd4573f, 7);
+      this.light = this.lightPool.acquire(0x5fcf43, 7);
       this.isPooledLight = true;
     } else {
-      this.light = new PointLight(0xd4573f, 0, 7, 2);
+      this.light = new PointLight(0x5fcf43, 0, 7, 2);
       this.isPooledLight = false;
     }
     if (this.light) {
@@ -354,7 +355,10 @@ class DesafioCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.castRoot.remove(this.castGroup);
     if (this.isPooledLight) {
       this.lightPool?.release(this.light);
