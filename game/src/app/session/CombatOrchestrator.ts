@@ -252,7 +252,6 @@ export class CombatOrchestrator {
       this.vOrigin.set(this.deps.player.x, 0, this.deps.player.z);
       const target = resolved.aim ? this.vTarget.set(resolved.aim.x, 0, resolved.aim.z) : null;
       const weaponAttackSkill = skill.kind === "damage" && skill.power === "weapon";
-      const fastPhysicalBuff = skill.id === "tk_fis_atk_descuidado" || skill.id === "tk_fis_fury";
       if (target && weaponAttackSkill) {
         const dx = target.x - this.deps.player.x;
         const dz = target.z - this.deps.player.z;
@@ -314,9 +313,8 @@ export class CombatOrchestrator {
             skill.id,
           );
         }
-        const castSpeed = fastPhysicalBuff ? 2 : 1;
-        this.deps.renderer.playerView.playCast(castSpeed);
-        this.deps.lockFromAnim("cast", COMBAT_BALANCE.moveLock.skillFallback);
+        const anim = this.deps.renderer.playerView.playAttack(1);
+        this.deps.lockFromAnim(anim, COMBAT_BALANCE.moveLock.skillFallback);
         this.applySkillImpact(resolved, skill.id, hpCap);
       }
     }

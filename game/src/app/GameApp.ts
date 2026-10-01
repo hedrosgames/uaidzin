@@ -62,6 +62,7 @@ export interface GameAppDeps {
   deathOverlayElement: HTMLElement;
   timerElement: HTMLElement;
   farmStatsElement: HTMLElement;
+  buffRowElement: HTMLElement;
   dropLogElement: HTMLElement;
   resultOverlayElement: HTMLElement;
   wireUiElement: HTMLElement;
@@ -183,6 +184,7 @@ export class GameApp {
       xpTextElement: deps.xpTextElement,
       timerElement: deps.timerElement,
       farmStatsElement: deps.farmStatsElement,
+      buffRowElement: deps.buffRowElement,
     });
 
     this.panel = new InteractionPanel(
@@ -512,6 +514,7 @@ export class GameApp {
       this.session.applyBootCharacter(character);
     }
     this.session.grantPotionPackOnce();
+    this.session.grantTkSkillsOnce();
     try {
       const view = this.currentViewModel();
       const wireApi = createWireGameApi(this.session, {

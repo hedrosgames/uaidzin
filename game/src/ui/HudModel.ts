@@ -26,6 +26,12 @@ export interface HudPotionSlot {
   stack: number;
 }
 
+export interface HudBuffSlot {
+  icon: string;
+  label: string;
+  remainingSec: number;
+}
+
 export interface HudModel {
   hp: number;
   maxHp: number;
@@ -42,6 +48,7 @@ export interface HudModel {
   kills: number;
   arenaHint: string | null;
   skills: HudSkillSlot[];
+  activeBuffs: HudBuffSlot[];
   potionSlots: Array<HudPotionSlot | null>;
   attackMode: CombatAttackMode;
   moveMode: CombatMoveMode;

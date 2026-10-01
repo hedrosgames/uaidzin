@@ -34,7 +34,7 @@ describe("TK físico comprado no runtime", () => {
   beforeEach(() => vi.spyOn(Math, "random").mockReturnValue(0.9));
   afterEach(() => vi.restoreAllMocks());
 
-  it.each(TK_FISICA.filter(skill => skill.kind !== "passive" && skill.recastWindowSec == null))(
+  it.each(TK_FISICA.filter(skill => skill.kind !== "passive" && skill.kind !== "buff"))(
     "$name usa auto-cast, MP e cooldown reais",
     skill => {
       const s = setup(skill.id);
@@ -108,21 +108,20 @@ describe("TK físico comprado no runtime", () => {
   it.each([
     ["tk_fis_atk_descuidado", "tk_reckless_atk"],
     ["tk_fis_fury", "tk_fury"],
-  ] as const)("%s dura 60 s e só libera recast nos últimos 5 s", (id, buffId) => {
+  ] as const)("%s dura 40 s e recarrega em 10 s", (id, buffId) => {
     const s = setup(id);
     const skill = TK_FISICA.find((entry) => entry.id === id)!;
     expect(skill.cooldown).toBe(10);
-    expect(skill.recastWindowSec).toBe(5);
     expect(s.cast(0, 0, [])?.slot.skill.id).toBe(id);
-    expect(s.buffs.active.find((buff) => buff.id === buffId)?.remainingSec).toBe(60);
-    expect(s.controller.slotStates(s.buffs)[0]?.cdLeft).toBe(55);
-    s.buffs.tick(54.9);
-    expect(s.cast(10, 0, [])).toBeNull();
+    expect(s.buffs.active.find((buff) => buff.id === buffId)?.remainingSec).toBe(40);
+    expect(s.controller.slotStates(s.buffs)[0]?.cdLeft).toBe(10);
+    s.loadout.tick(9.9);
+    expect(s.cast(0, 0, [])).toBeNull();
     expect(s.controller.slotStates(s.buffs)[0]?.ready).toBe(false);
-    s.buffs.tick(0.2);
+    s.loadout.tick(0.2);
     expect(s.controller.slotStates(s.buffs)[0]?.ready).toBe(true);
     expect(s.cast(0, 0, [])?.slot.skill.id).toBe(id);
-    expect(s.buffs.active.find((buff) => buff.id === buffId)?.remainingSec).toBe(60);
+    expect(s.buffs.active.find((buff) => buff.id === buffId)?.remainingSec).toBe(40);
   });
 
   it("Atk Descuidado e Fury preservam seus modificadores durante o buff", () => {
@@ -131,7 +130,7 @@ describe("TK físico comprado no runtime", () => {
     let mods = buildCombatMods(reckless.buffs.active, [], null, reckless.form);
     expect(mods.attackMul).toBeCloseTo(1.28);
     expect(mods.defenseMul).toBeCloseTo(0.82);
-    reckless.buffs.tick(60.01);
+    reckless.buffs.tick(40.01);
     mods = buildCombatMods(reckless.buffs.active, [], null, reckless.form);
     expect(mods.attackMul).toBe(1);
     expect(mods.defenseMul).toBe(1);
@@ -139,7 +138,7 @@ describe("TK físico comprado no runtime", () => {
     const fury = setup("tk_fis_fury");
     expect(fury.cast(0, 0, [])).not.toBeNull();
     expect(buildCombatMods(fury.buffs.active, [], null, fury.form).attackSpeed).toBeCloseTo(0.32);
-    fury.buffs.tick(60.01);
+    fury.buffs.tick(40.01);
     expect(buildCombatMods(fury.buffs.active, [], null, fury.form).attackSpeed).toBe(0);
   });
 

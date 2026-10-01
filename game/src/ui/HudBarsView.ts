@@ -1,6 +1,6 @@
 import { formatMMSS } from "../core/time/FormatTime";
 import { artForClass } from "./CharacterUiBinder";
-import type { HudModel } from "./HudModel";
+import type { HudBuffSlot, HudModel } from "./HudModel";
 
 export interface HudBarsViewElements {
   playerFaceElement: HTMLImageElement;
@@ -14,6 +14,7 @@ export interface HudBarsViewElements {
   xpTextElement: HTMLElement;
   timerElement: HTMLElement;
   farmStatsElement: HTMLElement;
+  buffRowElement: HTMLElement;
 }
 
 const CLASS_FACE: Record<string, string> = {
@@ -35,6 +36,8 @@ export class HudBarsView {
   private readonly xpText: HTMLElement;
   private readonly timerEl: HTMLElement;
   private readonly farmStats: HTMLElement;
+  private readonly buffRow: HTMLElement;
+  private lastBuffStamp = "";
 
   private lastFaceSrc = "";
   private lastName = "";
@@ -49,8 +52,6 @@ export class HudBarsView {
   private lastTimerText = "";
   private lastTimerHidden = true;
   private lastTimerUrgent = false;
-  private lastFarmStatsText = "";
-  private lastFarmStatsHidden = true;
 
   constructor(elements: HudBarsViewElements) {
     this.playerFace = elements.playerFaceElement;
@@ -64,9 +65,29 @@ export class HudBarsView {
     this.xpText = elements.xpTextElement;
     this.timerEl = elements.timerElement;
     this.farmStats = elements.farmStatsElement;
+    this.farmStats.hidden = true;
+    this.buffRow = elements.buffRowElement;
+  }
+
+  private updateBuffs(buffs: HudBuffSlot[]): void {
+    const stamp = buffs.map((buff) => `${buff.icon}|${buff.remainingSec.toFixed(1)}`).join(",");
+    if (stamp === this.lastBuffStamp) return;
+    this.lastBuffStamp = stamp;
+    if (buffs.length === 0) {
+      this.buffRow.hidden = true;
+      this.buffRow.innerHTML = "";
+      return;
+    }
+    this.buffRow.hidden = false;
+    let html = "";
+    for (const buff of buffs) {
+      html += `<div class="buff-chip" title="${buff.label} · ${buff.remainingSec.toFixed(1)} s"><img src="${buff.icon}" alt=""></div>`;
+    }
+    this.buffRow.innerHTML = html;
   }
 
   update(model: HudModel): void {
+    this.updateBuffs(model.activeBuffs);
     const faceSrc = CLASS_FACE[model.classId] || CLASS_FACE.TK;
     if (this.lastFaceSrc !== faceSrc) {
       this.lastFaceSrc = faceSrc;
@@ -117,24 +138,10 @@ export class HudBarsView {
         this.lastTimerUrgent = urgent;
         this.timerEl.classList.toggle("urgent", urgent);
       }
-
-      const farmText = `Abates ${model.kills} · XP ${model.xp} · ${model.arenaHint ?? ""}`;
-      if (this.lastFarmStatsHidden) {
-        this.lastFarmStatsHidden = false;
-        this.farmStats.hidden = false;
-      }
-      if (this.lastFarmStatsText !== farmText) {
-        this.lastFarmStatsText = farmText;
-        this.farmStats.textContent = farmText;
-      }
     } else {
       if (!this.lastTimerHidden) {
         this.lastTimerHidden = true;
         this.timerEl.hidden = true;
-      }
-      if (!this.lastFarmStatsHidden) {
-        this.lastFarmStatsHidden = true;
-        this.farmStats.hidden = true;
       }
     }
   }

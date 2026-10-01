@@ -51,7 +51,7 @@ import { canEngageEnemy } from "../domain/combat/CombatSpace";
 import type { BootCharacter } from "./BootFlow";
 import { PlayerController } from "../gameplay/PlayerController";
 import type { InputService } from "../gameplay/InputService";
-import type { HudModel, HudPotionSlot } from "../ui/HudModel";
+import type { HudModel, HudPotionSlot, HudBuffSlot } from "../ui/HudModel";
 import { PlayerRuntime } from "../gameplay/PlayerRuntime";
 import { EnemyRuntimeView } from "../presentation/enemies/EnemyRuntimeView";
 import { EffectManager } from "../presentation/effects/EffectManager";
@@ -564,6 +564,31 @@ export class CityGameSession {
     void this.saves.checkpoint();
   }
 
+  grantTkSkillsOnce(): void {
+    if (this.skillTree.state.classId !== "TK") return;
+    const profile = this.saveService.getProfileId() || "local";
+    const key = `uaidzin.tkSkillsAll.${profile}`;
+    try {
+      if (localStorage.getItem(key) === "1") return;
+    } catch {
+      return;
+    }
+    for (const tree of ["fisica", "controle", "magia"] as const) {
+      for (const skill of CLASSES.TK.trees[tree]) {
+        this.skillTree.state.learned.add(skill.id);
+      }
+    }
+    if (!this.skillTree.state.eighthTree) this.skillTree.state.eighthTree = "fisica";
+    this.skillLoadout.refresh();
+    try {
+      localStorage.setItem(key, "1");
+    } catch {
+      return;
+    }
+    this.saves.markDirty(["skills", "skillLoadout"], "critical");
+    void this.saves.checkpoint();
+  }
+
   applyBootCharacter(character: BootCharacter): void {
     this.snapshot.applyBootCharacter(character);
   }
@@ -831,6 +856,7 @@ export class CityGameSession {
       arenaHint: inDungeon ? this.currentArenaLabel() : null,
       skills: this.skill.slotStates(this.buffs),
       potionSlots: this.buildPotionHudSlots(),
+      activeBuffs: this.buildBuffHudSlots(),
       attackMode: this.attackMode,
       moveMode: this.moveMode,
       autoPotion: this.autoPotion,
@@ -843,6 +869,31 @@ export class CityGameSession {
       unspentPoints: p.unspentAttributePoints,
     };
     this.hudListener?.(model);
+  }
+
+  private buildBuffHudSlots(): HudBuffSlot[] {
+    const classId = this.skillTree.state.classId;
+    const trees = CLASSES[classId].trees;
+    const labelByBuffId = new Map<string, string>();
+    const iconByBuffId = new Map<string, string>();
+    for (const tree of Object.keys(trees) as TreeId[]) {
+      for (const skill of trees[tree]) {
+        for (const spec of [skill.buff, skill.extraBuff]) {
+          if (!spec) continue;
+          if (!labelByBuffId.has(spec.id)) labelByBuffId.set(spec.id, skill.name);
+          if (!iconByBuffId.has(spec.id)) iconByBuffId.set(spec.id, `/assets/icons/skills/${skill.id}.png`);
+        }
+      }
+    }
+    const seen = new Set<string>();
+    const out: HudBuffSlot[] = [];
+    for (const buff of this.buffs.active) {
+      const icon = iconByBuffId.get(buff.id);
+      if (!icon || seen.has(buff.id)) continue;
+      seen.add(buff.id);
+      out.push({ icon, label: labelByBuffId.get(buff.id) ?? buff.id, remainingSec: buff.remainingSec });
+    }
+    return out;
   }
 
   private buildPotionHudSlots(): Array<HudPotionSlot | null> {

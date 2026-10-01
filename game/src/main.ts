@@ -33,6 +33,7 @@ async function bootstrap(): Promise<GameApp> {
       deathOverlayElement: requireElement<HTMLElement>("death-overlay"),
       timerElement: requireElement<HTMLElement>("dungeon-timer"),
       farmStatsElement: requireElement<HTMLElement>("farm-stats"),
+      buffRowElement: requireElement<HTMLElement>("buff-row"),
       dropLogElement: requireElement<HTMLElement>("drop-log"),
       resultOverlayElement: requireElement<HTMLElement>("result-overlay"),
       wireUiElement: requireElement<HTMLElement>("wire-ui"),

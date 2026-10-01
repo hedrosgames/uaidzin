@@ -132,7 +132,7 @@ class EarthquakeCast {
     scene: Scene,
     batchedRenderer: BatchedRenderer,
     private readonly castRoot: Group,
-    private readonly shared: EarthquakeSharedResources,
+    shared: EarthquakeSharedResources,
     private readonly config: EarthquakeVfxConfig,
     private readonly origin: Vector3,
     private readonly radius: number,
