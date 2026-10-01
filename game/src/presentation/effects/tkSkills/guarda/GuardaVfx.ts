@@ -437,7 +437,10 @@ class GuardaCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.castRoot.remove(this.castGroup);
     if (this.isPooledLight) {
       this.lightPool?.release(this.light);

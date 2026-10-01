@@ -381,9 +381,14 @@ export class EffectManager {
       case "desafio":
         this.tkRegistry.get("desafio").castDesafio(input.origin, target);
         return;
-      case "guarda":
-        this.tkRegistry.get("guarda").castGuarda(input.origin, target.clone().sub(input.origin));
+      case "guarda": {
+        const direction = target.clone().sub(input.origin);
+        if (direction.lengthSq() < 1e-8) {
+          direction.set(Math.sin(input.facing), 0, Math.cos(input.facing));
+        }
+        this.tkRegistry.get("guarda").castGuarda(input.origin, direction);
         return;
+      }
       case "bastiao":
         this.tkRegistry.get("bastiao").castBastiao(input.origin);
         return;
