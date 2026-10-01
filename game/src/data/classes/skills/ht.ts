@@ -7,6 +7,7 @@ export const HT_FISICA: SkillDef[] = [
   defineSkill({
     id: "ht_fis_tiro_certeiro",
     name: "Tiro Certeiro",
+    desc: "Tiro físico da arma contra um inimigo a até 8 m. Causa 120 % do ataque.",
     index: 0,
     kind: "damage",
     shape: "single",
@@ -18,6 +19,7 @@ export const HT_FISICA: SkillDef[] = [
   defineSkill({
     id: "ht_fis_pes_ligeiros",
     name: "Pés Ligeiros",
+    desc: "Velocidade de movimento +28 % por 12 s.",
     index: 1,
     kind: "buff",
     buff: { id: "ht_fleet", sec: 12, stat: "moveSpeed", magnitude: 0.28 },
@@ -25,6 +27,7 @@ export const HT_FISICA: SkillDef[] = [
   defineSkill({
     id: "ht_fis_mira_aguia",
     name: "Mira de Águia",
+    desc: "Ataque +24 % por 12 s.",
     index: 2,
     kind: "buff",
     buff: { id: "ht_eagle", sec: 12, stat: "attack", magnitude: 0.24 },
@@ -32,6 +35,7 @@ export const HT_FISICA: SkillDef[] = [
   defineSkill({
     id: "ht_fis_tiro_congelante",
     name: "Tiro Congelante",
+    desc: "Tiro de gelo com dano da arma contra um inimigo a até 8 m. Causa 160 % do ataque e reduz o movimento do alvo em 50 % por 3,2 s.",
     index: 3,
     kind: "damage",
     shape: "single",
@@ -43,6 +47,7 @@ export const HT_FISICA: SkillDef[] = [
   defineSkill({
     id: "ht_fis_sentinela",
     name: "Sentinela",
+    desc: "Chance de esquiva +20 % por 10 s.",
     index: 4,
     kind: "buff",
     buff: { id: "ht_sentinel", sec: 10, stat: "evasion", magnitude: 0.2 },
@@ -50,6 +55,7 @@ export const HT_FISICA: SkillDef[] = [
   defineSkill({
     id: "ht_fis_flecha_rasante",
     name: "Flecha Rasante",
+    desc: "Flecha física contra um inimigo a até 8 m. Causa 165 % do ataque e ignora 40 % da defesa.",
     index: 5,
     kind: "damage",
     shape: "single",
@@ -62,6 +68,7 @@ export const HT_FISICA: SkillDef[] = [
   defineSkill({
     id: "ht_fis_instinto",
     name: "Instinto de Caça",
+    desc: "Passiva. Dano de skills +28 % contra um alvo sem outro inimigo vivo a até 3,5 m dele ou com até 40 % de vida. Não entra na barra.",
     index: 6,
     kind: "passive",
     passive: { id: "isolated", magnitude: 0.28 },
@@ -69,6 +76,7 @@ export const HT_FISICA: SkillDef[] = [
   defineSkill({
     id: "ht_fis_rapid_hit",
     name: "Rapid Hit",
+    desc: "Sete tiros físicos contra um inimigo a até 8 m. Cada acerto causa 55 % do ataque. Só uma 8ª skill por personagem.",
     index: 7,
     kind: "damage",
     shape: "single",
