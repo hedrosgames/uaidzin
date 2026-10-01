@@ -45,7 +45,7 @@ export interface JulgamentoVfxConfig {
 }
 
 export const DEFAULT_JULGAMENTO_VFX_CONFIG: JulgamentoVfxConfig = {
-  boltCount: 3,
+  boltCount: 1,
   boltStagger: 0.15,
   fallDuration: 0.12,
   dropHeight: 7.5,
@@ -82,7 +82,7 @@ function createSharedResources(textures: JulgamentoTextureSet): JulgamentoShared
   pillarGeometry.translate(0, 0.5, 0);
   const shockGeometry = new RingGeometry(0.34, 0.5, 48);
   const shockMaterial = new MeshBasicMaterial({
-    color: 0xd4a017,
+    color: 0x9fc9ff,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -93,10 +93,11 @@ function createSharedResources(textures: JulgamentoTextureSet): JulgamentoShared
   });
   const flashGeometry = new SphereGeometry(1, 16, 12);
   const flashMaterial = new MeshBasicMaterial({
-    color: 0xfff6cf,
+    color: 0xeaf5ff,
     transparent: true,
     opacity: 0,
     depthWrite: false,
+    blending: AdditiveBlending,
     toneMapped: false,
   });
   const glowGeometry = new PlaneGeometry(1, 1);
@@ -281,7 +282,10 @@ class JulgamentoBolt {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.castRoot.remove(this.beam, this.pillar, this.shock, this.flash, this.groundGlow);
     if (this.isPooledLight) {
       this.lightPool?.release(this.light);

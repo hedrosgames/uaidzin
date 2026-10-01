@@ -48,8 +48,8 @@ export const DEFAULT_GOLPE_VFX_CONFIG: GolpeVfxConfig = {
   swingDuration: 0.09,
   cleanupDelay: 0.45,
   maxConcurrentCasts: 4,
-  arcRadius: 1.95,
-  arcSpan: 1.9,
+  arcRadius: 3.5,
+  arcSpan: 2.15,
   sweepArc: 0.78,
   originHeight: 1.18,
   slashSparkCount: 30,
@@ -262,7 +262,10 @@ class GolpeCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.castRoot.remove(this.castGroup);
     if (this.isPooledLight) {
       this.lightPool?.release(this.light);

@@ -80,6 +80,7 @@ export class EffectManager {
   private shakeAmp = 0;
   private frame = 0;
   private tokenSeq = 1;
+  private readonly warmedSkillIds = new Set<string>();
   private readonly lightPool: TkLightPool;
   private fireBurst: FireBurstVfxController | null = null;
   private readonly skillVfx: SkillVfxDirector;
@@ -117,15 +118,30 @@ export class EffectManager {
     return this.tkRegistry;
   }
 
-  warmClassVfx(classId: string): void {
-    if (classId !== "FM") return;
-    this.fmEsfera();
-    this.fmLanca();
-    this.fmChoque();
-  }
-
-  warmFireBurst(): void {
-    this.fireBurstCtrl();
+  warmSkills(skills: readonly SkillDef[], x: number, z: number): void {
+    const origin = new Vector3(x, 0, z);
+    const target = new Vector3(x + 1, 0, z);
+    for (const skill of skills) {
+      if (skill.kind === "passive" || this.warmedSkillIds.has(skill.id)) continue;
+      const profile = getSkillVfxProfile(skill.id);
+      if (!profile) continue;
+      this.dispatchSkillVfx({
+        profile,
+        origin: origin.clone(),
+        target: target.clone(),
+        center: origin.clone(),
+        colorHex: profile.colorHex,
+        facing: 0,
+        range: profile.range,
+        radius: profile.radius,
+        hits: [],
+        hasHeal: skill.kind === "heal",
+        hasBuff: skill.kind === "buff",
+        hasTransform: skill.kind === "transform",
+        hasSummon: skill.kind === "summon",
+      });
+      this.warmedSkillIds.add(skill.id);
+    }
   }
 
   private fireBurstCtrl(): FireBurstVfxController {
@@ -332,9 +348,14 @@ export class EffectManager {
       case "aura":
         this.tkRegistry.get("aura").castAura(input.center);
         return;
-      case "escudo-sagrado":
-        this.tkRegistry.get("escudo-sagrado").castEscudo(input.origin, target.clone().sub(input.origin));
+      case "escudo-sagrado": {
+        const direction = target.clone().sub(input.origin);
+        if (direction.lengthSq() < 1e-8) {
+          direction.set(Math.sin(input.facing), 0, Math.cos(input.facing));
+        }
+        this.tkRegistry.get("escudo-sagrado").castEscudo(input.origin, direction);
         return;
+      }
       case "julgamento":
         this.tkRegistry.get("julgamento").castJulgamento(target);
         return;
@@ -345,7 +366,7 @@ export class EffectManager {
         this.tkRegistry.get("purificar").castPurificar(target);
         return;
       case "tribunal":
-        this.tkRegistry.get("tribunal").castTribunal(target);
+        this.tkRegistry.get("tribunal").castTribunal(input.center);
         return;
       case "provocacao":
         this.tkRegistry.get("provocacao").castProvocacao(input.center);
@@ -365,9 +386,14 @@ export class EffectManager {
       case "desafio":
         this.tkRegistry.get("desafio").castDesafio(input.origin, target);
         return;
-      case "guarda":
-        this.tkRegistry.get("guarda").castGuarda(input.origin, target.clone().sub(input.origin));
+      case "guarda": {
+        const direction = target.clone().sub(input.origin);
+        if (direction.lengthSq() < 1e-8) {
+          direction.set(Math.sin(input.facing), 0, Math.cos(input.facing));
+        }
+        this.tkRegistry.get("guarda").castGuarda(input.origin, direction);
         return;
+      }
       case "bastiao":
         this.tkRegistry.get("bastiao").castBastiao(input.origin);
         return;

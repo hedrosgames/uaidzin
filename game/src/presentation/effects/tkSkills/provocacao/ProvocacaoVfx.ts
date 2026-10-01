@@ -50,8 +50,8 @@ export const DEFAULT_PROVOCACAO_VFX_CONFIG: ProvocacaoVfxConfig = {
   maxConcurrentCasts: 2,
   emberEmission: 22,
   burstCount: 34,
-  ringMaxRadius: 2.6,
-  lineLength: 1.7,
+  ringMaxRadius: 5,
+  lineLength: 2.1,
   haloScale: 1.05,
 };
 
@@ -317,7 +317,10 @@ class ProvocacaoCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.castRoot.remove(this.ring, this.lines, this.halo);
     if (this.isPooledLight) {
       this.lightPool?.release(this.light);

@@ -308,7 +308,10 @@ class CorteCast {
     if (this.disposed) return;
     this.disposed = true;
     for (const slash of this.slashes) {
-      for (const system of slash.systems.all) system.dispose();
+      for (const system of slash.systems.all) {
+        system.emitter.removeFromParent();
+        system.dispose();
+      }
       this.castRoot.remove(slash.mesh);
       slash.mesh.geometry.dispose();
       slash.mesh.material.dispose();

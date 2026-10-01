@@ -1,126 +1,170 @@
 # AGENTS.md — UAIDZIN
 
-Jogo RPG de farm 3D no navegador (Three.js + Vite + TypeScript). Código em `game/`. Doc ativa: `nongame/docs/` (inventários + VFX kit + este mapa em `nongame/docs/project/README.md`).
+UAIDZIN é um RPG 3D de farm no navegador feito com Three.js, Vite e TypeScript.
 
-GDD histórico: cópia em `C:\Users\Felipe\Desktop\uaidzin-gdd`. Em conflito com código ou inventário, **código + save real + Felipe na sessão** vencem; GDD e inventários são referência, não ordem de execução.
+- Runtime: `game/`
+- Documentação ativa: `nongame/docs/`
+- Build gerada: `game/dist/` — não editar à mão.
 
-**Fluxo:** painel de tarefas da sessão (`task` create / start / done).
+## Fonte de verdade
 
-## Idioma
+Antes de alterar qualquer coisa:
 
-- Prosa, commits e respostas ao Felipe em **português do Brasil**.
-- Frases diretas, substantivo concreto.
+1. Buscar a `main` mais recente.
+2. Ler `nongame/docs/project/README.md`.
+3. Ler o inventário relevante em `nongame/docs/inventarios/`.
+4. Ler o código/runtime afetado.
 
-## Ordem de leitura antes de mexer
+Em conflito, a ordem é:
 
-1. `nongame/docs/project/README.md` — o que ainda vale no repo.
-2. Inventário afetado em `nongame/docs/inventarios/` (ex.: `animacoes.md`, `save-load.md`).
-3. Código ou boot da task (`game/src/`, `game/public/boot/`).
+**pedido atual do Felipe + comportamento/save real > código atual > inventários > documentação histórica**.
 
-**Ignorar no fluxo normal:** `nongame/backup/`, planos/checklists/grill/tarefas removidos do mapa, e qualquer cópia local de `nongame/gdd/` se ainda estiver no disco. Não recriar esses arquivos sem pedido explícito do Felipe.
+Ignorar no fluxo normal `nongame/backup/`, planos removidos, checklists antigos e cópias históricas de GDD.
 
-## Código — sem comentários (regra dura)
+## Git e concorrência
 
-**Nunca escrever comentário no código** (TypeScript, JS, CSS, HTML inline).
+- Nunca assumir que o SHA lido no começo ainda é o HEAD antes de gravar.
+- Antes de commit/push, buscar `main` novamente.
+- Se `main` mudou, refazer o diff sobre o novo HEAD. Não aplicar patch antigo às cegas.
+- Nunca usar force push.
+- Commit e push somente com autorização explícita do Felipe.
+- Commits devem ser focados, legíveis e em pt-BR.
+- Não sobrescrever mudança recente sem entender por que ela entrou.
 
-- Exceção: `/// <reference types="vite/client" />`.
-- Antes de fechar task de código: `game/scripts/_strip-comments.mjs` se precisar; `npm run typecheck` em `game/` tem que passar.
+## Código
 
-### Polimento ao fechar task de código
+Regra dura: **não escrever comentários em TypeScript, JavaScript, CSS ou HTML inline**.
 
-1. Zero comentários no diff.
-2. Sem `console.log` de debug esquecido.
-3. Sem temporário (`_test-*`, `_*-debug*`, screenshot morto).
-4. Sem CSS/JS morto.
-5. Sem emoji em UI.
+Exceção: `/// <reference types="vite/client" />`.
 
-## Painel de tarefas (obrigatório)
+Ao fechar uma mudança:
 
-Mudança com 2+ passos ou pedido do Felipe vira task no painel.
+- zero `console.log` de debug;
+- zero temporários, código morto ou arquivos de teste descartáveis;
+- zero emoji em UI;
+- nenhum código gerado editado manualmente;
+- remover infraestrutura obsoleta em vez de manter flags e contratos sem consumidor;
+- preferir uma regra central a vários special cases equivalentes.
 
-1. Registrar **antes** de mexer no código.
-2. `start` imediatamente antes de executar.
-3. `done` só com resultado **testado**; falhou → `block`.
-4. Pedido novo no meio → task nova.
+## Performance
 
-## Doc durante a execução
+Hot paths incluem `update`, `render`, HUD por frame, AI, combate e VFX.
 
-- Atualizar `nongame/docs/inventarios/` só quando a task for listar/auditar conteúdo.
-- VFX TK no padrão FireBurst: `nongame/docs/project/VFX-KIT-FIREBURST.md`.
-- Não inventar balance — marcar **provisório** e citar fonte (código, inventário ou GDD no Desktop).
-- UI/comportamento visível: Felipe valida antes de tratar como fechado.
+- Não reconstruir catálogo, `Map`, lookup estático ou configuração imutável a cada frame.
+- Não fazer `scene.traverse`, sorting, clone ou alocação evitável por frame quando o dado puder ser cacheado.
+- VFX pesado deve criar recursos compartilhados no controller, não por cast.
+- Sistemas de partículas inativos não devem receber trabalho de matriz/update sem necessidade.
+- Todo emitter, mesh, material, geometry e luz criado por cast precisa ter lifecycle claro de limpeza.
+- Luz de pool volta ao pool; luz própria é removida e descartada.
+- Otimização visual não começa reduzindo qualidade. Primeiro remover trabalho redundante, alocação, compilação tardia e recursos órfãos.
+- Controllers/VFX pesados das skills equipadas devem ser aquecidos antes do gameplay, durante o carregamento, para evitar travamento no primeiro uso.
 
-## Como fazer UI
+## Combate e skills
 
-**Fonte de runtime:** `game/public/boot/` + `game/src/ui/` (`WireUi.ts`). Fonte wire = `game/src/ui/wire`. O que o jogador vê vem do save (`SaveVault` / boot `save-store.js`).
+`CombatOrchestrator` é a fonte central para sincronização entre animação, VFX e impacto.
 
-`visual/telas/` é espelho legado, se existir no disco — **não** é fonte de verdade; não portar wire paralelo “de mentira” no runtime.
+- Não duplicar timing de ataque em controllers de VFX.
+- Skill de dano baseada em `power: "weapon"` deve usar `PlayerView.playAttack()`, permitindo que o weapon set escolha o clip correto.
+- O hit-frame deve acompanhar a duração real da animação, não um tempo absoluto copiado entre armas.
+- Quando um projétil tem tempo de viagem, separar momento de disparo e momento de impacto.
+- Dano que depende da chegada visual deve acontecer no impacto, não antes.
+- Ataque/skill pendente deve ser cancelado em morte, troca de mundo ou reset de combate.
+- Não deixar ação atrasada sobreviver ao contexto onde foi iniciada.
+- Cooldown e duração atuais no código são a fonte de verdade. Não reintroduzir `recastWindowSec` sem nova regra explícita.
+- Mudança de range, target selection, cooldown ou área precisa de teste de limite.
 
-### Travas de UI
+## VFX
 
-| Regra | Valor |
-|---|---|
-| Paleta | **C · Salão/Brasa** — `#100c08` / `#241c14` / `#d4a017` / `#a33b3b` / `#f0e6d0` |
-| Moldura principal | A — ferro + cantos ouro |
-| Escudo (`clip-path`) | **Só** CTA Entrar no login e empty-state “Criar Personagem” |
-| Demais botões | Retângulo `border-radius: 2px` |
-| Emoji | **Proibidos** — só PNG/SVG |
-| Arte de classe | `TKpng` / `FMpng` / `BMpng` / `HTpng` |
-| HP (inimigo e world bar) | Verde ≥ 40%, vermelho &lt; 40% |
-| HP no hub | Preferir frame da UI (world bar opcional na cidade) |
-| Tutorial na UI | **Proibido**, exceto **Sábio** |
-| Seleção de texto | `user-select: none`; exceção `input` / `textarea` / `[contenteditable=true]` |
-| Nomes de classe | TK Thegn Knight · FM Frost Maiden · BM Beast Master · HT Huntress |
-| pt-BR | Acentos corretos; sem acento reprova |
-| Painéis C/K/I | Mesmos atalhos na cidade **e** na dungeon |
+Referência de acabamento: `nongame/docs/project/VFX-KIT-FIREBURST.md` e o kit compartilhado em `game/src/presentation/effects/vfxKit/`.
 
-### Comportamento de UI
+- Reutilizar recursos/kit existentes antes de criar um pipeline paralelo.
+- VFX dedicado deve estar mapeado no catálogo; perder o mapping não pode degradar silenciosamente para o genérico.
+- Evitar duas malhas transparentes quase coincidentes quando isso puder gerar leitura de efeito duplicado.
+- VFX direcionado deve derivar orientação do alvo e manter geometria legível nos ângulos da câmera do jogo.
+- Warm-up deve criar os recursos reais de cast, compilar e limpar antes de liberar o loop.
+- Não disparar VFX de passiva ou entrada de mundo automaticamente sem comportamento de design explícito.
 
-- UI **não mente**: classe, nome, atributos, skills, ouro vêm do **save**.
-- Personagem novo: **5/5/5/5**, **0 ouro**, sem equip, skills zeradas; nome **3–12** letras, sem número/símbolo; nome **não repete** entre contas.
-- Sábio: só tutorial/codex — não abre equip. Skills por **K**.
-- Item sem ícone **não** entra em lista de jogo.
-- Drop na dungeon: log canto **inferior esquerdo**; sem tela de resultado cheia.
-- Click longe em NPC: anda e abre UI ao chegar; click-to-move **não** anda no lugar.
-- Toggle “não perguntar mais”: no jogo + Settings para restaurar.
+### Regressões visuais que devem ser preservadas
 
-## Save e sessão
+- Earthquake: onda radial de **6 m** com poeira, terra e pedras/detritos. Não substituir pelo AoE genérico.
+- Fire Burst: projétil/corrente legível durante o percurso e impacto sincronizado.
+- Force Wave: VFX único e legível; não voltar a sobrepor camadas que pareçam duas ondas.
 
-- Boot: `game/public/boot/assets/save-store.js`. Runtime: `game/src/persistence/`.
-- Contrato: `nongame/docs/inventarios/save-load.md` + `SaveTypes` / `SaveVault`.
-- Lab: **admin / admin** no `bootstrap()`.
-- Lembrar login: **só userId**.
-- AES-GCM com `crypto.subtle`; XOR só em `file://`.
-- Wipe: `http://127.0.0.1:5173/tools/save-wipe.html` e `__UAIDZIN__.save.wipe*`.
+## Rendering e mundo
 
-## Jogo (Vite)
+### Sombras
 
-```text
-cd game
-npm run dev          # http://127.0.0.1:5173
-npm run typecheck
-npm run smoke        # smoke rápido
-```
+- A sombra direcional acompanha o jogador.
+- O centro da shadow camera usa snap por texel para reduzir shimmering.
+- Não prender novamente a sombra da cidade em `(0, 0)`.
+- Presets atuais controlam frequência e resolução; preservar a resposta visual antes de aumentar custo.
 
-- **Model lab** (dev, fora da build): `http://127.0.0.1:5173/model-lab.html` — 4 classes, 9 conjuntos de arma, 19 clipes; ajuste de mount grava em `game/src/data/weapons/weapon-mounts.json` via `POST /api/dev/weapon-mounts`. QA: `npm run check:model-lab`. Runtime **não** lê `weapon-mounts.json` ainda; grips no jogo = `WeaponRig` + `weapon-set-catalog.json`.
-- Animações/sets: `game/src/presentation/player/weapon-set-catalog.json`, `WeaponSetCatalog.ts`, `PlayerAnimCatalog.ts`, `WeaponRig.ts`, `PlayerView.ts`; inventário I1: `nongame/docs/inventarios/animacoes.md`.
-- Mixamo no disco: `game/public/models/anims/`; organize: `game/scripts/mixamo-organize.mjs`.
-- Inspeção Three.js (dev): skill `.cursor/skills/threejs/SKILL.md` + `nongame/game/docs/THREEJS-DEVTOOLS-MCP.md`.
-- Porta fixa em `vite.config.ts` (5173). `game/dist/` é gerado — não editar à mão.
+### Cidade
+
+- Piso geral atual: `game/public/textures/city-painted/cobble-moss.webp`.
+- `earth.webp` permanece no projeto para bioma/área de deserto.
+- A praça/fonte usa material próprio e não deve herdar a troca do piso geral.
+- Textura de chão precisa continuar seamless.
+- A fonte não ativa o shader de oclusão do jogador.
+- Os braseiros/tochas removidos da cidade continuam como assets reutilizáveis; não deletar só porque deixaram de spawnar ali.
+
+### Escala — trava dura
+
+Sem pedido explícito do Felipe, é proibido alterar:
+
+- `PlayerView.fitStandingHeight`;
+- `TARGET_HEIGHT`;
+- `model.scale` do player;
+- nova medição de altura para “corrigir” animação, arma, oclusão ou load;
+- fitting/escala automática de inimigos em `EnemyRuntimeView`.
+
+Problema de animação se corrige no clip/mixer/weapon set, não na escala do modelo.
+
+## Dungeon 1 e inimigos
+
+Enquanto o layout atual estiver valendo:
+
+- Zona 1: 4 grupos de 3 `caveira_campo`.
+- Zona 2: 4 grupos de 3 `lobo_selvagem`.
+- Zona 3: 4 grupos de 3 `caveira_fogo` + boss separado.
+- IDs de spawn são únicos e grupos não devem nascer sobre props/limites.
+- `caveira_campo` preserva o material original do GLB; não passar novamente pelo shader `painted-character` sem validação visual.
+
+## UI e save
+
+Fonte de runtime da UI:
+
+- `game/public/boot/`
+- `game/src/ui/`
+- wire em `game/src/ui/wire/`
+
+Regras:
+
+- UI mostra dados reais do save; não inventar classe, atributos, ouro, skills ou equipamento.
+- pt-BR correto e sem emoji.
+- Ícone inexistente não deve virar placeholder enganoso.
+- Sábio é tutorial/codex; skills ficam no fluxo de skills.
+- Painéis e atalhos devem manter comportamento consistente entre cidade e dungeon.
+- Save/runtime: `game/src/persistence/`; boot: `game/public/boot/assets/save-store.js`.
 
 ## Validação
 
-- Boot: reler trecho; Playwright se houver interação.
-- `game/src`: `typecheck`; Playwright pontual se visual.
-- Felipe valida UI/HUD/comportamento visível.
-- Não marcar `done` no painel sem teste.
+Para mudança em `game/src`:
 
-## O que não fazer
+```text
+cd game
+npm run typecheck
+```
 
-- Não commitar sem pedido explícito.
-- Não inventar balance sem marcar provisório.
-- Não reintroduzir abas “Criar Mortal” no topo da seleção.
-- Não fechar UI “porque parece pronto”.
-- Não emoji nem escudo fora dos usos travados.
-- Não escrever tutorial de controle na UI (exceto Sábio).
-- **Não resetar a escala do player.** Calibrada uma vez no load, no bind pose, em `PlayerView.fitStandingHeight`. `TARGET_HEIGHT` = `1.72 * 1.1`. A função mede só o eixo Y dos ossos, sem `mixer.update` e sem usar Z. Proibido sem pedido explícito do Felipe: editar `fitStandingHeight`, `TARGET_HEIGHT`, `model.scale`, medir altura de novo, ou “corrigir” tamanho ao mexer em animação, arma, oclusão ou carregamento. Animação quebrada se corrige no clip e no mixer. O encaixe de escala do inimigo em `EnemyRuntimeView` também não se mexe.
+Executar também testes pontuais do domínio afetado e smoke/QA visual quando aplicável.
+
+Antes do commit:
+
+1. reler o diff final;
+2. confirmar o HEAD atual;
+3. confirmar ausência de comentário/debug/temporário;
+4. validar lifecycle de recursos se houver VFX/rendering;
+5. validar limites se houver combate/range/cooldown;
+6. não afirmar que teste rodou se o ambiente não permitiu executá-lo.
+
+UI, HUD e comportamento visual continuam exigindo validação do Felipe no jogo.

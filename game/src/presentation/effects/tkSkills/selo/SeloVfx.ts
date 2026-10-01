@@ -59,8 +59,8 @@ export const DEFAULT_SELO_VFX_CONFIG: SeloVfxConfig = {
 
 type SeloPhase = "materialize" | "sealed" | "fade";
 
-const FLASH_COLOR = 0xffedb0;
-const LIGHT_COLOR = 0xd4a017;
+const FLASH_COLOR = 0xffb8f2;
+const LIGHT_COLOR = 0xa84cff;
 
 interface SeloRing {
   mesh: Mesh<PlaneGeometry, MeshBasicMaterial>;
@@ -216,7 +216,10 @@ class SeloCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     for (const ring of this.rings) ring.mesh.material.dispose();
     this.flash.material.dispose();
     this.castRoot.remove(this.flash);
@@ -389,6 +392,7 @@ export class SeloVfxController {
       transparent: true,
       opacity: 0,
       depthWrite: false,
+      blending: AdditiveBlending,
       toneMapped: false,
     });
     this.batchedRenderer.name = "selo-batched-renderer";

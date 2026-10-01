@@ -35,10 +35,10 @@ export interface AuraParticleConfig {
 function createAuraGradient(): Gradient {
   return new Gradient(
     [
-      [new QuarksVector3(0.98, 0.9, 0.62), 0],
-      [new QuarksVector3(0.92, 0.7, 0.22), 0.42],
-      [new QuarksVector3(0.68, 0.5, 0.12), 0.76],
-      [new QuarksVector3(0.2, 0.15, 0.04), 1],
+      [new QuarksVector3(0.82, 0.96, 1), 0],
+      [new QuarksVector3(0.42, 0.82, 1), 0.42],
+      [new QuarksVector3(0.2, 0.55, 0.9), 0.76],
+      [new QuarksVector3(0.04, 0.16, 0.3), 1],
     ],
     [
       [0.55, 0],
@@ -69,7 +69,7 @@ export function createAuraShimmerSystems(
     startSpeed: new IntervalValue(0.08, 0.28),
     startSize: new IntervalValue(0.07, 0.18),
     startRotation: new IntervalValue(-Math.PI, Math.PI),
-    startColor: new ConstantColor(new QuarksVector4(0.98, 0.86, 0.5, 0.4)),
+    startColor: new ConstantColor(new QuarksVector4(0.72, 0.92, 1, 0.48)),
     emissionOverTime: new ConstantValue(config.shimmerEmission),
     emissionOverDistance: new ConstantValue(0),
     shape: new SphereEmitter({

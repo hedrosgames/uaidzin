@@ -7,6 +7,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   PointLight,
+  RingGeometry,
   Scene,
   Vector3,
 } from "three";
@@ -36,7 +37,28 @@ export const DEFAULT_DEATH_STAB_VFX_CONFIG: DeathStabVfxConfig = {
 
 type DeathStabPhase = "travel" | "fade";
 
+interface DeathStabSharedResources {
+  impactGeometry: RingGeometry;
+  impactMaterial: MeshBasicMaterial;
+}
+
 const UP = new Vector3(0, 1, 0);
+
+function createSharedResources(): DeathStabSharedResources {
+  return {
+    impactGeometry: new RingGeometry(0.34, 0.52, 40),
+    impactMaterial: new MeshBasicMaterial({
+      color: 0x8fd0ff,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      depthTest: true,
+      side: DoubleSide,
+      blending: AdditiveBlending,
+      toneMapped: false,
+    }),
+  };
+}
 
 function finiteVector(vector: Vector3): boolean {
   return Number.isFinite(vector.x) && Number.isFinite(vector.y) && Number.isFinite(vector.z);
@@ -51,6 +73,8 @@ class DeathStabCast {
   private readonly root = new Group();
   private readonly beam: Mesh<CylinderGeometry, MeshBasicMaterial>;
   private readonly material: MeshBasicMaterial;
+  private readonly impactMaterial: MeshBasicMaterial;
+  private readonly impactRing: Mesh<RingGeometry, MeshBasicMaterial>;
   private readonly direction = new Vector3();
   private readonly start = new Vector3();
   private readonly target = new Vector3();
@@ -65,6 +89,7 @@ class DeathStabCast {
 
   constructor(
     private readonly castRoot: Group,
+    shared: DeathStabSharedResources,
     private readonly config: DeathStabVfxConfig,
     origin: Vector3,
     target: Vector3,
@@ -100,7 +125,15 @@ class DeathStabCast {
     this.beam.name = "tk-death-stab-wind";
     this.beam.renderOrder = 15;
     this.beam.visible = false;
-    this.root.add(this.beam);
+    this.impactMaterial = shared.impactMaterial.clone();
+    this.impactRing = new Mesh(shared.impactGeometry, this.impactMaterial);
+    this.impactRing.name = "tk-death-stab-impact";
+    this.impactRing.rotation.x = -Math.PI / 2;
+    this.impactRing.position.set(target.x, Math.max(0.06, target.y + 0.06), target.z);
+    this.impactRing.scale.setScalar(0.3);
+    this.impactRing.visible = false;
+    this.impactRing.renderOrder = 14;
+    this.root.add(this.beam, this.impactRing);
     this.castRoot.add(this.root);
     if (this.lightPool) {
       this.light = this.lightPool.acquire(0x4aa8ff, 6);
@@ -139,6 +172,8 @@ class DeathStabCast {
         this.light.intensity = this.config.lightPeak * Math.sin(progress * Math.PI);
       }
       if (progress < 1) return;
+      this.impactRing.visible = true;
+      this.impactMaterial.opacity = 0.88;
       this.phase = "fade";
       this.elapsed = 0;
       return;
@@ -148,6 +183,8 @@ class DeathStabCast {
     this.beam.scale.x = 1 + progress * 0.35;
     this.beam.scale.z = 1 + progress * 0.35;
     this.material.opacity = 0.8 * fade * fade;
+    this.impactRing.scale.setScalar(0.3 + progress * 1.9);
+    this.impactMaterial.opacity = 0.88 * fade * fade;
     if (this.light) this.light.intensity = this.config.lightPeak * 0.3 * fade;
     if (progress >= 1) this.dispose();
   }
@@ -164,6 +201,7 @@ class DeathStabCast {
     }
     this.beam.geometry.dispose();
     this.material.dispose();
+    this.impactMaterial.dispose();
     this.onDispose(this);
   }
 }
@@ -171,6 +209,7 @@ class DeathStabCast {
 export class DeathStabVfxController {
   private readonly casts = new Set<DeathStabCast>();
   private readonly castRoot = new Group();
+  private readonly shared = createSharedResources();
   private readonly config: DeathStabVfxConfig;
   private disposed = false;
 
@@ -204,6 +243,7 @@ export class DeathStabVfxController {
     }
     const cast = new DeathStabCast(
       this.castRoot,
+      this.shared,
       this.config,
       origin,
       target,
@@ -236,6 +276,8 @@ export class DeathStabVfxController {
     this.disposed = true;
     this.clear();
     this.scene.remove(this.castRoot);
+    this.shared.impactGeometry.dispose();
+    this.shared.impactMaterial.dispose();
     this.castRoot.clear();
   }
 }

@@ -23,7 +23,6 @@ import { HudBarsView } from "../ui/HudBarsView";
 import { SkillBarView } from "../ui/SkillBarView";
 import { DropLogView } from "../ui/DropLogView";
 import { SettingsPanel } from "../ui/SettingsPanel";
-import { getSkillVfxProfile } from "../presentation/effects/skill/SkillVfxCatalog";
 import { preloadCampoKit } from "../world/Dungeon1World";
 import {
   DEFAULT_GRAPHICS_QUALITY,
@@ -540,18 +539,14 @@ export class GameApp {
       return;
     }
     await this.session.start();
-    const tkRegistry = this.session.effects.getTkRegistry();
-    for (const slot of this.session.skillLoadout.slots) {
-      if (!slot) continue;
-      const profile = getSkillVfxProfile(slot.skill.id);
-      if (profile?.family === "chain") this.session.effects.warmFireBurst();
-      if (profile?.dedicatedVfx && tkRegistry.supports(profile.dedicatedVfx)) {
-        tkRegistry.get(profile.dedicatedVfx);
-      }
-    }
-    this.session.effects.warmClassVfx(this.session.skillTree.state.classId);
+    const equippedSkills = this.session.skillLoadout.slots.flatMap((slot) => slot ? [slot.skill] : []);
+    this.session.effects.warmSkills(equippedSkills, this.session.player.x, this.session.player.z);
     this.renderer.applyRuntimeBudget();
-    this.renderer.renderer.compile(this.renderer.scene, this.session.camera.camera);
+    try {
+      this.renderer.renderer.compile(this.renderer.scene, this.session.camera.camera);
+    } finally {
+      this.session.effects.clearSkillVfx();
+    }
     this.loop.start();
     this.enterGame();
     bindHud(

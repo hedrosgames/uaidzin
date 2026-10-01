@@ -76,7 +76,7 @@ export class SkillController {
       equipCritPercent: this.character.equipCrit,
     });
     const slot = manual
-      ? this.manualSlot(manualSlotIndex, mods, buffs, blockDamage)
+      ? this.manualSlot(manualSlotIndex, mods, blockDamage)
       : autoSkillsFromBar && !blockDamage
         ? this.autoSlot(mods, buffs, form, summons, targets, px, pz, facing, false)
         : autoBuffs || (autoSkillsFromBar && blockDamage)
@@ -151,7 +151,7 @@ export class SkillController {
     });
   }
 
-  slotStates(buffs?: BuffService): Array<{ key: number; name: string; cdRatio: number; cdLeft: number; ready: boolean; auto: boolean }> {
+  slotStates(): Array<{ key: number; name: string; cdRatio: number; cdLeft: number; ready: boolean; auto: boolean }> {
     const list: Array<{ key: number; name: string; cdRatio: number; cdLeft: number; ready: boolean; auto: boolean }> = [];
     for (let i = 0; i < SKILL_BALANCE.barSize; i++) {
       const slot = this.loadout.slots[i];
@@ -159,16 +159,11 @@ export class SkillController {
       if (!slot) {
         list.push({ key, name: "", cdRatio: 0, cdLeft: 0, ready: false, auto: false });
       } else {
-        const recastBlock = buffs ? this.buffRecastBlock(slot.skill, buffs) : 0;
-        const cdLeft = Math.max(0, slot.cd, recastBlock);
-        const recastTotal = slot.skill.buff && slot.skill.recastWindowSec != null
-          ? Math.max(0, slot.skill.buff.sec - slot.skill.recastWindowSec)
-          : 0;
-        const total = Math.max(slot.cooldown, recastTotal);
+        const cdLeft = Math.max(0, slot.cd);
         list.push({
           key,
           name: slot.skill.name,
-          cdRatio: total > 0 ? Math.min(1, cdLeft / total) : 0,
+          cdRatio: slot.cooldown > 0 ? Math.min(1, cdLeft / slot.cooldown) : 0,
           cdLeft,
           ready: cdLeft <= 0,
           auto: slot.auto,
@@ -202,12 +197,11 @@ export class SkillController {
     this.loadout.resetCooldowns();
   }
 
-  private manualSlot(index: number, mods: CombatMods, buffs: BuffService, blockDamage: boolean): LoadoutSlot | null {
+  private manualSlot(index: number, mods: CombatMods, blockDamage: boolean): LoadoutSlot | null {
     if (index < 0 || index >= this.loadout.slots.length) return null;
     const slot = this.loadout.slots[index];
     if (!slot || !(slot.cd <= 0) || slot.skill.kind === "passive") return null;
     if (blockDamage && slot.skill.kind === "damage") return null;
-    if (this.buffRecastBlock(slot.skill, buffs) > 0) return null;
     if (!this.affordable(slot, mods)) return null;
     return slot;
   }
@@ -229,7 +223,6 @@ export class SkillController {
     for (const slot of this.loadout.slots) {
       if (!slot || !(slot.cd <= 0)) continue;
       if (!onlyBuffs && !slot.auto) continue;
-      if (this.buffRecastBlock(slot.skill, buffs) > 0) continue;
       if (!this.affordable(slot, mods)) continue;
       if (!this.autoUseful(slot, hpRatio, buffs, form, summons, targets, px, pz, facing, onlyBuffs)) continue;
       const score = this.autoScore(slot, hpRatio);
@@ -239,13 +232,6 @@ export class SkillController {
       }
     }
     return best;
-  }
-
-  private buffRecastBlock(skill: SkillDef, buffs: BuffService): number {
-    const window = skill.recastWindowSec ?? 0;
-    if (window <= 0 || !skill.buff) return 0;
-    const active = buffs.active.find((buff) => buff.id === skill.buff!.id);
-    return active ? Math.max(0, active.remainingSec - window) : 0;
   }
 
   private affordable(slot: LoadoutSlot, mods: CombatMods): boolean {
@@ -270,10 +256,7 @@ export class SkillController {
     if (onlyBuffs && skill.kind !== "buff") return false;
     if (!onlyBuffs && !slot.auto) return false;
     if (skill.kind === "heal") return hpRatio <= SKILL_BALANCE.healAutoHpRatio;
-    if (skill.kind === "buff") {
-      const window = skill.recastWindowSec ?? 1;
-      return !(skill.buff && buffs.has(skill.buff.id, window));
-    }
+    if (skill.kind === "buff") return !(skill.buff && buffs.has(skill.buff.id, 1));
     if (skill.kind === "transform") return !(skill.transform && form.id === skill.transform.id && form.active);
     if (skill.kind === "summon") {
       const specs = skill.pack ?? (skill.summon ? [skill.summon] : []);
