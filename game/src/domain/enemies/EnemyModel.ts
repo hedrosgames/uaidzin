@@ -124,6 +124,13 @@ export class EnemyModel {
     return false;
   }
 
+  heal(amount: number): number {
+    if (!this.alive || this.antiHealTimer > 0 || !Number.isFinite(amount) || amount <= 0) return 0;
+    const restored = Math.min(this.maxHp - this.hp, amount);
+    this.hp += restored;
+    return restored;
+  }
+
   respawn(): void {
     this.alive = true;
     this.hp = this.maxHp;

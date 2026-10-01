@@ -7,6 +7,7 @@ export const FM_FISICA: SkillDef[] = [
   defineSkill({
     id: "fm_fis_impacto_longinquo",
     name: "Impacto Longínquo",
+    desc: "Atinge o inimigo mais próximo a até 8 m com 1,45× o ataque da arma. Dano físico.",
     index: 0,
     kind: "damage",
     shape: "single",
@@ -18,6 +19,7 @@ export const FM_FISICA: SkillDef[] = [
   defineSkill({
     id: "fm_fis_olho_falcao",
     name: "Olho de Falcão",
+    desc: "Por 12 s, esquiva +14% e velocidade de movimento +22%.",
     index: 1,
     kind: "buff",
     buff: { id: "fm_hawk_evasion", sec: 12, stat: "evasion", magnitude: 0.14 },
@@ -26,6 +28,7 @@ export const FM_FISICA: SkillDef[] = [
   defineSkill({
     id: "fm_fis_furia_combate",
     name: "Fúria de Combate",
+    desc: "Por 12 s, ataque +26%. Afeta golpes e skills.",
     index: 2,
     kind: "buff",
     buff: { id: "fm_battle_fury", sec: 12, stat: "attack", magnitude: 0.26 },
@@ -33,6 +36,7 @@ export const FM_FISICA: SkillDef[] = [
   defineSkill({
     id: "fm_fis_guarda_solida",
     name: "Guarda Sólida",
+    desc: "Por 12 s, defesa +30%.",
     index: 3,
     kind: "buff",
     buff: { id: "fm_solid_guard", sec: 12, stat: "defense", magnitude: 0.3 },
@@ -40,6 +44,7 @@ export const FM_FISICA: SkillDef[] = [
   defineSkill({
     id: "fm_fis_conversao_vital",
     name: "Conversão Vital",
+    desc: "Por 14 s, cada skill recupera HP equivalente a 55% da mana gasta.",
     index: 4,
     kind: "buff",
     buff: { id: "fm_vital_convert", sec: 14, stat: "mpToHp", magnitude: 0.55 },
@@ -47,6 +52,7 @@ export const FM_FISICA: SkillDef[] = [
   defineSkill({
     id: "fm_fis_mestre_arco",
     name: "Mestre do Arco",
+    desc: "Passiva. Com arco equipado, ataque +28%. Não entra na barra.",
     index: 5,
     kind: "passive",
     passive: { id: "bow", magnitude: 0.28 },
@@ -55,6 +61,7 @@ export const FM_FISICA: SkillDef[] = [
   defineSkill({
     id: "fm_fis_ponto_critico",
     name: "Ponto Crítico",
+    desc: "Por 12 s, chance de crítico +16% em golpes e skills.",
     index: 6,
     kind: "buff",
     buff: { id: "fm_crit", sec: 12, stat: "crit", magnitude: 0.16 },
@@ -62,6 +69,7 @@ export const FM_FISICA: SkillDef[] = [
   defineSkill({
     id: "fm_fis_negacao_vida",
     name: "Negação de Vida",
+    desc: "Atinge inimigos num raio de 4,2 m com 1,8× o ataque da arma e bloqueia a cura deles por 6 s. Só uma 8ª skill por personagem.",
     index: 7,
     kind: "damage",
     shape: "aoe",
