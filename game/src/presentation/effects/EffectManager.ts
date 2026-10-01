@@ -275,6 +275,9 @@ export class EffectManager {
       case "death-stab":
         this.tkRegistry.get("death-stab").castDeathStab(input.origin, target);
         return;
+      case "earthquake":
+        this.tkRegistry.get("earthquake").castEarthquake(input.origin, input.radius || input.range);
+        return;
       case "golpe":
         this.tkRegistry.get("golpe").castGolpe(input.origin, target.clone().sub(input.origin));
         if (input.origin.distanceTo(target) > DEFAULT_GOLPE_VFX_CONFIG.arcRadius) {

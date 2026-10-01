@@ -40,6 +40,7 @@ export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
   tk_ctrl_8: "bastiao",
   tk_fis_force_wave: "force-wave",
   tk_fis_death_stab: "death-stab",
+  tk_fis_earthquake: "earthquake",
 };
 
 export const FM_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {

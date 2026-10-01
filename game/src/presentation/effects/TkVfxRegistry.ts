@@ -8,6 +8,7 @@ import { BencaoVfxController } from "./tkSkills/bencao/BencaoVfx";
 import { CorteVfxController } from "./tkSkills/corte/CorteVfx";
 import { DesafioVfxController } from "./tkSkills/desafio/DesafioVfx";
 import { DeathStabVfxController } from "./tkSkills/death-stab/DeathStabVfx";
+import { EarthquakeVfxController } from "./tkSkills/earthquake/EarthquakeVfx";
 import { EscudoSagradoVfxController } from "./tkSkills/escudo-sagrado/EscudoSagradoVfx";
 import { ForceWaveVfxController } from "./tkSkills/force-wave/ForceWaveVfx";
 import { FuriaVfxController } from "./tkSkills/furia/FuriaVfx";
@@ -38,6 +39,7 @@ export interface TkVfxControllerLike {
 export interface TkVfxMap {
   "force-wave": ForceWaveVfxController;
   "death-stab": DeathStabVfxController;
+  earthquake: EarthquakeVfxController;
   golpe: GolpeVfxController;
   investida: InvestidaVfxController;
   corte: CorteVfxController;
@@ -79,6 +81,7 @@ export class TkVfxRegistry {
     this.factories = {
       "force-wave": (s, lp) => new ForceWaveVfxController(s, {}, lp),
       "death-stab": (s, lp) => new DeathStabVfxController(s, {}, lp),
+      earthquake: (s, lp) => new EarthquakeVfxController(s, {}, lp),
       golpe: (s, lp) => new GolpeVfxController(s, {}, lp),
       investida: (s, lp) => new InvestidaVfxController(s, {}, lp),
       corte: (s, lp) => new CorteVfxController(s, {}, lp),
