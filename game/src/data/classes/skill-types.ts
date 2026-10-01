@@ -95,6 +95,7 @@ export interface SkillDef {
   damageMultiplier: number;
   range: number;
   cooldown: number;
+  recastWindowSec?: number;
   mp: number;
   kind: SkillKind;
   shape: SkillShape;
@@ -134,6 +135,7 @@ export interface SkillInput {
   damageMultiplier?: number;
   range?: number;
   cooldown?: number;
+  recastWindowSec?: number;
   mp?: number;
   radius?: number;
   maxTargets?: number;
@@ -209,6 +211,7 @@ export function defineSkill(input: SkillInput): SkillDef {
           ? SKILL_BALANCE.rangeRanged
           : SKILL_BALANCE.rangeMelee),
     cooldown: input.cooldown ?? (kind === "passive" ? 0 : SKILL_BALANCE.tierCd[i]),
+    recastWindowSec: input.recastWindowSec,
     mp: input.mp ?? (kind === "passive" ? 0 : SKILL_BALANCE.tierMp[i]),
     radius: input.radius,
     maxTargets: input.maxTargets,

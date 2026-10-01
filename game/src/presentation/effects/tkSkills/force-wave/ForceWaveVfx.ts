@@ -20,17 +20,21 @@ export interface ForceWaveVfxConfig {
   groundHeight: number;
   startWidth: number;
   endWidth: number;
+  startHeight: number;
+  endHeight: number;
   lightPeak: number;
 }
 
 export const DEFAULT_FORCE_WAVE_VFX_CONFIG: ForceWaveVfxConfig = {
-  travelDuration: 0.16,
-  fadeDuration: 0.12,
+  travelDuration: 0.18,
+  fadeDuration: 0.14,
   maxConcurrentCasts: 4,
-  groundHeight: 0.12,
-  startWidth: 1.65,
-  endWidth: 0.16,
-  lightPeak: 2.8,
+  groundHeight: 0.16,
+  startWidth: 1.9,
+  endWidth: 0.28,
+  startHeight: 0.9,
+  endHeight: 0.28,
+  lightPeak: 4,
 };
 
 type ForceWavePhase = "travel" | "fade";
@@ -40,21 +44,31 @@ interface ForceWaveSharedResources {
   material: ShaderMaterial;
 }
 
-function createGeometry(startWidth: number, endWidth: number): BufferGeometry {
+function createGeometry(
+  startWidth: number,
+  endWidth: number,
+  startHeight: number,
+  endHeight: number,
+): BufferGeometry {
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new Float32BufferAttribute([
     -startWidth * 0.5, 0, 0,
     startWidth * 0.5, 0, 0,
+    -startWidth * 0.5, startHeight, 0,
+    startWidth * 0.5, startHeight, 0,
     -endWidth * 0.5, 0, 1,
     endWidth * 0.5, 0, 1,
+    -endWidth * 0.5, endHeight, 1,
+    endWidth * 0.5, endHeight, 1,
   ], 3));
-  geometry.setAttribute("uv", new Float32BufferAttribute([
-    0, 0,
-    1, 0,
-    0, 1,
-    1, 1,
-  ], 2));
-  geometry.setIndex([0, 2, 1, 2, 3, 1]);
+  geometry.setIndex([
+    0, 1, 5, 0, 5, 4,
+    2, 6, 7, 2, 7, 3,
+    0, 4, 6, 0, 6, 2,
+    1, 3, 7, 1, 7, 5,
+    0, 2, 3, 0, 3, 1,
+    4, 5, 7, 4, 7, 6,
+  ]);
   geometry.computeVertexNormals();
   return geometry;
 }
@@ -62,28 +76,26 @@ function createGeometry(startWidth: number, endWidth: number): BufferGeometry {
 function createMaterial(): ShaderMaterial {
   return new ShaderMaterial({
     uniforms: {
-      opacity: { value: 0.82 },
+      opacity: { value: 0.92 },
     },
     vertexShader: `
-      varying vec2 vUv;
+      varying float vProgress;
       void main() {
-        vUv = uv;
+        vProgress = position.z;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
     fragmentShader: `
       uniform float opacity;
-      varying vec2 vUv;
+      varying float vProgress;
       void main() {
-        float sideFade = smoothstep(0.0, 0.16, vUv.x) * smoothstep(0.0, 0.16, 1.0 - vUv.x);
-        float lengthFade = mix(1.0, 0.48, vUv.y);
-        float alpha = opacity * sideFade * lengthFade;
+        float alpha = opacity * mix(1.0, 0.7, clamp(vProgress, 0.0, 1.0));
         gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
       }
     `,
     transparent: true,
     depthWrite: false,
-    depthTest: true,
+    depthTest: false,
     side: DoubleSide,
     blending: AdditiveBlending,
     toneMapped: false,
@@ -92,7 +104,12 @@ function createMaterial(): ShaderMaterial {
 
 function createSharedResources(config: ForceWaveVfxConfig): ForceWaveSharedResources {
   return {
-    geometry: createGeometry(config.startWidth, config.endWidth),
+    geometry: createGeometry(
+      config.startWidth,
+      config.endWidth,
+      config.startHeight,
+      config.endHeight,
+    ),
     material: createMaterial(),
   };
 }
@@ -133,28 +150,25 @@ class ForceWaveCast {
     this.direction.y = 0;
     this.distance = Math.max(this.direction.length(), 0.0001);
     this.direction.divideScalar(this.distance);
-
     this.root.name = "tk-force-wave-cast";
     this.root.position.set(origin.x, this.config.groundHeight, origin.z);
     this.root.rotation.y = Math.atan2(this.direction.x, this.direction.z);
-
     this.material = shared.material.clone();
     this.wave = new Mesh(shared.geometry, this.material);
     this.wave.name = "tk-force-wave-cone";
-    this.wave.renderOrder = 10;
-    this.wave.scale.set(1, 1, 0.001);
+    this.wave.renderOrder = 14;
+    this.wave.scale.set(1, 1, 0.02);
     this.root.add(this.wave);
     this.castRoot.add(this.root);
-
     if (this.lightPool) {
-      this.light = this.lightPool.acquire(0xffffff, 4.5);
+      this.light = this.lightPool.acquire(0xffffff, 5.5);
       this.isPooledLight = true;
     } else {
-      this.light = new PointLight(0xffffff, 0, 4.5, 2);
+      this.light = new PointLight(0xffffff, 0, 5.5, 2);
       this.isPooledLight = false;
     }
     if (this.light) {
-      this.light.position.set(0, 0.12, 0);
+      this.light.position.set(0, this.config.startHeight * 0.5, 0);
       this.root.add(this.light);
     }
   }
@@ -181,19 +195,15 @@ class ForceWaveCast {
   update(deltaTime: number): void {
     if (this.disposed) return;
     this.elapsed += deltaTime;
-
     if (this.phase === "travel") {
-      const progress = MathUtils.clamp(
-        this.elapsed / this.config.travelDuration,
-        0,
-        1,
-      );
+      const progress = MathUtils.clamp(this.elapsed / this.config.travelDuration, 0, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      const length = Math.max(0.001, this.distance * eased);
+      const length = Math.max(0.02, this.distance * eased);
       this.wave.scale.z = length;
-      this.material.uniforms.opacity.value = 0.82 - progress * 0.12;
+      this.material.uniforms.opacity.value = 0.92 - progress * 0.08;
       if (this.light) {
         this.light.position.z = length;
+        this.light.position.y = this.config.endHeight * 0.5;
         this.light.intensity = this.config.lightPeak * Math.sin(progress * Math.PI);
       }
       if (progress < 1) return;
@@ -201,15 +211,10 @@ class ForceWaveCast {
       this.elapsed = 0;
       return;
     }
-
-    const progress = MathUtils.clamp(
-      this.elapsed / this.config.fadeDuration,
-      0,
-      1,
-    );
+    const progress = MathUtils.clamp(this.elapsed / this.config.fadeDuration, 0, 1);
     const fade = 1 - progress;
-    this.wave.scale.x = 1 + progress * 0.12;
-    this.material.uniforms.opacity.value = 0.7 * fade * fade;
+    this.wave.scale.x = 1 + progress * 0.08;
+    this.material.uniforms.opacity.value = 0.84 * fade * fade;
     if (this.light) {
       this.light.position.z = this.distance;
       this.light.intensity = this.config.lightPeak * 0.35 * fade;
@@ -246,41 +251,15 @@ export class ForceWaveVfxController {
   ) {
     const merged = { ...DEFAULT_FORCE_WAVE_VFX_CONFIG, ...config };
     this.config = {
-      travelDuration: finiteOr(
-        merged.travelDuration,
-        DEFAULT_FORCE_WAVE_VFX_CONFIG.travelDuration,
-        0.04,
-      ),
-      fadeDuration: finiteOr(
-        merged.fadeDuration,
-        DEFAULT_FORCE_WAVE_VFX_CONFIG.fadeDuration,
-        0.04,
-      ),
-      maxConcurrentCasts: Math.floor(finiteOr(
-        merged.maxConcurrentCasts,
-        DEFAULT_FORCE_WAVE_VFX_CONFIG.maxConcurrentCasts,
-        1,
-      )),
-      groundHeight: finiteOr(
-        merged.groundHeight,
-        DEFAULT_FORCE_WAVE_VFX_CONFIG.groundHeight,
-        0,
-      ),
-      startWidth: finiteOr(
-        merged.startWidth,
-        DEFAULT_FORCE_WAVE_VFX_CONFIG.startWidth,
-        0.1,
-      ),
-      endWidth: finiteOr(
-        merged.endWidth,
-        DEFAULT_FORCE_WAVE_VFX_CONFIG.endWidth,
-        0.02,
-      ),
-      lightPeak: finiteOr(
-        merged.lightPeak,
-        DEFAULT_FORCE_WAVE_VFX_CONFIG.lightPeak,
-        0,
-      ),
+      travelDuration: finiteOr(merged.travelDuration, DEFAULT_FORCE_WAVE_VFX_CONFIG.travelDuration, 0.04),
+      fadeDuration: finiteOr(merged.fadeDuration, DEFAULT_FORCE_WAVE_VFX_CONFIG.fadeDuration, 0.04),
+      maxConcurrentCasts: Math.floor(finiteOr(merged.maxConcurrentCasts, DEFAULT_FORCE_WAVE_VFX_CONFIG.maxConcurrentCasts, 1)),
+      groundHeight: finiteOr(merged.groundHeight, DEFAULT_FORCE_WAVE_VFX_CONFIG.groundHeight, 0),
+      startWidth: finiteOr(merged.startWidth, DEFAULT_FORCE_WAVE_VFX_CONFIG.startWidth, 0.1),
+      endWidth: finiteOr(merged.endWidth, DEFAULT_FORCE_WAVE_VFX_CONFIG.endWidth, 0.02),
+      startHeight: finiteOr(merged.startHeight, DEFAULT_FORCE_WAVE_VFX_CONFIG.startHeight, 0.1),
+      endHeight: finiteOr(merged.endHeight, DEFAULT_FORCE_WAVE_VFX_CONFIG.endHeight, 0.05),
+      lightPeak: finiteOr(merged.lightPeak, DEFAULT_FORCE_WAVE_VFX_CONFIG.lightPeak, 0),
     };
     this.shared = createSharedResources(this.config);
     this.castRoot.name = "tk-force-wave-vfx-root";
@@ -311,9 +290,7 @@ export class ForceWaveVfxController {
 
   update(deltaTime: number): void {
     if (this.disposed || this.casts.size === 0) return;
-    const frameDelta = Number.isFinite(deltaTime)
-      ? MathUtils.clamp(deltaTime, 0, 0.1)
-      : 0;
+    const frameDelta = Number.isFinite(deltaTime) ? MathUtils.clamp(deltaTime, 0, 0.1) : 0;
     for (const cast of [...this.casts]) cast.update(frameDelta);
   }
 

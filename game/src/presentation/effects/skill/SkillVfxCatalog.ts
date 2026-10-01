@@ -15,6 +15,12 @@ const TREE_COLORS: Record<TreeId, number> = {
   magia: 0xb07cff,
 };
 
+const SKILL_COLOR_OVERRIDES: Record<string, number> = {
+  tk_fis_atk_descuidado: 0xb88640,
+  tk_fis_fury: 0xd63a20,
+  tk_fis_death_stab: 0x4aa8ff,
+};
+
 export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
   tk_mag_1: "bencao",
   tk_mag_2: "selo",
@@ -33,10 +39,7 @@ export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
   tk_ctrl_7: "guarda",
   tk_ctrl_8: "bastiao",
   tk_fis_force_wave: "force-wave",
-  tk_fis_atk_descuidado: "descuidado",
-  tk_fis_death_stab: "investida",
-  tk_fis_fury: "furia",
-  tk_fis_earthquake: "avalanche",
+  tk_fis_death_stab: "death-stab",
 };
 
 export const FM_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
@@ -108,7 +111,7 @@ function createProfile(
     element: skill.element ?? null,
     power: skill.power,
     family: familyFor(skill, classId),
-    colorHex: elementColor(skill.element, TREE_COLORS[tree]),
+    colorHex: SKILL_COLOR_OVERRIDES[skill.id] ?? elementColor(skill.element, TREE_COLORS[tree]),
     radius: skill.radius ?? skill.range,
     range: skill.range,
     seed: hashId(skill.id),

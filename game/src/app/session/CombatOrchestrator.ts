@@ -37,6 +37,7 @@ import { rollCritStrike } from "../../domain/combat/crit-strike";
 import { canEngageEnemy } from "../../domain/combat/CombatSpace";
 import { dungeon1ArenaFromZ } from "../../data/balance/xp-progression";
 import type { AttackTarget } from "../../domain/combat/AttackController";
+import type { ResolvedSkill } from "../../domain/combat/SkillCasting";
 
 export interface CombatOrchestratorDeps {
   enemies: EnemyService;
@@ -76,6 +77,14 @@ export class CombatOrchestrator {
   private cachedPassives: ReturnType<typeof learnedPassives> | null = null;
   private modsStamp = "";
   private pendingBasicAttack: { targetId: string; delay: number } | null = null;
+  private readonly pendingSkillImpacts: Array<{
+    skillId: string;
+    resolved: ResolvedSkill;
+    request: SkillVfxRequest | null;
+    dispatchVfx: boolean;
+    delay: number;
+    hpCap: number;
+  }> = [];
   private readonly vOrigin = new Vector3();
   private readonly vTarget = new Vector3();
   private readonly vAim = new Vector3();
@@ -153,6 +162,17 @@ export class CombatOrchestrator {
       }
     }
 
+    for (let i = this.pendingSkillImpacts.length - 1; i >= 0; i--) {
+      const pending = this.pendingSkillImpacts[i]!;
+      pending.delay -= dt;
+      if (pending.delay > 0) continue;
+      this.pendingSkillImpacts.splice(i, 1);
+      if (pending.dispatchVfx && pending.request) {
+        this.deps.effects.dispatchSkillVfx(pending.request);
+      }
+      this.applySkillImpact(pending.resolved, pending.skillId, pending.hpCap);
+    }
+
     const hitTarget = this.deps.attack.tick(
       dt,
       this.deps.player.isMoving || this.deps.getMoveLock() > 0 || !this.deps.isAutoAttackEnabled(),
@@ -218,13 +238,14 @@ export class CombatOrchestrator {
       }
       const center = skill.shape === "aoe" || !target ? this.vOrigin : target;
       const profile = getSkillVfxProfile(skill.id);
+      let request: SkillVfxRequest | null = null;
       if (profile) {
-        const request: SkillVfxRequest = {
+        request = {
           profile,
           origin: this.vOrigin.clone(),
           target: target ? target.clone() : null,
           center: center.clone(),
-          colorHex: resolved.color,
+          colorHex: profile.colorHex,
           facing: this.deps.player.facing,
           range: skill.range,
           radius: skill.radius ?? (skill.shape === "aoe" ? skill.range : 0),
@@ -234,63 +255,52 @@ export class CombatOrchestrator {
           hasTransform: resolved.transform != null,
           hasSummon: resolved.summons != null,
         };
-        this.deps.effects.dispatchSkillVfx(request);
-      } else {
-        const aim = resolved.aim ?? { x: this.deps.player.x, z: this.deps.player.z + 1 };
-        this.vAim.set(aim.x, 0, aim.z);
-        this.deps.effects.playSkillVfx(
-          resolved.vfx,
-          this.vOrigin.clone(),
-          this.vAim.clone(),
-          resolved.color,
-          skill.id,
-        );
       }
+      const hpCap = Math.round(this.deps.character.maxHp * (1 + Math.max(0, frameMods.maxHpMul)));
       if (skill.id === "tk_fis_force_wave") {
         const anim = this.deps.renderer.playerView.playAttack(1.5);
         this.deps.lockFromAnim(anim, COMBAT_BALANCE.moveLock.attackFallback);
+        if (request) {
+          this.pendingSkillImpacts.push({
+            skillId: skill.id,
+            resolved,
+            request,
+            dispatchVfx: true,
+            delay: Math.max(0.08, this.deps.renderer.playerView.getAnimDurationSec(anim) * 0.45),
+            hpCap,
+          });
+        } else {
+          this.applySkillImpact(resolved, skill.id, hpCap);
+        }
       } else {
+        if (request) {
+          this.deps.effects.dispatchSkillVfx(request);
+        } else {
+          const aim = resolved.aim ?? { x: this.deps.player.x, z: this.deps.player.z + 1 };
+          this.vAim.set(aim.x, 0, aim.z);
+          this.deps.effects.playSkillVfx(
+            resolved.vfx,
+            this.vOrigin.clone(),
+            this.vAim.clone(),
+            resolved.color,
+            skill.id,
+          );
+        }
         this.deps.renderer.playerView.playCast();
         this.deps.lockFromAnim("cast", COMBAT_BALANCE.moveLock.skillFallback);
-      }
-      const hpCap = Math.round(this.deps.character.maxHp * (1 + Math.max(0, frameMods.maxHpMul)));
-      this.deps.character.heal(resolved.heal + resolved.lifesteal, hpCap);
-      const fireBurstDeathDuration = cast.slot.skill.id === "tk_fis_fire_burst" ? 0.5 : undefined;
-      const seen = new Set<string>();
-      for (const hit of resolved.hits) {
-        const enemy = this.deps.enemies.findById(hit.id);
-        if (!enemy?.alive) continue;
-        const killed = enemy.applyDamage(hit.damage);
-        const mesh = this.deps.enemyView.getMesh(enemy.id);
-        if (!seen.has(enemy.id)) {
-          seen.add(enemy.id);
-          this.deps.effects.playHitFlash(mesh);
-          this.deps.enemyView.playHit(enemy.id);
-          if (resolved.vfx === "burst") this.deps.effects.playAttackPulse(mesh);
+        if (skill.id === "tk_fis_fire_burst") {
+          this.pendingSkillImpacts.push({
+            skillId: skill.id,
+            resolved,
+            request,
+            dispatchVfx: false,
+            delay: 0.5,
+            hpCap,
+          });
+        } else {
+          this.applySkillImpact(resolved, skill.id, hpCap);
         }
-        this.deps.effects.spawnDamageNumber(enemy.x, 1.6, enemy.z, hit.damage, "skill");
-        if (killed) {
-          this.deps.rewards.grantKillXp(enemy);
-          this.deps.enemyView.playDeath(enemy.id);
-          this.deps.effects.playDeath(mesh, fireBurstDeathDuration ?? 1.4);
-          this.deps.effects.hideHpBar(enemy.id);
-          this.deps.effects.spawnDamageNumber(enemy.x, 1.8, enemy.z, 0, "kill");
-          this.deps.effects.cameraPunch(0.08);
-          this.deps.triggerHitStop(0.04);
-          this.deps.enemies.onEnemyDeath(enemy);
-        }
-        this.deps.bus.emit("combat:hit", { targetId: enemy.id, damage: hit.damage, killed });
       }
-      for (const plan of resolved.enemyEffects) {
-        const enemy = this.deps.enemies.findById(plan.id);
-        if (!enemy?.alive) continue;
-        enemy.applySkillStatus(plan.effect, plan.dotDps, plan.effect.dotSec, this.deps.player.x, this.deps.player.z);
-      }
-      this.deps.bus.emit("skill:used", {
-        skillId: cast.slot.skill.id,
-        targetId: resolved.hits[0]?.id ?? "self",
-      });
-      this.invalidateMods();
     }
 
     const strikes = this.deps.summons.tick(
@@ -432,6 +442,46 @@ export class CombatOrchestrator {
     }
 
     this.deps.rewards.flushFrameCheckpoint();
+  }
+
+  private applySkillImpact(resolved: ResolvedSkill, skillId: string, hpCap: number): void {
+    this.deps.character.heal(resolved.heal + resolved.lifesteal, hpCap);
+    const deathDuration = skillId === "tk_fis_fire_burst" ? 0.5 : 1.4;
+    const seen = new Set<string>();
+    for (const hit of resolved.hits) {
+      const enemy = this.deps.enemies.findById(hit.id);
+      if (!enemy?.alive) continue;
+      const killed = enemy.applyDamage(hit.damage);
+      const mesh = this.deps.enemyView.getMesh(enemy.id);
+      if (!seen.has(enemy.id)) {
+        seen.add(enemy.id);
+        this.deps.effects.playHitFlash(mesh);
+        this.deps.enemyView.playHit(enemy.id);
+        if (resolved.vfx === "burst") this.deps.effects.playAttackPulse(mesh);
+      }
+      this.deps.effects.spawnDamageNumber(enemy.x, 1.6, enemy.z, hit.damage, "skill");
+      if (killed) {
+        this.deps.rewards.grantKillXp(enemy);
+        this.deps.enemyView.playDeath(enemy.id);
+        this.deps.effects.playDeath(mesh, deathDuration);
+        this.deps.effects.hideHpBar(enemy.id);
+        this.deps.effects.spawnDamageNumber(enemy.x, 1.8, enemy.z, 0, "kill");
+        this.deps.effects.cameraPunch(0.08);
+        this.deps.triggerHitStop(0.04);
+        this.deps.enemies.onEnemyDeath(enemy);
+      }
+      this.deps.bus.emit("combat:hit", { targetId: enemy.id, damage: hit.damage, killed });
+    }
+    for (const plan of resolved.enemyEffects) {
+      const enemy = this.deps.enemies.findById(plan.id);
+      if (!enemy?.alive) continue;
+      enemy.applySkillStatus(plan.effect, plan.dotDps, plan.effect.dotSec, this.deps.player.x, this.deps.player.z);
+    }
+    this.deps.bus.emit("skill:used", {
+      skillId,
+      targetId: resolved.hits[0]?.id ?? "self",
+    });
+    this.invalidateMods();
   }
 
   hurtPlayer(amount: number, crit = false): void {

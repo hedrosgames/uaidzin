@@ -34,7 +34,7 @@ describe("TK físico comprado no runtime", () => {
   beforeEach(() => vi.spyOn(Math, "random").mockReturnValue(0.9));
   afterEach(() => vi.restoreAllMocks());
 
-  it.each(TK_FISICA.filter(skill => skill.kind !== "passive"))(
+  it.each(TK_FISICA.filter(skill => skill.kind !== "passive" && skill.recastWindowSec == null))(
     "$name usa auto-cast, MP e cooldown reais",
     skill => {
       const s = setup(skill.id);
@@ -59,26 +59,28 @@ describe("TK físico comprado no runtime", () => {
   it("Force Wave atinge apenas o alvo mais próximo e respeita alcance", () => {
     const s = setup("tk_fis_force_wave");
     const foes = [
-      { id: "near", x: 0, z: 2, alive: true },
-      { id: "far", x: 0, z: 3, alive: true },
+      { id: "near", x: 0, z: 3, alive: true },
+      { id: "far", x: 0, z: 3.01, alive: true },
     ];
-    expect(s.cast(0, -1, foes)?.resolved.hits).toEqual([{ id: "near", x: 0, z: 2, damage: 125 }]);
+    expect(s.cast(0, -1, foes)?.resolved.hits).toEqual([{ id: "near", x: 0, z: 3, damage: 125 }]);
     s.controller.reset();
-    expect(s.cast(0, -1, [{ id: "outside", x: 0, z: 2.01, alive: true }])).toBeNull();
+    expect(s.cast(0, -1, [{ id: "outside", x: 0, z: 3.01, alive: true }])).toBeNull();
     expect(s.character.mp).toBe(994);
   });
 
-  it("Death Stab atravessa até três alvos à frente e ignora 25% da defesa", () => {
+  it("Death Stab atinge um único alvo a até 6 m e ignora 25% da defesa", () => {
     const s = setup("tk_fis_death_stab");
-    const foes = [1, 2, 3, 4].map(z => ({ id: `front${z}`, x: 0, z, alive: true }));
-    foes.push({ id: "back", x: 0, z: -1, alive: true });
-    const hits = s.cast(0, -1, foes, 100)?.resolved.hits;
-    expect(hits?.map(hit => hit.id)).toEqual(["front1", "front2", "front3"]);
-    expect(hits?.map(hit => hit.damage)).toEqual([89, 89, 89]);
+    const foes = [
+      { id: "near", x: 0, z: 5, alive: true },
+      { id: "edge", x: 0, z: 6, alive: true },
+    ];
+    expect(s.cast(0, -1, foes, 100)?.resolved.hits).toEqual([{ id: "near", x: 0, z: 5, damage: 89 }]);
+    s.controller.reset();
+    expect(s.cast(0, -1, [{ id: "outside", x: 0, z: 6.01, alive: true }], 100)).toBeNull();
   });
 
   it.each([
-    ["tk_fis_earthquake", 3.6, 170],
+    ["tk_fis_earthquake", 6, 170],
     ["tk_fis_fire_burst", 4.4, 260],
   ] as const)("%s aplica dano da arma a todos no raio e ignora resistência mágica", (id, radius, damage) => {
     const s = setup(id);
@@ -95,29 +97,47 @@ describe("TK físico comprado no runtime", () => {
   });
 
   it.each([
-    ["tk_fis_atk_descuidado", 12, "tk_reckless_atk"],
-    ["tk_fis_fury", 10, "tk_fury"],
-  ] as const)("%s aplica buff por duração real, renova sem acumular e expira", (id, duration, buffId) => {
+    ["tk_fis_atk_descuidado", "tk_reckless_atk"],
+    ["tk_fis_fury", "tk_fury"],
+  ] as const)("%s dura 60 s e só libera recast nos últimos 5 s", (id, buffId) => {
     const s = setup(id);
-    expect(s.cast(0, -1, [])?.resolved.hits).toEqual([]);
-    expect(s.buffs.active.every(buff => buff.remainingSec === duration)).toBe(true);
-    const mods = () => buildCombatMods(s.buffs.active, [], null, s.form);
-    if (id === "tk_fis_atk_descuidado") {
-      expect(mods().attackMul).toBeCloseTo(1.28);
-      expect(mods().defenseMul).toBeCloseTo(0.82);
-    } else expect(mods().attackSpeed).toBeCloseTo(0.32);
-    const count = s.buffs.active.length;
-    s.controller.reset();
-    expect(s.cast()).toBeNull();
-    expect(s.cast(0, 0)).not.toBeNull();
-    expect(s.buffs.active).toHaveLength(count);
-    s.buffs.tick(duration - 0.01);
-    expect(s.buffs.has(buffId)).toBe(true);
-    s.buffs.tick(0.02);
-    expect(s.buffs.has(buffId)).toBe(false);
-    expect(mods().attackMul).toBe(1);
-    expect(mods().defenseMul).toBe(1);
-    expect(mods().attackSpeed).toBe(0);
+    const skill = TK_FISICA.find((entry) => entry.id === id)!;
+    expect(skill.cooldown).toBe(10);
+    expect(skill.recastWindowSec).toBe(5);
+    expect(s.cast(0, 0, [])?.slot.skill.id).toBe(id);
+    expect(s.buffs.active.find((buff) => buff.id === buffId)?.remainingSec).toBe(60);
+    expect(s.controller.slotStates(s.buffs)[0]?.cdLeft).toBe(55);
+    s.buffs.tick(54.9);
+    expect(s.cast(10, 0, [])).toBeNull();
+    expect(s.controller.slotStates(s.buffs)[0]?.ready).toBe(false);
+    s.buffs.tick(0.2);
+    expect(s.controller.slotStates(s.buffs)[0]?.ready).toBe(true);
+    expect(s.cast(0, 0, [])?.slot.skill.id).toBe(id);
+    expect(s.buffs.active.find((buff) => buff.id === buffId)?.remainingSec).toBe(60);
+  });
+
+  it("Atk Descuidado e Fury preservam seus modificadores durante o buff", () => {
+    const reckless = setup("tk_fis_atk_descuidado");
+    expect(reckless.cast(0, 0, [])).not.toBeNull();
+    let mods = buildCombatMods(reckless.buffs.active, [], null, reckless.form);
+    expect(mods.attackMul).toBeCloseTo(1.28);
+    expect(mods.defenseMul).toBeCloseTo(0.82);
+    reckless.buffs.tick(60.01);
+    mods = buildCombatMods(reckless.buffs.active, [], null, reckless.form);
+    expect(mods.attackMul).toBe(1);
+    expect(mods.defenseMul).toBe(1);
+
+    const fury = setup("tk_fis_fury");
+    expect(fury.cast(0, 0, [])).not.toBeNull();
+    expect(buildCombatMods(fury.buffs.active, [], null, fury.form).attackSpeed).toBeCloseTo(0.32);
+    fury.buffs.tick(60.01);
+    expect(buildCombatMods(fury.buffs.active, [], null, fury.form).attackSpeed).toBe(0);
+  });
+
+  it("Earthquake, Fire Burst e Death Stab usam recarga de 2 s", () => {
+    for (const id of ["tk_fis_earthquake", "tk_fis_fire_burst", "tk_fis_death_stab"]) {
+      expect(TK_FISICA.find((skill) => skill.id === id)?.cooldown).toBe(2);
+    }
   });
 
   it("Mestre Dual exige arma dupla, Increase Critical soma 12% e passivas não entram na barra", () => {

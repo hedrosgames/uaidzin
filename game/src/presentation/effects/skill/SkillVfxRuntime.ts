@@ -274,6 +274,7 @@ class GenericSkillVfxCast {
   private readonly directional: boolean;
   private readonly family: SkillVfxProfile["family"];
   private readonly duration: number;
+  private readonly radius: number;
   private readonly origin: Vector3;
   private readonly target: Vector3;
   private readonly onDispose: () => void;
@@ -287,6 +288,7 @@ class GenericSkillVfxCast {
     this.directional = directionalFamily(family);
     this.family = family;
     this.duration = durationFor(family);
+    this.radius = Math.max(0.5, request.radius);
     this.onDispose = options.onDispose;
     this.lightPool = options.lightPool;
     this.origin = request.origin.clone();
@@ -421,7 +423,8 @@ class GenericSkillVfxCast {
     const impactProgress = MathUtils.clamp((this.elapsed - 0.18) / 0.54, 0, 1);
     if (this.phase === "impact") {
       const fade = Math.max(0, 1 - impactProgress);
-      this.ring.scale.setScalar(0.35 + impactProgress * 2.5);
+      const targetScale = this.radius / 0.5;
+      this.ring.scale.setScalar(0.35 + impactProgress * (targetScale - 0.35));
       const ringMaterial = this.ring.material as MeshBasicMaterial;
       ringMaterial.opacity = fade * 0.9;
       if (this.light) this.light.intensity = 4.2 * fade;
@@ -596,9 +599,14 @@ export class SkillVfxDirector {
 
   private normalizeRequest(request: SkillVfxRequest): SkillVfxRequest {
     const origin = request.origin.clone();
-    origin.y = Math.max(origin.y, 1.05);
     const center = request.center.clone();
-    center.y = Math.max(center.y, 0.18);
+    if (request.profile.family === "buff") {
+      origin.y = Math.max(origin.y, 0.08);
+      center.y = Math.max(center.y, 0.08);
+    } else {
+      origin.y = Math.max(origin.y, 1.05);
+      center.y = Math.max(center.y, 0.18);
+    }
     const target = request.target?.clone() ?? null;
     if (target) target.y = Math.max(target.y, 0.82);
     return { ...request, origin, center, target };

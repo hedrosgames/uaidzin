@@ -49,10 +49,10 @@ export interface FireBurstVfxConfig {
 }
 
 export const DEFAULT_FIRE_BURST_VFX_CONFIG: FireBurstVfxConfig = {
-  flightDuration: 0.20,
+  flightDuration: 0.5,
   maxConcurrentCasts: 3,
-  trailEmission: 45,
-  sparkEmission: 24,
+  trailEmission: 72,
+  sparkEmission: 40,
   chainSpacing: 0.19,
   chainMaxLinks: 128,
   cleanupDelay: 0.85,
@@ -84,23 +84,25 @@ function createSharedResources(
 ): FireBurstSharedResources {
   const flameTexture = createFireBurstFlameTexture();
   const particleMaterials = createFireBurstParticleMaterials(textures, flameTexture);
-  const chainGeometry = new TorusGeometry(0.12, 0.029, 6, 16);
-  chainGeometry.scale(0.72, 1.14, 1);
+  const chainGeometry = new TorusGeometry(0.15, 0.038, 6, 16);
+  chainGeometry.scale(0.76, 1.18, 1);
   const chainMaterial = new MeshStandardMaterial({
     map: textures.chain,
-    color: 0x8b8884,
-    emissive: 0x3b1308,
-    emissiveIntensity: 0.06,
+    color: 0xc7b9aa,
+    emissive: 0x9a2e08,
+    emissiveIntensity: 0.52,
     roughness: 0.42,
     metalness: 0.72,
   });
-  const tipGeometry = new ConeGeometry(0.18, 0.56, 4);
-  tipGeometry.scale(0.7, 1, 1);
-  tipGeometry.translate(0, -0.28, 0);
+  const tipGeometry = new ConeGeometry(0.23, 0.68, 4);
+  tipGeometry.scale(0.74, 1, 1);
+  tipGeometry.translate(0, -0.34, 0);
   const tipMaterial = new MeshStandardMaterial({
-    color: 0x79736c,
-    roughness: 0.32,
-    metalness: 0.78,
+    color: 0xffd09a,
+    emissive: 0xff5a12,
+    emissiveIntensity: 0.65,
+    roughness: 0.28,
+    metalness: 0.62,
   });
   const shockGeometry = new RingGeometry(0.32, 0.47, 48);
   const shockMaterial = new MeshBasicMaterial({
@@ -295,7 +297,7 @@ class FireBurstCast {
     for (const chain of this.chains) chain.update(linearProgress, this.flightElapsed);
     if (this.light) {
       this.light.position.copy(this.chains[0].head);
-      this.light.intensity = 0.9 + Math.sin(linearProgress * Math.PI) * 0.5;
+      this.light.intensity = 2.2 + Math.sin(linearProgress * Math.PI) * 2;
     }
     if (linearProgress >= 1) this.triggerImpact();
   }

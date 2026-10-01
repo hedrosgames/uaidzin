@@ -604,12 +604,6 @@ export class CityGameSession {
     this.buffs.tick(dt);
     this.form.advance(dt);
 
-    this.passiveVfxOrigin.set(this.player.x, 0, this.player.z);
-    this.effects.syncPassiveVfx(
-      this.combat.getLearnedPassives(),
-      this.passiveVfxOrigin,
-    );
-
     const frameMods = this.combat.getCombatMods();
     this.player.speedScale = 1 + frameMods.moveSpeed;
     const hpCap = Math.round(this.character.maxHp * (1 + Math.max(0, frameMods.maxHpMul)));
@@ -770,7 +764,7 @@ export class CityGameSession {
           : null,
       kills: this.dungeonRun.getKills(),
       arenaHint: inDungeon ? this.currentArenaLabel() : null,
-      skills: this.skill.slotStates(),
+      skills: this.skill.slotStates(this.buffs),
       potionSlots: this.buildPotionHudSlots(),
       attackMode: this.attackMode,
       moveMode: this.moveMode,
