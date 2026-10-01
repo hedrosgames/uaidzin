@@ -1438,6 +1438,7 @@ export class CityGameSession {
   dispose(): void {
     this.controller.dispose();
     this.enemyView.dispose();
+    this.summonView.dispose();
     this.effects.dispose();
     this.worlds.dispose();
   }
