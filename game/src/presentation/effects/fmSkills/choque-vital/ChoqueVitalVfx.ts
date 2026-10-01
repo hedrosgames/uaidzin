@@ -126,7 +126,7 @@ function createSharedResources(): ChoqueVitalSharedResources {
     map: textures.ironRail,
     color: 0x7d7060,
     emissive: 0xffb43a,
-    emissiveIntensity: 0.8,
+    emissiveIntensity: 0.52,
     roughness: 0.38,
     metalness: 0.8,
   });
@@ -159,7 +159,7 @@ function createSharedResources(): ChoqueVitalSharedResources {
     blending: AdditiveBlending,
     toneMapped: false,
   });
-  const flashGeometry = new SphereGeometry(1, 16, 12);
+  const flashGeometry = new SphereGeometry(1, 12, 8);
   const flashMaterialTemplate = new MeshBasicMaterial({
     map: textures.chargeCore,
     color: 0xfff6d8,
@@ -260,6 +260,8 @@ class ChoqueVitalCast {
   private readonly light: PointLight;
   private readonly head = new Vector3();
   private readonly tangent = new Vector3();
+  private readonly reverseTangent = new Vector3();
+  private readonly emitterOrientation = new Quaternion();
   private readonly side = new Vector3();
   private readonly up = new Vector3();
   private readonly orientation = new Quaternion();
@@ -561,7 +563,7 @@ class ChoqueVitalCast {
     this.striker.visible = true;
     this.striker.position.copy(this.head);
     this.striker.scale.setScalar(this.config.nodeRadius * 1.5 * flick);
-    this.strikerMaterial.opacity = 0.7 + Math.abs(Math.sin(this.elapsed * 62)) * 0.3;
+    this.strikerMaterial.opacity = 0.58 + Math.abs(Math.sin(this.elapsed * 62)) * 0.24;
 
     for (let index = 0; index < this.nodes.length; index += 1) {
       const node = this.nodes[index];
@@ -583,9 +585,11 @@ class ChoqueVitalCast {
     this.tail.update(eased, this.elapsed);
     this.light.position.copy(this.head);
     this.light.intensity = 2.2 + Math.sin(linear * Math.PI) * 2.4;
+    this.reverseTangent.copy(this.tangent).negate();
+    this.emitterOrientation.setFromUnitVectors(FORWARD, this.reverseTangent);
     for (const system of this.arcSystems.all) {
       system.emitter.position.copy(this.head);
-      system.emitter.quaternion.setFromUnitVectors(FORWARD, this.tangent.clone().negate());
+      system.emitter.quaternion.copy(this.emitterOrientation);
     }
     if (this.phaseElapsed >= this.flightDuration) this.triggerImpact();
   }
@@ -632,13 +636,13 @@ class ChoqueVitalCast {
     const progress = MathUtils.clamp(this.phaseElapsed / this.config.impactDuration, 0, 1);
     const fade = Math.pow(1 - progress, 2);
     this.flash.scale.setScalar(0.3 + Math.min(progress * 6, 1) * 1.6);
-    this.flashMaterial.opacity = fade;
+    this.flashMaterial.opacity = fade * 0.74;
     this.flash.visible = progress < 0.8;
-    this.ringShock.scale.setScalar(0.2 + progress * 3.4);
+    this.ringShock.scale.setScalar(0.2 + Math.sqrt(progress) * 3.4);
     this.ringShockMaterial.opacity = fade * 0.95;
     this.ringShock.visible = progress < 1;
     this.scorch.scale.setScalar(0.2 + progress * 1.6);
-    this.scorchMaterial.opacity = fade * 0.85;
+    this.scorchMaterial.opacity = Math.sqrt(1 - progress) * 0.7;
     this.scorch.visible = progress < 1;
     for (let index = 0; index < this.rings.length; index += 1) {
       const ring = this.rings[index];
@@ -737,7 +741,7 @@ export class ChoqueVitalVfxController {
   }
 
   update(deltaTime: number, width = 1, height = 1): void {
-    if (this.disposed) return;
+    if (this.disposed || this.casts.size === 0) return;
     const frameDelta = Number.isFinite(deltaTime)
       ? MathUtils.clamp(deltaTime, 0, 0.1)
       : 0;
@@ -785,7 +789,7 @@ export class ChoqueVitalVfxController {
   }
 
   private updateFrame(deltaTime: number, width: number, height: number): void {
-    for (const cast of [...this.casts]) {
+    for (const cast of this.casts) {
       cast.update(deltaTime);
       cast.prepareFrame();
     }
