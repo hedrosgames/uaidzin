@@ -89,8 +89,12 @@ function createMaterial(): ShaderMaterial {
       uniform float opacity;
       varying float vProgress;
       void main() {
-        float alpha = opacity * mix(1.0, 0.7, clamp(vProgress, 0.0, 1.0));
-        gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+        float progress = clamp(vProgress, 0.0, 1.0);
+        float tail = 1.0 - smoothstep(0.0, 0.82, progress);
+        float head = smoothstep(0.58, 1.0, progress);
+        float alpha = opacity * (0.28 + tail * 0.34 + head * 0.54);
+        vec3 color = mix(vec3(0.72, 0.88, 1.0), vec3(1.0), head);
+        gl_FragColor = vec4(color * (0.86 + head * 0.5), alpha);
       }
     `,
     transparent: true,
@@ -161,10 +165,10 @@ class ForceWaveCast {
     this.root.add(this.wave);
     this.castRoot.add(this.root);
     if (this.lightPool) {
-      this.light = this.lightPool.acquire(0xffffff, 5.5);
+      this.light = this.lightPool.acquire(0xe8f5ff, 5.5);
       this.isPooledLight = true;
     } else {
-      this.light = new PointLight(0xffffff, 0, 5.5, 2);
+      this.light = new PointLight(0xe8f5ff, 0, 5.5, 2);
       this.isPooledLight = false;
     }
     if (this.light) {
