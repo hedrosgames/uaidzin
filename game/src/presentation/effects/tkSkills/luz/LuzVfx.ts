@@ -53,8 +53,8 @@ export interface LuzVfxConfig {
 }
 
 export const DEFAULT_LUZ_VFX_CONFIG: LuzVfxConfig = {
-  chargeDuration: 0.15,
-  beamSpeed: 32,
+  chargeDuration: 0.11,
+  beamSpeed: 38,
   minBeamDuration: 0.1,
   maxBeamDuration: 0.24,
   impactDuration: 0.5,
@@ -64,7 +64,7 @@ export const DEFAULT_LUZ_VFX_CONFIG: LuzVfxConfig = {
   haloEmission: 30,
   impactSparkCount: 46,
   beamRadiusOrigin: 0.085,
-  beamRadiusTarget: 0.2,
+  beamRadiusTarget: 0.15,
   lightPeak: 5,
   originHeight: 1.05,
   targetHeight: 0.9,
@@ -303,7 +303,10 @@ class LuzCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.castRoot.remove(
       this.beamOuter,
       this.beamCore,
