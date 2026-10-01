@@ -121,6 +121,7 @@ function createSharedResources(
     transparent: true,
     opacity: 0,
     depthWrite: false,
+    blending: AdditiveBlending,
     toneMapped: false,
   });
   return {
