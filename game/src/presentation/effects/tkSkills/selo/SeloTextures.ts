@@ -33,7 +33,7 @@ function drawRunes(
 ): void {
   context.save();
   context.lineCap = "round";
-  context.shadowColor = "rgba(232,197,71,0.85)";
+  context.shadowColor = "rgba(205,126,255,0.9)";
   context.shadowBlur = 7;
   for (let index = 0; index < GLYPH_COUNT; index += 1) {
     const angle = (index / GLYPH_COUNT) * Math.PI * 2;
@@ -42,7 +42,7 @@ function drawRunes(
     context.save();
     context.translate(x, y);
     context.rotate(angle + Math.PI / 2);
-    context.strokeStyle = index % 3 === 0 ? "rgba(255,240,205,0.98)" : "rgba(240,214,130,0.94)";
+    context.strokeStyle = index % 3 === 0 ? "rgba(255,220,255,0.98)" : "rgba(218,158,255,0.94)";
     context.lineWidth = index % 3 === 0 ? 3.4 : 2.6;
     drawRuneStroke(context, 0, 0, index % 3 === 0 ? 1.15 : 0.92);
     context.restore();
@@ -56,19 +56,19 @@ function drawRingBand(
   ringRadius: number,
 ): void {
   context.save();
-  context.shadowColor = "rgba(212,160,23,0.9)";
+  context.shadowColor = "rgba(174,76,255,0.92)";
   context.shadowBlur = 14;
-  context.strokeStyle = "rgba(212,160,23,0.72)";
+  context.strokeStyle = "rgba(174,76,255,0.76)";
   context.lineWidth = 4.5;
   context.beginPath();
   context.arc(center, center, ringRadius, 0, Math.PI * 2);
   context.stroke();
-  context.strokeStyle = "rgba(255,236,180,0.95)";
+  context.strokeStyle = "rgba(255,205,250,0.96)";
   context.lineWidth = 1.7;
   context.beginPath();
   context.arc(center, center, ringRadius, 0, Math.PI * 2);
   context.stroke();
-  context.strokeStyle = "rgba(163,59,59,0.55)";
+  context.strokeStyle = "rgba(104,42,180,0.62)";
   context.lineWidth = 2.4;
   context.beginPath();
   context.arc(center, center, ringRadius - 13, 0, Math.PI * 2);
@@ -79,10 +79,10 @@ function drawRingBand(
 function createRingTexture(size: number, ringRadius: number): Texture {
   return createTexture(size, size, (context) => {
     const glow = context.createRadialGradient(size / 2, size / 2, ringRadius * 0.62, size / 2, size / 2, ringRadius * 1.3);
-    glow.addColorStop(0, "rgba(212,160,23,0)");
-    glow.addColorStop(0.74, "rgba(212,160,23,0.2)");
-    glow.addColorStop(0.9, "rgba(163,59,59,0.24)");
-    glow.addColorStop(1, "rgba(212,160,23,0)");
+    glow.addColorStop(0, "rgba(120,40,220,0)");
+    glow.addColorStop(0.74, "rgba(174,76,255,0.22)");
+    glow.addColorStop(0.9, "rgba(236,84,205,0.28)");
+    glow.addColorStop(1, "rgba(120,40,220,0)");
     context.fillStyle = glow;
     context.fillRect(0, 0, size, size);
     drawRingBand(context, size / 2, ringRadius);
@@ -93,23 +93,23 @@ function createRingTexture(size: number, ringRadius: number): Texture {
 export function createSeloTextures(): SeloTextureSet {
   const dust = createTexture(64, 64, (context) => {
     drawRadialGlow(context, 32, 32, [
-      [0, "rgba(255,242,210,1)"],
-      [0.24, "rgba(232,197,71,0.9)"],
-      [0.56, "rgba(212,160,23,0.55)"],
-      [1, "rgba(70,46,10,0)"],
+      [0, "rgba(255,226,255,1)"],
+      [0.24, "rgba(220,140,255,0.92)"],
+      [0.56, "rgba(174,76,255,0.6)"],
+      [1, "rgba(40,8,68,0)"],
     ]);
   });
 
   const glyph = createTexture(64, 64, (context) => {
     drawRadialGlow(context, 32, 30, [
-      [0, "rgba(255,236,180,0.55)"],
-      [0.5, "rgba(212,160,23,0.24)"],
-      [1, "rgba(70,46,10,0)"],
+      [0, "rgba(255,205,250,0.62)"],
+      [0.5, "rgba(174,76,255,0.28)"],
+      [1, "rgba(40,8,68,0)"],
     ]);
-    context.strokeStyle = "rgba(255,240,205,1)";
+    context.strokeStyle = "rgba(255,220,255,1)";
     context.lineWidth = 3.2;
     context.lineCap = "round";
-    context.shadowColor = "rgba(232,197,71,0.95)";
+    context.shadowColor = "rgba(205,126,255,0.96)";
     context.shadowBlur = 6;
     drawRuneStroke(context, 32, 32, 1.35);
   });

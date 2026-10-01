@@ -45,10 +45,10 @@ export interface SeloParticleConfig {
 function createSeloGradient(): Gradient {
   return new Gradient(
     [
-      [new QuarksVector3(1, 0.95, 0.72), 0],
-      [new QuarksVector3(1, 0.8, 0.3), 0.34],
-      [new QuarksVector3(0.83, 0.47, 0.12), 0.7],
-      [new QuarksVector3(0.4, 0.1, 0.04), 1],
+      [new QuarksVector3(1, 0.82, 1), 0],
+      [new QuarksVector3(0.78, 0.36, 1), 0.34],
+      [new QuarksVector3(0.48, 0.12, 0.82), 0.7],
+      [new QuarksVector3(0.12, 0.02, 0.24), 1],
     ],
     [
       [0.9, 0],
@@ -80,7 +80,7 @@ export function createSeloAmbientSystems(
     startSpeed: new IntervalValue(0.18, 0.6),
     startSize: new IntervalValue(0.1, 0.26),
     startRotation: new IntervalValue(-Math.PI, Math.PI),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.86, 0.52, 0.7)),
+    startColor: new ConstantColor(new QuarksVector4(0.92, 0.58, 1, 0.75)),
     emissionOverTime: new ConstantValue(config.dustEmission),
     emissionOverDistance: new ConstantValue(0),
     shape: new SphereEmitter({
@@ -107,7 +107,7 @@ export function createSeloAmbientSystems(
     startSpeed: new IntervalValue(0.1, 0.34),
     startSize: new IntervalValue(0.16, 0.3),
     startRotation: new IntervalValue(-Math.PI, Math.PI),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.92, 0.62, 0.92)),
+    startColor: new ConstantColor(new QuarksVector4(1, 0.72, 1, 0.94)),
     emissionOverTime: new ConstantValue(config.moteEmission),
     emissionOverDistance: new ConstantValue(0),
     shape: new SphereEmitter({
@@ -145,7 +145,7 @@ export function createSeloBurstSystems(
     startSpeed: new IntervalValue(2.2, 5.4),
     startSize: new IntervalValue(0.24, 0.58),
     startRotation: new IntervalValue(-Math.PI, Math.PI),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.9, 0.6, 0.92)),
+    startColor: new ConstantColor(new QuarksVector4(0.86, 0.48, 1, 0.94)),
     emissionOverTime: new ConstantValue(0),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [{ time: 0, count: new ConstantValue(config.burstCount), cycle: 1, interval: 0, probability: 1 }],
@@ -172,7 +172,7 @@ export function createSeloBurstSystems(
     startLife: new IntervalValue(0.2, 0.44),
     startSpeed: new IntervalValue(3.1, 6.2),
     startSize: new IntervalValue(0.1, 0.22),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.8, 0.42, 0.9)),
+    startColor: new ConstantColor(new QuarksVector4(0.7, 0.28, 1, 0.92)),
     emissionOverTime: new ConstantValue(0),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [{ time: 0, count: new ConstantValue(Math.floor(config.burstCount * 0.6)), cycle: 1, interval: 0, probability: 1 }],
