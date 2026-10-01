@@ -19,11 +19,11 @@ function makePaintedGroundMaterial(map: Texture, color = 0xf2e6da): MeshStandard
 }
 
 export function makeCityFloorMaterial(halfSize: number, plazaRadius = 5.5): MeshStandardMaterial {
-  const texture = loadPaintedGroundTexture("earth");
+  const texture = loadPaintedGroundTexture("cobble-moss");
   texture.wrapS = texture.wrapT = MirroredRepeatWrapping;
   texture.repeat.setScalar(halfSize * 2 / CITY_FLOOR_TILE_SIZE);
-  const material = makePaintedGroundMaterial(texture, 0xe2cbb0);
-  material.name = "city-painted-earth-floor";
+  const material = makePaintedGroundMaterial(texture, 0xe8ded2);
+  material.name = "city-painted-cobble-moss-floor";
   const gardenMask = bakeCityGardenMask(halfSize, plazaRadius);
   if (!gardenMask) return material;
   material.addEventListener("dispose", () => gardenMask.dispose());
@@ -39,7 +39,7 @@ vec3 moss = mix(vec3(0.12, 0.17, 0.075), vec3(0.24, 0.29, 0.12), garden.b);
 diffuseColor.rgb = mix(diffuseColor.rgb, earth, garden.g * 0.68);
 diffuseColor.rgb = mix(diffuseColor.rgb, moss, garden.r * 0.78);`);
   };
-  material.customProgramCacheKey = () => "city-painted-earth-floor-1";
+  material.customProgramCacheKey = () => "city-painted-cobble-moss-floor-1";
   return material;
 }
 
