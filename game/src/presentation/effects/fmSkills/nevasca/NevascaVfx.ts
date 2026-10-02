@@ -324,6 +324,7 @@ class NevascaCast {
     this.rimMaterial.dispose();
     this.rimInnerMaterial.dispose();
     this.light.dispose();
+    this.crystals.dispose();
     this.onDispose(this);
   }
 

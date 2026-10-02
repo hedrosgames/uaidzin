@@ -469,7 +469,10 @@ class ChoqueVitalCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.tail.dispose();
     this.castRoot.remove(
       this.rails,
@@ -486,6 +489,8 @@ class ChoqueVitalCast {
     this.flashMaterial.dispose();
     this.ringShockMaterial.dispose();
     this.scorchMaterial.dispose();
+    this.light.dispose();
+    this.debris.dispose();
     this.onDispose(this);
   }
 

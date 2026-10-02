@@ -504,7 +504,10 @@ class LancaGlacialCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.tail.dispose();
     this.castRoot.remove(
       this.blade,
@@ -523,6 +526,8 @@ class LancaGlacialCast {
     this.flashMaterial.dispose();
     this.fractureMaterial.dispose();
     this.frostMaterial.dispose();
+    this.light.dispose();
+    this.debris.dispose();
     this.onDispose(this);
   }
 

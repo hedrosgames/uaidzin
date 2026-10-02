@@ -421,6 +421,7 @@ class EsferaIgneaCast {
       phaseElapsed: this.phaseElapsed,
       head: this.head.toArray(),
       tangent: this.tangent.toArray(),
+      origin: this.origin.toArray(),
       target: this.target.toArray(),
       flightDuration: this.flightDuration,
       lightIntensity: this.light.intensity,
@@ -453,7 +454,10 @@ class EsferaIgneaCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.tail.dispose();
     this.castRoot.remove(
       this.core,
@@ -471,6 +475,8 @@ class EsferaIgneaCast {
     this.ringMaterial.dispose();
     this.scorchMaterial.dispose();
     this.chargeGlowMaterial?.dispose();
+    this.light.dispose();
+    this.debris.dispose();
     this.onDispose(this);
   }
 

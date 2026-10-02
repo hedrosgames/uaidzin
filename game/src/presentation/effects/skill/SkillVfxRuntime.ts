@@ -250,6 +250,7 @@ function positionSegment(
 }
 
 class GenericSkillVfxCast {
+  readonly skillId: string;
   private readonly motion: ParticleSystem | null;
   private readonly impact: ParticleSystem | null;
   private readonly aura: ParticleSystem | null;
@@ -281,6 +282,7 @@ class GenericSkillVfxCast {
 
   constructor(options: SkillVfxCastOptions) {
     const { scene, batch, root, resources, request, castIndex } = options;
+    this.skillId = request.profile.id;
     const family = request.profile.family;
     this.directional = directionalFamily(family);
     this.family = family;
@@ -532,7 +534,12 @@ export class SkillVfxDirector {
       this.passiveActiveIds.add(profiles[i]!.id);
     }
     for (const id of this.passiveIds) {
-      if (!this.passiveActiveIds.has(id)) this.passiveIds.delete(id);
+      if (!this.passiveActiveIds.has(id)) {
+        this.passiveIds.delete(id);
+        for (const cast of [...this.casts]) {
+          if (cast.skillId === id) cast.dispose();
+        }
+      }
     }
     for (let i = 0; i < profiles.length; i++) {
       const profile = profiles[i]!;

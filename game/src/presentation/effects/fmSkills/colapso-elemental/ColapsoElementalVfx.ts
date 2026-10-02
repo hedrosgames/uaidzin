@@ -320,7 +320,10 @@ class ColapsoElementalCast {
     }
     this.castRoot.remove(this.heart, this.disc, this.discInner, this.light);
     for (const core of this.orbitCores) this.castRoot.remove(core);
-    for (const mesh of this.shardMeshes) this.castRoot.remove(mesh);
+    for (const mesh of this.shardMeshes) {
+      this.castRoot.remove(mesh);
+      mesh.dispose();
+    }
     for (const material of this.orbitMaterials) material.dispose();
     for (const material of this.shardMaterials) material.dispose();
     this.heartMaterial.dispose();
