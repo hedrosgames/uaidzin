@@ -25,9 +25,9 @@ function hits(hp: number, damage: number): number {
 }
 
 describe("balance D1 (sem equipamento, +5 FOR por nível)", () => {
-  const skeleton = monster("d1-a1-s1");
-  const wolf = monster("d1-a2-w1");
-  const fire = monster("d1-a3-g1");
+  const skeleton = monster("d1-a1-s1-a");
+  const wolf = monster("d1-a2-w1-a");
+  const fire = monster("d1-a3-g1-a");
 
   it("mata a caveira em até 3 golpes do nível 1 ao 10", () => {
     for (let level = 1; level <= 10; level++) {
