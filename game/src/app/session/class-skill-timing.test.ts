@@ -283,6 +283,40 @@ describe("Campo de Gelo preserva a mecânica", () => {
   });
 });
 
+describe("Mana Burn preserva a mecânica", () => {
+  beforeEach(() => vi.spyOn(Math, "random").mockReturnValue(0.9));
+  afterEach(() => vi.restoreAllMocks());
+
+  it("aplica os dois buffs no disparo, sem dano, mantendo custo e recarga", () => {
+    const skill = CLASSES.TK.trees.magia.find(entry => entry.id === "tk_mag_mana_burn")!;
+    const s = setup("TK", skill);
+    s.update(0);
+    expect(s.character.mp).toBe(1000 - skill.mp);
+    expect(s.enemy.hp).toBe(10000);
+    expect(s.dispatch).toHaveBeenCalledOnce();
+    const request = s.dispatch.mock.calls[0]![0];
+    expect(request.profile.dedicatedVfx).toBe("mana-burn");
+    expect(request.profile.kind).toBe("buff");
+    expect(request.center.toArray()).toEqual([0, 0, 0]);
+    expect(request.hits).toHaveLength(0);
+    expect(request.hasBuff).toBe(true);
+    const power = s.buffs.active.find(buff => buff.id === "tk_mana_burn")!;
+    expect(power.stat).toBe("magicPower");
+    expect(power.magnitude).toBeCloseTo(0.28, 5);
+    expect(power.remainingSec).toBe(40);
+    const cost = s.buffs.active.find(buff => buff.id === "tk_mana_burn_cost")!;
+    expect(cost.stat).toBe("mpCost");
+    expect(cost.magnitude).toBeCloseTo(0.4, 5);
+    expect(cost.remainingSec).toBe(40);
+    expect(skill.cooldown).toBe(10);
+    expect(skill.mp).toBe(8);
+    s.combat.advancePendingActions(1);
+    expect(s.enemy.hp).toBe(10000);
+    expect(s.dispatch).toHaveBeenCalledOnce();
+    expect(s.character.mp).toBe(1000 - skill.mp);
+  });
+});
+
 describe("Lâmina de Energia sincronizada", () => {
   beforeEach(() => vi.spyOn(Math, "random").mockReturnValue(0.9));
   afterEach(() => vi.restoreAllMocks());

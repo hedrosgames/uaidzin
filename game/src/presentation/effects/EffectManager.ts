@@ -16,6 +16,15 @@ import { VFX_BALANCE } from "../../data/balance/vfx";
 import { EsferaIgneaVfxController } from "./fmSkills/esfera-ignea/EsferaIgneaVfx";
 import { LancaGlacialVfxController } from "./fmSkills/lanca-glacial/LancaGlacialVfx";
 import { ChoqueVitalVfxController } from "./fmSkills/choque-vital/ChoqueVitalVfx";
+import { PicadaPeconhentaVfxController } from "./fmSkills/picada-peconhenta/PicadaPeconhentaVfx";
+import { TempestadeBrasaVfxController } from "./fmSkills/tempestade-brasa/TempestadeBrasaVfx";
+import { SombraCorrosivaVfxController } from "./fmSkills/sombra-corrosiva/SombraCorrosivaVfx";
+import { NevascaVfxController } from "./fmSkills/nevasca/NevascaVfx";
+import { ColapsoElementalVfxController } from "./fmSkills/colapso-elemental/ColapsoElementalVfx";
+import { BmAtlasVfxController } from "./bmSkills/BmAtlasVfx";
+import { isBmDedicatedVfx } from "./bmSkills/BmAtlasDefs";
+import { HtAtlasVfxController } from "./htSkills/HtAtlasVfx";
+import { isHtDedicatedVfx } from "./htSkills/HtAtlasDefs";
 import { DEFAULT_GOLPE_VFX_CONFIG } from "./tkSkills/golpe/GolpeVfx";
 import { laminaEnergiaEndpoints } from "./tkSkills/lamina-energia/LaminaEnergiaTiming";
 import { FireBurstVfxController } from "./fireBurst/FireBurstVfx";
@@ -90,6 +99,13 @@ export class EffectManager {
   private readonly enemyFireballs: EsferaIgneaVfxController;
   private fmLancaGlacial: LancaGlacialVfxController | null = null;
   private fmChoqueVital: ChoqueVitalVfxController | null = null;
+  private fmPicadaPeconhenta: PicadaPeconhentaVfxController | null = null;
+  private fmTempestadeBrasa: TempestadeBrasaVfxController | null = null;
+  private fmSombraCorrosiva: SombraCorrosivaVfxController | null = null;
+  private fmNevasca: NevascaVfxController | null = null;
+  private fmColapsoElemental: ColapsoElementalVfxController | null = null;
+  private bmAtlas: BmAtlasVfxController | null = null;
+  private htAtlas: HtAtlasVfxController | null = null;
 
   constructor(
     parent: HTMLElement,
@@ -117,6 +133,14 @@ export class EffectManager {
 
   getTkRegistry(): TkVfxRegistry {
     return this.tkRegistry;
+  }
+
+  getHtAtlas(): HtAtlasVfxController {
+    return this.htAtlasCtrl();
+  }
+
+  getBmAtlas(): BmAtlasVfxController {
+    return this.bmAtlasCtrl();
   }
 
   warmSkills(skills: readonly SkillDef[], x: number, z: number): void {
@@ -159,6 +183,34 @@ export class EffectManager {
 
   private fmChoque(): ChoqueVitalVfxController {
     return this.fmChoqueVital ??= new ChoqueVitalVfxController(this.sceneRoot);
+  }
+
+  private fmPicada(): PicadaPeconhentaVfxController {
+    return this.fmPicadaPeconhenta ??= new PicadaPeconhentaVfxController(this.sceneRoot);
+  }
+
+  private fmTempestade(): TempestadeBrasaVfxController {
+    return this.fmTempestadeBrasa ??= new TempestadeBrasaVfxController(this.sceneRoot);
+  }
+
+  private fmSombra(): SombraCorrosivaVfxController {
+    return this.fmSombraCorrosiva ??= new SombraCorrosivaVfxController(this.sceneRoot);
+  }
+
+  private fmNevascaCtrl(): NevascaVfxController {
+    return this.fmNevasca ??= new NevascaVfxController(this.sceneRoot);
+  }
+
+  private fmColapso(): ColapsoElementalVfxController {
+    return this.fmColapsoElemental ??= new ColapsoElementalVfxController(this.sceneRoot);
+  }
+
+  private bmAtlasCtrl(): BmAtlasVfxController {
+    return this.bmAtlas ??= new BmAtlasVfxController(this.sceneRoot, this.lightPool);
+  }
+
+  private htAtlasCtrl(): HtAtlasVfxController {
+    return this.htAtlas ??= new HtAtlasVfxController(this.sceneRoot, this.lightPool);
   }
 
   isFlashing(mesh: Object3D | null | undefined): boolean {
@@ -266,6 +318,13 @@ export class EffectManager {
     this.enemyFireballs.clear();
     this.fmLancaGlacial?.clear();
     this.fmChoqueVital?.clear();
+    this.fmPicadaPeconhenta?.clear();
+    this.fmTempestadeBrasa?.clear();
+    this.fmSombraCorrosiva?.clear();
+    this.fmNevasca?.clear();
+    this.fmColapsoElemental?.clear();
+    this.bmAtlas?.clear();
+    this.htAtlas?.clear();
   }
 
   clearFireBurst(): void {
@@ -285,6 +344,24 @@ export class EffectManager {
       return;
     }
     const target = input.target ?? input.center;
+    if (isBmDedicatedVfx(input.profile.dedicatedVfx)) {
+      this.bmAtlasCtrl().cast(
+        input.profile.dedicatedVfx,
+        input.origin,
+        target,
+        input.radius || input.range || 1,
+      );
+      return;
+    }
+    if (isHtDedicatedVfx(input.profile.dedicatedVfx)) {
+      this.htAtlasCtrl().cast(
+        input.profile.dedicatedVfx,
+        input.origin,
+        target,
+        input.radius || input.range || 1,
+      );
+      return;
+    }
     switch (input.profile.dedicatedVfx) {
       case "force-wave":
         this.tkRegistry.get("force-wave").castForceWave(input.origin, target);
@@ -357,6 +434,11 @@ export class EffectManager {
       case "campo-gelo":
         this.tkRegistry.get("campo-gelo").castCampoGelo(input.center, input.radius);
         return;
+      case "mana-burn":
+        this.tkRegistry.get("mana-burn").castManaBurn(
+          input.center, undefined, this.sceneRoot.getObjectByName("PlayerRoot"),
+        );
+        return;
       case "escudo-sagrado": {
         const direction = target.clone().sub(input.origin);
         if (direction.lengthSq() < 1e-8) {
@@ -415,6 +497,21 @@ export class EffectManager {
       case "choque-vital":
         this.fmChoque().castChoqueVital(input.origin, target);
         return;
+      case "picada-peconhenta":
+        this.fmPicada().castPicada(input.origin, target, input.profile.skill.enemy?.dotSec);
+        return;
+      case "tempestade-brasa":
+        this.fmTempestade().castTempestadeBrasa(input.center);
+        return;
+      case "sombra-corrosiva":
+        this.fmSombra().castSombraCorrosiva(input.origin, target);
+        return;
+      case "nevasca":
+        this.fmNevascaCtrl().castNevasca(input.center);
+        return;
+      case "colapso-elemental":
+        this.fmColapso().castColapsoElemental(input.center);
+        return;
       default:
         break;
     }
@@ -428,14 +525,28 @@ export class EffectManager {
       this.tkRegistry.getActiveCastCount() +
       (this.fmEsferaIgnea?.getActiveCastCount() ?? 0) +
       (this.fmLancaGlacial?.getActiveCastCount() ?? 0) +
-      (this.fmChoqueVital?.getActiveCastCount() ?? 0);
+      (this.fmChoqueVital?.getActiveCastCount() ?? 0) +
+      (this.fmPicadaPeconhenta?.getActiveCastCount() ?? 0) +
+      (this.fmTempestadeBrasa?.getActiveCastCount() ?? 0) +
+      (this.fmSombraCorrosiva?.getActiveCastCount() ?? 0) +
+      (this.fmNevasca?.getActiveCastCount() ?? 0) +
+      (this.fmColapsoElemental?.getActiveCastCount() ?? 0) +
+      (this.bmAtlas?.getActiveCastCount() ?? 0) +
+      (this.htAtlas?.getActiveCastCount() ?? 0);
     const particles =
       this.skillVfx.getParticleCount() +
       (this.fireBurst?.getParticleCount() ?? 0) +
       this.tkRegistry.getParticleCount() +
       (this.fmEsferaIgnea?.getParticleCount() ?? 0) +
       (this.fmLancaGlacial?.getParticleCount() ?? 0) +
-      (this.fmChoqueVital?.getParticleCount() ?? 0);
+      (this.fmChoqueVital?.getParticleCount() ?? 0) +
+      (this.fmPicadaPeconhenta?.getParticleCount() ?? 0) +
+      (this.fmTempestadeBrasa?.getParticleCount() ?? 0) +
+      (this.fmSombraCorrosiva?.getParticleCount() ?? 0) +
+      (this.fmNevasca?.getParticleCount() ?? 0) +
+      (this.fmColapsoElemental?.getParticleCount() ?? 0) +
+      (this.bmAtlas?.getParticleCount() ?? 0) +
+      (this.htAtlas?.getParticleCount() ?? 0);
     return { active, particles };
   }
 
@@ -658,6 +769,13 @@ export class EffectManager {
     this.enemyFireballs.update(dt, width, height);
     this.fmLancaGlacial?.update(dt, width, height);
     this.fmChoqueVital?.update(dt, width, height);
+    this.fmPicadaPeconhenta?.update(dt, width, height);
+    this.fmTempestadeBrasa?.update(dt, width, height);
+    this.fmSombraCorrosiva?.update(dt, width, height);
+    this.fmNevasca?.update(dt, width, height);
+    this.fmColapsoElemental?.update(dt, width, height);
+    this.bmAtlas?.update(dt, width, height);
+    this.htAtlas?.update(dt, width, height);
     for (let i = this.floating.length - 1; i >= 0; i--) {
       const f = this.floating[i];
       f.life -= dt;
@@ -779,6 +897,13 @@ export class EffectManager {
     this.enemyFireballs.dispose();
     this.fmLancaGlacial?.dispose();
     this.fmChoqueVital?.dispose();
+    this.fmPicadaPeconhenta?.dispose();
+    this.fmTempestadeBrasa?.dispose();
+    this.fmSombraCorrosiva?.dispose();
+    this.fmNevasca?.dispose();
+    this.fmColapsoElemental?.dispose();
+    this.bmAtlas?.dispose();
+    this.htAtlas?.dispose();
     this.lightPool.dispose();
     this.drainMeshFx();
     for (const el of this.hpBars.values()) el.remove();

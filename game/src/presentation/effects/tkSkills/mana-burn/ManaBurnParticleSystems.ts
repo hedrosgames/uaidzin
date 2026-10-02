@@ -7,39 +7,37 @@ import { createFlameAnimation, createShrink } from "../../vfxKit/quarkFx";
 import type { ManaBurnResources } from "./ManaBurnResources";
 import type { ManaBurnVfxConfig } from "./ManaBurnVfx";
 
-const MANA_COLORS = [
-  [new Vector3(0.86, 0.94, 1), 0],
-  [new Vector3(0.55, 0.76, 1), 0.45],
-  [new Vector3(0.2, 0.36, 0.72), 1],
-] as const;
-const EMBER_COLORS = [
-  [new Vector3(1, 0.95, 0.84), 0],
-  [new Vector3(1, 0.78, 0.44), 0.5],
-  [new Vector3(0.66, 0.36, 0.14), 1],
-] as const;
-const ARCANE_COLORS = [
-  [new Vector3(1, 0.99, 0.96), 0],
-  [new Vector3(0.94, 0.96, 1), 0.46],
-  [new Vector3(0.58, 0.7, 0.92), 1],
-] as const;
+type Rgb = readonly [red: number, green: number, blue: number];
+type ColorStop = [Vector3, number];
+
+const MANA_RAMP: readonly Rgb[] = [[0.86, 0.94, 1], [0.55, 0.76, 1], [0.2, 0.36, 0.72]];
+const EMBER_RAMP: readonly Rgb[] = [[1, 0.95, 0.84], [1, 0.78, 0.44], [0.66, 0.36, 0.14]];
+const ARCANE_RAMP: readonly Rgb[] = [[1, 0.99, 0.96], [0.94, 0.96, 1], [0.58, 0.7, 0.92]];
+
+function stops(ramp: readonly Rgb[]): ColorStop[] {
+  return ramp.map(([red, green, blue], index) => [
+    new Vector3(red, green, blue),
+    index / (ramp.length - 1),
+  ]);
+}
 
 function fadeInOut(peak: number): ColorOverLife {
   return new ColorOverLife(new Gradient(
-    [...MANA_COLORS],
+    stops(MANA_RAMP),
     [[0, 0], [peak, 0.08], [peak * 0.78, 0.34], [peak * 0.3, 0.7], [0, 1]],
   ));
 }
 
 function emberFade(peak: number): ColorOverLife {
   return new ColorOverLife(new Gradient(
-    [...EMBER_COLORS],
+    stops(EMBER_RAMP),
     [[0, 0.04], [peak, 0.07], [peak * 0.62, 0.36], [peak * 0.22, 0.72], [0, 1]],
   ));
 }
 
 function arcaneFade(peak: number): ColorOverLife {
   return new ColorOverLife(new Gradient(
-    [...ARCANE_COLORS],
+    stops(ARCANE_RAMP),
     [[0, 0], [peak, 0.09], [peak * 0.8, 0.42], [peak * 0.26, 0.76], [0, 1]],
   ));
 }
@@ -89,7 +87,7 @@ export function createManaBurnSystems(shared: ManaBurnResources, config: ManaBur
     vTileCount: 4,
     blendTiles: true,
     behaviors: [
-      new FrameOverLife(new PiecewiseBezier([[new Bezier(0, 5, 10, 15), 0]])),
+      createFlameAnimation(),
       arcaneFade(0.94),
       new SizeOverLife(new PiecewiseBezier([[new Bezier(0.66, 0.94, 1.02, 1.06), 0]])),
     ],

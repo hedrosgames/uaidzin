@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ManaBurnUAID · Mana em combustão</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #100c08; color: #f0e6d0; font: 14px/1.5 system-ui, sans-serif; user-select: none; }
+    #gl { display: block; width: 100vw; height: 100vh; }
+    aside { position: fixed; top: 16px; left: 16px; width: min(310px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 18px; background: #241c14ed; border: 1px solid #695138; border-top: 3px solid #d4a017; }
+    h1 { margin: 4px 0 2px; font-size: 21px; font-weight: 600; }
+    p { margin: 0 0 14px; color: #c6b89e; }
+    small { color: #d4a017; letter-spacing: .1em; text-transform: uppercase; font-size: 10px; }
+    .buttons { display: flex; gap: 6px; margin-bottom: 12px; }
+    button, select { border: 1px solid #695138; border-radius: 2px; color: #f0e6d0; background: #100c08; padding: 7px; font: inherit; }
+    button { cursor: pointer; flex: 1; }
+    button:hover, button:focus-visible { border-color: #d4a017; }
+    #cast { background: #77521b; }
+    label { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; }
+    select { max-width: 170px; }
+    input { accent-color: #d4a017; }
+    #scrub { width: 100%; margin: 12px 0; }
+    #state { border-top: 1px solid #695138; padding-top: 10px; color: #f0e6d0; font-size: 12px; }
+    .foot { display: block; margin-top: 10px; font-size: 11px; color: #a99a80; }
+  </style>
+</head>
+<body>
+  <canvas id="gl" aria-label="Prévia 3D do Mana Burn"></canvas>
+  <aside>
+    <small>TK · Magia · 03</small>
+    <h1>ManaBurnUAID</h1>
+    <p>Faíscas azuis afundam no anel de brasa · chama arcana contida no torso</p>
+    <div class="buttons">
+      <button id="cast">Disparar</button>
+      <button id="pause" aria-pressed="false">Pausar</button>
+      <button id="clear">Limpar</button>
+    </div>
+    <label>Câmera
+      <select id="view">
+        <option value="iso">Isométrica</option>
+        <option value="third">Terceira pessoa</option>
+        <option value="top">Superior</option>
+        <option value="side">Lateral</option>
+      </select>
+    </label>
+    <label>Velocidade
+      <select id="speed"><option value="1">1×</option><option value="0.5">0,5×</option><option value="0.25">0,25×</option></select>
+    </label>
+    <label>Repetir<input id="loop" type="checkbox" checked></label>
+    <label>Personagem andando<input id="walk" type="checkbox"></label>
+    <label>Referência do anel<input id="boundary" type="checkbox"></label>
+    <input id="scrub" aria-label="Tempo do efeito em milissegundos" type="range" min="0" max="2800" step="1" value="0">
+    <div id="state" role="status">Pronta</div>
+    <span class="foot" id="foot">tk_mag_mana_burn</span>
+  </aside>
+  <script type="module" src="/src/presentation/effects/tkSkills/mana-burn/demo.ts"></script>
+</body>
+</html>

@@ -22,6 +22,7 @@ import { JulgamentoVfxController } from "./tkSkills/julgamento/JulgamentoVfx";
 import { LaminaEnergiaVfxController } from "./tkSkills/lamina-energia/LaminaEnergiaVfx";
 import { LuzVfxController } from "./tkSkills/luz/LuzVfx";
 import { MachadoVfxController } from "./tkSkills/machado/MachadoVfx";
+import { ManaBurnVfxController } from "./tkSkills/mana-burn/ManaBurnVfx";
 import { MuralhaVfxController } from "./tkSkills/muralha/MuralhaVfx";
 import { PosturaVfxController } from "./tkSkills/postura/PosturaVfx";
 import { ProvocacaoVfxController } from "./tkSkills/provocacao/ProvocacaoVfx";
@@ -48,6 +49,7 @@ export interface TkVfxMap {
   corte: CorteVfxController;
   "lamina-energia": LaminaEnergiaVfxController;
   "campo-gelo": CampoGeloVfxController;
+  "mana-burn": ManaBurnVfxController;
   machado: MachadoVfxController;
   quebra: QuebraVfxController;
   furia: FuryVfxController;
@@ -92,6 +94,7 @@ export class TkVfxRegistry {
       corte: (s, lp) => new CorteVfxController(s, {}, lp),
       "lamina-energia": (s, lp) => new LaminaEnergiaVfxController(s, {}, lp),
       "campo-gelo": (s, lp) => new CampoGeloVfxController(s, {}, lp),
+      "mana-burn": (s, lp) => new ManaBurnVfxController(s, {}, lp),
       machado: (s, lp) => new MachadoVfxController(s, {}, lp),
       quebra: (s, lp) => new QuebraVfxController(s, {}, lp),
       furia: (s, lp) => new FuryVfxController(s, {}, lp),

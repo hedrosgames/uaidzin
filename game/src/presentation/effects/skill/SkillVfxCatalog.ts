@@ -1,5 +1,7 @@
 import { CLASSES, type ClassId, type TreeId, type SkillDef } from "../../../data/classes/class-definitions";
 import { elementColor } from "../../../data/classes/skill-types";
+import { BM_DEDICATED_VFX_BY_SKILL_ID } from "../bmSkills/BmAtlasDefs";
+import { HT_DEDICATED_VFX_BY_SKILL_ID } from "../htSkills/HtAtlasDefs";
 import type {
   DedicatedSkillVfx,
   SkillVfxFamily,
@@ -24,11 +26,12 @@ const SKILL_COLOR_OVERRIDES: Record<string, number> = {
   tk_fis_death_stab: 0xf1f1ee,
   tk_mag_lamina_energia: 0xffecc8,
   tk_mag_campo_gelo: 0x9ddfff,
+  tk_mag_mana_burn: 0xdfae63,
 };
 
 export const TK_DEDICATED_VFX_BY_SKILL_ID: Record<string, DedicatedSkillVfx> = {
   tk_ctrl_sustain: "bencao",
-  tk_mag_mana_burn: "selo",
+  tk_mag_mana_burn: "mana-burn",
   tk_mag_campo_gelo: "campo-gelo",
   tk_mag_moon_ray: "julgamento",
   tk_mag_death_stab: "luz",
@@ -79,7 +82,7 @@ function familyFor(skill: SkillDef, classId: ClassId): SkillVfxFamily {
   if (skill.shape === "aoe") return "aoe";
   if (skill.shape === "line") return "line";
   const lowerName = skill.name.toLowerCase();
-  if (classId === "HT" && (lowerName.includes("flecha") || lowerName.includes("tiro"))) {
+  if (classId === "HT" && (lowerName.includes("flecha") || lowerName.includes("tiro") || skill.id === "ht_fis_rapid_hit")) {
     return "arrow";
   }
   if (skill.shape === "single" && skill.range <= 3.2) return "melee";
@@ -98,8 +101,15 @@ function passiveEventFor(skill: SkillDef): SkillVfxPassiveEvent | null {
 }
 
 function dedicatedVfxFor(skillId: string): DedicatedSkillVfx | undefined {
-  return TK_DEDICATED_VFX_BY_SKILL_ID[skillId] ?? FM_DEDICATED_VFX_BY_SKILL_ID[skillId];
+  return (
+    TK_DEDICATED_VFX_BY_SKILL_ID[skillId] ??
+    FM_DEDICATED_VFX_BY_SKILL_ID[skillId] ??
+    BM_DEDICATED_VFX_BY_SKILL_ID[skillId] ??
+    HT_DEDICATED_VFX_BY_SKILL_ID[skillId]
+  );
 }
+
+export { BM_DEDICATED_VFX_BY_SKILL_ID, HT_DEDICATED_VFX_BY_SKILL_ID };
 
 function createProfile(
   skill: SkillDef,
