@@ -87,3 +87,64 @@ describe("Ponto de ataque em coordenadas de mundo", () => {
     expect(out.z).toBeCloseTo(-2);
   });
 });
+
+describe("PlayerView transformacao de modelo", () => {
+  it("ativa transformacao, remove armas e restaura base no reset", async () => {
+    const view = new PlayerView(makeMockPlayerLoader(0));
+    await view.load("BM");
+    expect(view.getWeaponSet()).toBe(CLASS_WEAPON_SET.BM);
+    expect(view.getTransformation()).toBeNull();
+
+    await view.setTransformation("lobo");
+    expect(view.getTransformation()).toBe("lobo");
+    expect(view.getWeaponSet()).toBeNull();
+    expect(view.root.getObjectByName("lobo")).toBeDefined();
+    expect(view.root.getObjectByName("BM")).toBeUndefined();
+    expect(view.playAttack()).toBe("attack");
+
+    await view.setTransformation(null);
+    expect(view.getTransformation()).toBeNull();
+    expect(view.root.getObjectByName("BM")).toBeDefined();
+    expect(view.root.getObjectByName("lobo")).toBeUndefined();
+    expect(view.getWeaponSet()).toBe(CLASS_WEAPON_SET.BM);
+  });
+
+  it("ignora transformId invalido mantendo o estado atual", async () => {
+    const view = new PlayerView(makeMockPlayerLoader(0));
+    await view.load("BM");
+    await view.setTransformation("invalido");
+    expect(view.getTransformation()).toBeNull();
+    expect(view.root.getObjectByName("BM")).toBeDefined();
+  });
+
+  it("garante depthWrite ativo nos materiais do modelo transformado", async () => {
+    const loader: PlayerGltfLoader = {
+      loadAsync: async () => {
+        const scene = new Group();
+        const mat = new MeshStandardMaterial({ transparent: true, depthWrite: false });
+        const mesh = new Mesh(new BoxGeometry(1, 1, 1), mat);
+        scene.add(mesh);
+        return { scene, animations: [new AnimationClip("idle", 1, [])] };
+      },
+    };
+    const view = new PlayerView(loader);
+    await view.load("BM");
+    await view.setTransformation("lobo");
+    const loboMesh = view.root.getObjectByName("lobo")?.children.find(c => (c as Mesh).isMesh) as Mesh | undefined;
+    expect(loboMesh).toBeDefined();
+    const mat = loboMesh!.material as MeshStandardMaterial;
+    expect(mat.depthWrite).toBe(true);
+    expect(mat.depthTest).toBe(true);
+  });
+
+  it("restaura postura de morte na base ao detransformar morto", async () => {
+    const view = new PlayerView(makeMockPlayerLoader(0));
+    await view.load("BM");
+    await view.setTransformation("urso");
+    view.playDeath();
+    expect(view.isDeadPose()).toBe(true);
+    await view.setTransformation(null);
+    expect(view.isDeadPose()).toBe(true);
+    expect(view.getTransformation()).toBeNull();
+  });
+});

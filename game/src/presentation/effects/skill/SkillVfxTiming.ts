@@ -9,6 +9,7 @@ import { DEFAULT_NEVASCA_VFX_CONFIG } from "../fmSkills/nevasca/NevascaVfx";
 import { DEFAULT_COLAPSO_ELEMENTAL_VFX_CONFIG } from "../fmSkills/colapso-elemental/ColapsoElementalVfx";
 import { LAMINA_ENERGIA_TIMING, laminaEnergiaEndpoints, laminaEnergiaFlightDuration } from "../tkSkills/lamina-energia/LaminaEnergiaTiming";
 import { HT_ATLAS_DEFS, isHtDedicatedVfx, type HtDedicatedVfxId } from "../htSkills/HtAtlasDefs";
+import { BM_ATLAS_DEFS, isBmDedicatedVfx, type BmDedicatedVfxId } from "../bmSkills/BmAtlasDefs";
 
 export function skillVfxDuration(family: SkillVfxFamily): number {
   if (family === "projectile") return 0.58;
@@ -24,6 +25,10 @@ export function skillVfxDuration(family: SkillVfxFamily): number {
 
 export function htSkillVfxDuration(dedicatedId: HtDedicatedVfxId): number {
   return HT_ATLAS_DEFS[dedicatedId]?.duration ?? skillVfxDuration("arrow");
+}
+
+export function bmSkillVfxDuration(dedicatedId: BmDedicatedVfxId): number {
+  return BM_ATLAS_DEFS[dedicatedId]?.duration ?? skillVfxDuration("melee");
 }
 
 export function skillVfxImpactDelay(request: SkillVfxRequest): number {
@@ -53,6 +58,13 @@ export function skillVfxImpactDelay(request: SkillVfxRequest): number {
     if (def.mode === "self") return 0;
     if (!def.travel) return skillVfxDuration("melee");
     return skillVfxDuration("arrow");
+  }
+  if (isBmDedicatedVfx(dedicated)) {
+    const def = BM_ATLAS_DEFS[dedicated];
+    if (request.hasSummon || def.mode === "self" || def.mode === "summon") return 0;
+    if (def.mode === "aoe") return 0.18;
+    if (!def.travel) return skillVfxDuration("melee");
+    return skillVfxDuration("projectile");
   }
   const family = request.profile.family;
   if (family === "aoe") return 0.18;

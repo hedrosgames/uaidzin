@@ -7,6 +7,7 @@ import {
   type CanvasTexture,
 } from "three";
 import { ManaBurnTextures } from "./ManaBurnTextures";
+import { createBladeGeometry } from "../../vfxKit/stylizedGeometry";
 
 function material(
   name: string,
@@ -35,14 +36,23 @@ function material(
 export class ManaBurnResources {
   readonly textures: ManaBurnTextures = new ManaBurnTextures();
   readonly ringGeometry: PlaneGeometry = new PlaneGeometry(2, 2);
+  readonly flameBodyGeometry = createBladeGeometry(0.74, 0.28, 0.04);
   readonly materials = {
-    ember: material("ember", this.textures.ring, 0xd9a75c, 0.9, true),
-    arc: material("arc", this.textures.ring, 0x9dc4ff, 0.8, true),
-    flash: material("flash", this.textures.ring, 0xffffff, 0.92, true),
+    ember: material("ember", this.textures.ring, 0xc68a48, 0.9, false),
+    arc: material("arc", this.textures.ring, 0x72b8e2, 0.8, true),
+    flash: material("flash", this.textures.ring, 0xffdea5, 0.66, true),
     flame: material("flame", this.textures.surge, 0xffffff, 1, false),
-    drain: material("drain", this.textures.spark, 0xffffff, 0.94, true),
+    drain: material("drain", this.textures.spark, 0x99ceea, 0.94, true),
     mote: material("mote", this.textures.spark, 0xffffff, 0.8, true),
     residual: material("residual", this.textures.spark, 0xffffff, 0.72, true),
+    flameBody: new MeshBasicMaterial({
+      color: 0xe0b778,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: DoubleSide,
+      toneMapped: false,
+    }),
   };
 
   constructor() {
@@ -53,6 +63,7 @@ export class ManaBurnResources {
 
   dispose(): void {
     this.ringGeometry.dispose();
+    this.flameBodyGeometry.dispose();
     for (const shared of Object.values(this.materials)) shared.dispose();
     this.textures.dispose();
   }

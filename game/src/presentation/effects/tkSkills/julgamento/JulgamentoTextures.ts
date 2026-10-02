@@ -10,11 +10,11 @@ export interface JulgamentoTextureSet {
 export function createJulgamentoTextures(): JulgamentoTextureSet {
   const beam = createTexture(128, 256, (context) => {
     const horizontal = context.createLinearGradient(0, 0, 128, 0);
-    horizontal.addColorStop(0, "rgba(70,130,210,0)");
-    horizontal.addColorStop(0.22, "rgba(190,224,255,0.58)");
-    horizontal.addColorStop(0.5, "rgba(240,250,255,1)");
-    horizontal.addColorStop(0.78, "rgba(190,224,255,0.58)");
-    horizontal.addColorStop(1, "rgba(70,130,210,0)");
+    horizontal.addColorStop(0, "rgba(171,126,61,0)");
+    horizontal.addColorStop(0.22, "rgba(234,197,130,0.58)");
+    horizontal.addColorStop(0.5, "rgba(255,245,215,1)");
+    horizontal.addColorStop(0.78, "rgba(234,197,130,0.58)");
+    horizontal.addColorStop(1, "rgba(171,126,61,0)");
     context.fillStyle = horizontal;
     context.fillRect(0, 0, 128, 256);
     context.globalCompositeOperation = "destination-in";
@@ -30,20 +30,20 @@ export function createJulgamentoTextures(): JulgamentoTextureSet {
 
   const glow = createTexture(128, 128, (context) => {
     drawRadialGlow(context, 64, 64, [
-      [0, "rgba(246,253,255,1)"],
-      [0.18, "rgba(175,220,255,0.96)"],
-      [0.42, "rgba(110,174,240,0.72)"],
-      [0.72, "rgba(80,112,190,0.3)"],
-      [1, "rgba(18,28,70,0)"],
+      [0, "rgba(255,246,216,1)"],
+      [0.18, "rgba(245,213,157,0.96)"],
+      [0.42, "rgba(220,177,103,0.72)"],
+      [0.72, "rgba(163,119,65,0.3)"],
+      [1, "rgba(59,40,22,0)"],
     ]);
   });
 
   const spark = createTexture(64, 64, (context) => {
     drawRadialGlow(context, 32, 32, [
-      [0, "rgba(250,254,255,1)"],
-      [0.24, "rgba(190,228,255,1)"],
-      [0.52, "rgba(100,168,235,0.78)"],
-      [1, "rgba(24,42,90,0)"],
+      [0, "rgba(255,248,224,1)"],
+      [0.24, "rgba(245,218,167,1)"],
+      [0.52, "rgba(201,155,83,0.78)"],
+      [1, "rgba(69,47,23,0)"],
     ]);
   });
 

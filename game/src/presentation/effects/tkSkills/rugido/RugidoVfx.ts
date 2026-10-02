@@ -1,11 +1,16 @@
 import {
   AdditiveBlending,
+  BufferGeometry,
   Color,
   DoubleSide,
+  DynamicDrawUsage,
   Group,
+  InstancedMesh,
   MathUtils,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardMaterial,
+  Object3D,
   PointLight,
   RingGeometry,
   Scene,
@@ -28,6 +33,7 @@ import {
   type RugidoTextureSet,
 } from "./RugidoTextures";
 import type { TkLightPool } from "../../TkLightPool";
+import { createTaperedArcGeometry } from "../../vfxKit/stylizedGeometry";
 
 export interface RugidoVfxConfig {
   waveDuration: number;
@@ -49,8 +55,8 @@ export const DEFAULT_RUGIDO_VFX_CONFIG: RugidoVfxConfig = {
   flashDuration: 0.16,
   cleanupDelay: 0.95,
   maxConcurrentCasts: 3,
-  streakEmission: 240,
-  dustEmission: 95,
+  streakEmission: 96,
+  dustEmission: 48,
   emberCount: 26,
   chestHeight: 1.25,
   waveRadius: 3.8,
@@ -59,8 +65,8 @@ export const DEFAULT_RUGIDO_VFX_CONFIG: RugidoVfxConfig = {
 
 export type RugidoCastPhase = "roar";
 
-const EMBER_RED = new Color(0xa33b3b);
-const EMBER_GOLD = new Color(0xd4a017);
+const SHADOW_CORE = new Color(0x533976);
+const SHADOW_EDGE = new Color(0xc49be0);
 
 interface RugidoSharedResources {
   textures: RugidoTextureSet;
@@ -73,6 +79,8 @@ interface RugidoSharedResources {
   shellMaterial: MeshBasicMaterial;
   flashGeometry: SphereGeometry;
   flashMaterial: MeshBasicMaterial;
+  clawGeometry: BufferGeometry;
+  clawMaterial: MeshStandardMaterial;
 }
 
 function createSharedResources(
@@ -82,7 +90,7 @@ function createSharedResources(
   const ringGeometry = new RingGeometry(0.3, 0.46, 56);
   const ringSecondaryGeometry = new RingGeometry(0.24, 0.52, 56);
   const ringMaterial = new MeshBasicMaterial({
-    color: 0xd4695a,
+    color: 0x9c72bc,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -92,7 +100,7 @@ function createSharedResources(
     toneMapped: false,
   });
   const ringSecondaryMaterial = new MeshBasicMaterial({
-    color: 0xd4a017,
+    color: 0x644789,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -103,7 +111,7 @@ function createSharedResources(
   });
   const shellGeometry = new SphereGeometry(1, 24, 16);
   const shellMaterial = new MeshBasicMaterial({
-    color: 0xd4a017,
+    color: 0x613d85,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -114,10 +122,12 @@ function createSharedResources(
   });
   const flashGeometry = new SphereGeometry(1, 16, 12);
   const flashMaterial = new MeshBasicMaterial({
-    color: 0xa33b3b,
+    map: textures.ember,
+    color: 0x9e6bcc,
     transparent: true,
     opacity: 0,
     depthWrite: false,
+    blending: AdditiveBlending,
     toneMapped: false,
   });
   return {
@@ -131,6 +141,18 @@ function createSharedResources(
     shellMaterial,
     flashGeometry,
     flashMaterial,
+    clawGeometry: createTaperedArcGeometry(1, 0.22, Math.PI * 0.86, 0.06),
+    clawMaterial: new MeshStandardMaterial({
+      color: 0x58356f,
+      emissive: 0x9d63bc,
+      emissiveIntensity: 0.42,
+      roughness: 0.85,
+      metalness: 0,
+      flatShading: true,
+      transparent: true,
+      depthWrite: false,
+      side: DoubleSide,
+    }),
   };
 }
 
@@ -152,6 +174,8 @@ class RugidoCast {
   private readonly ringSecondaryMaterial: MeshBasicMaterial;
   private readonly shell: Mesh<SphereGeometry, MeshBasicMaterial>;
   private readonly flash: Mesh<SphereGeometry, MeshBasicMaterial>;
+  private readonly claws: InstancedMesh<BufferGeometry, MeshStandardMaterial>;
+  private readonly clawPose = new Object3D();
   private readonly light: PointLight | null;
   private readonly isPooledLight: boolean;
   private elapsed = 0;
@@ -196,19 +220,26 @@ class RugidoCast {
     this.flash = new Mesh(shared.flashGeometry, shared.flashMaterial.clone());
     this.flash.name = "rugido-flash";
     this.castRoot.add(this.flash);
+    this.claws = new InstancedMesh(shared.clawGeometry, shared.clawMaterial.clone(), 3);
+    this.claws.name = "tk-fear-shadow-talons";
+    this.claws.position.copy(origin);
+    this.claws.instanceMatrix.setUsage(DynamicDrawUsage);
+    this.claws.frustumCulled = false;
+    this.claws.material.opacity = 0;
+    this.castRoot.add(this.claws);
 
     if (this.lightPool) {
-      this.light = this.lightPool.acquire(0xc4553b, 9);
+      this.light = this.lightPool.acquire(0xa56cc9, 9);
       this.isPooledLight = true;
     } else {
-      this.light = new PointLight(0xc4553b, 0, 9, 2);
+      this.light = new PointLight(0xa56cc9, 0, 9, 2);
       this.isPooledLight = false;
     }
     if (this.light) {
       this.light.name = "rugido-light";
       this.castRoot.add(this.light);
       this.light.position.copy(origin);
-      this.light.intensity = 5.8;
+      this.light.intensity = 2.8;
     }
 
     for (const system of this.systems) {
@@ -234,7 +265,7 @@ class RugidoCast {
     this.shell.material.opacity = 0.2;
     this.flash.scale.setScalar(0.32);
     this.flash.material.opacity = 1;
-    this.flash.material.color.copy(EMBER_RED);
+    this.flash.material.color.copy(SHADOW_CORE);
   }
 
   getPhase(): RugidoCastPhase {
@@ -281,6 +312,19 @@ class RugidoCast {
   update(deltaTime: number): void {
     if (this.disposed) return;
     this.elapsed += deltaTime;
+    const clawProgress = MathUtils.clamp(this.elapsed / 0.58, 0, 1);
+    const clawReveal = Math.min(1, clawProgress * 5);
+    const clawFade = Math.pow(1 - clawProgress, 1.2);
+    this.claws.material.opacity = clawReveal * clawFade * 0.88;
+    for (let index = 0; index < 3; index++) {
+      this.clawPose.position.set((index - 1) * 0.48, 0.7 - clawProgress * 0.38, -0.3);
+      this.clawPose.rotation.set(0.14, (index - 1) * 0.25, -Math.PI / 2 + (index - 1) * 0.28);
+      this.clawPose.scale.set(0.85 + clawReveal * 0.22, 0.65 + clawReveal * 0.35, 1);
+      this.clawPose.updateMatrix();
+      this.claws.setMatrixAt(index, this.clawPose.matrix);
+    }
+    this.claws.instanceMatrix.needsUpdate = true;
+    this.claws.visible = clawProgress < 1;
     const waveProgress = MathUtils.clamp(this.elapsed / this.config.waveDuration, 0, 1);
     const waveFade = Math.pow(1 - waveProgress, 1.6);
     this.ring.scale.setScalar(MathUtils.lerp(0.35, this.config.waveRadius, waveProgress));
@@ -303,17 +347,17 @@ class RugidoCast {
 
     const shellProgress = MathUtils.clamp(this.elapsed / 0.28, 0, 1);
     this.shell.scale.setScalar(MathUtils.lerp(0.35, 3, shellProgress));
-    this.shell.material.opacity = Math.pow(1 - shellProgress, 2) * 0.2;
+    this.shell.material.opacity = Math.pow(1 - shellProgress, 2) * 0.07;
     this.shell.visible = shellProgress < 1;
 
     const flashProgress = MathUtils.clamp(this.elapsed / this.config.flashDuration, 0, 1);
     this.flash.scale.setScalar(0.32 + flashProgress * 0.8);
     this.flash.material.opacity = Math.pow(1 - flashProgress, 2);
-    this.flash.material.color.lerpColors(EMBER_RED, EMBER_GOLD, flashProgress);
+    this.flash.material.color.lerpColors(SHADOW_CORE, SHADOW_EDGE, flashProgress);
     this.flash.visible = flashProgress < 1;
 
     const lightProgress = MathUtils.clamp(this.elapsed / 0.4, 0, 1);
-    if (this.light) this.light.intensity = 5.8 * Math.pow(1 - lightProgress, 1.5);
+    if (this.light) this.light.intensity = 2.8 * Math.pow(1 - lightProgress, 1.5);
 
     if (this.elapsed >= this.config.cleanupDelay) this.dispose();
   }
@@ -325,7 +369,7 @@ class RugidoCast {
       system.emitter.removeFromParent();
       system.dispose();
     }
-    this.castRoot.remove(this.ring, this.ringSecondary, this.shell, this.flash);
+    this.castRoot.remove(this.ring, this.ringSecondary, this.shell, this.flash, this.claws);
     if (this.isPooledLight) {
       this.lightPool?.release(this.light);
     } else if (this.light) {
@@ -336,6 +380,8 @@ class RugidoCast {
     this.ringSecondaryMaterial.dispose();
     this.shell.material.dispose();
     this.flash.material.dispose();
+    this.claws.material.dispose();
+    this.claws.dispose();
     this.onDispose(this);
   }
 }
@@ -463,6 +509,8 @@ export class RugidoVfxController {
     this.shared.shellMaterial.dispose();
     this.shared.flashGeometry.dispose();
     this.shared.flashMaterial.dispose();
+    this.shared.clawGeometry.dispose();
+    this.shared.clawMaterial.dispose();
     disposeRugidoParticleMaterials(this.shared.particleMaterials);
     disposeRugidoTextures(this.textures);
     this.castRoot.clear();

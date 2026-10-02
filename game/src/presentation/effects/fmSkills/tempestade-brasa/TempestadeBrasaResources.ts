@@ -74,8 +74,8 @@ function finish(
   return geometry;
 }
 
-const COAL_CORE = new Color(0xffffff);
-const COAL_EDGE = new Color(0x8a4520);
+const COAL_CORE = new Color(0xffa44a);
+const COAL_EDGE = new Color(0x35190f);
 const RIM_CORE = new Color(0xffe9b8);
 const RIM_EDGE = new Color(0xd8561c);
 const CRACK_HOT = new Color(0xffd489);
@@ -97,7 +97,7 @@ function createCoalGeometry(): BufferGeometry {
         height + jitter(side * 2.7 + ringIndex * 5.9, 0.12),
         Math.sin(angle) * radius,
       ],
-      color: COAL_EDGE.clone().lerp(COAL_CORE, Math.pow(1 - Math.abs(v - 0.35) * 1.5, 2) * 0.9 + 0.1),
+      color: COAL_EDGE.clone().lerp(COAL_CORE, Math.pow(1 - Math.abs(v - 0.35) * 1.5, 2) * (side % 3 === 0 ? 0.9 : 0.35) + 0.1),
     };
   };
   for (let ringIndex = 0; ringIndex < COAL_RINGS; ringIndex += 1) {
@@ -269,11 +269,11 @@ export class TempestadeBrasaResources {
     coalRain: particleMaterial("coalRain", this.textures.ember, 0.9, false),
     cinder: particleMaterial("cinder", this.textures.spark, 0.92, true),
     flash: particleMaterial("flash", this.textures.flash, 0.94, true),
-    dust: particleMaterial("dust", this.textures.smoke, 0.62, false),
+    dust: particleMaterial("dust", this.textures.smoke, 0.42, false),
     ash: particleMaterial("ash", this.textures.smoke, 0.5, false),
     scorch: particleMaterial("scorch", this.textures.scorch, 0.72, false),
   };
-  readonly coalMaterial: MeshBasicMaterial = emissiveMaterial("coal", null, 0xffb257, 0.98, false);
+  readonly coalMaterial: MeshBasicMaterial = emissiveMaterial("coal", null, 0xffffff, 0.98, false);
   readonly coalHotMaterial: MeshBasicMaterial = emissiveMaterial("coalHot", null, 0xffe6b0, 1, true);
   readonly rimMaterial: MeshBasicMaterial = emissiveMaterial("rim", null, 0xff9a3c, 0.92, true);
   readonly rimCoreMaterial: MeshBasicMaterial = emissiveMaterial("rimCore", null, 0xffe2a6, 0.86, true);

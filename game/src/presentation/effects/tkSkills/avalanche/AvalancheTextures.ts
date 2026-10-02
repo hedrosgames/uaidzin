@@ -1,5 +1,5 @@
 import { type Texture } from "three";
-import { createCanvasTexture as createTexture, drawRadialGlow } from "../../vfxKit/canvasTexture";
+import { createCanvasTexture as createTexture } from "../../vfxKit/canvasTexture";
 
 export interface AvalancheTextureSet {
   dust: Texture;
@@ -8,24 +8,21 @@ export interface AvalancheTextureSet {
 
 export function createAvalancheTextures(): AvalancheTextureSet {
   const dust = createTexture(128, 128, (context) => {
-    drawRadialGlow(context, 64, 64, [
-      [0, "rgba(226,208,176,0.94)"],
-      [0.3, "rgba(178,154,118,0.8)"],
-      [0.62, "rgba(112,92,66,0.42)"],
-      [1, "rgba(58,46,32,0)"],
-    ]);
-    context.globalAlpha = 0.32;
-    for (let index = 0; index < 12; index += 1) {
-      const angle = (index / 12) * Math.PI * 2;
-      const x = 64 + Math.cos(angle) * (28 + (index % 3) * 9);
-      const y = 64 + Math.sin(angle) * (28 + (index % 4) * 7);
-      const puff = context.createRadialGradient(x, y, 0, x, y, 17);
-      puff.addColorStop(0, "rgba(232,216,186,0.72)");
-      puff.addColorStop(1, "rgba(118,96,68,0)");
+    for (let index = 0; index < 7; index += 1) {
+      const angle = index * Math.PI * 2 / 7;
+      const x = 64 + Math.cos(angle) * 22;
+      const y = 67 + Math.sin(angle) * 17;
+      const radius = 23 + index % 3 * 4;
+      const puff = context.createRadialGradient(x - 5, y - 7, 3, x, y, radius);
+      puff.addColorStop(0, "rgba(217,193,151,0.78)");
+      puff.addColorStop(0.62, "rgba(172,143,104,0.66)");
+      puff.addColorStop(0.86, "rgba(126,103,77,0.34)");
+      puff.addColorStop(1, "rgba(96,77,55,0)");
       context.fillStyle = puff;
-      context.fillRect(x - 17, y - 17, 34, 34);
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.fill();
     }
-    context.globalAlpha = 1;
   });
 
   const debris = createTexture(64, 64, (context) => {

@@ -83,8 +83,8 @@ const FIXED_STEP = 1 / 60;
 
 function createColorGradient(colorHex: number): Gradient {
   const base = new Color(colorHex);
-  const hot = base.clone().lerp(new Color(0xffffff), 0.46);
-  const warm = base.clone().lerp(new Color(0xffa500), 0.34);
+  const hot = base.clone().lerp(new Color(0xfff3d9), 0.22);
+  const warm = base.clone().lerp(new Color(0xffffff), 0.08);
   const deep = base.clone().multiplyScalar(0.32);
   return new Gradient(
     [
@@ -159,7 +159,7 @@ function createMotionSystem(
     worldSpace: true,
     renderOrder: 6,
     behaviors: [
-      new ColorOverLife(createColorGradient(request.colorHex)),
+      new ColorOverLife(createColorGradient(getSkillArtwork(request.profile.id)?.accent ?? request.colorHex)),
       createShrink(),
       new WidthOverLength(new PiecewiseBezier([[new Bezier(1, 0.72, 0.16, 0), 0]])),
       createTurbulence(directional ? 0.5 : 0.28),
@@ -188,7 +188,7 @@ function createImpactSystem(request: SkillVfxRequest, material: MeshBasicMateria
     worldSpace: true,
     renderOrder: 7,
     behaviors: [
-      new ColorOverLife(createColorGradient(request.colorHex)),
+      new ColorOverLife(createColorGradient(getSkillArtwork(request.profile.id)?.accent ?? request.colorHex)),
       createShrink(),
       new ApplyForce(new QuarksVector3(0, -2.4, 0), new ConstantValue(1)),
       createTurbulence(0.46),
@@ -213,7 +213,7 @@ function createAuraSystem(request: SkillVfxRequest, material: MeshBasicMaterial)
     worldSpace: true,
     renderOrder: 7,
     behaviors: [
-      new ColorOverLife(createColorGradient(request.colorHex)),
+      new ColorOverLife(createColorGradient(getSkillArtwork(request.profile.id)?.accent ?? request.colorHex)),
       createShrink(),
       createTurbulence(0.36),
     ],
@@ -270,6 +270,7 @@ class GenericSkillVfxCast {
   private readonly curve: CubicBezierCurve3 | null;
   private readonly impactPoint: Vector3;
   private readonly directional: boolean;
+  private readonly targetDelivery: boolean;
   private readonly family: SkillVfxProfile["family"];
   private readonly duration: number;
   private readonly radius: number;
@@ -284,7 +285,10 @@ class GenericSkillVfxCast {
     const { scene, batch, root, resources, request, castIndex } = options;
     this.skillId = request.profile.id;
     const family = request.profile.family;
+    const art = getSkillArtwork(request.profile.id);
+    const colorHex = art?.accent ?? request.colorHex;
     this.directional = directionalFamily(family);
+    this.targetDelivery = art?.delivery === "target";
     this.family = family;
     this.duration = skillVfxDuration(family);
     this.radius = Math.max(0.5, request.radius);
@@ -293,38 +297,37 @@ class GenericSkillVfxCast {
     this.origin = request.origin.clone();
     this.target = (request.target ?? request.center).clone();
     this.impactPoint = (this.directional ? this.target : request.center).clone();
-    this.curve = this.directional ? this.createCurve(request, castIndex) : null;
+    this.curve = this.directional && !this.targetDelivery ? this.createCurve(request, castIndex) : null;
     this.group.name = `skill-vfx-${request.profile.id}`;
     root.add(this.group);
-    const art = getSkillArtwork(request.profile.id);
     this.artwork = art ? new SkillArtwork(this.group, resources.artwork, art, this.radius, family === "aoe") : null;
 
-    const coreMaterial = createAdditiveMeshMaterial(request.colorHex, 0.86);
-    const ringMaterial = createAdditiveMeshMaterial(request.colorHex, 0.78);
-    const beamMaterial = createAdditiveMeshMaterial(request.colorHex, 0.56);
-    const arrowMaterial = createAdditiveMeshMaterial(request.colorHex, 0.92);
+    const coreMaterial = createAdditiveMeshMaterial(colorHex, 0.56);
+    const ringMaterial = createAdditiveMeshMaterial(colorHex, 0.3);
+    const beamMaterial = createAdditiveMeshMaterial(colorHex, 0.34);
+    const arrowMaterial = createAdditiveMeshMaterial(colorHex, 0.82);
     this.materials.push(coreMaterial, ringMaterial, beamMaterial, arrowMaterial);
 
     this.core = new Mesh(resources.coreGeometry, coreMaterial);
     this.ring = new Mesh(resources.ringGeometry, ringMaterial);
     this.beam = new Mesh(resources.beamGeometry, beamMaterial);
     this.arrow = new Mesh(resources.arrowGeometry, arrowMaterial);
-    this.core.visible = this.directional;
-    this.ring.visible = !this.directional;
-    this.beam.visible = family === "line" || family === "projectile";
-    this.arrow.visible = family === "arrow";
+    this.core.visible = this.directional && !art;
+    this.ring.visible = !this.directional && family !== "passive";
+    this.beam.visible = !art && (family === "line" || family === "projectile");
+    this.arrow.visible = !art && family === "arrow";
     this.ring.rotation.x = -Math.PI / 2;
     if (this.lightPool) {
-      this.light = this.lightPool.acquire(request.colorHex, 6.5);
+      this.light = this.lightPool.acquire(colorHex, 6.5);
       this.isPooledLight = true;
     } else {
-      this.light = new PointLight(request.colorHex, 0, 6.5, 2);
+      this.light = new PointLight(colorHex, 0, 6.5, 2);
       this.group.add(this.light);
       this.isPooledLight = false;
     }
     this.group.add(this.core, this.ring, this.beam, this.arrow);
 
-    this.motion = this.directional ? createMotionSystem(request, resources.particleMaterials.trail, true) : null;
+    this.motion = this.directional && !this.targetDelivery ? createMotionSystem(request, resources.particleMaterials.trail, true) : null;
     this.impact = this.directional || family === "aoe" ? createImpactSystem(request, resources.particleMaterials.fire) : null;
     this.aura = !this.directional ? createAuraSystem(request, resources.particleMaterials.fire) : null;
     this.systems = [this.motion, this.impact, this.aura].filter((system): system is ParticleSystem => system !== null);
@@ -347,18 +350,23 @@ class GenericSkillVfxCast {
       this.ring.position.copy(this.impactPoint);
       this.core.position.copy(this.impactPoint);
       if (this.light) this.light.position.copy(this.impactPoint);
-    } else {
-      this.motion!.emitter.position.copy(this.origin);
-      this.motion!.emitter.quaternion.setFromUnitVectors(FORWARD, FORWARD);
+    } else if (this.motion) {
+      this.motion.emitter.position.copy(this.origin);
+      this.motion.emitter.quaternion.setFromUnitVectors(FORWARD, FORWARD);
     }
+    this.artwork?.update(0, 0, this.targetDelivery ? this.target : this.directional ? this.origin : this.impactPoint);
   }
 
   getParticleCount(): number {
-    return this.systems.reduce((total, system) => total + system.particleNum, 0);
+    return this.systems.reduce((total, system) => total + system.particleNum, 0)
+      + (this.artwork?.getInstanceCount() ?? 0);
   }
 
   prepareFrame(): void {
-    for (const system of this.systems) system.emitter.updateWorldMatrix(true, false);
+    if (this.disposed) return;
+    for (const system of this.systems) {
+      if (system.emitter.visible || system.particleNum > 0) system.emitter.updateWorldMatrix(true, false);
+    }
   }
 
   update(deltaTime: number): void {
@@ -372,7 +380,10 @@ class GenericSkillVfxCast {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    for (const system of this.systems) system.dispose();
+    for (const system of this.systems) {
+      system.emitter.removeFromParent();
+      system.dispose();
+    }
     this.artwork?.dispose();
     this.group.removeFromParent();
     if (this.isPooledLight) {
@@ -405,8 +416,8 @@ class GenericSkillVfxCast {
       this.beam.visible = false;
       this.arrow.visible = false;
       this.ring.scale.setScalar(0.35 + (1 - fade) * 1.8);
-      (this.ring.material as MeshBasicMaterial).opacity = 0.9 * fade;
-      if (this.light) this.light.intensity = 4.2 * fade;
+      (this.ring.material as MeshBasicMaterial).opacity = 0.32 * fade;
+      if (this.light) this.light.intensity = 2 * fade;
       this.artwork?.update(this.elapsed, 1 - fade, this.impactPoint, undefined, true);
       if (fade <= 0) this.dispose();
       return;
@@ -415,9 +426,11 @@ class GenericSkillVfxCast {
     const eased = 1 - Math.pow(1 - progress, 2);
     const point = this.curve?.getPoint(eased, this.scratchPoint) ?? this.target;
     const tangent = this.curve?.getTangent(eased, this.scratchTangent).normalize() ?? FORWARD;
-    this.motion!.emitter.position.copy(point);
-    this.motion!.emitter.quaternion.setFromUnitVectors(FORWARD, tangent);
-    this.artwork?.update(this.elapsed, progress, point, tangent);
+    if (this.motion) {
+      this.motion.emitter.position.copy(point);
+      this.motion.emitter.quaternion.setFromUnitVectors(FORWARD, tangent);
+    }
+    this.artwork?.update(this.elapsed, progress, point, this.targetDelivery ? undefined : tangent);
     this.core.position.copy(point);
     this.core.scale.setScalar(0.82 + Math.sin(progress * Math.PI) * 0.34);
     if (this.beam.visible) positionSegment(this.beam, this.origin, point);
@@ -427,7 +440,7 @@ class GenericSkillVfxCast {
     }
     if (this.light) {
       this.light.position.copy(point);
-      this.light.intensity = 1.4 + Math.sin(progress * Math.PI) * 1.5;
+      this.light.intensity = 0.7 + Math.sin(progress * Math.PI) * 0.9;
     }
     if (progress >= 1) this.triggerImpact();
   }
@@ -441,19 +454,20 @@ class GenericSkillVfxCast {
       const targetScale = this.radius / 0.5;
       this.ring.scale.setScalar(0.35 + impactProgress * (targetScale - 0.35));
       const ringMaterial = this.ring.material as MeshBasicMaterial;
-      ringMaterial.opacity = fade * 0.9;
-      if (this.light) this.light.intensity = 4.2 * fade;
+      ringMaterial.opacity = fade * 0.32;
+      if (this.light) this.light.intensity = 2 * fade;
     }
     if (this.elapsed >= this.duration) this.dispose();
   }
 
   private updatePulse(): void {
     const progress = MathUtils.clamp(this.elapsed / this.duration, 0, 1);
-    this.artwork?.update(this.elapsed, progress, this.impactPoint, undefined, progress >= 0.75);
+    const closing = progress >= 0.72;
+    this.artwork?.update(this.elapsed, progress, this.impactPoint, undefined, closing, Math.max(0, (progress - 0.72) / 0.28));
     this.ring.scale.setScalar(0.65 + progress * 1.9);
     const ringMaterial = this.ring.material as MeshBasicMaterial;
-    ringMaterial.opacity = Math.max(0, 0.8 * (1 - progress));
-    if (this.light) this.light.intensity = 1.8 * (1 - progress);
+    ringMaterial.opacity = Math.max(0, 0.28 * (1 - progress));
+    if (this.light) this.light.intensity = (this.family === "passive" ? 0.35 : 1) * (1 - progress);
     if (progress >= 0.7) this.phase = "pulse";
     if (progress >= 1) this.dispose();
   }
@@ -470,12 +484,12 @@ class GenericSkillVfxCast {
     this.ring.position.copy(this.impactPoint);
     this.ring.scale.setScalar(0.35);
     const ringMaterial = this.ring.material as MeshBasicMaterial;
-    ringMaterial.opacity = 0.9;
-    this.core.visible = true;
+    ringMaterial.opacity = 0.32;
+    this.core.visible = !this.artwork;
     this.core.position.copy(this.impactPoint);
     if (this.light) {
       this.light.position.copy(this.impactPoint);
-      this.light.intensity = 4.2;
+      this.light.intensity = 2;
     }
   }
 }

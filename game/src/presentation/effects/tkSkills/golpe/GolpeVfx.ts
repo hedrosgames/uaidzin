@@ -1,5 +1,6 @@
 import {
   AdditiveBlending,
+  BufferGeometry,
   DoubleSide,
   Group,
   MathUtils,
@@ -9,7 +10,6 @@ import {
   PointLight,
   Scene,
   ShaderMaterial,
-  TorusGeometry,
   Vector2,
   Vector3,
   type Texture,
@@ -30,6 +30,7 @@ import {
   type GolpeTextureSet,
 } from "./GolpeTextures";
 import type { TkLightPool } from "../../TkLightPool";
+import { createTaperedArcGeometry } from "../../vfxKit/stylizedGeometry";
 
 export interface GolpeVfxConfig {
   swingDuration: number;
@@ -51,7 +52,7 @@ export const DEFAULT_GOLPE_VFX_CONFIG: GolpeVfxConfig = {
   arcRadius: 3.5,
   arcSpan: 2.15,
   sweepArc: 0.78,
-  originHeight: 1.18,
+  originHeight: 0.28,
   slashSparkCount: 30,
   groundSparkCount: 36,
   emberCount: 14,
@@ -63,21 +64,21 @@ interface GolpeSharedResources {
   textures: GolpeTextureSet;
   flameTexture: Texture;
   particleMaterials: GolpeParticleMaterials;
-  arcGeometry: TorusGeometry;
-  edgeGeometry: TorusGeometry;
+  arcGeometry: BufferGeometry;
+  edgeGeometry: BufferGeometry;
   arcMaterial: MeshStandardMaterial;
   edgeMaterial: MeshBasicMaterial;
 }
 
-function createArcGeometry(radius: number, span: number): TorusGeometry {
-  const geometry = new TorusGeometry(radius, 0.052, 8, 60, span);
-  geometry.rotateZ(Math.PI / 2 - span / 2);
+function createArcGeometry(radius: number, span: number): BufferGeometry {
+  const geometry = createTaperedArcGeometry(radius, 0.48, span, 0.07, 36);
+  geometry.rotateZ(Math.PI / 2);
   return geometry;
 }
 
-function createEdgeGeometry(radius: number, span: number): TorusGeometry {
-  const geometry = new TorusGeometry(radius, 0.02, 4, 60, span);
-  geometry.rotateZ(Math.PI / 2 - span / 2);
+function createEdgeGeometry(radius: number, span: number): BufferGeometry {
+  const geometry = createTaperedArcGeometry(radius + 0.015, 0.055, span, 0.02, 36);
+  geometry.rotateZ(Math.PI / 2);
   return geometry;
 }
 
@@ -86,15 +87,16 @@ function createSharedResources(config: GolpeVfxConfig): GolpeSharedResources {
   const flameTexture = createFireBurstFlameTexture();
   const particleMaterials = createGolpeParticleMaterials(textures, flameTexture);
   const arcMaterial = new MeshStandardMaterial({
-    map: textures.metal,
-    color: 0x8a8378,
+    color: 0xe35822,
     emissive: 0xff7a1a,
-    emissiveMap: textures.metal,
-    emissiveIntensity: 2.6,
-    roughness: 0.35,
-    metalness: 0.85,
+    emissiveIntensity: 0.86,
+    roughness: 0.72,
+    metalness: 0.06,
+    flatShading: true,
     transparent: true,
     opacity: 1,
+    depthWrite: false,
+    side: DoubleSide,
   });
   const edgeMaterial = new MeshBasicMaterial({
     color: 0xffc266,
@@ -126,8 +128,8 @@ function isFiniteVector3(vector: Vector3): boolean {
 class GolpeCast {
   private readonly castGroup: Group;
   private readonly swingGroup: Group;
-  private readonly arc: Mesh<TorusGeometry, MeshStandardMaterial>;
-  private readonly edge: Mesh<TorusGeometry, MeshBasicMaterial>;
+  private readonly arc: Mesh<BufferGeometry, MeshStandardMaterial>;
+  private readonly edge: Mesh<BufferGeometry, MeshBasicMaterial>;
   private readonly light: PointLight | null;
   private readonly isPooledLight: boolean;
   private readonly slashSparks: ParticleSystem;
@@ -168,7 +170,7 @@ class GolpeCast {
 
     const planeGroup = new Group();
     planeGroup.name = "tk-golpe-plane";
-    planeGroup.rotation.y = Math.PI / 2;
+    planeGroup.rotation.x = Math.PI / 2;
 
     this.swingGroup = new Group();
     this.swingGroup.name = "tk-golpe-swing";
@@ -294,8 +296,8 @@ class GolpeCast {
     const grow = 0.92 + progress * 0.16;
     this.arc.scale.setScalar(grow);
     this.edge.scale.setScalar(grow);
-    this.arc.material.emissiveIntensity = 2.6 * (1 - progress * 0.35);
-    this.edge.material.opacity = 0.95 * (1 - progress * 0.5);
+    this.arc.material.emissiveIntensity = 0.86 * (1 - progress * 0.35);
+    this.edge.material.opacity = 0.72 * (1 - progress * 0.5);
     if (this.light) this.light.intensity = 1.2 + Math.sin(progress * Math.PI) * 2.4;
     if (progress >= 1) this.triggerAfterglow();
   }
@@ -328,7 +330,7 @@ class GolpeCast {
       1 - MathUtils.clamp(this.afterglowElapsed / fadeWindow, 0, 1),
       1.6,
     );
-    this.arc.material.emissiveIntensity = 1.7 * fade;
+    this.arc.material.emissiveIntensity = 0.56 * fade;
     this.arc.material.opacity = 0.9 * fade;
     this.edge.material.opacity = 0.5 * fade;
     if (this.light) this.light.intensity = 3.4 * fade;

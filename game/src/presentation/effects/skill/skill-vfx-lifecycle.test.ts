@@ -9,7 +9,10 @@ import { SkillArtwork, SkillArtworkResources } from "./art/SkillArtwork";
 
 const classProfiles = SKILL_VFX_CATALOG.filter(profile => profile.classId !== "TK");
 const artworkProfiles = classProfiles.filter(profile => getSkillArtwork(profile.id));
-const dedicatedIds = ["fm_mag_esfera_ignea", "fm_mag_lanca_glacial", "fm_mag_choque_vital"];
+const dedicatedIds = [
+  "fm_mag_esfera_ignea", "fm_mag_lanca_glacial", "fm_mag_choque_vital", "fm_mag_picada",
+  "fm_mag_tempestade_brasa", "fm_mag_sombra_corrosiva", "fm_mag_nevasca", "fm_mag_colapso",
+];
 const directions = [
   new Vector3(4, 0, 0), new Vector3(-4, 0, 0),
   new Vector3(0, 0, 4), new Vector3(0, 0, -4),
@@ -117,9 +120,9 @@ describe("Ciclo de vida do VFX genérico das classes", () => {
   });
   afterAll(() => vi.unstubAllGlobals());
 
-  it("cobre 69 configurações autorais e preserva três FM dedicadas", () => {
+  it("cobre 64 configurações autorais e preserva as oito FM dedicadas", () => {
     expect(classProfiles).toHaveLength(72);
-    expect(artworkProfiles).toHaveLength(69);
+    expect(artworkProfiles).toHaveLength(64);
     expect(classProfiles.filter(profile => !getSkillArtwork(profile.id)).map(profile => profile.id))
       .toEqual(dedicatedIds);
     for (const profile of artworkProfiles) {
@@ -139,7 +142,13 @@ describe("Ciclo de vida do VFX genérico das classes", () => {
     const { scene, director, batch, root } = setup();
     for (const target of directions) {
       expect(director.play(requestFor(profile, target))).toBe(true);
-      expect(artworkMeshes(root)).toHaveLength(1);
+      let layers = 1;
+      let secondary = getSkillArtwork(profile.id)!.secondary;
+      while (secondary) {
+        layers++;
+        secondary = secondary.secondary;
+      }
+      expect(artworkMeshes(root)).toHaveLength(layers);
       expect(artworkMeshes(root)[0].count).toBe(getSkillArtwork(profile.id)!.count);
       let particles = 0;
       for (const duration of [0.05, 0.15, 0.3, 0.4, 0.6, 1.5]) {
@@ -186,7 +195,7 @@ describe("Ciclo de vida do VFX genérico das classes", () => {
   );
 
   it.each(directions.filter(direction => direction.lengthSq() > 0))(
-    "alinha as sete flechas à tangente (%s) sem inverter a cauda",
+    "alinha flecha e rastros à tangente (%s) sem inverter a cauda",
     direction => {
       const group = new Group();
       const resources = new SkillArtworkResources();
@@ -195,7 +204,7 @@ describe("Ciclo de vida do VFX genérico das classes", () => {
         const tangent = direction.clone().normalize();
         const center = new Vector3(0, 3, 0);
         artwork.update(0.25, 0.5, center, tangent);
-        const mesh = artworkMeshes(group)[0];
+        const mesh = artworkMeshes(group)[1];
         const matrix = new Matrix4();
         const positions: Vector3[] = [];
         for (let index = 0; index < mesh.count; index++) {
@@ -205,7 +214,7 @@ describe("Ciclo de vida do VFX genérico das classes", () => {
           expect(forward.dot(tangent)).toBeCloseTo(1, 5);
         }
         const tail = positions[positions.length - 1].clone().sub(positions[0]);
-        expect(tail.dot(tangent)).toBeCloseTo(-0.96, 5);
+        expect(tail.dot(tangent)).toBeCloseTo(-(mesh.count - 1) * 0.16, 5);
       } finally {
         artwork.dispose();
         resources.dispose();
@@ -241,16 +250,16 @@ describe("Ciclo de vida do VFX genérico das classes", () => {
     }
   });
 
-  it("compartilha geometria e material da arte e só descarta ao destruir director", () => {
+  it("compartilha geometria, isola opacidade e descarta cada recurso no seu owner", () => {
     const { director, root, scene } = setup();
     const profile = getSkillVfxProfile("ht_fis_rapid_hit")!;
     director.play(requestFor(profile));
     advance(director, 0.3);
     director.play(requestFor(profile, new Vector3(0, 0, 4)));
     advance(director, 0.05);
-    const [first, second] = artworkMeshes(root);
+    const [first, second] = artworkMeshes(root).filter(mesh => mesh.name === "skill-art-arrow");
     expect(first.geometry).toBe(second.geometry);
-    expect(first.material).toBe(second.material);
+    expect(first.material).not.toBe(second.material);
     expect(first.material).toBeInstanceOf(MeshStandardMaterial);
     const geometryDisposed = vi.fn();
     const materialDisposed = vi.fn();
@@ -259,12 +268,12 @@ describe("Ciclo de vida do VFX genérico das classes", () => {
     advance(director, 1);
     expect(director.getActiveCastCount()).toBe(1);
     expect(geometryDisposed).not.toHaveBeenCalled();
-    expect(materialDisposed).not.toHaveBeenCalled();
+    expect(materialDisposed).toHaveBeenCalledOnce();
     expectFiniteTransforms(scene);
     advance(director, 2);
     expect(director.getActiveCastCount()).toBe(0);
     expect(geometryDisposed).not.toHaveBeenCalled();
-    expect(materialDisposed).not.toHaveBeenCalled();
+    expect(materialDisposed).toHaveBeenCalledOnce();
     director.dispose();
     expect(geometryDisposed).toHaveBeenCalledOnce();
     expect(materialDisposed).toHaveBeenCalledOnce();

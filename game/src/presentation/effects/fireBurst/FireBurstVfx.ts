@@ -88,11 +88,11 @@ function createSharedResources(
   chainGeometry.scale(0.76, 1.18, 1);
   const chainMaterial = new MeshStandardMaterial({
     map: textures.chain,
-    color: 0xc7b9aa,
+    color: 0x9d8872,
     emissive: 0x9a2e08,
-    emissiveIntensity: 0.52,
-    roughness: 0.42,
-    metalness: 0.72,
+    emissiveIntensity: 0.26,
+    roughness: 0.58,
+    metalness: 0.46,
   });
   const tipGeometry = new ConeGeometry(0.23, 0.68, 4);
   tipGeometry.scale(0.74, 1, 1);
@@ -100,7 +100,7 @@ function createSharedResources(
   const tipMaterial = new MeshStandardMaterial({
     color: 0xffd09a,
     emissive: 0xff5a12,
-    emissiveIntensity: 0.65,
+    emissiveIntensity: 0.38,
     roughness: 0.28,
     metalness: 0.62,
   });
@@ -117,6 +117,7 @@ function createSharedResources(
   });
   const flashGeometry = new SphereGeometry(1, 16, 12);
   const flashMaterial = new MeshBasicMaterial({
+    map: textures.fire,
     color: 0xffedb0,
     transparent: true,
     opacity: 0,
@@ -183,11 +184,12 @@ class FireBurstCast {
     private readonly lightPool?: TkLightPool,
   ) {
     this.impactSystems = createFireBurstImpactSystems(shared.particleMaterials);
+    const phaseOffset = Math.random() * Math.PI * 2;
     for (let index = 0; index < FIRE_BURST_CHAIN_COUNT; index += 1) {
       const flightSystems = createFireBurstFlightSystems(shared.particleMaterials, config);
       this.chains.push(new FireBurstChain(
         castRoot, shared, flightSystems, origin, target,
-        Math.random() * Math.PI * 2,
+        phaseOffset + index * Math.PI * 2 / FIRE_BURST_CHAIN_COUNT,
         config.chainSpacing, config.chainMaxLinks,
       ));
       for (const system of flightSystems.all) system.play();

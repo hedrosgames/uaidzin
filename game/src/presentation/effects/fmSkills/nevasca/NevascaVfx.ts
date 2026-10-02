@@ -234,7 +234,7 @@ class NevascaCast {
       height,
       Math.sin(seed.angle) * radius,
     );
-    this.axis.set(Math.sin(seed.angle), 0.24, -Math.cos(seed.angle)).normalize();
+    this.axis.set(Math.cos(seed.angle), 0.24, Math.sin(seed.angle)).normalize();
     this.quaternion.setFromAxisAngle(this.axis, seed.lean * eased);
     this.spinQuaternion.setFromAxisAngle(this.upAxis, seed.angle + this.elapsed * seed.spin * 0.12);
     this.quaternion.multiply(this.spinQuaternion);
@@ -251,7 +251,7 @@ class NevascaCast {
     const radius = seed.offset + flight * (this.config.radius * 0.42 + this.config.crystalSpeed * 0.1);
     const height = (seed.height + 1.06) * (1 - flight * 0.62) + flight * 0.4;
     this.position.set(Math.cos(seed.angle) * radius, Math.max(0.02, height), Math.sin(seed.angle) * radius);
-    this.axis.set(Math.sin(seed.angle), 0.3, -Math.cos(seed.angle)).normalize();
+    this.axis.set(Math.cos(seed.angle), 0.3, Math.sin(seed.angle)).normalize();
     this.quaternion.setFromAxisAngle(this.axis, seed.lean - flight * 1.4);
     this.spinQuaternion.setFromAxisAngle(this.upAxis, seed.angle + this.elapsed * 3.4);
     this.quaternion.multiply(this.spinQuaternion);
@@ -340,8 +340,8 @@ class NevascaCast {
     const spin = this.elapsed * 1.6;
     this.rim.rotation.y = spin;
     this.rimInner.rotation.y = -spin * 1.35;
-    this.rimMaterial.opacity = 0.9 * progress;
-    this.rimInnerMaterial.opacity = 0.74 * progress;
+    this.rimMaterial.opacity = 0.54 * progress;
+    this.rimInnerMaterial.opacity = 0.38 * progress;
     this.frostMaterial.opacity = 0.3 * progress;
     this.frost.scale.setScalar(this.config.frostScale * (0.2 + progress * 0.28));
     this.cone.visible = true;
@@ -368,13 +368,14 @@ class NevascaCast {
     const eased = MathUtils.clamp(progress / 0.72, 0, 1);
     this.rim.rotation.y = this.elapsed * 2.4;
     this.rimInner.rotation.y = -this.elapsed * 3.2;
-    this.rimMaterial.opacity = 0.9;
-    this.rimInnerMaterial.opacity = 0.74;
+    this.rimMaterial.opacity = 0.54;
+    this.rimInnerMaterial.opacity = 0.38;
     this.frostMaterial.opacity = 0.26 * (1 - progress * 0.25);
     this.frost.scale.setScalar(this.config.frostScale * (0.48 + progress * 0.2));
     this.cone.visible = true;
     this.cone.scale.setScalar(this.config.coneScale * (0.06 + eased * 0.94));
-    this.coneMaterial.opacity = 0.22 + eased * 0.16;
+    this.cone.rotation.y = this.elapsed * 2.4;
+    this.coneMaterial.opacity = 0.16 + eased * 0.12;
     this.crystalMaterial.opacity = 0.96;
     for (let index = 0; index < this.seeds.length; index += 1) this.writeCrystal(index, progress);
     this.crystals.instanceMatrix.needsUpdate = true;
@@ -399,9 +400,10 @@ class NevascaCast {
     const collapse = MathUtils.clamp((progress - 0.34) / 0.66, 0, 1);
     this.rim.rotation.y = this.elapsed * 3.1;
     this.rimInner.rotation.y = -this.elapsed * 4.2;
-    this.rimMaterial.opacity = 0.9 * (1 - collapse * 0.55);
-    this.rimInnerMaterial.opacity = 0.74 * (1 - collapse * 0.4);
-    this.coneMaterial.opacity = 0.32 * Math.pow(1 - collapse, 1.4);
+    this.rimMaterial.opacity = 0.54 * (1 - collapse * 0.55);
+    this.rimInnerMaterial.opacity = 0.38 * (1 - collapse * 0.4);
+    this.cone.rotation.y = this.elapsed * 2.4;
+    this.coneMaterial.opacity = 0.28 * Math.pow(1 - collapse, 1.4);
     this.cone.scale.setScalar(this.config.coneScale * (1 + collapse * 0.22));
     this.cone.visible = collapse < 0.98;
     this.crystalMaterial.opacity = 0.96 * (1 - collapse * 0.85);
@@ -440,8 +442,8 @@ class NevascaCast {
     const fadeStart = this.config.residualDuration;
     const fadeProgress = MathUtils.clamp((this.phaseElapsed - fadeStart) / this.config.fadeDuration, 0, 1);
     const fade = Math.pow(1 - fadeProgress, 2);
-    this.rimMaterial.opacity = 0.4 * fade;
-    this.rimInnerMaterial.opacity = 0.34 * fade;
+    this.rimMaterial.opacity = 0.24 * fade;
+    this.rimInnerMaterial.opacity = 0.18 * fade;
     this.rim.rotation.y = this.elapsed * 0.9;
     this.rimInner.rotation.y = -this.elapsed * 1.2;
     this.frostMaterial.opacity = 0.22 * fade;

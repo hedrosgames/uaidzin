@@ -5,6 +5,7 @@ import {
   MathUtils,
   Mesh,
   MeshBasicMaterial,
+  NormalBlending,
   PointLight,
   Scene,
   ShaderMaterial,
@@ -94,8 +95,8 @@ function createDomeGeometry(
 ): BufferGeometry {
   const geometry = new SphereGeometry(
     radius,
-    10,
-    8,
+    6,
+    4,
     Math.PI / 2 - phiLength / 2,
     phiLength,
     thetaStart,
@@ -105,12 +106,25 @@ function createDomeGeometry(
   const colors = new Float32Array(positions.count * 3);
   const random = mulberry32(4177);
   for (let face = 0; face < positions.count / 3; face += 1) {
-    const brightness = 0.78 + random() * 0.44;
+    const brightness = 0.68 + random() * 0.3;
+    let x = 0;
+    let y = 0;
+    let z = 0;
+    for (let corner = 0; corner < 3; corner++) {
+      x += positions.getX(face * 3 + corner) / 3;
+      y += positions.getY(face * 3 + corner) / 3;
+      z += positions.getZ(face * 3 + corner) / 3;
+    }
     for (let corner = 0; corner < 3; corner += 1) {
       const index = face * 3 + corner;
       colors[index * 3] = brightness;
       colors[index * 3 + 1] = brightness * 0.97;
       colors[index * 3 + 2] = brightness * 0.9;
+      positions.setXYZ(index,
+        x + (positions.getX(index) - x) * 0.8,
+        y + (positions.getY(index) - y) * 0.8,
+        z + (positions.getZ(index) - z) * 0.8,
+      );
     }
   }
   geometry.setAttribute("color", new BufferAttribute(colors, 3));
@@ -137,14 +151,14 @@ function createSharedResources(config: EscudoSagradoVfxConfig): EscudoSharedReso
     flameTexture,
   );
   const domeMaterial = new MeshBasicMaterial({
-    map: textures.dome,
+    color: 0xd7d9c4,
     vertexColors: true,
     transparent: true,
     opacity: 0,
     depthWrite: false,
     depthTest: true,
     side: DoubleSide,
-    blending: AdditiveBlending,
+    blending: NormalBlending,
     toneMapped: false,
   });
   const rimMaterial = new MeshBasicMaterial({
@@ -240,6 +254,8 @@ class EscudoSagradoCast {
     this.bottomRim = new Mesh(shared.bottomRimGeometry, shared.rimMaterial.clone());
     this.bottomRim.name = "tk-escudo-rim-bottom";
     this.bottomRim.renderOrder = 8;
+    this.topRim.position.y = config.domeRadius * Math.cos(config.domeThetaStart);
+    this.bottomRim.position.y = config.domeRadius * Math.cos(config.domeThetaStart + config.domeThetaLength);
 
     this.domeGroup.add(this.dome, this.topRim, this.bottomRim);
     this.castGroup.add(this.domeGroup);
@@ -352,7 +368,7 @@ class EscudoSagradoCast {
     );
     const eased = 1 - Math.pow(1 - progress, 3);
     this.domeGroup.scale.setScalar(0.62 + eased * 0.38);
-    this.dome.material.opacity = 0.85 * Math.min(1, progress * 1.6);
+    this.dome.material.opacity = 0.64 * Math.min(1, progress * 1.6);
     const pulse = 1 + Math.sin(progress * Math.PI * 3) * 0.05 * (1 - progress);
     this.topRim.material.opacity = 0.95 * eased * pulse;
     this.bottomRim.material.opacity = 0.8 * eased * pulse;
@@ -398,7 +414,7 @@ class EscudoSagradoCast {
     );
     const breathe = 1 + Math.sin(this.lingerElapsed * 9) * 0.012 * fade;
     this.domeGroup.scale.setScalar(breathe);
-    this.dome.material.opacity = 0.85 * fade;
+    this.dome.material.opacity = 0.64 * fade;
     this.topRim.material.opacity = 0.95 * fade;
     this.bottomRim.material.opacity = 0.8 * fade;
     if (this.light) this.light.intensity = 2.2 * fade;

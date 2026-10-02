@@ -1,9 +1,14 @@
 import {
   AdditiveBlending,
+  BufferGeometry,
   DoubleSide,
+  DynamicDrawUsage,
   Group,
+  InstancedMesh,
   MathUtils,
   Mesh,
+  MeshStandardMaterial,
+  Object3D,
   PlaneGeometry,
   PointLight,
   Scene,
@@ -32,6 +37,7 @@ import {
   type FuriaPalette,
 } from "./FuriaPalette";
 import type { TkLightPool } from "../../TkLightPool";
+import { createTaperedArcGeometry } from "../../vfxKit/stylizedGeometry";
 
 export { DEFAULT_FURIA_PALETTE, DESCUIDADO_PALETTE, type FuriaPalette };
 
@@ -74,11 +80,13 @@ const AURA_RING_FRAGMENT =  `
   void main() {
     float radius = length(vLocal);
     float normalized = radius / 1.35;
-    float band = smoothstep(0.58, 0.78, normalized) * (1.0 - smoothstep(0.86, 1.0, normalized));
+    float angle = atan(vLocal.y, vLocal.x);
+    float fissure = pow(0.5 + 0.5 * sin(angle * 6.0 + normalized * 2.5), 8.0);
+    float band = smoothstep(0.77, 0.85, normalized) * (1.0 - smoothstep(0.9, 1.0, normalized));
     float pulse = 0.62 + 0.38 * sin(uTime * 4.4);
     float waves = 0.5 + 0.5 * sin(normalized * 21.0 - uTime * 6.2);
-    float alpha = band * (0.42 + 0.34 * pulse) * (0.72 + 0.28 * waves) * uIntensity;
-    vec3 color = uColor * (0.85 + 0.75 * pulse * waves);
+    float alpha = band * (0.2 + 0.22 * pulse) * (0.18 + 0.82 * fissure) * uIntensity;
+    vec3 color = uColor * (0.78 + 0.3 * pulse * waves);
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -99,15 +107,32 @@ function createAuraRingMaterial(palette: FuriaPalette = DEFAULT_FURIA_PALETTE): 
   });
 }
 
-function createSharedResources(
-  textures: FuriaTextureSet,
-): {
+interface FuriaSharedResources {
   particleMaterials: FuriaParticleMaterials;
   ringGeometry: PlaneGeometry;
-} {
+  bladeGeometry: BufferGeometry;
+  bladeMaterial: MeshStandardMaterial;
+}
+
+function createSharedResources(
+  textures: FuriaTextureSet,
+  palette: FuriaPalette,
+): FuriaSharedResources {
   const particleMaterials = createFuriaParticleMaterials(textures);
   const ringGeometry = new PlaneGeometry(2.7, 2.7);
-  return { particleMaterials, ringGeometry };
+  const bladeGeometry = createTaperedArcGeometry(0.75, 0.18, Math.PI * 0.88, 0.055);
+  const bladeMaterial = new MeshStandardMaterial({
+    color: palette.lightColor,
+    emissive: palette.lightColor,
+    emissiveIntensity: 0.32,
+    roughness: 0.65,
+    metalness: 0.32,
+    flatShading: true,
+    transparent: true,
+    depthWrite: false,
+    side: DoubleSide,
+  });
+  return { particleMaterials, ringGeometry, bladeGeometry, bladeMaterial };
 }
 
 function finiteOr(value: number, fallback: number, minimum: number): number {
@@ -124,6 +149,8 @@ class FuriaCast {
   private readonly burstSystems: FuriaBurstSystems;
   private readonly systems: ParticleSystem[];
   private readonly ring: Mesh<PlaneGeometry, ShaderMaterial>;
+  private readonly blades: InstancedMesh<BufferGeometry, MeshStandardMaterial>;
+  private readonly bladePose = new Object3D();
   private readonly light: PointLight | null;
   private readonly isPooledLight: boolean;
   private phase: FuriaPhase = "activation";
@@ -137,10 +164,7 @@ class FuriaCast {
     scene: Scene,
     batchedRenderer: BatchedRenderer,
     private readonly castRoot: Group,
-    shared: {
-      particleMaterials: FuriaParticleMaterials;
-      ringGeometry: PlaneGeometry;
-    },
+    shared: FuriaSharedResources,
     private readonly config: FuriaVfxConfig,
     center: Vector3,
     private readonly onDispose: (cast: FuriaCast) => void,
@@ -161,6 +185,11 @@ class FuriaCast {
     this.ring.rotation.x = -Math.PI / 2;
     this.ring.renderOrder = 11;
     this.castRoot.add(this.ring);
+    this.blades = new InstancedMesh(shared.bladeGeometry, shared.bladeMaterial.clone(), 2);
+    this.blades.name = "descuidado-open-guard-blades";
+    this.blades.instanceMatrix.setUsage(DynamicDrawUsage);
+    this.blades.frustumCulled = false;
+    this.castRoot.add(this.blades);
 
     if (this.lightPool) {
       this.light = this.lightPool.acquire(palette.lightColor, 6.5);
@@ -172,7 +201,9 @@ class FuriaCast {
     if (this.light) this.castRoot.add(this.light);
 
     this.place(center);
+    for (const system of this.systems) system.emitter.position.copy(this.castRoot.position);
     this.triggerActivation();
+    this.updateBlades();
   }
 
   getPhase(): FuriaPhase {
@@ -212,6 +243,7 @@ class FuriaCast {
     if (this.phase === "activation") this.updateActivation(deltaTime);
     else if (this.phase === "active") this.updateActive(deltaTime);
     else this.updateFade(deltaTime);
+    if (!this.disposed) this.updateBlades();
   }
 
   dispose(): void {
@@ -229,6 +261,8 @@ class FuriaCast {
       this.light.dispose();
     }
     this.ring.material.dispose();
+    this.blades.material.dispose();
+    this.blades.dispose();
     this.castRoot.removeFromParent();
     this.castRoot.clear();
     this.onDispose(this);
@@ -240,6 +274,21 @@ class FuriaCast {
     this.castRoot.position.copy(position);
     this.ring.position.set(0, 0.01, 0);
     if (this.light) this.light.position.set(0, 0.9, 0);
+  }
+
+  private updateBlades(): void {
+    const reveal = Math.min(1, this.activationElapsed / this.config.activationDuration);
+    const fade = this.phase === "fade" ? Math.max(0, 1 - this.fadeElapsed / this.config.fadeDuration) : 1;
+    this.blades.material.opacity = reveal * fade * 0.86;
+    for (let index = 0; index < 2; index++) {
+      const side = index === 0 ? -1 : 1;
+      this.bladePose.position.set(side * 0.26, 0.72 + reveal * 0.24 + Math.sin(this.pulseTime * 3.2) * 0.06, 0);
+      this.bladePose.rotation.set(0.22 * side, (side < 0 ? Math.PI : 0) + 0.3 * side, side * (0.32 + reveal * 0.18));
+      this.bladePose.scale.set(0.75 + reveal * 0.25, 1.1, 1);
+      this.bladePose.updateMatrix();
+      this.blades.setMatrixAt(index, this.bladePose.matrix);
+    }
+    this.blades.instanceMatrix.needsUpdate = true;
   }
 
   private triggerActivation(): void {
@@ -255,7 +304,7 @@ class FuriaCast {
     this.auraSystems.embers.play();
     this.ring.scale.setScalar(0.24);
     this.ring.material.uniforms.uIntensity.value = 1;
-    if (this.light) this.light.intensity = 5.4;
+    if (this.light) this.light.intensity = 2.4;
   }
 
   private updateActivation(deltaTime: number): void {
@@ -269,7 +318,7 @@ class FuriaCast {
     this.ring.scale.setScalar(0.24 + ease * 0.76);
     this.pulseTime += deltaTime;
     this.ring.material.uniforms.uTime.value = this.pulseTime;
-    if (this.light) this.light.intensity = 5.4 * (1 - progress * 0.72);
+    if (this.light) this.light.intensity = 2.4 * (1 - progress * 0.72);
     if (progress >= 1) {
       this.phase = "active";
       this.activeElapsed = 0;
@@ -307,10 +356,7 @@ class FuriaCast {
 
 export class FuriaVfxController {
   private readonly textures: FuriaTextureSet;
-  private readonly shared: {
-    particleMaterials: FuriaParticleMaterials;
-    ringGeometry: PlaneGeometry;
-  };
+  private readonly shared: FuriaSharedResources;
   private readonly castRoot = new Group();
   private readonly batchedRenderer = new BatchedRenderer();
   private readonly batchResolution = new Vector2(1, 1);
@@ -327,7 +373,7 @@ export class FuriaVfxController {
     const merged = { ...DEFAULT_FURIA_VFX_CONFIG, ...config };
     const palette = config.palette ?? DEFAULT_FURIA_PALETTE;
     this.textures = createFuriaTextures(palette);
-    this.shared = createSharedResources(this.textures);
+    this.shared = createSharedResources(this.textures, palette);
     this.config = {
       auraDuration: finiteOr(merged.auraDuration, DEFAULT_FURIA_VFX_CONFIG.auraDuration, 0.1),
       activationDuration: finiteOr(merged.activationDuration, DEFAULT_FURIA_VFX_CONFIG.activationDuration, 0.02),
@@ -453,6 +499,8 @@ export class FuriaVfxController {
     this.batchedRenderer.batches.length = 0;
     this.batchedRenderer.systemToBatchIndex.clear();
     this.shared.ringGeometry.dispose();
+    this.shared.bladeGeometry.dispose();
+    this.shared.bladeMaterial.dispose();
     disposeFuriaParticleMaterials(this.shared.particleMaterials);
     disposeFuriaTextures(this.textures);
     this.castRoot.clear();

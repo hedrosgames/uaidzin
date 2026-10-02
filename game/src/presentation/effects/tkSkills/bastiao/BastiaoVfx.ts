@@ -74,20 +74,20 @@ export const DEFAULT_BASTIAO_VFX_CONFIG: BastiaoVfxConfig = {
   descendDuration: 0.35,
   cleanupDelay: 0.15,
   maxConcurrentCasts: 2,
-  circleRadius: 2.2,
-  stakeHeight: 2.6,
-  stakeRadius: 0.13,
-  chainSag: 0.38,
+  circleRadius: 0.72,
+  stakeHeight: 1.3,
+  stakeRadius: 0.065,
+  chainSag: 0.14,
   dustEmission: 26,
   jointBurstCount: 16,
   chainSparkCount: 20,
   closeSparkCount: 44,
   pulseBurstCount: 26,
   descentBurstCount: 22,
-  lightPeak: 6,
-  lightRise: 1.6,
-  innerRingRadius: 1.35,
-  outerRingRadius: 1.95,
+  lightPeak: 2.4,
+  lightRise: 0.8,
+  innerRingRadius: 0.68,
+  outerRingRadius: 0.9,
   originHeight: 1.1,
 };
 
@@ -119,16 +119,17 @@ function createSharedResources(): BastiaoSharedResources {
   const ringGeometry = new PlaneGeometry(1, 1);
   ringGeometry.rotateX(-Math.PI / 2);
   const ironMaterial = new MeshStandardMaterial({
-    color: 0x4a4238,
-    emissive: 0x1a1208,
-    emissiveIntensity: 0.3,
-    roughness: 0.38,
-    metalness: 0.82,
+    color: 0x9c8058,
+    emissive: 0x554124,
+    emissiveIntensity: 0.18,
+    roughness: 0.66,
+    metalness: 0.36,
+    flatShading: true,
   });
   const goldMaterial = new MeshStandardMaterial({
     color: 0xd4a017,
     emissive: 0xd4a017,
-    emissiveIntensity: 0.85,
+    emissiveIntensity: 0.24,
     roughness: 0.3,
     metalness: 0.75,
   });
@@ -250,6 +251,7 @@ class BastiaoCast {
     this.createRing(shared, 1, config.outerRingRadius * 2.29);
 
     this.flashMaterial = new MeshBasicMaterial({
+      map: shared.textures.spark,
       color: 0xffe9a8,
       transparent: true,
       opacity: 0,
@@ -500,7 +502,7 @@ class BastiaoCast {
     const offset = (rise - descend * descend) * (this.config.stakeHeight + 0.25);
     for (const stake of this.stakes) {
       stake.group.position.y = stake.position.y - (this.config.stakeHeight + 0.25) + offset;
-      stake.group.rotation.y = stake.angle + this.elapsed * 0.4;
+      stake.group.rotation.y = stake.angle;
       if (descend > 0 && !stake.descentTriggered) {
         stake.descentTriggered = true;
         stake.descent.groundDust.emitter.visible = true;
@@ -553,13 +555,13 @@ class BastiaoCast {
       1,
     );
     const closePulse = MathUtils.clamp(1 - (this.elapsed - this.closeTime) / 0.3, 0, 1);
-    const base = 0.16 + fadeIn * 0.66;
+    const base = 0.04 + fadeIn * 0.2;
     for (let index = 0; index < this.rings.length; index += 1) {
       const ring = this.rings[index];
       const material = this.ringMaterials[index];
       material.opacity = base * fadeOut + closePulse * 0.2;
       ring.visible = material.opacity > 0.01 && fadeOut > 0.01;
-      ring.rotation.z += (index === 0 ? 0.95 : -0.62) * deltaTime;
+      ring.rotation.y += (index === 0 ? 0.32 : -0.2) * deltaTime;
       const pulse = 1 + closePulse * 0.05 * (index === 0 ? 1 : 0.6);
       const baseScale = ring.userData.baseScale as number;
       ring.scale.set(baseScale * pulse, 1, baseScale * pulse);

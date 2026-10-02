@@ -17,16 +17,16 @@ type Point = readonly [x: number, y: number, z: number];
 type Vertex = { point: Point; u: number; v: number; color: Color };
 type GeometryData = { positions: number[]; uv: number[]; colors: number[] };
 
-const STINGER_LENGTH = 0.5;
+const STINGER_LENGTH = 0.72;
 const STINGER_SIDES = 8;
 const STINGER_SEGMENTS = 12;
-const STINGER_RADIUS = 0.075;
+const STINGER_RADIUS = 0.095;
 const BARB_ANGLES = [0.42, 2.51, 4.6] as const;
 const BARB_SPANS = [0.5, 0.6, 0.7] as const;
 const BARB_REACH = 2.7;
 const BARB_LENGTH = 0.14;
-const BASE_COLOR = new Color(0x24502f);
-const MID_COLOR = new Color(0x53a95f);
+const BASE_COLOR = new Color(0x286542);
+const MID_COLOR = new Color(0x65c879);
 const TIP_COLOR = new Color(0xc4ef8a);
 
 function stingerRadius(t: number): number {
@@ -191,22 +191,22 @@ export class PicadaPeconhentaResources {
   readonly stingerMaterial: MeshStandardMaterial = new MeshStandardMaterial({
     name: "PicadaPeconhenta.stinger",
     map: this.textures.chitin,
-    color: 0xa6e878,
+    color: 0xc0f2a2,
     emissive: 0x3d9a4c,
-    emissiveIntensity: 0.6,
-    roughness: 0.34,
-    metalness: 0.18,
+    emissiveIntensity: 0.36,
+    roughness: 0.2,
+    metalness: 0.04,
     vertexColors: true,
     flatShading: true,
   });
   readonly materials = {
     goo: particleMaterial("goo", this.textures.goo, 0.96, false),
     trail: particleMaterial("trail", this.textures.goo, 0.82, false),
-    bubble: particleMaterial("bubble", this.textures.bubble, 0.86, true),
-    splash: particleMaterial("splash", this.textures.splash, 0.94, true),
-    droplet: particleMaterial("droplet", this.textures.bubble, 0.92, true),
+    bubble: particleMaterial("bubble", this.textures.bubble, 0.86, false),
+    splash: particleMaterial("splash", this.textures.splash, 0.68, false),
+    droplet: particleMaterial("droplet", this.textures.bubble, 0.92, false),
     decal: decalMaterial(this.textures.drip, 0.84),
-    bead: particleMaterial("bead", this.textures.splash, 0.92, true),
+    bead: particleMaterial("bead", this.textures.bubble, 0.92, false),
   };
 
   dispose(): void {

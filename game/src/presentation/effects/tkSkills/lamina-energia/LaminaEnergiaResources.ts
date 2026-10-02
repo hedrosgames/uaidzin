@@ -22,7 +22,7 @@ const BLADE_SECTION: readonly CrossSection[] = [
   [1, 0.1],
   [0.46, -0.78],
 ];
-const BLADE_FACETS = [0xffffff, 0xece0c8, 0xcdb992, 0xf6e9ce] as const;
+const BLADE_FACETS = [0xfff3d4, 0xd9ad69, 0x8d6840, 0xf3d49a] as const;
 const TEXEL_INSET = 2.5 / 256;
 const TEXEL_RANGE = 1 - TEXEL_INSET * 2;
 
@@ -50,10 +50,10 @@ function bladeVertex(t: number, section: number): Vertex {
   const [depth, height] = BLADE_SECTION[section];
   const envelope = Math.pow(Math.max(0, 1 - t * t), 0.7);
   const centerY = Math.sin(t * Math.PI) * 0.014 + t * 0.012;
-  const span = 0.215 * envelope * (1 + Math.sin(t * Math.PI * 2) * 0.07);
+  const span = 0.27 * envelope * (1 + Math.sin(t * Math.PI * 2) * 0.07);
   return [
     t * 0.72,
-    centerY + height * 0.085 * envelope + t * 0.008 * depth * envelope,
+    centerY + height * 0.105 * envelope + t * 0.008 * depth * envelope,
     -0.58 * t * t - span * depth,
     (t + 1) * 0.5,
     1 - depth,

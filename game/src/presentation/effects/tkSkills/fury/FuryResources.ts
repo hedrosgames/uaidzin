@@ -9,6 +9,7 @@ import {
   type Texture,
 } from "three";
 import { FuryTextures } from "./FuryTextures";
+import { createTaperedArcGeometry } from "../../vfxKit/stylizedGeometry";
 
 function material(map: Texture, color = 0xffffff, additive = false): MeshBasicMaterial {
   return new MeshBasicMaterial({
@@ -64,35 +65,10 @@ function createSurge(): BufferGeometry {
   return geometry(positions, uv, indices);
 }
 
-function createOrbitSlash(): BufferGeometry {
-  const positions: number[] = [];
-  const uv: number[] = [];
-  const indices: number[] = [];
-  const segments = 28;
-  for (let step = 0; step <= segments; step++) {
-    const t = step / segments;
-    const angle = t * Math.PI * 0.95;
-    const width = 0.025 + Math.sin(t * Math.PI) * 0.15;
-    for (const side of [-1, 1]) {
-      positions.push(
-        Math.cos(angle) * (0.72 + side * width),
-        (t - 0.5) * 0.2 + side * width * 0.22,
-        Math.sin(angle) * (0.72 + side * width),
-      );
-      uv.push(t, (side + 1) / 2);
-    }
-    if (step < segments) {
-      const a = step * 2;
-      indices.push(a, a + 1, a + 2, a + 2, a + 1, a + 3);
-    }
-  }
-  return geometry(positions, uv, indices);
-}
-
 export class FuryResources {
   readonly textures = new FuryTextures();
   readonly surgeGeometry = createSurge();
-  readonly slashGeometry = createOrbitSlash();
+  readonly slashGeometry = createTaperedArcGeometry(0.55, 0.16, Math.PI * 1.45, 0.035);
   readonly groundGeometry = new PlaneGeometry(2, 2);
   readonly materials = {
     surge: material(this.textures.surge),
@@ -100,9 +76,14 @@ export class FuryResources {
     spark: material(this.textures.spark),
     pulse: material(this.textures.ring),
     ground: material(this.textures.ring, 0xe45040),
-    orbit: material(this.textures.slash, 0xff936f),
-    accent: material(this.textures.slash, 0xffd3a6, true),
+    orbit: material(this.textures.slash, 0xf47748),
+    accent: material(this.textures.slash, 0xffcb8a, true),
   };
+
+  constructor() {
+    this.materials.orbit.map = null;
+    this.materials.accent.map = null;
+  }
 
   dispose(): void {
     this.surgeGeometry.dispose();

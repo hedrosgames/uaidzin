@@ -65,18 +65,18 @@ export function createChoqueVitalParticleMaterials(
     });
   return {
     spark: create(sparkTexture, 0.95),
-    glow: create(glowTexture, 0.8),
-    smoke: create(glowTexture, 0.5),
+    glow: create(glowTexture, 0.42),
+    smoke: create(glowTexture, 0.24),
   };
 }
 
 function createChargeGradient(): Gradient {
   return new Gradient(
     [
-      [new QuarksVector3(1, 1, 0.92), 0],
-      [new QuarksVector3(1, 0.86, 0.44), 0.3],
-      [new QuarksVector3(0.9, 0.52, 0.1), 0.68],
-      [new QuarksVector3(0.24, 0.1, 0.02), 1],
+      [new QuarksVector3(0.88, 0.8, 1), 0],
+      [new QuarksVector3(0.68, 0.38, 1), 0.3],
+      [new QuarksVector3(0.4, 0.12, 0.9), 0.68],
+      [new QuarksVector3(0.12, 0.02, 0.24), 1],
     ],
     [
       [1, 0],
@@ -97,7 +97,7 @@ export function createChoqueVitalChargeSystems(
     startLife: new IntervalValue(0.1, 0.24),
     startSpeed: new IntervalValue(1.1, 2.6),
     startSize: new IntervalValue(0.05, 0.12),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.9, 0.54, 0.94)),
+    startColor: new ConstantColor(new QuarksVector4(0.8, 0.6, 1, 0.94)),
     emissionOverTime: new ConstantValue(70),
     emissionOverDistance: new ConstantValue(0),
     shape: new SphereEmitter({ radius: 0.34, thickness: 0.4 }),
@@ -126,7 +126,7 @@ export function createChoqueVitalArcSystems(
     startLife: new IntervalValue(0.1, 0.26),
     startSpeed: new IntervalValue(2, 5.6),
     startSize: new IntervalValue(0.045, 0.11),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.94, 0.66, 0.98)),
+    startColor: new ConstantColor(new QuarksVector4(0.86, 0.7, 1, 0.98)),
     emissionOverTime: new ConstantValue(config.sparkEmission),
     emissionOverDistance: new ConstantValue(8),
     shape: new CircleEmitter({ radius: 0.12, thickness: 0.7 }),
@@ -148,8 +148,8 @@ export function createChoqueVitalArcSystems(
     looping: false,
     startLife: new IntervalValue(0.12, 0.3),
     startSpeed: new IntervalValue(0.2, 0.9),
-    startSize: new IntervalValue(0.24, 0.52),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.82, 0.4, 0.6)),
+    startSize: new IntervalValue(0.12, 0.3),
+    startColor: new ConstantColor(new QuarksVector4(0.66, 0.36, 1, 0.6)),
     emissionOverTime: new ConstantValue(config.coronaEmission),
     emissionOverDistance: new ConstantValue(0),
     shape: new SphereEmitter({ radius: 0.2, thickness: 0.7 }),
@@ -183,7 +183,7 @@ export function createChoqueVitalImpactSystems(
     startLife: new IntervalValue(0.14, 0.36),
     startSpeed: new IntervalValue(4.2, 9),
     startSize: new IntervalValue(0.1, 0.26),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.96, 0.76, 0.96)),
+    startColor: new ConstantColor(new QuarksVector4(0.86, 0.74, 1, 0.96)),
     emissionOverTime: new ConstantValue(0),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [
@@ -215,8 +215,8 @@ export function createChoqueVitalImpactSystems(
     looping: false,
     startLife: new IntervalValue(0.24, 0.56),
     startSpeed: new IntervalValue(0.9, 2.6),
-    startSize: new IntervalValue(0.5, 1.05),
-    startColor: new ConstantColor(new QuarksVector4(0.86, 0.66, 0.34, 0.36)),
+    startSize: new IntervalValue(0.18, 0.42),
+    startColor: new ConstantColor(new QuarksVector4(0.54, 0.28, 0.86, 0.36)),
     emissionOverTime: new ConstantValue(0),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [{ time: 0, count: new ConstantValue(14), cycle: 1, interval: 0, probability: 1 }],

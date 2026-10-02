@@ -124,35 +124,35 @@ function createSharedResources(): ChoqueVitalSharedResources {
   const railGeometry = new BoxGeometry(1, 1, 1);
   const railMaterial = new MeshStandardMaterial({
     map: textures.ironRail,
-    color: 0x7d7060,
-    emissive: 0xffb43a,
-    emissiveIntensity: 0.52,
+    color: 0x9563dc,
+    emissive: 0x883cff,
+    emissiveIntensity: 0.85,
     roughness: 0.38,
-    metalness: 0.8,
+    metalness: 0.12,
   });
   const nodeGeometry = new OctahedronGeometry(1, 0);
   const nodeMaterial = new MeshStandardMaterial({
     map: textures.runeBand,
-    color: 0x8f6c30,
-    emissive: 0xffc44f,
+    color: 0xc49aef,
+    emissive: 0x9a48ff,
     emissiveIntensity: 0.42,
     roughness: 0.34,
-    metalness: 0.92,
+    metalness: 0.12,
     flatShading: true,
   });
-  const ringGeometry = new TorusGeometry(1, 0.075, 6, 20, Math.PI * 1.35);
+  const ringGeometry = new TorusGeometry(0.68, 0.04, 4, 8, Math.PI * 0.85);
   const ringMaterial = new MeshStandardMaterial({
     map: textures.runeBand,
-    color: 0xb98c34,
-    emissive: 0xffc44f,
+    color: 0xb27fe8,
+    emissive: 0x9a48ff,
     emissiveIntensity: 0.62,
     roughness: 0.3,
-    metalness: 0.9,
+    metalness: 0.08,
   });
   const strikerGeometry = new IcosahedronGeometry(1, 1);
   const strikerMaterialTemplate = new MeshBasicMaterial({
     map: textures.chargeCore,
-    color: 0xfff6d8,
+    color: 0xd5bdff,
     transparent: true,
     opacity: 0.9,
     depthWrite: false,
@@ -162,16 +162,16 @@ function createSharedResources(): ChoqueVitalSharedResources {
   const flashGeometry = new SphereGeometry(1, 12, 8);
   const flashMaterialTemplate = new MeshBasicMaterial({
     map: textures.chargeCore,
-    color: 0xfff6d8,
+    color: 0xd5bdff,
     transparent: true,
     opacity: 0,
     depthWrite: false,
     blending: AdditiveBlending,
     toneMapped: false,
   });
-  const ringShockGeometry = new RingGeometry(0.26, 0.5, 44);
+  const ringShockGeometry = new RingGeometry(0.44, 0.5, 12);
   const ringShockMaterialTemplate = new MeshBasicMaterial({
-    color: 0xffd88a,
+    color: 0xae78ff,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -192,11 +192,11 @@ function createSharedResources(): ChoqueVitalSharedResources {
   });
   const debrisGeometry = new TetrahedronGeometry(0.5, 0);
   const debrisMaterial = new MeshStandardMaterial({
-    color: 0x2a241c,
-    emissive: 0xff8c14,
+    color: 0x493071,
+    emissive: 0xa35fff,
     emissiveIntensity: 0.5,
     roughness: 0.54,
-    metalness: 0.62,
+    metalness: 0.12,
     flatShading: true,
   });
   return {
@@ -395,7 +395,7 @@ class ChoqueVitalCast {
     this.scorch.renderOrder = 11;
     this.castRoot.add(this.scorch);
 
-    this.light = new PointLight(0xffc44f, 0, 6.5, 2);
+    this.light = new PointLight(0xa166ff, 0, 6.5, 2);
     this.light.position.copy(origin);
     this.castRoot.add(this.light);
 
@@ -490,6 +490,7 @@ class ChoqueVitalCast {
     this.ringShockMaterial.dispose();
     this.scorchMaterial.dispose();
     this.light.dispose();
+    this.rails.dispose();
     this.debris.dispose();
     this.onDispose(this);
   }
@@ -568,7 +569,7 @@ class ChoqueVitalCast {
     this.striker.visible = true;
     this.striker.position.copy(this.head);
     this.striker.scale.setScalar(this.config.nodeRadius * 1.5 * flick);
-    this.strikerMaterial.opacity = 0.58 + Math.abs(Math.sin(this.elapsed * 62)) * 0.24;
+    this.strikerMaterial.opacity = 0.3 + Math.abs(Math.sin(this.elapsed * 62)) * 0.16;
 
     for (let index = 0; index < this.nodes.length; index += 1) {
       const node = this.nodes[index];
@@ -619,7 +620,7 @@ class ChoqueVitalCast {
     this.tail.hide();
     this.flash.position.copy(this.target);
     this.flash.scale.setScalar(0.3);
-    this.flashMaterial.opacity = 1;
+    this.flashMaterial.opacity = 0.4;
     this.flash.visible = true;
     this.ringShock.position.copy(this.target);
     this.ringShock.quaternion.setFromUnitVectors(FORWARD, this.tangent);
@@ -640,21 +641,30 @@ class ChoqueVitalCast {
     this.impactAge += deltaTime;
     const progress = MathUtils.clamp(this.phaseElapsed / this.config.impactDuration, 0, 1);
     const fade = Math.pow(1 - progress, 2);
-    this.flash.scale.setScalar(0.3 + Math.min(progress * 6, 1) * 1.6);
-    this.flashMaterial.opacity = fade * 0.74;
+    this.flash.scale.setScalar(0.18 + Math.min(progress * 6, 1) * 0.55);
+    this.flashMaterial.opacity = fade * fade * 0.32;
     this.flash.visible = progress < 0.8;
     this.ringShock.scale.setScalar(0.2 + Math.sqrt(progress) * 3.4);
-    this.ringShockMaterial.opacity = fade * 0.95;
+    this.ringShockMaterial.opacity = fade * 0.32;
     this.ringShock.visible = progress < 1;
     this.scorch.scale.setScalar(0.2 + progress * 1.6);
-    this.scorchMaterial.opacity = Math.sqrt(1 - progress) * 0.7;
+    this.scorchMaterial.opacity = Math.sqrt(1 - progress) * 0.3;
     this.scorch.visible = progress < 1;
     for (let index = 0; index < this.rings.length; index += 1) {
       const ring = this.rings[index];
       ring.visible = progress < 0.8;
       ring.position.copy(this.target);
       ring.rotation.set(this.impactAge * (7 + index * 4), this.impactAge * (5 + index * 3), 0);
-      ring.scale.setScalar(this.config.ringRadius * (1 + progress * 7));
+      ring.scale.setScalar(this.config.ringRadius * (1 + progress * 2) * (1 - progress));
+    }
+    for (let index = 0; index < this.nodes.length; index += 1) {
+      const node = this.nodes[index];
+      const nodeFade = Math.max(1 - progress / (0.3 + index * 0.16), 0);
+      node.visible = nodeFade > 0;
+      node.position.copy(this.target)
+        .addScaledVector(this.side, (index - 1) * (0.3 + progress * 0.8))
+        .addScaledVector(this.up, index === 1 ? 0.35 : -0.12);
+      node.scale.setScalar(this.config.nodeRadius * nodeFade);
     }
     for (let index = 0; index < this.debrisCount; index += 1) {
       this.debrisDummy.position

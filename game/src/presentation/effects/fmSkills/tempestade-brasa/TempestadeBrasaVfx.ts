@@ -202,7 +202,7 @@ class TempestadeBrasaCast {
       this.castRoot.add(arc);
     }
 
-    const crackMaterial = resources.crackMaterial.clone();
+    const crackMaterial = resources.crackMaterial;
     for (let index = 0; index < config.crackCount; index += 1) {
       const material = crackMaterial.clone();
       material.opacity = 0;
@@ -342,7 +342,7 @@ class TempestadeBrasaCast {
   private updateTelegraph(deltaTime: number): void {
     void deltaTime;
     const progress = MathUtils.clamp(this.phaseElapsed / this.config.telegraphDuration, 0, 1);
-    for (const arc of this.rimArcs) arc.material.opacity = progress * 0.72;
+    for (const arc of this.rimArcs) arc.material.opacity = progress * 0.42;
     for (const crack of this.cracks) crack.material.opacity = progress * 0.78;
     this.light.intensity = this.config.lightPeak * progress * 0.24;
     if (this.phaseElapsed + 1e-9 >= this.config.telegraphDuration) this.triggerStorm();
@@ -371,7 +371,7 @@ class TempestadeBrasaCast {
       this.start(this.cores[this.coresStarted]!);
       this.coresStarted += 1;
     }
-    for (const arc of this.rimArcs) arc.material.opacity = 0.72 + progress * 0.2;
+    for (const arc of this.rimArcs) arc.material.opacity = 0.42 + progress * 0.12;
     for (const crack of this.cracks) crack.material.opacity = 0.78 + progress * 0.2;
     this.scorchMaterial.opacity = progress * 0.3;
     this.light.intensity = this.config.lightPeak * (0.3 + progress * 0.55);
@@ -385,7 +385,7 @@ class TempestadeBrasaCast {
     this.particles.rain.endEmit();
     this.particles.cinders.endEmit();
     this.flashFired = true;
-    this.flashMaterial.opacity = 0.95;
+    this.flashMaterial.opacity = 0.38;
     this.light.intensity = this.config.lightPeak;
     for (const arc of this.rimArcs) arc.scale.setScalar(1.12);
   }
@@ -394,10 +394,10 @@ class TempestadeBrasaCast {
     void deltaTime;
     const progress = MathUtils.clamp(this.phaseElapsed / this.config.peakDuration, 0, 1);
     const fade = Math.pow(1 - progress, 1.6);
-    this.flashMaterial.opacity = 0.95 * fade;
+    this.flashMaterial.opacity = 0.38 * fade;
     this.flash.scale.setScalar(this.config.radius * (1.5 + progress * 0.9));
     for (const arc of this.rimArcs) {
-      arc.material.opacity = Math.max(0, (0.92 - progress * 0.62) * fade + 0.12);
+      arc.material.opacity = Math.max(0, (0.54 - progress * 0.4) * fade + 0.08);
       arc.scale.setScalar(1.12 + progress * 0.26);
     }
     this.light.intensity = this.config.lightPeak * fade;
@@ -462,7 +462,7 @@ class TempestadeBrasaCast {
       );
       this.quaternion.setFromAxisAngle(UP, seed.angle + life * seed.spin);
       const scale = seed.size * (1 - fadeOut) * appear;
-      this.scale.set(scale, scale, scale);
+      this.scale.set(scale * 0.78, scale * (1.2 + Math.sin(index * 2.1) * 0.24), scale * 0.78);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       this.debris.setMatrixAt(index, this.matrix);
       if (this.position.y > highest) highest = this.position.y;

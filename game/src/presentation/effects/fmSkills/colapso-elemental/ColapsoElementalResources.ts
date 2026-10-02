@@ -19,8 +19,8 @@ const SHARD_HEIGHT = 0.46;
 const SHARD_RADIUS = 0.14;
 const DISC_SEGMENTS = 30;
 const DISC_SIDES = 6;
-const CORE_SIDES = 14;
-const CORE_RINGS = 8;
+const CORE_SIDES = 8;
+const CORE_RINGS = 5;
 
 const EMBER_DEEP = new Color(0x8a2f12);
 const EMBER_BODY = new Color(0xff8f3c);
@@ -166,9 +166,8 @@ function createCoreGeometry(): BufferGeometry {
       Math.sin(angle) * radius,
     ];
     const heat = Math.pow(1 - Math.abs(t - 0.5) * 1.8, 1.6);
-    const color = EMBER_DEEP.clone()
-      .lerp(GOLD_BODY, Math.pow(t, 0.7) * 0.75 + heat * 0.25)
-      .lerp(GOLD_TIP, heat * 0.5);
+    const shade = 0.24 + heat * 0.42 + (side % 3) * 0.12;
+    const color = new Color().setRGB(shade, shade, shade);
     return { point, color };
   };
   for (let ringIndex = 0; ringIndex < CORE_RINGS; ringIndex += 1) {
@@ -192,10 +191,10 @@ function createCoreGeometry(): BufferGeometry {
     const next = (side + 1) % CORE_SIDES;
     const a = ring(CORE_RINGS, side);
     const b = ring(CORE_RINGS, next);
-    pushTriangle(positions, uvs, colors, a.point, top, b.point, [side / CORE_SIDES, 1], [0.5, 1], [next / CORE_SIDES, 1], a.color, GOLD_TIP, b.color);
+    pushTriangle(positions, uvs, colors, a.point, top, b.point, [side / CORE_SIDES, 1], [0.5, 1], [next / CORE_SIDES, 1], a.color, a.color, b.color);
     const e = ring(0, next);
     const f = ring(0, side);
-    pushTriangle(positions, uvs, colors, bottom, e.point, f.point, [0.5, 0], [next / CORE_SIDES, 0], [side / CORE_SIDES, 0], EMBER_DEEP, e.color, f.color);
+    pushTriangle(positions, uvs, colors, bottom, e.point, f.point, [0.5, 0], [next / CORE_SIDES, 0], [side / CORE_SIDES, 0], e.color, e.color, f.color);
   }
   return finish("core", positions, uvs, colors);
 }
@@ -209,13 +208,12 @@ function createDiscGeometry(inner: number, outer: number): BufferGeometry {
     const angle = t * Math.PI * 2;
     const cross = side / DISC_SIDES * Math.PI * 2;
     const taper = Math.pow(Math.sin(Math.PI * Math.min(0.999, t + 0.001)), 0.36);
-    const radius = inner + (outer - inner) * t;
+    const radius = inner + (outer - inner) * t + Math.cos(cross) * 0.09;
     const thickness = 0.06 * taper * (0.5 + Math.sin(cross) * 0.5);
     const lift = 0.04 + Math.sin(cross) * thickness;
     const glow = Math.pow(taper, 1.4);
-    const color = EMBER_BODY.clone()
-      .lerp(FROST_BODY, t)
-      .lerp(GOLD_TIP, glow * 0.55);
+    const palette = shardPalette(Math.min(3, Math.floor(t * 4)));
+    const color = palette[1].clone().lerp(palette[2], glow * 0.3);
     return {
       point: [
         Math.cos(angle) * radius,
@@ -226,6 +224,7 @@ function createDiscGeometry(inner: number, outer: number): BufferGeometry {
     };
   };
   for (let segment = 0; segment < DISC_SEGMENTS; segment += 1) {
+    if (segment % 5 === 0) continue;
     for (let side = 0; side < DISC_SIDES; side += 1) {
       const next = (side + 1) % DISC_SIDES;
       const a = ring(segment, side);
@@ -310,8 +309,8 @@ export class ColapsoElementalResources {
   readonly materials = {
     core: particleMaterial("core", this.textures.core, 0.96, false),
     fragment: particleMaterial("fragment", this.textures.fragment, 0.94, false),
-    flash: particleMaterial("flash", this.textures.flash, 0.94, true),
-    ring: particleMaterial("ring", this.textures.ring, 0.86, true),
+    flash: particleMaterial("flash", this.textures.flash, 0.46, true),
+    ring: particleMaterial("ring", this.textures.ring, 0.46, true),
     dust: particleMaterial("dust", this.textures.dust, 0.58, false),
     streak: particleMaterial("streak", this.textures.streak, 0.9, true),
   };
@@ -322,8 +321,8 @@ export class ColapsoElementalResources {
     0.94,
     false,
   ));
-  readonly discMaterial: MeshBasicMaterial = emissiveMaterial("disc", null, 0xffd6a2, 0.82, true);
-  readonly discInnerMaterial: MeshBasicMaterial = emissiveMaterial("discInner", null, 0xf2f8ff, 0.68, true);
+  readonly discMaterial: MeshBasicMaterial = emissiveMaterial("disc", null, 0xffffff, 0.82, false);
+  readonly discInnerMaterial: MeshBasicMaterial = emissiveMaterial("discInner", null, 0xffffff, 0.68, true);
   readonly coreMeshMaterial: MeshBasicMaterial = emissiveMaterial("coreMesh", null, 0xffe0b0, 0.98, false);
 
   dispose(): void {

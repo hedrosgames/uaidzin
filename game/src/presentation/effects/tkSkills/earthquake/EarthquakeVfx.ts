@@ -1,14 +1,19 @@
 import {
+  BufferGeometry,
+  Color,
+  DodecahedronGeometry,
   DoubleSide,
+  DynamicDrawUsage,
   Group,
+  InstancedMesh,
   MathUtils,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardMaterial,
+  Object3D,
   PointLight,
-  RingGeometry,
   Scene,
   ShaderMaterial,
-  TorusGeometry,
   Vector2,
   Vector3,
 } from "three";
@@ -28,6 +33,7 @@ import {
   type AvalancheTextureSet,
 } from "../avalanche/AvalancheTextures";
 import type { TkLightPool } from "../../TkLightPool";
+import { createBrokenRingGeometry } from "../../vfxKit/stylizedGeometry";
 
 export interface EarthquakeVfxConfig {
   waveDuration: number;
@@ -58,10 +64,12 @@ type EarthquakePhase = "wave" | "aftermath";
 interface EarthquakeSharedResources {
   textures: AvalancheTextureSet;
   particleMaterials: AvalancheParticleMaterials;
-  ringGeometry: TorusGeometry;
+  ringGeometry: BufferGeometry;
   ringMaterial: MeshBasicMaterial;
-  bandGeometry: RingGeometry;
+  bandGeometry: BufferGeometry;
   bandMaterial: MeshBasicMaterial;
+  rockGeometry: DodecahedronGeometry;
+  rockMaterial: MeshStandardMaterial;
 }
 
 function finiteOr(value: number, fallback: number, minimum: number): number {
@@ -78,9 +86,10 @@ function finiteVector(vector: Vector3): boolean {
 function createSharedResources(): EarthquakeSharedResources {
   const textures = createAvalancheTextures();
   const particleMaterials = createAvalancheParticleMaterials(textures);
-  const ringGeometry = new TorusGeometry(1, 0.075, 8, 64);
+  const ringGeometry = createBrokenRingGeometry(0.965, 1, 80);
   const ringMaterial = new MeshBasicMaterial({
-    color: 0xc49a63,
+    color: 0xb69468,
+    vertexColors: true,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -88,9 +97,10 @@ function createSharedResources(): EarthquakeSharedResources {
     side: DoubleSide,
     toneMapped: false,
   });
-  const bandGeometry = new RingGeometry(0.74, 1, 64);
+  const bandGeometry = createBrokenRingGeometry(0.82, 0.96, 80);
   const bandMaterial = new MeshBasicMaterial({
     color: 0x66513b,
+    vertexColors: true,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -105,13 +115,24 @@ function createSharedResources(): EarthquakeSharedResources {
     ringMaterial,
     bandGeometry,
     bandMaterial,
+    rockGeometry: new DodecahedronGeometry(0.42, 0),
+    rockMaterial: new MeshStandardMaterial({
+      color: 0xab885c,
+      roughness: 0.96,
+      metalness: 0,
+      flatShading: true,
+    }),
   };
 }
 
 class EarthquakeCast {
   private readonly root = new Group();
-  private readonly ring: Mesh<TorusGeometry, MeshBasicMaterial>;
-  private readonly band: Mesh<RingGeometry, MeshBasicMaterial>;
+  private readonly ring: Mesh<BufferGeometry, MeshBasicMaterial>;
+  private readonly band: Mesh<BufferGeometry, MeshBasicMaterial>;
+  private readonly rocks: InstancedMesh;
+  private readonly rockPose = new Object3D();
+  private readonly rockAngles: Float32Array;
+  private readonly rockFractions: Float32Array;
   private readonly waveDust: ParticleSystem[] = [];
   private readonly linger: ParticleSystem;
   private readonly impacts: Array<{
@@ -156,6 +177,21 @@ class EarthquakeCast {
     this.band.scale.setScalar(0.01);
 
     this.root.add(this.band, this.ring);
+    const rockCount = config.impactPoints * 2;
+    this.rocks = new InstancedMesh(shared.rockGeometry, shared.rockMaterial, rockCount);
+    this.rocks.name = "tk-earthquake-faceted-plates";
+    this.rocks.instanceMatrix.setUsage(DynamicDrawUsage);
+    this.rocks.frustumCulled = false;
+    this.rockAngles = new Float32Array(rockCount);
+    this.rockFractions = new Float32Array(rockCount);
+    const tint = new Color();
+    for (let index = 0; index < rockCount; index++) {
+      this.rockAngles[index] = index * Math.PI * (3 - Math.sqrt(5));
+      this.rockFractions[index] = 0.26 + (index % 4) * 0.23;
+      tint.setHex(index % 3 === 0 ? 0xe5c69a : index % 3 === 1 ? 0xb69c79 : 0x81715b);
+      this.rocks.setColorAt(index, tint);
+    }
+    this.root.add(this.rocks);
     this.castRoot.add(this.root);
 
     for (let index = 0; index < this.config.radialDustPoints; index += 1) {
@@ -212,6 +248,7 @@ class EarthquakeCast {
     }
 
     this.updateWave(0);
+    this.updateRocks();
   }
 
   getPhase(): EarthquakePhase {
@@ -258,9 +295,32 @@ class EarthquakeCast {
     if (this.disposed) return;
     if (this.phase === "wave") {
       this.updateWave(deltaTime);
-      return;
+    } else this.updateAftermath(deltaTime);
+    if (!this.disposed) this.updateRocks();
+  }
+
+  private updateRocks(): void {
+    const time = this.elapsed + this.cleanupElapsed;
+    for (let index = 0; index < this.rockAngles.length; index++) {
+      const fraction = this.rockFractions[index]!;
+      const at = this.config.waveDuration * (1 - Math.sqrt(1 - fraction));
+      const age = time - at;
+      const rise = MathUtils.clamp(age / 0.09, 0, 1);
+      const settle = MathUtils.clamp((age - 0.14) / 0.58, 0, 1);
+      const presence = rise * (1 - settle * settle);
+      const angle = this.rockAngles[index]!;
+      const size = (0.65 + (index % 3) * 0.18) * Math.min(1, this.radius / 3);
+      this.rockPose.position.set(
+        Math.cos(angle) * this.radius * fraction,
+        -0.18 + presence * (0.24 + (index % 3) * 0.12),
+        Math.sin(angle) * this.radius * fraction,
+      );
+      this.rockPose.rotation.set(0.2 + rise * 0.38, angle, Math.sin(index * 2.3) * 0.24);
+      this.rockPose.scale.set(size * presence * 1.25, size * presence * 0.58, size * presence);
+      this.rockPose.updateMatrix();
+      this.rocks.setMatrixAt(index, this.rockPose.matrix);
     }
-    this.updateAftermath(deltaTime);
+    this.rocks.instanceMatrix.needsUpdate = true;
   }
 
   private currentRadius(): number {
@@ -295,11 +355,11 @@ class EarthquakeCast {
     const scale = Math.max(0.01, frontRadius);
     this.ring.scale.setScalar(scale);
     this.band.scale.setScalar(scale);
-    this.ring.material.opacity = 0.84 * (1 - progress * 0.28);
-    this.band.material.opacity = 0.36 * Math.min(1, progress * 5) * (1 - progress * 0.35);
+    this.ring.material.opacity = 0.66 * (1 - progress * 0.28);
+    this.band.material.opacity = 0.28 * Math.min(1, progress * 5) * (1 - progress * 0.35);
 
     if (this.light) {
-      this.light.intensity = 1.5 + Math.sin(progress * Math.PI) * 3.2;
+      this.light.intensity = 0.6 + Math.sin(progress * Math.PI) * 1.5;
     }
 
     if (progress >= 1) this.finishWave();
@@ -343,6 +403,7 @@ class EarthquakeCast {
     }
     this.ring.material.dispose();
     this.band.material.dispose();
+    this.rocks.dispose();
     this.onDispose(this);
   }
 }
@@ -489,6 +550,8 @@ export class EarthquakeVfxController {
     this.shared.ringMaterial.dispose();
     this.shared.bandGeometry.dispose();
     this.shared.bandMaterial.dispose();
+    this.shared.rockGeometry.dispose();
+    this.shared.rockMaterial.dispose();
     disposeAvalancheParticleMaterials(this.shared.particleMaterials);
     disposeAvalancheTextures(this.shared.textures);
     this.castRoot.clear();

@@ -127,13 +127,14 @@ function createSharedResources(): LancaGlacialSharedResources {
   const frostTexture = createLancaGlacialFrostTexture();
   const particleMaterials = createLancaGlacialParticleMaterials(frostTexture, textures.glint);
   const bladeGeometry = new ConeGeometry(1, 2.4, 6, 1);
+  bladeGeometry.scale(0.62, 1.6, 0.62);
   bladeGeometry.translate(0, 0.55, 0);
   const bladeMaterial = new MeshStandardMaterial({
     map: textures.iceBlade,
     emissiveMap: textures.iceFissure,
     emissive: 0x9fd4ec,
-    emissiveIntensity: 0.62,
-    color: 0x9bbfd4,
+    emissiveIntensity: 0.38,
+    color: 0x438dcc,
     roughness: 0.16,
     metalness: 0.08,
     flatShading: true,
@@ -168,21 +169,21 @@ function createSharedResources(): LancaGlacialSharedResources {
   });
   const shardGeometry = new TetrahedronGeometry(1, 0);
   const shardMaterial = new MeshStandardMaterial({
-    color: 0xa8d4e8,
+    color: 0x72bfea,
     emissive: 0x4a8fb4,
-    emissiveIntensity: 0.6,
+    emissiveIntensity: 0.32,
     roughness: 0.18,
     metalness: 0.1,
     flatShading: true,
   });
-  const collarGeometry = new TorusGeometry(1, 0.14, 6, 18);
+  const collarGeometry = new TorusGeometry(0.55, 0.1, 5, 12);
   const collarMaterial = new MeshStandardMaterial({
     map: textures.ironSocket,
-    color: 0x8a6a30,
+    color: 0x3c6384,
     emissive: 0x2a3d47,
     emissiveIntensity: 0.4,
     roughness: 0.34,
-    metalness: 0.88,
+    metalness: 0.38,
   });
   const flashGeometry = new SphereGeometry(1, 16, 12);
   const flashMaterialTemplate = new MeshBasicMaterial({
@@ -217,10 +218,11 @@ function createSharedResources(): LancaGlacialSharedResources {
     toneMapped: false,
   });
   const debrisGeometry = new TetrahedronGeometry(0.5, 0);
+  debrisGeometry.scale(0.55, 1.65, 0.55);
   const debrisMaterial = new MeshStandardMaterial({
     color: 0x9cc4d8,
     emissive: 0x3f7f9e,
-    emissiveIntensity: 0.8,
+    emissiveIntensity: 0.4,
     roughness: 0.14,
     metalness: 0.12,
     flatShading: true,
@@ -589,7 +591,7 @@ class LancaGlacialCast {
     this.haft.quaternion.copy(this.orientation);
     this.heart.position.copy(this.head).addScaledVector(this.tangent, 0.16 * this.config.bladeRadius);
     this.heart.scale.setScalar(this.config.bladeRadius * grow * 0.95);
-    this.heartMaterial.opacity = 0.5 + Math.sin(this.elapsed * 20) * 0.08;
+    this.heartMaterial.opacity = 0.22 + Math.sin(this.elapsed * 20) * 0.04;
     this.collar.position.copy(this.head).addScaledVector(this.tangent, -0.16 * this.config.bladeRadius);
     this.collar.quaternion.copy(this.orientation);
     this.collar.rotateX(Math.PI / 2);
@@ -601,13 +603,13 @@ class LancaGlacialCast {
     for (let index = 0; index < this.shards.length; index += 1) {
       const shard = this.shards[index];
       const angle = spin * (index % 2 === 0 ? 1 : -1) + index * 2.1;
-      const radius = this.config.shardRadius * grow * (1 + index * 0.18);
+      const radius = this.config.shardRadius * grow * (0.65 + index * 0.12);
       shard.position.copy(this.head)
         .addScaledVector(this.side, Math.cos(angle) * radius)
         .addScaledVector(this.up, Math.sin(angle) * radius * 0.8)
         .addScaledVector(this.tangent, Math.sin(angle * 0.6) * radius * 0.4);
       shard.rotation.set(spin * 1.3, spin * 0.8 + index, spin);
-      shard.scale.setScalar(0.16 * grow);
+      shard.scale.set(0.08 * grow, 0.24 * grow, 0.08 * grow);
     }
     this.tail.update(eased, this.elapsed);
     this.light.position.copy(this.head);
@@ -662,7 +664,7 @@ class LancaGlacialCast {
     this.tail.hide();
     this.flash.position.copy(this.target);
     this.flash.scale.setScalar(this.config.bladeRadius);
-    this.flashMaterial.opacity = 0.9;
+    this.flashMaterial.opacity = 0.45;
     this.flash.visible = true;
     this.fracture.position.copy(this.target);
     this.fracture.quaternion.setFromUnitVectors(FORWARD, this.tangent);
@@ -681,13 +683,13 @@ class LancaGlacialCast {
     const progress = MathUtils.clamp(this.phaseElapsed / this.config.impactDuration, 0, 1);
     const fade = Math.pow(1 - progress, 2);
     this.flash.scale.setScalar(this.config.bladeRadius * (1 + Math.min(progress * 6, 1) * 2.4));
-    this.flashMaterial.opacity = fade * 0.74;
+    this.flashMaterial.opacity = fade * fade * 0.36;
     this.flash.visible = progress < 0.85;
-    this.fracture.scale.setScalar(0.2 + Math.sqrt(progress) * 2.2);
-    this.fractureMaterial.opacity = fade * 0.9;
+    this.fracture.scale.setScalar(0.2 + Math.sqrt(progress) * 1.35);
+    this.fractureMaterial.opacity = fade * 0.55;
     this.fracture.visible = progress < 1;
     this.frost.scale.setScalar(0.2 + progress * 1.8);
-    this.frostMaterial.opacity = Math.sqrt(1 - progress) * 0.68;
+    this.frostMaterial.opacity = Math.sqrt(1 - progress) * 0.32;
     this.frost.visible = progress < 1;
     this.burstAge += deltaTime;
     for (let index = 0; index < this.shards.length; index += 1) {
@@ -701,7 +703,8 @@ class LancaGlacialCast {
         this.debrisSpin[index].y * this.burstAge,
         this.debrisSpin[index].z * this.burstAge,
       );
-      shard.scale.setScalar(Math.max(0.34 * (1 - progress * 0.8), 0.001));
+      const shardScale = Math.max(0.34 * (1 - progress * 0.8), 0.001);
+      shard.scale.set(shardScale * 0.45, shardScale * 1.5, shardScale * 0.45);
     }
     for (let index = 0; index < this.debrisCount; index += 1) {
       const direction = this.debrisDirections[index];

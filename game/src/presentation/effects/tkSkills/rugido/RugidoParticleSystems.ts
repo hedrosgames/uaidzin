@@ -45,10 +45,10 @@ export interface RugidoParticleConfig {
 function createRoarGradient(): Gradient {
   return new Gradient(
     [
-      [new QuarksVector3(1, 0.96, 0.86), 0],
-      [new QuarksVector3(1, 0.84, 0.48), 0.3],
-      [new QuarksVector3(0.82, 0.38, 0.18), 0.66],
-      [new QuarksVector3(0.36, 0.12, 0.06), 1],
+      [new QuarksVector3(0.82, 0.65, 1), 0],
+      [new QuarksVector3(0.62, 0.35, 0.88), 0.3],
+      [new QuarksVector3(0.35, 0.17, 0.52), 0.66],
+      [new QuarksVector3(0.12, 0.05, 0.22), 1],
     ],
     [
       [1, 0],
@@ -62,9 +62,9 @@ function createRoarGradient(): Gradient {
 function createEmberGradient(): Gradient {
   return new Gradient(
     [
-      [new QuarksVector3(1, 0.66, 0.44), 0],
-      [new QuarksVector3(0.88, 0.32, 0.18), 0.5],
-      [new QuarksVector3(0.32, 0.09, 0.05), 1],
+      [new QuarksVector3(0.82, 0.62, 1), 0],
+      [new QuarksVector3(0.58, 0.26, 0.76), 0.5],
+      [new QuarksVector3(0.2, 0.08, 0.3), 1],
     ],
     [
       [1, 0],
@@ -118,8 +118,8 @@ export function createRugidoEmissionSystems(
     looping: false,
     startLife: new IntervalValue(0.28, 0.5),
     startSpeed: new IntervalValue(6.4, 10.6),
-    startSize: new IntervalValue(0.5, 0.95),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.93, 0.74, 0.95)),
+    startSize: new IntervalValue(0.12, 0.26),
+    startColor: new ConstantColor(new QuarksVector4(0.86, 0.74, 1, 0.82)),
     emissionOverTime: new ConstantValue(config.streakEmission),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [],
@@ -131,7 +131,7 @@ export function createRugidoEmissionSystems(
     }),
     material: materials.streak,
     renderMode: RenderMode.StretchedBillBoard,
-    speedFactor: 3.6,
+    rendererEmitterSettings: { speedFactor: 0.025, lengthFactor: 1.8 },
     worldSpace: true,
     renderOrder: 10,
     behaviors: [
@@ -176,7 +176,7 @@ export function createRugidoEmissionSystems(
     startLife: new IntervalValue(0.14, 0.38),
     startSpeed: new IntervalValue(2.4, 5.6),
     startSize: new IntervalValue(0.05, 0.11),
-    startColor: new ConstantColor(new QuarksVector4(1, 0.62, 0.42, 0.95)),
+    startColor: new ConstantColor(new QuarksVector4(0.82, 0.55, 1, 0.88)),
     emissionOverTime: new ConstantValue(0),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [{ time: 0, count: new ConstantValue(config.emberCount), cycle: 1, interval: 0, probability: 1 }],

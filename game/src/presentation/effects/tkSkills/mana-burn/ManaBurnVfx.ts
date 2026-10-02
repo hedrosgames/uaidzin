@@ -1,6 +1,6 @@
 import {
-  Group, MathUtils, Mesh, Object3D, PointLight, Scene, ShaderMaterial, Vector2, Vector3,
-  type MeshBasicMaterial, type PlaneGeometry,
+  DynamicDrawUsage, Group, InstancedMesh, MathUtils, Mesh, Object3D, PointLight, Scene, ShaderMaterial, Vector2, Vector3,
+  type BufferGeometry, type MeshBasicMaterial, type PlaneGeometry,
 } from "three";
 import { BatchedRenderer, type ParticleSystem } from "three.quarks";
 import type { TkLightPool } from "../../TkLightPool";
@@ -81,6 +81,8 @@ class ManaBurnCast {
   private readonly arcRing: Mesh<PlaneGeometry, MeshBasicMaterial>;
   private readonly emberMaterial: MeshBasicMaterial;
   private readonly arcMaterial: MeshBasicMaterial;
+  private readonly flameBody: InstancedMesh<BufferGeometry, MeshBasicMaterial>;
+  private readonly flameDummy = new Object3D();
   private readonly particles: ReturnType<typeof createManaBurnSystems>;
   private readonly systems: ParticleSystem[];
   private readonly anchorOffset = new Vector3();
@@ -135,6 +137,12 @@ class ManaBurnCast {
     this.arcRing.scale.setScalar(ARC_RADIUS * 0.55);
     this.arcRing.visible = false;
     this.root.add(this.emberRing, this.arcRing);
+    this.flameBody = new InstancedMesh(resources.flameBodyGeometry, resources.materials.flameBody.clone(), 3);
+    this.flameBody.name = "tk-mana-burn-body-flames";
+    this.flameBody.instanceMatrix.setUsage(DynamicDrawUsage);
+    this.flameBody.frustumCulled = false;
+    this.flameBody.visible = false;
+    this.root.add(this.flameBody);
     this.particles = createManaBurnSystems(resources, config);
     this.systems = Object.values(this.particles);
     for (const system of this.systems) {
@@ -246,6 +254,21 @@ class ManaBurnCast {
     this.arcRing.visible = arcAlpha > 0.004;
     this.arcRing.scale.setScalar(ARC_RADIUS * (0.55 + stateReveal * 0.45 + beat * 0.02));
     this.arcRing.rotation.z = -this.elapsed * 0.78;
+    const flameProgress = MathUtils.clamp((this.elapsed - this.flameAt) / this.config.flameDuration, 0, 1);
+    const flameAlpha = Math.sin(flameProgress * Math.PI);
+    this.flameBody.visible = flameAlpha > 0.01;
+    this.flameBody.material.opacity = flameAlpha * 0.7;
+    if (this.flameBody.visible) {
+      for (let index = 0; index < 3; index++) {
+        const angle = index * Math.PI * 2 / 3 + this.elapsed * 0.65;
+        this.flameDummy.position.set(Math.sin(angle) * 0.35, this.config.flameBase + this.config.flameHeight * 0.44, Math.cos(angle) * 0.35);
+        this.flameDummy.rotation.set(0.08, angle, Math.sin(this.elapsed * 8 + index) * 0.12);
+        this.flameDummy.scale.set(0.65 + flameAlpha * 0.35, 0.68 + flameAlpha * 0.35, 1);
+        this.flameDummy.updateMatrix();
+        this.flameBody.setMatrixAt(index, this.flameDummy.matrix);
+      }
+      this.flameBody.instanceMatrix.needsUpdate = true;
+    }
     if (this.light) {
       const ignition = this.phase === "activation" ? Math.sin(activation * Math.PI) : 0;
       const sustained = 0.2 + beat * 0.13 + stateReveal * 0.06;
@@ -263,6 +286,8 @@ class ManaBurnCast {
     }
     this.emberMaterial.dispose();
     this.arcMaterial.dispose();
+    this.flameBody.material.dispose();
+    this.flameBody.dispose();
     if (this.lightPool) this.lightPool.release(this.light);
     else if (this.light) {
       this.light.removeFromParent();

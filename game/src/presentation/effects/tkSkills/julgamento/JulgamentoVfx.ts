@@ -1,5 +1,6 @@
 import {
   AdditiveBlending,
+  BufferGeometry,
   CylinderGeometry,
   DoubleSide,
   Group,
@@ -28,6 +29,7 @@ import {
   type JulgamentoTextureSet,
 } from "./JulgamentoTextures";
 import type { TkLightPool } from "../../TkLightPool";
+import { createTaperedArcGeometry } from "../../vfxKit/stylizedGeometry";
 
 export interface JulgamentoVfxConfig {
   boltCount: number;
@@ -55,7 +57,7 @@ export const DEFAULT_JULGAMENTO_VFX_CONFIG: JulgamentoVfxConfig = {
   plumeBurstCount: 18,
   cleanupDelay: 1.0,
   targetHeight: 0.05,
-  lightIntensity: 8.5,
+  lightIntensity: 4.2,
   finalBoltScale: 1.3,
 };
 
@@ -72,17 +74,19 @@ interface JulgamentoSharedResources {
   flashMaterial: MeshBasicMaterial;
   glowGeometry: PlaneGeometry;
   glowMaterial: MeshBasicMaterial;
+  moonGeometry: BufferGeometry;
+  moonMaterial: MeshBasicMaterial;
 }
 
 function createSharedResources(textures: JulgamentoTextureSet): JulgamentoSharedResources {
   const particleMaterials = createJulgamentoParticleMaterials(textures);
-  const beamGeometry = new CylinderGeometry(0.13, 0.26, 1, 18, 1, true);
+  const beamGeometry = new CylinderGeometry(0.065, 0.115, 1, 12, 1, true);
   beamGeometry.translate(0, -0.5, 0);
-  const pillarGeometry = new CylinderGeometry(0.3, 0.48, 1, 20, 1, true);
+  const pillarGeometry = new CylinderGeometry(0.16, 0.28, 1, 12, 1, true);
   pillarGeometry.translate(0, 0.5, 0);
   const shockGeometry = new RingGeometry(0.34, 0.5, 48);
   const shockMaterial = new MeshBasicMaterial({
-    color: 0x9fc9ff,
+    color: 0xe0bf78,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -93,7 +97,8 @@ function createSharedResources(textures: JulgamentoTextureSet): JulgamentoShared
   });
   const flashGeometry = new SphereGeometry(1, 16, 12);
   const flashMaterial = new MeshBasicMaterial({
-    color: 0xeaf5ff,
+    map: textures.glow,
+    color: 0xffefd2,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -123,6 +128,15 @@ function createSharedResources(textures: JulgamentoTextureSet): JulgamentoShared
     flashMaterial,
     glowGeometry,
     glowMaterial,
+    moonGeometry: createTaperedArcGeometry(0.48, 0.18, Math.PI * 1.45, 0.045),
+    moonMaterial: new MeshBasicMaterial({
+      color: 0xefce8b,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: DoubleSide,
+      toneMapped: false,
+    }),
   };
 }
 
@@ -150,6 +164,7 @@ class JulgamentoBolt {
   readonly flash: Mesh<SphereGeometry, MeshBasicMaterial>;
   readonly groundGlow: Mesh;
   readonly groundGlowMaterial: MeshBasicMaterial;
+  readonly moon: Mesh<BufferGeometry, MeshBasicMaterial>;
   readonly light: PointLight | null;
   private readonly isPooledLight: boolean;
   readonly index: number;
@@ -215,6 +230,12 @@ class JulgamentoBolt {
     this.groundGlow.visible = false;
     this.groundGlow.renderOrder = 10;
     castRoot.add(this.groundGlow);
+    this.moon = new Mesh(shared.moonGeometry, shared.moonMaterial.clone());
+    this.moon.name = "tk-moon-ray-crescent";
+    this.moon.position.set(target.x, target.y + Math.min(config.dropHeight, 3.1), target.z);
+    this.moon.rotation.set(0, 0.45, 0.35);
+    this.moon.visible = false;
+    castRoot.add(this.moon);
 
     if (this.lightPool) {
       this.light = this.lightPool.acquire(0xf0c24a, 9.5 * scale);
@@ -274,6 +295,7 @@ class JulgamentoBolt {
     if (this.disposed || this.phase !== "wait") return;
     this.phase = "beam";
     this.beam.visible = true;
+    this.moon.visible = true;
     this.impactSystems.beamTrail.emitter.visible = true;
     this.impactSystems.beamTrail.restart();
     this.impactSystems.beamTrail.play();
@@ -286,7 +308,7 @@ class JulgamentoBolt {
       system.emitter.removeFromParent();
       system.dispose();
     }
-    this.castRoot.remove(this.beam, this.pillar, this.shock, this.flash, this.groundGlow);
+    this.castRoot.remove(this.beam, this.pillar, this.shock, this.flash, this.groundGlow, this.moon);
     if (this.isPooledLight) {
       this.lightPool?.release(this.light);
     } else if (this.light) {
@@ -298,13 +320,17 @@ class JulgamentoBolt {
     this.shockMaterial.dispose();
     this.flash.material.dispose();
     this.groundGlowMaterial.dispose();
+    this.moon.material.dispose();
   }
 
   private updateBeam(): void {
     const config = this.config;
     const progress = MathUtils.clamp(this.localTime / config.fallDuration, 0, 1);
     const eased = progress * progress;
-    this.beam.scale.set(this.scale, Math.max(0.02, eased), this.scale);
+    this.beam.scale.set(this.scale, Math.max(0.02, eased * config.dropHeight), this.scale);
+    this.beam.material.opacity = 0.62;
+    this.moon.material.opacity = Math.min(1, progress * 3) * 0.92;
+    this.moon.scale.setScalar(0.72 + progress * 0.28);
     if (this.light) {
       this.light.position.set(
         this.target.x,
@@ -331,7 +357,7 @@ class JulgamentoBolt {
     }
     this.pillar.visible = true;
     this.pillar.scale.set(this.scale * 0.6, this.config.dropHeight * 0.42 * this.scale, this.scale * 0.6);
-    this.pillar.material.opacity = 0.9;
+    this.pillar.material.opacity = 0.42;
     this.shock.scale.setScalar(0.26 * this.scale);
     this.shockMaterial.opacity = 0.4;
     this.shock.visible = true;
@@ -341,7 +367,7 @@ class JulgamentoBolt {
     this.flash.material.opacity = 1;
     this.flash.visible = true;
     this.groundGlow.scale.setScalar(2.6 * this.scale);
-    this.groundGlowMaterial.opacity = 0.85;
+    this.groundGlowMaterial.opacity = 0.48;
     this.groundGlow.visible = true;
     if (this.light) {
       this.light.position.set(this.target.x, this.target.y + 0.5 * this.scale, this.target.z);
@@ -351,6 +377,7 @@ class JulgamentoBolt {
 
   private updateImpact(deltaTime: number): void {
     this.impactElapsed += deltaTime;
+    this.moon.material.opacity = 0.92 * Math.max(0, 1 - this.impactElapsed / 0.42);
     const shockProgress = MathUtils.clamp(this.impactElapsed / 0.34, 0, 1);
     const shockFade = Math.pow(1 - shockProgress, 2);
     this.shock.scale.setScalar((0.26 + shockProgress * 4.6) * this.scale);
@@ -366,10 +393,10 @@ class JulgamentoBolt {
       this.config.dropHeight * 0.42 * this.scale * (0.4 + pillarRise * 0.6),
       this.scale * (0.6 + pillarProgress * 0.5),
     );
-    this.pillar.material.opacity = 0.9 * Math.pow(1 - pillarProgress, 1.6);
+    this.pillar.material.opacity = 0.42 * Math.pow(1 - pillarProgress, 1.6);
     this.pillar.visible = pillarProgress < 1;
     const glowFade = Math.pow(1 - MathUtils.clamp(this.impactElapsed / 0.8, 0, 1), 1.4);
-    this.groundGlowMaterial.opacity = glowFade * 0.85;
+    this.groundGlowMaterial.opacity = glowFade * 0.48;
     this.groundGlow.visible = glowFade > 0.01;
     const lightFade = Math.pow(1 - MathUtils.clamp(this.impactElapsed / 0.45, 0, 1), 2);
     if (this.light) {
@@ -610,6 +637,8 @@ export class JulgamentoVfxController {
     this.shared.flashMaterial.dispose();
     this.shared.glowGeometry.dispose();
     this.shared.glowMaterial.dispose();
+    this.shared.moonGeometry.dispose();
+    this.shared.moonMaterial.dispose();
     disposeJulgamentoParticleMaterials(this.shared.particleMaterials);
     disposeJulgamentoTextures(this.textures);
     this.castRoot.clear();

@@ -81,10 +81,13 @@ const RING_FRAGMENT =  `
     float normalized = length(vLocal) / uRadius;
     float mainBand = smoothstep(0.84, 0.96, normalized) * (1.0 - smoothstep(0.985, 1.0, normalized));
     float goldRim = smoothstep(0.93, 0.972, normalized) * (1.0 - smoothstep(0.988, 1.0, normalized));
-    float trail = smoothstep(0.42, 0.9, normalized) * 0.22;
+    float angle = atan(vLocal.y, vLocal.x);
+    float marks = pow(0.5 + 0.5 * cos(angle * 12.0), 18.0);
+    float teeth = marks * smoothstep(0.58, 0.83, normalized) * (1.0 - smoothstep(0.86, 0.9, normalized));
+    float cutoff = 1.0 - smoothstep(0.99, 1.0, normalized);
     float waves = 0.5 + 0.5 * sin(normalized * 26.0 - uTime * 11.0);
-    float alpha = (mainBand * (0.86 + 0.3 * waves) + trail * waves) * uIntensity;
-    vec3 color = mix(uBlood, uGold, goldRim) * (1.0 + goldRim * 0.85 + waves * 0.3);
+    float alpha = (mainBand * 0.62 + teeth * 0.72) * cutoff * uIntensity;
+    vec3 color = mix(uBlood, uGold, max(goldRim, teeth)) * (0.85 + waves * 0.12);
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -105,13 +108,13 @@ const LINE_FRAGMENT =  `
   uniform vec3 uGold;
   varying vec2 vUv;
   void main() {
-    float distance = vUv.x;
+    float distance = 1.0 - vUv.x;
     float across = 1.0 - abs(vUv.y - 0.5) * 2.0;
     float body = smoothstep(0.0, max(uHead, 0.001), distance) * step(distance, uHead);
     float head = smoothstep(uHead - 0.16, uHead - 0.01, distance) * (1.0 - smoothstep(uHead, uHead + 0.03, distance));
     float zigzag = 0.72 + 0.28 * sin(distance * 34.0 - uTime * 20.0);
     float alpha = (body * (0.4 + 0.22 * zigzag) + head * 1.35) * across * uIntensity;
-    vec3 color = mix(uBlood, uGold, head * 0.8) * (1.0 + head * 1.1);
+    vec3 color = mix(uBlood, uGold, head * 0.8) * (0.8 + head * 0.3);
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -264,6 +267,7 @@ class ProvocacaoCast {
     if (this.light) this.castRoot.add(this.light);
 
     this.place(center);
+    for (const system of this.systems) system.emitter.position.copy(this.castRoot.position);
     this.triggerShock();
   }
 
@@ -388,6 +392,7 @@ class ProvocacaoCast {
     this.pulseTime += deltaTime;
     const surgeProgress = MathUtils.clamp(this.surgeElapsed / this.config.surgeDuration, 0, 1);
     this.ring.scale.setScalar(1 + surgeProgress * 0.06);
+    this.ring.material.uniforms.uIntensity.value = 1 - surgeProgress * 0.7;
     this.lineHead = MathUtils.clamp(
       (this.config.shockDuration + this.surgeElapsed) / (this.config.shockDuration + 0.13),
       0,

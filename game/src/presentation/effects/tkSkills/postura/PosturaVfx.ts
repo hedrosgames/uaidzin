@@ -1,11 +1,13 @@
 import {
   AdditiveBlending,
+  BufferGeometry,
   Color,
   DoubleSide,
   Group,
   MathUtils,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardMaterial,
   PlaneGeometry,
   PointLight,
   RingGeometry,
@@ -30,6 +32,7 @@ import {
   type PosturaTextureSet,
 } from "./PosturaTextures";
 import type { TkLightPool } from "../../TkLightPool";
+import { createShieldGeometry } from "../../vfxKit/stylizedGeometry";
 
 export interface PosturaVfxConfig {
   duration: number;
@@ -82,9 +85,10 @@ const GROUND_RING_FRAGMENT =  `
     float disc = 1.0 - smoothstep(0.6, 0.9, radius);
     float segments = 0.6 + 0.4 * step(0.55, fract(radius * 9.0 + 0.5 * sin(atan(vLocal.y, vLocal.x) * 12.0 + uTime * 0.4)));
     vec3 ironColor = uIron * (0.75 + 0.35 * breath);
-    float ironAlpha = disc * 0.62 * uIntensity;
+    float ironAlpha = disc * 0.12 * uIntensity;
     vec3 goldColor = uGold * (0.85 + 0.7 * breath);
-    float rimAlpha = (rim * (0.62 + 0.3 * breath) + innerRim * 0.24 * segments) * uIntensity;
+    float gaps = smoothstep(0.25, 0.55, sin(atan(vLocal.y, vLocal.x) * 4.0));
+    float rimAlpha = (rim * (0.24 + 0.12 * breath) * gaps + innerRim * 0.1 * segments) * uIntensity;
     vec3 color = ironColor * ironAlpha + goldColor * rimAlpha * 1.35;
     float alpha = clamp(ironAlpha + rimAlpha, 0.0, 1.0);
     gl_FragColor = vec4(color, alpha);
@@ -108,17 +112,32 @@ function createGroundRingMaterial(radius: number): ShaderMaterial {
   });
 }
 
-function createSharedResources(
-  textures: PosturaTextureSet,
-): {
+interface PosturaSharedResources {
   particleMaterials: PosturaParticleMaterials;
   groundGeometry: PlaneGeometry;
   closureGeometry: RingGeometry;
-} {
+  plateGeometry: BufferGeometry;
+  plateMaterial: MeshStandardMaterial;
+}
+
+function createSharedResources(
+  textures: PosturaTextureSet,
+): PosturaSharedResources {
   const particleMaterials = createPosturaParticleMaterials(textures);
   const groundGeometry = new PlaneGeometry(2.9, 2.9);
   const closureGeometry = new RingGeometry(0.88, 1, 64);
-  return { particleMaterials, groundGeometry, closureGeometry };
+  const plateGeometry = createShieldGeometry(0.62, 0.86, 0.055);
+  const plateMaterial = new MeshStandardMaterial({
+    color: 0xc9b783,
+    emissive: 0x6b603e,
+    emissiveIntensity: 0.2,
+    roughness: 0.56,
+    metalness: 0.38,
+    flatShading: true,
+    transparent: true,
+    depthWrite: false,
+  });
+  return { particleMaterials, groundGeometry, closureGeometry, plateGeometry, plateMaterial };
 }
 
 function finiteOr(value: number, fallback: number, minimum: number): number {
@@ -155,6 +174,7 @@ class PosturaCast {
   private readonly sparkSystems: PosturaSparkSystems;
   private readonly systems: ParticleSystem[];
   private readonly groundRing: Mesh<PlaneGeometry, ShaderMaterial>;
+  private readonly plate: Mesh<BufferGeometry, MeshStandardMaterial>;
   private readonly closureRings: Mesh<RingGeometry, MeshBasicMaterial>[] = [];
   private readonly flash: Sprite;
   private readonly flashMaterial: SpriteMaterial;
@@ -174,12 +194,7 @@ class PosturaCast {
     scene: Scene,
     batchedRenderer: BatchedRenderer,
     private readonly castRoot: Group,
-    shared: {
-      particleMaterials: PosturaParticleMaterials;
-      groundGeometry: PlaneGeometry;
-      closureGeometry: RingGeometry;
-      textures: PosturaTextureSet;
-    },
+    shared: PosturaSharedResources & { textures: PosturaTextureSet },
     private readonly config: PosturaVfxConfig,
     center: Vector3,
     private readonly onDispose: (cast: PosturaCast) => void,
@@ -200,6 +215,12 @@ class PosturaCast {
     this.groundRing.renderOrder = 11;
     this.groundRing.scale.setScalar(0.35);
     this.castRoot.add(this.groundRing);
+    this.plate = new Mesh(shared.plateGeometry, shared.plateMaterial.clone());
+    this.plate.name = "tk-parry-oblique-guard";
+    this.plate.position.set(-0.42, 1.04, 0.48);
+    this.plate.rotation.set(-0.16, -0.55, -0.38);
+    this.plate.material.opacity = 0;
+    this.castRoot.add(this.plate);
 
     for (let index = 0; index < 2; index += 1) {
       const ring = createClosureRing(shared, index);
@@ -280,6 +301,13 @@ class PosturaCast {
     if (this.phase === "activation") this.updateActivation(deltaTime);
     else if (this.phase === "active") this.updateActive(deltaTime);
     else this.updateFade(deltaTime);
+    if (!this.disposed) {
+      const reveal = Math.min(1, this.activationElapsed / this.config.activationDuration);
+      const fade = this.phase === "fade" ? Math.max(0, 1 - this.fadeElapsed / this.config.fadeDuration) : 1;
+      this.plate.scale.setScalar(0.72 + reveal * 0.28);
+      this.plate.material.opacity = reveal * fade * 0.78;
+      this.plate.rotation.z = -0.38 + Math.sin(this.breathTime * 1.6) * 0.04;
+    }
   }
 
   dispose(): void {
@@ -298,6 +326,7 @@ class PosturaCast {
     }
     for (const ring of this.closureRings) this.castRoot.remove(ring);
     this.groundRing.material.dispose();
+    this.plate.material.dispose();
     this.flashMaterial.dispose();
     for (const ring of this.closureRings) ring.material.dispose();
     this.castRoot.removeFromParent();
@@ -345,7 +374,7 @@ class PosturaCast {
       const startScale = index === 0 ? 3.4 : 2.6;
       const endScale = index === 0 ? 1.1 : 0.72;
       ring.visible = progress < 1;
-      ring.material.opacity = (index === 0 ? 0.85 : 0.6) * Math.sin(progress * Math.PI * 0.9 + 0.35) * 1.2;
+      ring.material.opacity = (index === 0 ? 0.34 : 0.2) * Math.sin(progress * Math.PI * 0.9 + 0.35);
       ring.material.opacity = MathUtils.clamp(ring.material.opacity, 0, index === 0 ? 0.9 : 0.65);
       ring.scale.setScalar(MathUtils.lerp(startScale, endScale, close));
       ring.position.y = 0.03 + close * 0.1;
@@ -554,6 +583,8 @@ export class PosturaVfxController {
     this.batchedRenderer.systemToBatchIndex.clear();
     this.shared.groundGeometry.dispose();
     this.shared.closureGeometry.dispose();
+    this.shared.plateGeometry.dispose();
+    this.shared.plateMaterial.dispose();
     disposePosturaParticleMaterials(this.shared.particleMaterials);
     disposePosturaTextures(this.textures);
   }

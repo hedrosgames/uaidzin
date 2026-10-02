@@ -1,5 +1,6 @@
 import {
   AdditiveBlending,
+  BufferGeometry,
   CylinderGeometry,
   DodecahedronGeometry,
   DoubleSide,
@@ -34,8 +35,9 @@ import {
   type TribunalTextureSet,
 } from "./TribunalTextures";
 import type { TkLightPool } from "../../TkLightPool";
+import { createBladeGeometry } from "../../vfxKit/stylizedGeometry";
 
-export const TRIBUNAL_PILLAR_COUNT = 5;
+export const TRIBUNAL_PILLAR_COUNT = 8;
 
 export interface TribunalVfxConfig {
   descentDuration: number;
@@ -63,15 +65,15 @@ export const DEFAULT_TRIBUNAL_VFX_CONFIG: TribunalVfxConfig = {
   cleanupDelay: 0.95,
   maxConcurrentCasts: 2,
   circleRadius: 4.2,
-  pillarHeight: 9,
+  pillarHeight: 2.6,
   pillarRadius: 0.34,
   stoneRise: 0.42,
-  trailEmission: 48,
-  sparkEmission: 22,
-  touchdownBurstCount: 24,
+  trailEmission: 28,
+  sparkEmission: 14,
+  touchdownBurstCount: 16,
   finalBurstCount: 44,
-  lightIntensity: 6,
-  finalLightIntensity: 9.6,
+  lightIntensity: 3.2,
+  finalLightIntensity: 5.2,
   targetHeight: 0.05,
 };
 
@@ -80,10 +82,10 @@ type CastPhase = "descent" | "fissures" | "impact";
 interface TribunalSharedResources {
   textures: TribunalTextureSet;
   particleMaterials: TribunalParticleMaterials;
-  columnGeometry: CylinderGeometry;
+  columnGeometry: BufferGeometry;
   coreGeometry: CylinderGeometry;
   headGeometry: SphereGeometry;
-  columnMaterial: MeshBasicMaterial;
+  columnMaterial: MeshStandardMaterial;
   coreMaterial: MeshBasicMaterial;
   headMaterial: MeshBasicMaterial;
   shockGeometry: RingGeometry;
@@ -98,24 +100,33 @@ interface TribunalSharedResources {
 function createSharedResources(): TribunalSharedResources {
   const textures = createTribunalTextures();
   const particleMaterials = createTribunalParticleMaterials(textures);
-  const columnGeometry = new CylinderGeometry(1, 1.3, 1, 18, 1, true);
-  columnGeometry.translate(0, -0.5, 0);
+  const columnGeometry = createBladeGeometry(1, 2.2, 0.22);
+  columnGeometry.translate(0, 0.38, 0);
   const coreGeometry = new CylinderGeometry(1, 1.2, 1, 12, 1, true);
-  coreGeometry.translate(0, -0.5, 0);
+  coreGeometry.translate(0, 0.5, 0);
   const headGeometry = new SphereGeometry(0.3, 16, 12);
-  const columnMaterial = new MeshBasicMaterial({
-    map: textures.beam,
-    color: 0xffffff,
+  const columnMaterial = new MeshStandardMaterial({
+    color: 0xe5c998,
+    emissive: 0xc89a48,
+    emissiveIntensity: 0.28,
+    roughness: 0.56,
+    metalness: 0.3,
+    flatShading: true,
     transparent: true,
     opacity: 0,
     depthWrite: false,
     depthTest: true,
     side: DoubleSide,
+  });
+  const coreMaterial = new MeshBasicMaterial({
+    map: textures.beam,
+    color: 0xe9c779,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
     blending: AdditiveBlending,
     toneMapped: false,
   });
-  const coreMaterial = columnMaterial.clone();
-  coreMaterial.opacity = 0;
   const headMaterial = new MeshBasicMaterial({
     map: textures.beam,
     color: 0xffe9a8,
@@ -138,10 +149,12 @@ function createSharedResources(): TribunalSharedResources {
   });
   const flashGeometry = new SphereGeometry(1, 16, 12);
   const flashMaterial = new MeshBasicMaterial({
+    map: textures.spark,
     color: 0xfff3c8,
     transparent: true,
     opacity: 0,
     depthWrite: false,
+    blending: AdditiveBlending,
     toneMapped: false,
   });
   const fissureGeometry = new PlaneGeometry(1, 0.16);
@@ -298,6 +311,7 @@ class TribunalCast {
     column.name = "tk-tribunal-pillar";
     column.scale.set(config.pillarRadius, 0.001, config.pillarRadius);
     column.position.set(position.x, this.target.y + config.pillarHeight, position.z);
+    column.rotation.y = -angle;
     column.renderOrder = 9;
     const core = new Mesh(shared.coreGeometry, shared.coreMaterial.clone());
     core.name = "tk-tribunal-pillar-core";
@@ -471,8 +485,6 @@ class TribunalCast {
       system.dispose();
     }
     for (const pillar of this.pillars) {
-      for (const system of pillar.systems.all) system.dispose();
-      for (const system of pillar.touchdown.all) system.dispose();
       this.castRoot.remove(pillar.column, pillar.core, pillar.head, pillar.shock, pillar.flash);
       (pillar.column.material as MeshBasicMaterial).dispose();
       (pillar.core.material as MeshBasicMaterial).dispose();
@@ -500,15 +512,16 @@ class TribunalCast {
   private updateDescent(_deltaTime: number): void {
     const progress = MathUtils.clamp(this.elapsed / this.config.descentDuration, 0, 1);
     const eased = progress * progress;
-    const headY = this.target.y + this.config.pillarHeight * (1 - eased);
+    const headY = this.target.y + this.config.pillarHeight * eased;
     for (const pillar of this.pillars) {
       pillar.head.position.set(pillar.position.x, headY, pillar.position.z);
-      const columnTop = this.target.y + this.config.pillarHeight;
-      const columnSpan = Math.max(columnTop - headY, 0.001);
+      const columnSpan = Math.max(headY - this.target.y, 0.001);
+      pillar.column.position.y = this.target.y;
+      pillar.core.position.y = this.target.y;
       pillar.column.scale.set(this.config.pillarRadius, columnSpan, this.config.pillarRadius);
-      pillar.core.scale.set(this.config.pillarRadius * 0.42, columnSpan, this.config.pillarRadius * 0.42);
-      (pillar.column.material as MeshBasicMaterial).opacity = 0.55 + progress * 0.35;
-      (pillar.core.material as MeshBasicMaterial).opacity = 0.85;
+      pillar.core.scale.set(this.config.pillarRadius * 0.12, columnSpan, this.config.pillarRadius * 0.12);
+      (pillar.column.material as MeshStandardMaterial).opacity = 0.55 + progress * 0.35;
+      (pillar.core.material as MeshBasicMaterial).opacity = 0.32;
       for (const system of pillar.systems.all) {
         system.emitter.position.copy(pillar.head.position);
       }
@@ -546,9 +559,19 @@ class TribunalCast {
   private updateFissures(deltaTime: number): void {
     const progress = MathUtils.clamp(this.elapsed / this.config.fissureDuration, 0, 1);
     for (const pillar of this.pillars) {
+      const gather = progress * progress;
+      const height = this.config.pillarHeight * (1 - gather * 0.45);
+      pillar.column.position.set(
+        this.target.x + (pillar.position.x - this.target.x) * (1 - gather * 0.76),
+        this.target.y,
+        this.target.z + (pillar.position.z - this.target.z) * (1 - gather * 0.76),
+      );
+      pillar.column.scale.y = height;
+      pillar.core.position.copy(pillar.column.position);
+      pillar.core.scale.y = height;
       const flashProgress = MathUtils.clamp(this.elapsed / 0.16, 0, 1);
-      pillar.flash.scale.setScalar(0.16 + flashProgress * 0.5);
-      pillar.flashMaterial.opacity = Math.pow(1 - flashProgress, 2) * 0.9;
+      pillar.flash.scale.setScalar(0.1 + flashProgress * 0.28);
+      pillar.flashMaterial.opacity = Math.pow(1 - flashProgress, 2) * 0.4;
       pillar.flash.visible = flashProgress < 1;
       const shockProgress = MathUtils.clamp(this.elapsed / 0.3, 0, 1);
       pillar.shock.scale.setScalar(0.2 + shockProgress * 2.4);
@@ -607,7 +630,7 @@ class TribunalCast {
     for (const pillar of this.pillars) {
       const fade = MathUtils.clamp(1 - this.impactElapsed / 0.55, 0, 1);
       (pillar.column.material as MeshBasicMaterial).opacity = 0.9 * fade * fade;
-      (pillar.core.material as MeshBasicMaterial).opacity = 0.85 * fade * fade;
+      (pillar.core.material as MeshBasicMaterial).opacity = 0.32 * fade * fade;
       pillar.column.visible = fade > 0.01;
       pillar.core.visible = fade > 0.01;
     }

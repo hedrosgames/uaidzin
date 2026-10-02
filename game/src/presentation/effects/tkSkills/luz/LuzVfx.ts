@@ -1,5 +1,6 @@
 import {
   AdditiveBlending,
+  BufferGeometry,
   CylinderGeometry,
   DoubleSide,
   Group,
@@ -8,7 +9,6 @@ import {
   MeshBasicMaterial,
   PointLight,
   Quaternion,
-  RingGeometry,
   Scene,
   ShaderMaterial,
   SphereGeometry,
@@ -33,6 +33,7 @@ import {
   type LuzTextureSet,
 } from "./LuzTextures";
 import type { TkLightPool } from "../../TkLightPool";
+import { createTaperedArcGeometry } from "../../vfxKit/stylizedGeometry";
 
 export interface LuzVfxConfig {
   chargeDuration: number;
@@ -78,7 +79,7 @@ interface LuzSharedResources {
   beamGeometry: CylinderGeometry;
   coreGeometry: CylinderGeometry;
   glowGeometry: SphereGeometry;
-  shockGeometry: RingGeometry;
+  shockGeometry: BufferGeometry;
   beamMaterial: MeshBasicMaterial;
   coreMaterial: MeshBasicMaterial;
 }
@@ -89,7 +90,7 @@ function createSharedResources(): LuzSharedResources {
   const beamGeometry = new CylinderGeometry(1, 0.42, 1, 24, 1, true);
   const coreGeometry = new CylinderGeometry(0.3, 0.2, 1, 14, 1, true);
   const glowGeometry = new SphereGeometry(1, 18, 14);
-  const shockGeometry = new RingGeometry(0.3, 0.62, 48);
+  const shockGeometry = createTaperedArcGeometry(0.58, 0.055, Math.PI * 1.94, 0.022);
   const beamMaterial = new MeshBasicMaterial({
     map: textures.beam,
     color: 0xf0e6d0,
@@ -161,6 +162,8 @@ class LuzCast {
   private phaseElapsed = 0;
   private disposed = false;
   private readonly head = new Vector3();
+  private readonly origin = new Vector3();
+  private readonly midpoint = new Vector3();
 
   constructor(
     scene: Scene,
@@ -173,6 +176,7 @@ class LuzCast {
     private readonly onDispose: (cast: LuzCast) => void,
     private readonly lightPool?: TkLightPool,
   ) {
+    this.origin.copy(origin);
     this.direction.copy(target).sub(origin);
     this.beamLength = Math.max(this.direction.length(), 0.0001);
     this.direction.divideScalar(this.beamLength);
@@ -201,8 +205,8 @@ class LuzCast {
     const beamQuaternion = new Quaternion();
     beamQuaternion.setFromUnitVectors(UP, this.direction);
 
-    this.beamOuterMaterial = shared.beamMaterial;
-    this.beamCoreMaterial = shared.coreMaterial;
+    this.beamOuterMaterial = shared.beamMaterial.clone();
+    this.beamCoreMaterial = shared.coreMaterial.clone();
     this.beamOuter = new Mesh(shared.beamGeometry, this.beamOuterMaterial);
     this.beamOuter.name = "luz-beam";
     this.beamOuter.scale.set(config.beamRadiusTarget, 0.0001, config.beamRadiusTarget);
@@ -218,7 +222,7 @@ class LuzCast {
     this.castRoot.add(this.beamOuter, this.beamCore);
 
     this.chargeGlowMaterial = shared.beamMaterial.clone();
-    this.chargeGlowMaterial.map = null;
+    this.chargeGlowMaterial.map = shared.textures.glow;
     this.chargeGlowMaterial.opacity = 0;
     this.chargeGlow = new Mesh(shared.glowGeometry, this.chargeGlowMaterial);
     this.chargeGlow.name = "luz-charge-glow";
@@ -228,7 +232,7 @@ class LuzCast {
     this.castRoot.add(this.chargeGlow);
 
     this.flashMaterial = shared.beamMaterial.clone();
-    this.flashMaterial.map = null;
+    this.flashMaterial.map = shared.textures.glow;
     this.flashMaterial.opacity = 0;
     this.flash = new Mesh(shared.glowGeometry, this.flashMaterial);
     this.flash.name = "luz-flash";
@@ -321,6 +325,8 @@ class LuzCast {
       this.light.dispose();
     }
     this.chargeGlowMaterial.dispose();
+    this.beamOuterMaterial.dispose();
+    this.beamCoreMaterial.dispose();
     this.flashMaterial.dispose();
     this.shockMaterial.dispose();
     this.onDispose(this);
@@ -338,6 +344,9 @@ class LuzCast {
     this.chargeGlow.visible = true;
     this.chargeGlow.scale.setScalar(0.1 + progress * 0.34 * pulse);
     this.chargeGlowMaterial.opacity = progress * 0.85;
+    this.shockRing.visible = true;
+    this.shockRing.scale.set(0.8, 1.1, 1);
+    this.shockMaterial.opacity = progress * 0.62;
     if (this.light) this.light.intensity = progress * 1.6;
     this.chargeSystems.chargeMotes.emitter.position.copy(this.castOrigin());
     if (this.phaseElapsed >= this.config.chargeDuration) this.triggerFire();
@@ -345,7 +354,7 @@ class LuzCast {
   }
 
   private castOrigin(): Vector3 {
-    return this.target.clone().addScaledVector(this.direction, -this.beamLength);
+    return this.origin;
   }
 
   private triggerFire(): void {
@@ -368,7 +377,7 @@ class LuzCast {
     const progress = MathUtils.clamp(this.phaseElapsed / this.fireDuration, 0, 1);
     const eased = progress * progress * (3 - 2 * progress);
     const revealed = Math.max(this.beamLength * eased, 0.0001);
-    const midpoint = this.castOrigin().addScaledVector(this.direction, revealed / 2);
+    const midpoint = this.midpoint.copy(this.origin).addScaledVector(this.direction, revealed / 2);
     this.beamOuter.scale.set(this.config.beamRadiusTarget, revealed, this.config.beamRadiusTarget);
     this.beamOuter.position.copy(midpoint);
     this.beamCore.scale.set(
@@ -423,8 +432,8 @@ class LuzCast {
     this.flash.scale.setScalar(0.16 + Math.min(progress * 6, 1) * 0.62);
     this.flashMaterial.opacity = fade * 0.95;
     this.flash.visible = progress < 0.85;
-    this.shockRing.scale.setScalar(0.4 + progress * 3.4);
-    this.shockMaterial.opacity = fade * 0.7;
+    this.shockRing.scale.set(Math.max(0.025, 0.8 * (1 - progress * 2.6)), 1.1 + progress * 0.45, 1);
+    this.shockMaterial.opacity = fade * 0.88;
     this.shockRing.visible = progress < 1;
     if (this.light) this.light.intensity = this.config.lightPeak * fade;
     if (this.phaseElapsed >= this.config.impactDuration) this.dispose();

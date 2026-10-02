@@ -77,7 +77,7 @@ export const DEFAULT_COLAPSO_ELEMENTAL_VFX_CONFIG: ColapsoElementalVfxConfig = {
 export type ColapsoElementalPhase = "telegraph" | "collapse" | "rupture" | "residual";
 
 const LIGHT_COLOR = 0xffc078;
-const ELEMENT_TINTS = [0xffb257, 0xa8dcff, 0xc07ef0, 0xffe08a] as const;
+const ELEMENT_TINTS = [0xff752b, 0x65bfff, 0xac58ef, 0xffd65c] as const;
 const ELEMENT_OFFSETS = [0, Math.PI * 0.5, Math.PI, Math.PI * 1.5] as const;
 
 interface ShardSeed {
@@ -164,7 +164,8 @@ class ColapsoElementalCast {
     }
 
     this.heartMaterial = resources.coreMeshMaterial.clone();
-    this.heartMaterial.color.setHex(0xffe6c0);
+    this.heartMaterial.color.setHex(0x180e27);
+    this.heartMaterial.vertexColors = false;
     this.heart = new Mesh(resources.coreGeometry, this.heartMaterial);
     this.heart.name = "colapso-elemental-heart";
     this.heart.position.set(center.x, center.y + 1.05, center.z);
@@ -351,7 +352,10 @@ class ColapsoElementalCast {
         this.center.y + 1.05 + bob * distance * 0.6,
         this.center.z + Math.sin(angle) * distance,
       );
-      core.scale.setScalar(size * (0.9 + (index % 2) * 0.16));
+      const variant = index % ELEMENT_TINTS.length;
+      const width = variant === 1 ? 0.72 : variant === 2 ? 0.86 : 1.08;
+      const height = variant === 1 ? 1.65 : variant === 3 ? 0.8 : 1.12;
+      core.scale.set(size * width, size * height, size * width);
       core.rotation.y = this.elapsed * 2.2 + index;
       core.rotation.x = this.elapsed * 1.4;
     }
@@ -362,7 +366,7 @@ class ColapsoElementalCast {
     const spin = this.elapsed * this.config.orbitSpeed;
     this.updateOrbit(this.config.orbitRadius * (0.6 + progress * 0.4), spin, 0.2 + progress * 0.22);
     this.heart.visible = true;
-    this.heart.scale.setScalar(0.1 + progress * 0.16);
+    this.heart.scale.setScalar(0.18 + progress * 0.28);
     this.heartMaterial.opacity = 0.5 + progress * 0.42;
     this.heart.rotation.y = this.elapsed * 3.4;
     this.particles.orbit.emitter.position.set(this.center.x, this.center.y + 1.05, this.center.z);
@@ -385,7 +389,7 @@ class ColapsoElementalCast {
     this.updateOrbit(Math.max(0.14, distance), spin, 0.42 * (1 - progress * 0.55));
     const squeeze = MathUtils.clamp((progress - 0.55) / 0.45, 0, 1);
     this.heart.visible = squeeze < 0.92;
-    this.heart.scale.setScalar(Math.max(0.001, 0.26 * (1 - progress * 0.35) * (1 - squeeze * 0.75)));
+    this.heart.scale.setScalar(Math.max(0.001, 0.46 * (1 - progress * 0.35) * (1 - squeeze * 0.75)));
     this.heartMaterial.opacity = 0.92 + Math.sin(this.elapsed * 46) * 0.06 * progress;
     this.heart.rotation.y = this.elapsed * 5.2;
     this.particles.orbit.emitter.visible = this.particles.orbit.particleNum > 0;
@@ -403,7 +407,7 @@ class ColapsoElementalCast {
     this.disc.scale.setScalar(this.config.discScale * 0.16);
     this.discInner.scale.setScalar(this.config.discScale * 0.2);
     this.discMaterial.opacity = 0.9;
-    this.discInnerMaterial.opacity = 0.8;
+    this.discInnerMaterial.opacity = 0.4;
     for (const mesh of this.shardMeshes) mesh.visible = true;
     this.particles.fragments.emitter.position.set(this.center.x, this.center.y + 0.5, this.center.z);
     this.start(this.particles.fragments);
@@ -418,7 +422,7 @@ class ColapsoElementalCast {
     this.disc.scale.setScalar(this.config.discScale * (0.16 + expand * 0.84));
     this.discInner.scale.setScalar(this.config.discScale * (0.2 + expand * 0.72));
     this.discMaterial.opacity = 0.34 + 0.56 * Math.pow(1 - progress, 0.7);
-    this.discInnerMaterial.opacity = 0.26 + 0.54 * Math.pow(1 - progress, 1.1);
+    this.discInnerMaterial.opacity = 0.13 + 0.27 * Math.pow(1 - progress, 1.1);
     this.disc.rotation.y = this.elapsed * 1.4;
     this.discInner.rotation.y = -this.elapsed * 2.1;
     const spin = this.elapsed * this.config.orbitSpeed * 3.4;
@@ -452,7 +456,7 @@ class ColapsoElementalCast {
     this.particles.fragments.endEmit();
     for (const core of this.orbitCores) core.visible = false;
     this.discMaterial.opacity = 0.43;
-    this.discInnerMaterial.opacity = 0.3;
+    this.discInnerMaterial.opacity = 0.15;
     this.particles.dust.emitter.position.set(this.center.x, this.center.y + 0.3, this.center.z);
     this.start(this.particles.dust);
   }
@@ -462,7 +466,7 @@ class ColapsoElementalCast {
     const decay = MathUtils.clamp(this.phaseElapsed / total, 0, 1);
     const fade = Math.pow(1 - decay, 1.7);
     this.discMaterial.opacity = 0.43 * fade;
-    this.discInnerMaterial.opacity = 0.3 * fade;
+    this.discInnerMaterial.opacity = 0.15 * fade;
     this.disc.scale.setScalar(this.config.discScale * (1.02 + decay * 0.05));
     this.discInner.scale.setScalar(this.config.discScale * (0.94 + decay * 0.03));
     this.disc.rotation.y = this.elapsed * 0.7;

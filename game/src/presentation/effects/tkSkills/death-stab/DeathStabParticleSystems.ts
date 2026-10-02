@@ -54,7 +54,7 @@ function burst(options: BurstOptions): ParticleSystem {
 
 export function createMainWave(resources: DeathStabResources, distance: number, duration: number, index: number): ParticleSystem {
   const system = burst({ name: "DeathStab_MainWaves", count: 1, life: duration,
-    speed: distance / duration, size: 0.82 + index * 0.08, alpha: 0.94 - index * 0.05,
+    speed: distance / duration, size: 1.02 - index * 0.07, alpha: 0.96 - index * 0.1,
     angle: 0, radius: 0, material: resources.windMaterial, geometry: resources.wave });
   system.startLife = value(duration);
   system.startSpeed = value(distance / duration);
@@ -78,10 +78,10 @@ export function createDeathStabBursts(resources: DeathStabResources, distance: n
   const common = { angle: 0.06, radius: 0.12, material: resources.strokeMaterial, geometry: resources.needle };
   const release = burst({ ...common, name: "DeathStab_WeaponFlash", count: 3, life: 0.055,
     speed: 5, size: 0.8, alpha: 0.95, angle: 0.5, material: resources.flashMaterial });
-  const trail = burst({ ...common, name: "DeathStab_CenterTrail", count: 6, life: travel * 0.8,
-    speed: distance / travel * 0.8, size: 0.85, alpha: 0.2, radius: 0.035 });
-  const streaks = burst({ ...common, name: "DeathStab_SpeedStreaks", count: 10, life: travel,
-    speed: distance / travel, size: 1.4, alpha: 0.68 });
+  const trail = burst({ ...common, name: "DeathStab_CenterTrail", count: 3, life: travel * 0.8,
+    speed: distance / travel * 0.8, size: 1.05, alpha: 0.32, radius: 0.055 });
+  const streaks = burst({ ...common, name: "DeathStab_SpeedStreaks", count: 6, life: travel,
+    speed: distance / travel, size: 1.5, alpha: 0.62 });
   const curls = burst({ name: "DeathStab_WindCurls", count: 5, life: 0.19,
     speed: 3.5, size: 0.34, alpha: 0.36, angle: 0.9, radius: 0.2, material: resources.curlMaterial });
   curls.behaviors.push(new RotationOverLife(curve(-2, 2)));

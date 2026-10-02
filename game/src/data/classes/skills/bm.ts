@@ -10,7 +10,7 @@ const dragao: SummonSpec = { id: "dragao", role: "elite", attackMul: 0.72, hpMul
 export const BM_FISICA: SkillDef[] = [
   defineSkill({
     id: "bm_fis_lobo_guerreiro",
-    name: "Lobo Guerreiro",
+    name: "Lobisomem",
     desc: "Assume a forma de lobo por 18 s: ataque +18 %, defesa −8 % e velocidade de ataque +28 %.",
     index: 0,
     kind: "transform",
@@ -58,7 +58,7 @@ export const BM_FISICA: SkillDef[] = [
   }),
   defineSkill({
     id: "bm_fis_ursao",
-    name: "Ursão Ancião",
+    name: "Forma de Urso",
     desc: "Assume a forma de urso por 18 s: ataque +12 %, defesa +42 % e vida máxima +35 %.",
     index: 5,
     kind: "transform",
@@ -74,7 +74,7 @@ export const BM_FISICA: SkillDef[] = [
   }),
   defineSkill({
     id: "bm_fis_tita",
-    name: "Titã Primordial",
+    name: "Titã",
     desc: "Assume a forma de titã por 14 s: ataque +42 %, defesa +35 %, vida máxima +40 % e velocidade de ataque +12 %. Só uma 8ª árvore por personagem.",
     index: 7,
     kind: "transform",
@@ -159,15 +159,11 @@ export const BM_MAGIA: SkillDef[] = [
   }),
   defineSkill({
     id: "bm_mag_furia_quatro",
-    name: "Fúria dos Quatro",
-    desc: "Atinge todos os inimigos num raio de 4,4 m com dano mágico elemental de 2,7 vezes o poder mágico. Só uma 8ª árvore por personagem.",
+    name: "Transformação Eden",
+    desc: "Assume a forma celestial de Eden por 16 s: ataque +35 %, defesa +25 %, vida máxima +30 % e velocidade de ataque +25 %. Só uma 8ª árvore por personagem.",
     index: 7,
-    kind: "damage",
-    shape: "aoe",
-    element: "mixed",
-    radius: 4.4,
-    range: 4.4,
-    damageMultiplier: 2.7,
+    kind: "transform",
+    transform: { id: "eden", sec: 16, attack: 1.35, defense: 1.25, hp: 1.3, scale: 1.15, attackSpeed: 0.25 },
   }),
 ];
 

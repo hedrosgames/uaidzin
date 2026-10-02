@@ -92,7 +92,7 @@ class CampoGeloCast {
       this.shards.push({
         x: Math.cos(angle) * distance,
         z: Math.sin(angle) * distance,
-        height: (edge ? 0.22 + 0.34 * Math.abs(Math.sin(i * 2.3)) : 0.18) * size,
+        height: (edge ? 0.28 + 0.4 * Math.abs(Math.sin(i * 2.3)) : 0.18) * size,
         width: (0.75 + 0.45 * Math.abs(Math.cos(i * 1.8))) * size,
         angle,
         lean: edge ? 0.12 + Math.abs(Math.sin(i * 0.8)) * 0.08 : 0.08,
@@ -148,7 +148,7 @@ class CampoGeloCast {
     const expand = 1 - Math.pow(1 - activation, 3);
     this.ground.scale.setScalar(this.radius * (0.25 + expand * 0.75));
     this.groundMaterial.opacity = (0.08 + expand * 0.25) * fade * fade;
-    this.rimMaterial.opacity = (0.3 + expand * 0.38) * fade * fade;
+    this.rimMaterial.opacity = (0.16 + expand * 0.29) * fade * fade;
     this.crystalMaterial.opacity = (0.45 + expand * 0.43) * fade;
     const size = Math.min(1, this.radius / 2);
     for (let i = 0; i < this.shards.length; i++) {

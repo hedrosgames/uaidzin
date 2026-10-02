@@ -5,15 +5,14 @@ import {
   MathUtils,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardMaterial,
   PointLight,
   RingGeometry,
   Scene,
   ShaderMaterial,
-  SphereGeometry,
   TorusGeometry,
   Vector2,
   Vector3,
-  BufferAttribute,
   type BufferGeometry,
   type Texture,
 } from "three";
@@ -33,6 +32,7 @@ import {
   type GuardaTextureSet,
 } from "./GuardaTextures";
 import type { TkLightPool } from "../../TkLightPool";
+import { createShieldGeometry } from "../../vfxKit/stylizedGeometry";
 
 export interface GuardaVfxConfig {
   riseDuration: number;
@@ -87,50 +87,20 @@ interface GuardaSharedResources {
   rimBottomGeometry: TorusGeometry;
   rippleGeometry: TorusGeometry;
   auraGeometry: RingGeometry;
-  shellMaterial: MeshBasicMaterial;
+  shellMaterial: MeshStandardMaterial;
   rimMaterial: MeshBasicMaterial;
   auraMaterial: MeshBasicMaterial;
   rippleMaterial: MeshBasicMaterial;
 }
 
-function mulberry32(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let result = Math.imul(state ^ (state >>> 15), 1 | state);
-    result = (result + Math.imul(result ^ (result >>> 7), 61 | result)) ^ result;
-    return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 function createShellGeometry(
   radius: number,
-  phiLength: number,
-  thetaStart: number,
-  thetaLength: number,
+  _phiLength: number,
+  _thetaStart: number,
+  _thetaLength: number,
 ): BufferGeometry {
-  const geometry = new SphereGeometry(
-    radius,
-    10,
-    8,
-    Math.PI / 2 - phiLength / 2,
-    phiLength,
-    thetaStart,
-    thetaLength,
-  ).toNonIndexed();
-  const positions = geometry.getAttribute("position") as BufferAttribute;
-  const colors = new Float32Array(positions.count * 3);
-  const random = mulberry32(991);
-  for (let face = 0; face < positions.count / 3; face += 1) {
-    const brightness = 0.5 + random() * 0.5;
-    for (let corner = 0; corner < 3; corner += 1) {
-      const index = face * 3 + corner;
-      colors[index * 3] = brightness;
-      colors[index * 3 + 1] = brightness * 0.92;
-      colors[index * 3 + 2] = brightness * 0.78;
-    }
-  }
-  geometry.setAttribute("color", new BufferAttribute(colors, 3));
+  const geometry = createShieldGeometry(radius * 1.12, radius * 1.38, 0.085);
+  geometry.translate(0, 0.12, radius * 0.48);
   return geometry;
 }
 
@@ -169,16 +139,18 @@ function createSharedResources(config: GuardaVfxConfig): GuardaSharedResources {
     textures,
     flameTexture,
   );
-  const shellMaterial = new MeshBasicMaterial({
-    map: textures.shell,
-    vertexColors: true,
+  const shellMaterial = new MeshStandardMaterial({
+    color: 0x7795a4,
+    emissive: 0x354451,
+    emissiveIntensity: 0.22,
+    roughness: 0.6,
+    metalness: 0.35,
+    flatShading: true,
     transparent: true,
     opacity: 0,
     depthWrite: false,
     depthTest: true,
     side: DoubleSide,
-    blending: AdditiveBlending,
-    toneMapped: false,
   });
   const rimMaterial = new MeshBasicMaterial({
     color: 0xd4a017,
@@ -254,7 +226,7 @@ function isFiniteVector3(vector: Vector3): boolean {
 class GuardaCast {
   private readonly castGroup: Group;
   private readonly shellGroup: Group;
-  private readonly shell: Mesh<BufferGeometry, MeshBasicMaterial>;
+  private readonly shell: Mesh<BufferGeometry, MeshStandardMaterial>;
   private readonly rimTop: Mesh<TorusGeometry, MeshBasicMaterial>;
   private readonly rimBottom: Mesh<TorusGeometry, MeshBasicMaterial>;
   private readonly aura: Mesh<RingGeometry, MeshBasicMaterial>;
@@ -423,10 +395,11 @@ class GuardaCast {
       ? 1
       : 1 + Math.sin(this.elapsed * 7.5) * 0.012 * factor;
     this.shellGroup.scale.setScalar((0.55 + this.riseEase() * 0.45) * breathe);
-    this.shell.material.opacity = 0.72 * factor;
-    this.rimTop.material.opacity = 0.92 * factor;
-    this.rimBottom.material.opacity = 0.78 * factor;
-    this.aura.material.opacity = 0.34 * factor * (1 + Math.sin(this.elapsed * 6.5) * 0.18);
+    this.shell.material.opacity = 0.82 * factor;
+    this.shellGroup.position.y = this.config.originHeight - (1 - this.riseEase()) * 0.65;
+    this.rimTop.material.opacity = 0.48 * factor;
+    this.rimBottom.material.opacity = 0.32 * factor;
+    this.aura.material.opacity = 0.16 * factor * (1 + Math.sin(this.elapsed * 6.5) * 0.18);
     this.aura.rotation.y += deltaTime * 0.4;
     if (this.light) this.light.intensity = (0.9 + this.lightPulse * 3.4) * factor;
     if (this.elapsed >= this.config.shieldDuration + this.config.fadeDuration) {

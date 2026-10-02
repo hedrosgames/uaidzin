@@ -1,11 +1,13 @@
 import {
   AdditiveBlending,
+  ConeGeometry,
   CylinderGeometry,
   DoubleSide,
   Group,
   MathUtils,
   Mesh,
   MeshBasicMaterial,
+  NormalBlending,
   PointLight,
   Scene,
   ShaderMaterial,
@@ -63,7 +65,7 @@ type DesafioPhase = "aim" | "hold" | "seal";
 interface DesafioSharedResources {
   textures: DesafioTextureSet;
   particleMaterials: DesafioParticleMaterials;
-  coreGeometry: CylinderGeometry;
+  coreGeometry: ConeGeometry;
   sheathGeometry: CylinderGeometry;
   ringInnerGeometry: TorusGeometry;
   ringOuterGeometry: TorusGeometry;
@@ -75,7 +77,7 @@ interface DesafioSharedResources {
 function createSharedResources(config: DesafioVfxConfig): DesafioSharedResources {
   const textures = createDesafioTextures();
   const particleMaterials = createDesafioParticleMaterials(textures);
-  const coreGeometry = new CylinderGeometry(0.018, 0.018, 1, 8, 1, true);
+  const coreGeometry = new ConeGeometry(0.095, 1, 5);
   const sheathGeometry = new CylinderGeometry(0.055, 0.055, 1, 10, 1, true);
   const ringInnerGeometry = new TorusGeometry(config.markRadius * 0.62, 0.016, 6, 48);
   const ringOuterGeometry = new TorusGeometry(config.markRadius, 0.012, 6, 56);
@@ -108,7 +110,7 @@ function isFiniteVector3(vector: Vector3): boolean {
 class DesafioCast {
   private readonly castGroup: Group;
   private readonly beamGroup: Group;
-  private readonly core: Mesh<CylinderGeometry, MeshBasicMaterial>;
+  private readonly core: Mesh<ConeGeometry, MeshBasicMaterial>;
   private readonly sheath: Mesh<CylinderGeometry, MeshBasicMaterial>;
   private readonly markGroup: Group;
   private readonly ringA: Group;
@@ -164,11 +166,11 @@ class DesafioCast {
       this.beamDirection,
     );
     this.core = new Mesh(shared.coreGeometry, new MeshBasicMaterial({
-      color: 0xd8ffc8,
+      color: 0x9cda65,
       transparent: true,
       opacity: 0.95,
       depthWrite: false,
-      blending: AdditiveBlending,
+      blending: NormalBlending,
       side: DoubleSide,
       toneMapped: false,
     }));
@@ -259,6 +261,7 @@ class DesafioCast {
     this.castGroup.add(this.glow);
 
     this.flash = new Mesh(shared.flashGeometry, new MeshBasicMaterial({
+      map: shared.textures.glow,
       color: 0xcaffb6,
       transparent: true,
       opacity: 0,
@@ -397,10 +400,13 @@ class DesafioCast {
       this.beamMidpoint.z + Math.sin(this.elapsed * 46.7) * this.beamTremorAxis.z * 0.014,
     );
     const coreScale = 1 + pulse * 0.3;
-    this.core.scale.set(coreScale, this.origin.distanceTo(this.target), coreScale);
-    this.sheath.scale.set(1 + pulse * 0.14, this.origin.distanceTo(this.target), 1 + pulse * 0.14);
-    this.core.material.opacity = 0.8 + pulse * 0.2;
-    this.sheath.material.opacity = 0.58 + Math.sin(this.elapsed * 17.3) * 0.12;
+    const distance = this.origin.distanceTo(this.target);
+    const pointLength = Math.min(distance, 0.72 + distance * 0.12);
+    this.core.scale.set(coreScale, pointLength, coreScale);
+    this.core.position.y = distance * 0.5 - pointLength * 0.5;
+    this.sheath.scale.set(1 + pulse * 0.14, distance, 1 + pulse * 0.14);
+    this.core.material.opacity = 0.88 + pulse * 0.08;
+    this.sheath.material.opacity = 0.2 + Math.sin(this.elapsed * 17.3) * 0.06;
 
     this.ringA.rotation.y = this.elapsed * 2.4;
     this.ringB.rotation.y = -this.elapsed * 1.7;
@@ -411,7 +417,7 @@ class DesafioCast {
     this.halo.material.opacity = 0.4 + Math.sin(this.elapsed * 9.4) * 0.16;
     this.halo.scale.setScalar(1 - progress * 0.24);
     this.glow.material.opacity = 0.28 + progress * 0.3;
-    this.glow.scale.setScalar(1.15 + progress * 0.55);
+    this.glow.scale.setScalar(0.58 + progress * 0.24);
     if (this.light) this.light.intensity = 1.1 + Math.sin(this.elapsed * 12.8) * 0.55 + progress * 0.9;
 
     if (this.phaseElapsed >= this.config.aimDuration) this.enterHold();
@@ -435,7 +441,7 @@ class DesafioCast {
     this.halo.material.opacity = (0.56 - progress * 0.3) + Math.sin(this.elapsed * 9.4) * 0.1;
     this.halo.scale.setScalar(0.76 - progress * 0.3);
     this.glow.material.opacity = 0.58 + progress * 0.24;
-    this.glow.scale.setScalar(1.7 + progress * 0.5);
+    this.glow.scale.setScalar(0.82 + progress * 0.12);
     if (this.light) this.light.intensity = 2 + progress * 2.4 + Math.sin(this.elapsed * 18.2) * 0.5;
     if (this.phaseElapsed >= this.config.holdDuration) this.enterSeal();
   }

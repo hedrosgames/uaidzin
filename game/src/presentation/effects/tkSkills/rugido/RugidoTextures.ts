@@ -10,10 +10,10 @@ export interface RugidoTextureSet {
 export function createRugidoTextures(): RugidoTextureSet {
   const streak = createTexture(128, 64, (context) => {
     const glow = context.createRadialGradient(64, 32, 0, 64, 32, 62);
-    glow.addColorStop(0, "rgba(255,252,238,1)");
-    glow.addColorStop(0.24, "rgba(255,232,170,0.96)");
-    glow.addColorStop(0.55, "rgba(212,160,23,0.55)");
-    glow.addColorStop(1, "rgba(74,50,20,0)");
+    glow.addColorStop(0, "rgba(240,219,255,1)");
+    glow.addColorStop(0.24, "rgba(194,151,224,0.96)");
+    glow.addColorStop(0.55, "rgba(123,75,167,0.55)");
+    glow.addColorStop(1, "rgba(45,25,64,0)");
     context.save();
     context.translate(64, 32);
     context.scale(1, 0.24);
@@ -49,10 +49,10 @@ export function createRugidoTextures(): RugidoTextureSet {
 
   const ember = createTexture(64, 64, (context) => {
     drawRadialGlow(context, 32, 32, [
-      [0, "rgba(255,240,214,1)"],
-      [0.22, "rgba(238,150,96,1)"],
-      [0.5, "rgba(163,59,59,0.82)"],
-      [1, "rgba(46,16,10,0)"],
+      [0, "rgba(236,215,255,1)"],
+      [0.22, "rgba(185,133,217,1)"],
+      [0.5, "rgba(108,58,151,0.82)"],
+      [1, "rgba(38,17,58,0)"],
     ]);
   });
 

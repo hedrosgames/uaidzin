@@ -130,4 +130,18 @@ describe("BM magia comprado no runtime", () => {
     expect(s.cast(0, 0, [], true)?.resolved.hits).toEqual([]);
     expect(s.character.mp).toBe(994);
   });
+
+  it("Transformação Eden aplica a forma de Eden, seus atributos e expira", () => {
+    const s = setup("bm_mag_furia_quatro");
+    expect(s.cast(0, 0, [])).not.toBeNull();
+    expect(s.form.id).toBe("eden");
+    const mods = buildCombatMods([], [], null, s.form);
+    expect(mods.attackMul).toBeCloseTo(1.35);
+    expect(mods.defenseMul).toBeCloseTo(1.25);
+    expect(mods.maxHpMul).toBeCloseTo(0.3);
+    expect(mods.attackSpeed).toBeCloseTo(0.25);
+    s.form.advance(16);
+    expect(s.form.active).toBe(false);
+    expect(buildCombatMods([], [], null, s.form).attackMul).toBe(1);
+  });
 });

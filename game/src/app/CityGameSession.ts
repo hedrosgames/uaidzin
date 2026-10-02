@@ -832,6 +832,10 @@ export class CityGameSession {
       this.player.isMoving ? this.player.speed * this.player.speedScale : undefined,
       groundY,
     );
+    const desiredTransform = this.form.active ? this.form.id : null;
+    if (this.renderer.playerView.getTransformation() !== desiredTransform) {
+      void this.renderer.playerView.setTransformation(desiredTransform);
+    }
     this.renderer.playerView.root.scale.setScalar(this.form.active ? this.form.scale : 1);
     this.renderer.updatePlayer(dt);
     this.enemyView.sync(this.enemies, dt);

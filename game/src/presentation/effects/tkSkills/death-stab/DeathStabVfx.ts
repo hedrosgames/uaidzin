@@ -133,6 +133,7 @@ export class DeathStabVfxController {
   clear(): void {
     for (const cast of this.casts) this.removeCast(cast);
     this.accumulator = 0;
+    this.renderer.update(0);
   }
 
   getActiveCastCount(): number { return this.casts.size; }
@@ -191,7 +192,10 @@ export class DeathStabVfxController {
   }
 
   private removeCast(cast: DeathStabCast): void {
-    for (const burst of cast.bursts) burst.system.dispose();
+    for (const burst of cast.bursts) {
+      burst.system.emitter.removeFromParent();
+      burst.system.dispose();
+    }
     cast.root.removeFromParent();
     cast.root.clear();
     this.casts.delete(cast);

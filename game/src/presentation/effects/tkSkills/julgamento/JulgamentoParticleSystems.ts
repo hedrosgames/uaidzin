@@ -42,10 +42,10 @@ export interface JulgamentoParticleConfig {
 function createMoonGradient(): Gradient {
   return new Gradient(
     [
-      [new QuarksVector3(0.96, 1, 1), 0],
-      [new QuarksVector3(0.68, 0.86, 1), 0.38],
-      [new QuarksVector3(0.38, 0.58, 0.9), 0.74],
-      [new QuarksVector3(0.12, 0.18, 0.36), 1],
+      [new QuarksVector3(1, 0.94, 0.78), 0],
+      [new QuarksVector3(0.94, 0.75, 0.44), 0.38],
+      [new QuarksVector3(0.62, 0.42, 0.2), 0.74],
+      [new QuarksVector3(0.24, 0.15, 0.06), 1],
     ],
     [
       [1, 0],
@@ -79,7 +79,7 @@ export function createJulgamentoImpactSystems(
     startSpeed: new IntervalValue(0.4, 1.6),
     startSize: new IntervalValue(0.2, 0.42),
     startRotation: new IntervalValue(-1.2, 1.2),
-    startColor: new ConstantColor(new QuarksVector4(0.8, 0.92, 1, 0.76)),
+    startColor: new ConstantColor(new QuarksVector4(1, 0.88, 0.62, 0.76)),
     emissionOverTime: new ConstantValue(config.trailEmission),
     emissionOverDistance: new ConstantValue(0),
     shape: new ConeEmitter({
@@ -106,7 +106,7 @@ export function createJulgamentoImpactSystems(
     startSpeed: new IntervalValue(3.4, 8.2),
     startSize: new IntervalValue(0.05, 0.15),
     startRotation: new IntervalValue(-Math.PI, Math.PI),
-    startColor: new ConstantColor(new QuarksVector4(0.86, 0.95, 1, 0.96)),
+    startColor: new ConstantColor(new QuarksVector4(1, 0.93, 0.78, 0.9)),
     emissionOverTime: new ConstantValue(0),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [
@@ -140,8 +140,8 @@ export function createJulgamentoImpactSystems(
     looping: false,
     startLife: new IntervalValue(0.22, 0.52),
     startSpeed: new IntervalValue(2.2, 5.8),
-    startSize: new IntervalValue(0.7, 1.3),
-    startColor: new ConstantColor(new QuarksVector4(0.68, 0.84, 1, 0.88)),
+    startSize: new IntervalValue(0.26, 0.58),
+    startColor: new ConstantColor(new QuarksVector4(1, 0.84, 0.52, 0.64)),
     emissionOverTime: new ConstantValue(0),
     emissionOverDistance: new ConstantValue(0),
     emissionBursts: [

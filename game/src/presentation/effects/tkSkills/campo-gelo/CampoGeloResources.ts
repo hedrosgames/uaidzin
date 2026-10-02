@@ -59,8 +59,8 @@ function finishGeometry(name: string, data: GeometryData): BufferGeometry {
 function crystalVertex(point: Point, facet: number): Vertex {
   const height = point[1];
   const color = new Color(0x38596f);
-  const middle = new Color(0x92d2e6);
-  const tip = new Color(0xf3fcff);
+  const middle = new Color(0x62b8d4);
+  const tip = new Color(0xe0f3f5);
   if (height < 0.43) color.lerp(middle, height / 0.43);
   else color.copy(middle).lerp(tip, (height - 0.43) / 0.57);
   color.multiplyScalar(facet + (1 - facet) * Math.pow(height, 3) * 0.8);
@@ -107,7 +107,7 @@ function rimVertex(sector: number, step: number, band: number): Vertex {
   const top = 0.043 + 0.012 * Math.sin(sector * 1.3 + t * 8) + 0.01 * Math.cos(t * 5 + sector);
   const radius = band === 0 || band === 3 ? inner : outer;
   const y = band < 2 ? 0.015 : band === 2 ? top : 0.015 + (top - 0.015) * 0.63;
-  const color = new Color(0x89cbdc).lerp(new Color(0xe9f9ff), band >= 2 ? 0.72 : 0.05);
+  const color = new Color(0x589db7).lerp(new Color(0xdaeff2), band >= 2 ? 0.55 : 0.05);
   return {
     point: [Math.cos(angle) * radius, y, Math.sin(angle) * radius],
     u: t,

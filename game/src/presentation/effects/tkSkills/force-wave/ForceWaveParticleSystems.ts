@@ -33,7 +33,7 @@ export class ForceWaveResources {
   readonly geometry = createWaveGeometry();
   readonly streakGeometry = createStreakGeometry();
   readonly materials = {
-    main: createMaterial(this.textures.main),
+    main: createMaterial(this.textures.main, true),
     streak: createMaterial(this.textures.streak),
     edge: createMaterial(this.textures.edge),
     impact: createMaterial(this.textures.impact),
@@ -58,10 +58,11 @@ function createStreakGeometry(): PlaneGeometry {
   return geometry;
 }
 
-function createMaterial(map: Texture): MeshBasicMaterial {
+function createMaterial(map: Texture, vertexColors = false): MeshBasicMaterial {
   return new MeshBasicMaterial({
     map,
     color: 0xffffff,
+    vertexColors,
     transparent: true,
     blending: NormalBlending,
     side: DoubleSide,
@@ -74,33 +75,34 @@ function createMaterial(map: Texture): MeshBasicMaterial {
 
 function createWaveGeometry(): BufferGeometry {
   const positions: number[] = [];
+  const colors: number[] = [];
   const uv: number[] = [];
   const indices: number[] = [];
-  const segments = 12;
-  for (let ribbon = 0; ribbon < 3; ribbon++) {
-    const offset = positions.length / 3;
-    const angle = ribbon * Math.PI / 3;
-    for (let step = 0; step <= segments; step++) {
-      const t = step / segments;
-      const twist = angle + Math.sin(t * Math.PI) * 0.13;
-      for (const side of [-1, 1]) {
-        const radius = side * 0.5;
-        const bend = Math.sin(t * Math.PI) * 0.035;
-        positions.push(
-          Math.cos(twist) * radius + Math.sin(angle) * bend,
-          Math.sin(twist) * radius - Math.cos(angle) * bend,
-          (t - 0.03) / 0.91,
-        );
-        uv.push(t, (side + 1) / 2);
-      }
-      if (step === segments) continue;
-      const a = offset + step * 2;
-      indices.push(a, a + 1, a + 2, a + 2, a + 1, a + 3);
+  const segments = 16;
+  const folds = 8;
+  for (let step = 0; step <= segments; step++) {
+    const t = step / segments;
+    for (let fold = 0; fold <= folds; fold++) {
+      const across = fold / folds;
+      const side = across * 2 - 1;
+      const crown = 1 - side * side;
+      positions.push(
+        side * 0.5,
+        crown * (0.13 + Math.sin(t * Math.PI) * 0.16),
+        (t - 0.03) / 0.91 - crown * Math.sin(t * Math.PI) * 0.08,
+      );
+      const shade = 0.64 + across * 0.3 + Math.pow(t, 3) * 0.06;
+      colors.push(shade * 0.94, shade * 0.97, shade);
+      uv.push(t, across);
+      if (step === segments || fold === folds) continue;
+      const a = step * (folds + 1) + fold;
+      indices.push(a, a + 1, a + folds + 1, a + folds + 1, a + 1, a + folds + 2);
     }
   }
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
   geometry.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+  geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
@@ -168,7 +170,7 @@ export function createForceWaveSystems(
     behaviors: [
       new FrameOverLife(new PiecewiseBezier([[new Bezier(0, 5, 10, 15), 0]])),
       new SizeOverLife(new Vector3Function(expansion(), expansion(), new ConstantValue(1))),
-      fade(0.86),
+      fade(0.98),
     ],
   });
   const streaks = new ParticleSystem({
@@ -188,7 +190,7 @@ export function createForceWaveSystems(
     ...common,
     startLife: new IntervalValue(0.08, 0.14),
     startSpeed: new IntervalValue(speed * 0.35, speed * 0.52),
-    startSize: new IntervalValue(0.22, 0.38),
+    startSize: new IntervalValue(0.14, 0.26),
     startRotation: new IntervalValue(-Math.PI, Math.PI),
     emissionBursts: burst(4),
     shape: new ConeEmitter({ radius: 0.28, thickness: 0.15, angle: 0.32 }),

@@ -74,12 +74,13 @@ const GROUND_RING_FRAGMENT = `
   void main() {
     float radius = length(vLocal);
     float normalized = radius / 1.35;
-    float band = smoothstep(0.52, 0.72, normalized) * (1.0 - smoothstep(0.86, 1.0, normalized));
-    float innerBand = smoothstep(0.1, 0.3, normalized) * (1.0 - smoothstep(0.42, 0.58, normalized)) * 0.4;
+    float band = smoothstep(0.77, 0.86, normalized) * (1.0 - smoothstep(0.92, 1.0, normalized));
+    float innerBand = smoothstep(0.36, 0.4, normalized) * (1.0 - smoothstep(0.44, 0.48, normalized)) * 0.24;
     float pulse = 0.62 + 0.38 * sin(uTime * 3.4);
     float waves = 0.5 + 0.5 * sin(normalized * 19.0 - uTime * 5.0);
-    float alpha = (band * (0.46 + 0.3 * pulse) + innerBand * pulse * 0.5) * (0.74 + 0.26 * waves) * uIntensity;
-    vec3 color = uColor * (0.85 + 0.85 * pulse * waves);
+    float petals = 0.18 + 0.82 * pow(0.5 + 0.5 * cos(atan(vLocal.y, vLocal.x) * 3.0 + uTime), 4.0);
+    float alpha = (band * (0.26 + 0.2 * pulse) * petals + innerBand * pulse * 0.5) * uIntensity;
+    vec3 color = uColor * (0.8 + 0.25 * pulse * waves);
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -98,12 +99,12 @@ const COLUMN_FRAGMENT = `
   uniform vec3 uColor;
   varying vec2 vUv;
   void main() {
-    float heightFade = pow(1.0 - vUv.y, 1.55);
+    float heightFade = smoothstep(0.05, 0.2, vUv.y) * (1.0 - smoothstep(0.55, 0.86, vUv.y));
     float baseFade = smoothstep(0.0, 0.08, vUv.y);
-    float streaks = 0.62 + 0.38 * sin(vUv.x * 37.699 + uTime * 2.2);
+    float streaks = pow(0.5 + 0.5 * cos(vUv.x * 18.8496 - vUv.y * 13.0 + uTime * 3.6), 18.0);
     float rise = 0.72 + 0.28 * sin(vUv.y * 9.0 - uTime * 3.4);
-    float alpha = heightFade * baseFade * streaks * rise * uIntensity * 0.55;
-    vec3 color = uColor * (0.9 + 0.6 * rise);
+    float alpha = heightFade * baseFade * streaks * rise * uIntensity * 0.58;
+    vec3 color = uColor * (0.85 + 0.2 * rise);
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -129,7 +130,7 @@ function createColumnMaterial(): ShaderMaterial {
     uniforms: {
       uTime: { value: 0 },
       uIntensity: { value: 0 },
-      uColor: { value: new Color(0.94, 0.9, 0.82) },
+      uColor: { value: new Color(0.88, 0.65, 0.25) },
     },
     vertexShader: COLUMN_VERTEX,
     fragmentShader: COLUMN_FRAGMENT,
@@ -310,9 +311,10 @@ class BencaoCast {
     const position = center.clone();
     position.y = 0.02;
     this.castRoot.position.copy(position);
+    for (const system of this.systems) system.emitter.position.set(position.x, 0.22, position.z);
     this.ring.position.set(0, 0.01, 0);
     this.column.position.set(0, this.config.columnHeight / 2, 0);
-    this.topGlow.position.set(0, this.config.columnHeight, 0);
+    this.topGlow.position.set(0, 1.1, 0);
     if (this.light) this.light.position.set(0, 1.1, 0);
   }
 
@@ -349,8 +351,8 @@ class BencaoCast {
       0.05 + ease * 0.95,
       0.4 + ease * 0.6,
     );
-    this.topGlow.scale.setScalar(0.1 + ease * 0.9);
-    this.topGlow.material.opacity = ease;
+    this.topGlow.scale.setScalar(0.1 + ease * 0.32);
+    this.topGlow.material.opacity = ease * 0.62;
     this.pulseTime += deltaTime;
     this.ring.material.uniforms.uTime.value = this.pulseTime;
     this.column.material.uniforms.uTime.value = this.pulseTime;
@@ -369,9 +371,9 @@ class BencaoCast {
     if (this.light) this.light.intensity = 1.6 + Math.sin(this.pulseTime * 3.4) * 0.5;
     const breathe = 1 + Math.sin(this.pulseTime * 2.2) * 0.03;
     this.ring.scale.setScalar(breathe);
-    this.topGlow.material.opacity = 0.78 + Math.sin(this.pulseTime * 3.0) * 0.16;
+    this.topGlow.material.opacity = 0.46 + Math.sin(this.pulseTime * 3.0) * 0.12;
     const bob = Math.sin(this.pulseTime * 2.4) * 0.06;
-    this.topGlow.position.y = this.config.columnHeight + bob;
+    this.topGlow.position.y = 1.1 + bob;
     const columnBreathe = 1 + Math.sin(this.pulseTime * 2.8) * 0.02;
     this.column.scale.x = columnBreathe;
     this.column.scale.z = columnBreathe;
@@ -393,8 +395,8 @@ class BencaoCast {
     const fade = Math.pow(1 - progress, 2);
     this.ring.material.uniforms.uIntensity.value = fade;
     this.column.material.uniforms.uIntensity.value = fade;
-    this.topGlow.material.opacity = fade * 0.8;
-    this.topGlow.position.y = this.config.columnHeight + progress * 0.4;
+    this.topGlow.material.opacity = fade * 0.46;
+    this.topGlow.position.y = 1.1 + progress * 0.16;
     if (this.light) this.light.intensity = 1.6 * fade;
     this.ring.scale.setScalar(1 + progress * 0.16);
     this.column.scale.set(1 + progress * 0.08, 1, 1 + progress * 0.08);

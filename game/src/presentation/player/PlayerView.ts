@@ -57,7 +57,14 @@ function applyClassStandingPose(model: Object3D, clip: AnimationClip | undefined
   if (!clip) return;
   for (const track of clip.tracks) {
     const separator = track.name.lastIndexOf(".");
-    const bone = model.getObjectByName(track.name.slice(0, separator)) as Bone | undefined;
+    const trackTarget = track.name.slice(0, separator);
+    let bone = model.getObjectByName(trackTarget) as Bone | undefined;
+    if (!bone?.isBone && trackTarget.startsWith("mixamorig_")) {
+      bone = model.getObjectByName(trackTarget.replace(/^mixamorig_/, "mixamorig")) as Bone | undefined;
+    }
+    if (!bone?.isBone && trackTarget.startsWith("mixamorig")) {
+      bone = model.getObjectByName(trackTarget.replace(/^mixamorig/, "mixamorig_")) as Bone | undefined;
+    }
     if (!bone?.isBone) continue;
     const property = track.name.slice(separator + 1);
     if (property === "position") bone.position.fromArray(track.values);
@@ -119,6 +126,13 @@ const ONE_SHOT: ReadonlySet<PlayerAnim> = new Set([
 
 const TARGET_HEIGHT = 1.72 * 1.1;
 
+export const TRANSFORMATION_MODELS: Record<string, string> = {
+  lobo: "/models/transformations/lobo.glb",
+  urso: "/models/transformations/urso.glb",
+  tita: "/models/transformations/tita.glb",
+  eden: "/models/transformations/eden.glb",
+};
+
 export interface PlayerGltfLoader {
   loadAsync(url: string): Promise<{ scene: Object3D; animations: AnimationClip[] }>;
 }
@@ -129,6 +143,11 @@ export class PlayerView {
   private mixer: AnimationMixer | null = null;
   private readonly actions = new Map<PlayerAnim, AnimationAction>();
   private model: Object3D | null = null;
+  private activeTransformation: string | null = null;
+  private baseModel: Object3D | null = null;
+  private baseMixer: AnimationMixer | null = null;
+  private readonly baseActions = new Map<PlayerAnim, AnimationAction>();
+  private transformGen = 0;
   private current: PlayerAnim | "" = "";
   private busyUntil = 0;
   private dead = false;
@@ -162,17 +181,26 @@ export class PlayerView {
   async load(classId: string = "TK"): Promise<void> {
     const id: PlayerClassId = isPlayerClassId(classId) ? classId : "TK";
     const loadToken = ++this.loadGen;
+    this.activeTransformation = null;
+    ++this.transformGen;
     this.classId = id;
     this.ready = false;
     this.dead = false;
     this.current = "";
     this.busyUntil = 0;
     this.actions.clear();
-    if (this.model) {
+    this.baseActions.clear();
+    if (this.baseModel) {
+      this.disposeObject(this.baseModel);
+      this.root.remove(this.baseModel);
+      this.baseModel = null;
+    }
+    if (this.model && this.model !== this.baseModel) {
       this.disposeObject(this.model);
       this.root.remove(this.model);
       this.model = null;
     }
+    this.baseMixer = null;
     this.mixer = null;
     this.hipsRest = null;
     this.classIdleClip = null;
@@ -216,10 +244,12 @@ export class PlayerView {
     this.appliedArmorAppearance = loadedAppearance;
 
     this.model = model;
+    this.baseModel = model;
     this.root.add(model);
     applyClassStandingPose(model, base.animations[0]);
 
     this.mixer = new AnimationMixer(model);
+    this.baseMixer = this.mixer;
 
     const embeddedIdle = base.animations[0] ?? null;
     if (embeddedIdle) {
@@ -260,6 +290,10 @@ export class PlayerView {
     if (loadToken !== this.loadGen) return;
     await this.setArmorAppearance(this.armorAppearance);
     if (loadToken !== this.loadGen) return;
+    this.baseActions.clear();
+    for (const [name, action] of this.actions) {
+      this.baseActions.set(name, action);
+    }
     this.ready = true;
   }
 
@@ -287,6 +321,12 @@ export class PlayerView {
     const loadToken = this.loadGen;
     if (!this.model || !this.mixer) return;
     await this.applyWeaponSet(set, weaponToken, loadToken);
+    if (!this.activeTransformation) {
+      this.baseActions.clear();
+      for (const [name, action] of this.actions) {
+        this.baseActions.set(name, action);
+      }
+    }
   }
 
   async clearWeapons(): Promise<void> {
@@ -300,6 +340,12 @@ export class PlayerView {
     await this.bindAttackClipSafe("attack", weaponToken, loadToken);
     if (weaponToken !== this.weaponSetGen || loadToken !== this.loadGen) return;
     await this.bindIdleClip("class", weaponToken, loadToken);
+    if (!this.activeTransformation) {
+      this.baseActions.clear();
+      for (const [name, action] of this.actions) {
+        this.baseActions.set(name, action);
+      }
+    }
     if (!this.dead) this.play(this.moving ? "run" : "idle", true);
   }
 
@@ -382,10 +428,122 @@ export class PlayerView {
   }
 
   playAttack(attackSpeedMul = 1): "attack" | "cast" {
-    const set = this.weaponRig.getSet() ?? this.weaponSet;
+    const set = this.activeTransformation ? null : (this.weaponRig.getSet() ?? this.weaponSet);
     const anim: "attack" | "cast" = set ? basicAnimForWeapon(set) : "attack";
     this.playOneShot(anim, attackSpeedMul);
     return anim;
+  }
+
+  getTransformation(): string | null {
+    return this.activeTransformation;
+  }
+
+  async setTransformation(transformId: string | null): Promise<void> {
+    const target = transformId && transformId in TRANSFORMATION_MODELS ? transformId : null;
+    if (this.activeTransformation === target) return;
+    const token = ++this.transformGen;
+    const loadToken = this.loadGen;
+
+    if (!target) {
+      this.activeTransformation = null;
+      if (this.model && this.model !== this.baseModel) {
+        this.disposeObject(this.model);
+        this.root.remove(this.model);
+      }
+      this.model = this.baseModel;
+      if (this.baseModel) {
+        this.baseModel.visible = true;
+        if (this.baseModel.parent !== this.root) {
+          this.root.add(this.baseModel);
+        }
+        this.mixer = this.baseMixer;
+        this.actions.clear();
+        for (const [name, action] of this.baseActions) {
+          this.actions.set(name, action);
+        }
+        this.buildGhosts(this.baseModel);
+        this.weaponRig.bindModel(this.baseModel);
+        const targetSet = this.weaponSet ?? CLASS_WEAPON_SET[this.classId];
+        const weaponToken = ++this.weaponSetGen;
+        await this.applyWeaponSet(targetSet, weaponToken, loadToken);
+        if (token !== this.transformGen || loadToken !== this.loadGen) return;
+        this.busyUntil = 0;
+        this.current = "";
+        if (this.dead) this.play("death", false);
+        else if (this.ready) this.play(this.moving ? "run" : "idle", true);
+      }
+      return;
+    }
+
+    this.activeTransformation = target;
+    const url = TRANSFORMATION_MODELS[target];
+    let gltf: { scene: Object3D; animations: AnimationClip[] };
+    try {
+      gltf = await this.loader.loadAsync(url);
+    } catch {
+      if (token !== this.transformGen || loadToken !== this.loadGen) return;
+      await this.setTransformation(null);
+      return;
+    }
+
+    if (token !== this.transformGen || loadToken !== this.loadGen) {
+      this.disposeObject(gltf.scene);
+      return;
+    }
+
+    this.weaponRig.clear();
+    this.armorAura.apply([]);
+    if (this.baseModel) {
+      this.mixer?.stopAllAction();
+      this.baseModel.visible = false;
+      this.root.remove(this.baseModel);
+    }
+    if (this.model && this.model !== this.baseModel) {
+      this.disposeObject(this.model);
+      this.root.remove(this.model);
+      this.model = null;
+    }
+
+    const model = gltf.scene;
+    model.name = target;
+    model.traverse((node) => {
+      if (node.name.startsWith("mixamorig_")) {
+        node.name = node.name.replace(/^mixamorig_/, "mixamorig");
+      }
+      const mesh = node as Mesh;
+      if (!mesh.isMesh) return;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const mat of mats) {
+        if (!mat) continue;
+        mat.depthWrite = true;
+        mat.depthTest = true;
+      }
+      if ((mesh as SkinnedMesh).isSkinnedMesh) {
+        (mesh as SkinnedMesh).frustumCulled = false;
+      }
+    });
+
+    applyClassStandingPose(
+      model,
+      this.classIdleClip ?? this.baseActions.get("idle")?.getClip() ?? gltf.animations[0],
+    );
+    this.fitStandingHeight(model);
+    this.model = model;
+    this.root.add(model);
+    this.mixer = new AnimationMixer(model);
+    this.actions.clear();
+
+    for (const [name, baseAction] of this.baseActions) {
+      this.actions.set(name, this.mixer.clipAction(baseAction.getClip()));
+    }
+
+    this.buildGhosts(model);
+    this.busyUntil = 0;
+    this.current = "";
+    if (this.dead) this.play("death", false);
+    else if (this.ready) this.play(this.moving ? "run" : "idle", true);
   }
 
   playCast(castSpeedMul = 1): void {

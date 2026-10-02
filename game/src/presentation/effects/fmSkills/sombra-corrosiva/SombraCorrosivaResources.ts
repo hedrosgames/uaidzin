@@ -15,19 +15,19 @@ type Point = readonly [x: number, y: number, z: number];
 
 const TEAR_SIDES = 12;
 const TEAR_RINGS = 14;
-const TEAR_HEIGHT = 0.52;
-const TEAR_RADIUS = 0.15;
+const TEAR_HEIGHT = 0.66;
+const TEAR_RADIUS = 0.21;
 const EYE_SEGMENTS = 34;
 const THREAD_SEGMENTS = 16;
 const THREAD_SIDES = 5;
 
 const TEAR_DEEP = new Color(0x0e0816);
-const TEAR_MID = new Color(0x4a2a63);
-const TEAR_RIM = new Color(0xa86fb8);
+const TEAR_MID = new Color(0x67418c);
+const TEAR_RIM = new Color(0xca92ef);
 const EYE_VOID = new Color(0x120a1e);
 const EYE_RIM = new Color(0xc084c8);
-const THREAD_DARK = new Color(0x1a0f28);
-const THREAD_RIM = new Color(0x8a5fae);
+const THREAD_DARK = new Color(0x432452);
+const THREAD_RIM = new Color(0xc087e8);
 
 function wobble(seed: number, spread: number): number {
   return (Math.sin(seed * 12.9898) * 43758.5453 % 1) * spread;
@@ -108,7 +108,6 @@ function createTearGeometry(): BufferGeometry {
     }
   }
   const tip: Point = [0, TEAR_HEIGHT * 0.66, 0];
-  const top = ring(TEAR_RINGS, 0);
   for (let side = 0; side < TEAR_SIDES; side += 1) {
     const next = (side + 1) % TEAR_SIDES;
     const a = ring(TEAR_RINGS, side);
@@ -117,7 +116,6 @@ function createTearGeometry(): BufferGeometry {
     pushVertex(positions, uvs, colors, tip, 0.5, 1, TEAR_RIM);
     pushVertex(positions, uvs, colors, b.point, next / TEAR_SIDES, 1, b.color);
   }
-  void top;
   const base: Point = [0, -TEAR_HEIGHT * 0.34, 0];
   for (let side = 0; side < TEAR_SIDES; side += 1) {
     const next = (side + 1) % TEAR_SIDES;
@@ -127,12 +125,9 @@ function createTearGeometry(): BufferGeometry {
     pushVertex(positions, uvs, colors, a.point, next / TEAR_SIDES, 0, a.color);
     pushVertex(positions, uvs, colors, b.point, side / TEAR_SIDES, 0, b.color);
   }
-  return finish("tear", positions, uvs, colors);
-}
-
-function eyeHalfWidth(t: number): number {
-  const angle = Math.PI * (t - 0.5);
-  return Math.pow(Math.cos(angle), 0.72);
+  const geometry = finish("tear", positions, uvs, colors);
+  geometry.rotateX(Math.PI / 2);
+  return geometry;
 }
 
 function createEyeGeometry(band: number): BufferGeometry {
@@ -140,17 +135,18 @@ function createEyeGeometry(band: number): BufferGeometry {
   const uvs: number[] = [];
   const colors: number[] = [];
   const loop = (t: number, side: number) => {
-    const width = eyeHalfWidth(t);
-    const height = width * 0.42;
+    const orbit = t * Math.PI * 2;
+    const width = Math.abs(Math.sin(orbit));
+    const inset = band < 0.05 ? 0.8 : 1;
     const angle = side / 6 * Math.PI * 2;
     const point: Point = [
-      (t - 0.5) * 1.5,
-      Math.sin(Math.PI * (t - 0.5)) * 0.24 + Math.sin(angle) * band * 0.5,
-      Math.cos(angle) * band * 0.5,
+      Math.cos(orbit) * (0.75 * inset + Math.cos(angle) * band),
+      Math.sin(orbit) * (0.32 * inset + Math.cos(angle) * band) * (0.65 + width * 0.35),
+      Math.sin(angle) * band,
     ];
     const glow = Math.pow(width, 1.4);
-    const color = EYE_VOID.clone().lerp(EYE_RIM, glow * 0.85);
-    return { point, color, height };
+    const color = EYE_VOID.clone().lerp(EYE_RIM, band < 0.05 ? 0.08 : 0.45 + glow * 0.55);
+    return { point, color };
   };
   for (let segment = 0; segment < EYE_SEGMENTS; segment += 1) {
     for (let side = 0; side < 6; side += 1) {
@@ -171,7 +167,7 @@ function createEyeGeometry(band: number): BufferGeometry {
       pushVertex(positions, uvs, colors, d.point, u1, v1, d.color);
     }
   }
-  return finish(band > 0.1 ? "eyeLid" : "eyeVoid", positions, uvs, colors);
+  return finish(band >= 0.05 ? "eyeLid" : "eyeVoid", positions, uvs, colors);
 }
 
 function createThreadGeometry(): BufferGeometry {
@@ -286,8 +282,8 @@ function bodyMaterial(
 export class SombraCorrosivaResources {
   readonly textures: SombraCorrosivaTextures = new SombraCorrosivaTextures();
   readonly tearGeometry: BufferGeometry = createTearGeometry();
-  readonly eyeLidGeometry: BufferGeometry = createEyeGeometry(0.05);
-  readonly eyeVoidGeometry: BufferGeometry = createEyeGeometry(0.012);
+  readonly eyeLidGeometry: BufferGeometry = createEyeGeometry(0.075);
+  readonly eyeVoidGeometry: BufferGeometry = createEyeGeometry(0.035);
   readonly threadGeometry: BufferGeometry = createThreadGeometry();
   readonly billboardGeometry: PlaneGeometry = createPlane("billboard", 1, 1, false);
   readonly groundGeometry: PlaneGeometry = createPlane("ground", 1, 1, true);
@@ -300,7 +296,7 @@ export class SombraCorrosivaResources {
     iris: particleMaterial("iris", this.textures.iris, 0.9, false),
   };
   readonly tearMaterial: MeshBasicMaterial = bodyMaterial("tear", null, 0xffffff, 0.96, false);
-  readonly eyeLidMaterial: MeshBasicMaterial = bodyMaterial("eyeLid", null, 0xffffff, 0.9, true);
+  readonly eyeLidMaterial: MeshBasicMaterial = bodyMaterial("eyeLid", null, 0xffffff, 0.9, false);
   readonly eyeVoidMaterial: MeshBasicMaterial = bodyMaterial("eyeVoid", null, 0xffffff, 0.92, false);
   readonly threadMaterial: MeshBasicMaterial = bodyMaterial("thread", null, 0xffffff, 0.85, false);
 

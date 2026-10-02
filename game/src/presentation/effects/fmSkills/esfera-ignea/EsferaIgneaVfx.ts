@@ -118,15 +118,16 @@ function createSharedResources(): EsferaIgneaSharedResources {
   const textures = createEsferaIgneaTextures();
   const flameTexture = createFireBurstFlameTexture();
   const particleMaterials = createEsferaIgneaParticleMaterials(flameTexture, textures.ember);
-  const coreGeometry = new IcosahedronGeometry(1, 1);
+  const coreGeometry = new IcosahedronGeometry(1, 0);
+  coreGeometry.scale(0.88, 1.12, 0.94);
   const coreMaterial = new MeshStandardMaterial({
     map: textures.coreSurface,
-    color: 0x1d120c,
+    color: 0x713019,
     emissiveMap: textures.coreFissure,
     emissive: 0xff7a1a,
-    emissiveIntensity: 0.46,
+    emissiveIntensity: 0.64,
     roughness: 0.74,
-    metalness: 0.28,
+    metalness: 0.08,
     flatShading: true,
   });
   const heartGeometry = new SphereGeometry(1, 12, 8);
@@ -139,23 +140,24 @@ function createSharedResources(): EsferaIgneaSharedResources {
     blending: AdditiveBlending,
     toneMapped: false,
   });
-  const shellGeometry = new TorusGeometry(1, 0.062, 6, 22, Math.PI * 1.42);
+  const shellGeometry = new TorusGeometry(1, 0.09, 5, 12, Math.PI * 0.72);
   const shellMaterial = new MeshStandardMaterial({
     map: textures.shellBand,
-    color: 0x8f7038,
+    color: 0xa43b12,
     emissive: 0xff7a1a,
     emissiveIntensity: 0.22,
-    roughness: 0.3,
-    metalness: 0.9,
+    roughness: 0.78,
+    metalness: 0.08,
+    flatShading: true,
   });
   const shardGeometry = new OctahedronGeometry(0.5, 0);
   shardGeometry.scale(0.45, 1.5, 0.45);
   const shardMaterial = new MeshStandardMaterial({
     color: 0x7a5228,
     emissive: 0xff6a12,
-    emissiveIntensity: 0.9,
+    emissiveIntensity: 0.55,
     roughness: 0.46,
-    metalness: 0.66,
+    metalness: 0.12,
   });
   const flashGeometry = new SphereGeometry(1, 14, 10);
   const flashMaterialTemplate = new MeshBasicMaterial({
@@ -331,7 +333,7 @@ class EsferaIgneaCast {
       const shell = new Mesh(shared.shellGeometry, shared.shellMaterial);
       shell.name = `esfera-ignea-shell-${index}`;
       shell.position.copy(origin);
-      shell.scale.setScalar(config.shellRadius);
+      shell.scale.setScalar(config.shellRadius * 0.62);
       shell.renderOrder = 8;
       this.castRoot.add(shell);
       this.shells.push(shell);
@@ -534,15 +536,15 @@ class EsferaIgneaCast {
     this.core.rotation.set(spin * 0.7, spin, spin * 0.35);
     this.heart.position.copy(this.head);
     this.core.scale.setScalar(this.config.coreRadius * grow);
-    this.heart.scale.setScalar(this.config.coreRadius * grow * 1.25);
-    this.heartMaterial.opacity = 0.58 + Math.sin(this.elapsed * 22) * 0.08;
+    this.heart.scale.setScalar(this.config.coreRadius * grow * 1.06);
+    this.heartMaterial.opacity = 0.24 + Math.sin(this.elapsed * 22) * 0.05;
     for (let index = 0; index < this.shells.length; index += 1) {
       const shell = this.shells[index];
       shell.position.copy(this.head);
       shell.quaternion.setFromUnitVectors(UP, this.tangent);
       shell.quaternion.multiply(this.shellAxes[index]);
       const wobble = 1 + Math.sin(this.elapsed * 5 + index) * 0.07;
-      shell.scale.setScalar(this.config.shellRadius * grow * wobble);
+      shell.scale.setScalar(this.config.shellRadius * grow * wobble * (0.58 + index * 0.04));
     }
     this.tail.update(eased, this.elapsed);
     this.reverseTangent.copy(this.tangent).negate();
@@ -577,7 +579,7 @@ class EsferaIgneaCast {
     this.tail.hide();
     this.flash.position.copy(this.target);
     this.flash.scale.setScalar(this.config.coreRadius * 0.6);
-    this.flashMaterial.opacity = 1;
+    this.flashMaterial.opacity = 0.55;
     this.flash.visible = true;
     this.ring.position.copy(this.target);
     this.ring.quaternion.setFromUnitVectors(FORWARD, this.tangent);
@@ -600,10 +602,10 @@ class EsferaIgneaCast {
     const fade = Math.pow(1 - progress, 2);
     const overshoot = 1 + Math.sin(Math.min(progress * 2.4, 1) * Math.PI) * 0.32;
     this.flash.scale.setScalar(this.config.coreRadius * (0.6 + Math.min(progress * 5, 1) * 1.7));
-    this.flashMaterial.opacity = fade * 0.72;
+    this.flashMaterial.opacity = fade * fade * 0.42;
     this.flash.visible = progress < 0.9;
     this.ring.scale.setScalar(0.2 + Math.sqrt(progress) * 2.6);
-    this.ringMaterial.opacity = fade * 0.6;
+    this.ringMaterial.opacity = fade * 0.28;
     this.ring.visible = progress < 1;
     this.scorch.scale.setScalar(0.2 + progress * 1.5 * overshoot);
     this.scorchMaterial.opacity = Math.sqrt(1 - progress) * 0.82;
@@ -611,7 +613,8 @@ class EsferaIgneaCast {
     for (let index = 0; index < this.shells.length; index += 1) {
       const shell = this.shells[index];
       shell.visible = progress < 0.7;
-      const burst = 1 + progress * 5.4;
+      const burst = (0.62 + progress * 1.6) * Math.max(1 - progress / 0.7, 0.001);
+      shell.position.copy(this.target).addScaledVector(this.debrisDirections[index], progress * 1.5);
       shell.scale.setScalar(this.config.shellRadius * burst);
       shell.rotation.x += deltaTime * (5 + index * 3);
       shell.rotation.y -= deltaTime * (4 + index * 2);

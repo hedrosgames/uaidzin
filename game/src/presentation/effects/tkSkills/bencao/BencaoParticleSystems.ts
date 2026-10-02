@@ -53,8 +53,8 @@ class BencaoSwirl implements Behavior {
     const radius = Math.hypot(x, z);
     if (radius < 1e-4) return;
     const factor = (this.strength * delta) / radius;
-    particle.velocity.x += -z * factor;
-    particle.velocity.z += x * factor;
+    particle.velocity.x += -z * factor - x * delta * 4.2;
+    particle.velocity.z += x * factor - z * delta * 4.2;
   }
 
   initialize(): void {}
@@ -103,7 +103,7 @@ export function createBencaoAuraSystems(
     duration: 2,
     looping: true,
     startLife: new IntervalValue(0.5, 0.85),
-    startSpeed: new IntervalValue(0.55, 1.25),
+    startSpeed: new IntervalValue(-0.55, -0.18),
     startSize: new IntervalValue(0.08, 0.2),
     startRotation: new IntervalValue(-Math.PI, Math.PI),
     startColor: new ConstantColor(new QuarksVector4(1, 0.88, 0.52, 0.86)),
@@ -115,7 +115,7 @@ export function createBencaoAuraSystems(
     }),
     material: materials.mote,
     renderMode: RenderMode.BillBoard,
-    worldSpace: true,
+    worldSpace: false,
     renderOrder: 8,
     behaviors: [
       new ColorOverLife(createBencaoGradient()),

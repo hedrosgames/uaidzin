@@ -105,6 +105,7 @@ class SombraCorrosivaCast {
   private readonly direction = new Vector3();
   private readonly head = new Vector3();
   private readonly tangent = new Vector3();
+  private readonly reverseTangent = new Vector3();
   private readonly orientation = new Quaternion();
   private readonly eyeOrientation = new Quaternion();
   private readonly threadReach: number;
@@ -324,7 +325,8 @@ class SombraCorrosivaCast {
     this.tear.position.copy(this.head);
     this.tear.scale.setScalar(this.config.tearScale * (0.8 + linear * 0.28));
     this.particles.trail.emitter.position.copy(this.head);
-    this.orientation.setFromUnitVectors(FORWARD, this.tangent.clone().negate());
+    this.reverseTangent.copy(this.tangent).negate();
+    this.orientation.setFromUnitVectors(FORWARD, this.reverseTangent);
     this.particles.trail.emitter.quaternion.copy(this.orientation);
     this.light.position.copy(this.head);
     this.light.intensity = this.config.lightPeak * (0.6 + Math.sin(linear * Math.PI) * 0.4);

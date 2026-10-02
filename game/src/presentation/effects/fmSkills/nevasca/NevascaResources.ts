@@ -15,15 +15,15 @@ type Point = readonly [x: number, y: number, z: number];
 
 const CRYSTAL_SIDES = 6;
 const CRYSTAL_RINGS = 6;
-const CRYSTAL_HEIGHT = 0.62;
-const CRYSTAL_RADIUS = 0.105;
+const CRYSTAL_HEIGHT = 0.78;
+const CRYSTAL_RADIUS = 0.135;
 const ARC_SEGMENTS = 26;
 const ARC_SIDES = 7;
 const CONE_SIDES = 30;
 const CONE_RINGS = 9;
 
-const ICE_DEEP = new Color(0x3d76ad);
-const ICE_BODY = new Color(0xb9dcf3);
+const ICE_DEEP = new Color(0x235b9e);
+const ICE_BODY = new Color(0x7dbce9);
 const ICE_TIP = new Color(0xf2fdff);
 const ARC_EDGE = new Color(0x7fb6e4);
 const ARC_CORE = new Color(0xf2fdff);
@@ -183,7 +183,7 @@ function createConeShellGeometry(): BufferGeometry {
   const colors: number[] = [];
   const ring = (ringIndex: number, side: number): { point: Point; color: Color } => {
     const t = ringIndex / CONE_RINGS;
-    const angle = side / CONE_SIDES * Math.PI * 2;
+    const angle = side / CONE_SIDES * Math.PI * 2 + t * 1.4;
     const radius = Math.pow(1 - t, 0.82);
     const ripple = 1 + Math.sin(angle * 5 + t * 6.4) * 0.045;
     const point: Point = [
@@ -199,6 +199,7 @@ function createConeShellGeometry(): BufferGeometry {
   };
   for (let ringIndex = 0; ringIndex < CONE_RINGS; ringIndex += 1) {
     for (let side = 0; side < CONE_SIDES; side += 1) {
+      if (side % 5 === 0) continue;
       const next = (side + 1) % CONE_SIDES;
       const a = ring(ringIndex, side);
       const b = ring(ringIndex, next);
@@ -290,7 +291,7 @@ export class NevascaResources {
     frost: particleMaterial("frost", this.textures.frost, 0.95, false),
     crystal: particleMaterial("crystal", this.textures.crystal, 0.92, false),
     flake: particleMaterial("flake", this.textures.flake, 0.9, false),
-    flash: particleMaterial("flash", this.textures.flash, 0.92, true),
+    flash: particleMaterial("flash", this.textures.flash, 0.5, true),
     ground: particleMaterial("ground", this.textures.ground, 0.72, false),
     streak: particleMaterial("streak", this.textures.streak, 0.88, true),
   };

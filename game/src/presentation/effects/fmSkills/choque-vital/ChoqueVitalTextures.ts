@@ -45,15 +45,15 @@ export function createChoqueVitalTextures(): ChoqueVitalTextureSet {
 
   const runeBand = createCanvasTexture(128, 128, (context) => {
     const bronze = context.createLinearGradient(0, 0, 0, 128);
-    bronze.addColorStop(0, "#4a3618");
-    bronze.addColorStop(0.26, "#b98c34");
-    bronze.addColorStop(0.48, "#f0cd6a");
-    bronze.addColorStop(0.66, "#8a6428");
-    bronze.addColorStop(1, "#2a1e0e");
+    bronze.addColorStop(0, "#26183f");
+    bronze.addColorStop(0.26, "#8855bf");
+    bronze.addColorStop(0.48, "#d5b7fa");
+    bronze.addColorStop(0.66, "#65428a");
+    bronze.addColorStop(1, "#180d2a");
     context.fillStyle = bronze;
     context.fillRect(0, 0, 128, 128);
     context.globalAlpha = 0.55;
-    context.strokeStyle = "#2a1c0c";
+    context.strokeStyle = "#24103a";
     context.lineWidth = 3;
     for (let rune = 0; rune < 6; rune += 1) {
       const y = 16 + rune * 20;
@@ -65,7 +65,7 @@ export function createChoqueVitalTextures(): ChoqueVitalTextureSet {
       context.stroke();
     }
     context.globalAlpha = 0.4;
-    context.fillStyle = "#fff3c4";
+    context.fillStyle = "#eee2ff";
     for (let index = 0; index < 20; index += 1) {
       const x = (index * 59) % 128;
       const y = (index * 83) % 128;
@@ -76,11 +76,11 @@ export function createChoqueVitalTextures(): ChoqueVitalTextureSet {
 
   const chargeCore = createCanvasTexture(128, 128, (context) => {
     drawRadialGlow(context, 64, 64, [
-      [0, "rgba(255,252,232,1)"],
-      [0.14, "rgba(255,240,178,1)"],
-      [0.36, "rgba(240,196,86,0.92)"],
-      [0.66, "rgba(168,104,26,0.36)"],
-      [1, "rgba(70,34,6,0)"],
+      [0, "rgba(238,232,255,1)"],
+      [0.14, "rgba(212,178,255,0.9)"],
+      [0.36, "rgba(150,86,240,0.62)"],
+      [0.66, "rgba(94,26,168,0.18)"],
+      [1, "rgba(34,6,70,0)"],
     ]);
   });
 
@@ -90,7 +90,7 @@ export function createChoqueVitalTextures(): ChoqueVitalTextureSet {
     for (let ring = 0; ring < 3; ring += 1) {
       context.beginPath();
       context.arc(96, 96, 44 + ring * 20, 0, TAU);
-      context.strokeStyle = `rgba(${246 - ring * 30},${206 - ring * 34},${110 - ring * 30},${0.44 - ring * 0.12})`;
+      context.strokeStyle = `rgba(${186 - ring * 30},${110 - ring * 24},${250 - ring * 20},${0.44 - ring * 0.12})`;
       context.lineWidth = 8 - ring * 2;
       context.stroke();
     }
@@ -99,7 +99,7 @@ export function createChoqueVitalTextures(): ChoqueVitalTextureSet {
       context.beginPath();
       context.moveTo(96 + Math.cos(angle) * 30, 96 + Math.sin(angle) * 30);
       context.lineTo(96 + Math.cos(angle + 0.08) * 86, 96 + Math.sin(angle + 0.08) * 86);
-      context.strokeStyle = "rgba(255,226,150,0.26)";
+      context.strokeStyle = "rgba(190,150,255,0.26)";
       context.lineWidth = 2.4;
       context.stroke();
     }
@@ -108,13 +108,13 @@ export function createChoqueVitalTextures(): ChoqueVitalTextureSet {
 
   const spark = createCanvasTexture(64, 64, (context) => {
     drawRadialGlow(context, 32, 32, [
-      [0, "rgba(255,255,246,1)"],
-      [0.2, "rgba(255,238,178,1)"],
-      [0.48, "rgba(232,172,52,0.72)"],
-      [1, "rgba(90,44,6,0)"],
+      [0, "rgba(244,240,255,1)"],
+      [0.2, "rgba(218,178,255,1)"],
+      [0.48, "rgba(152,72,232,0.72)"],
+      [1, "rgba(44,6,90,0)"],
     ]);
     context.globalCompositeOperation = "lighter";
-    context.strokeStyle = "rgba(255,246,206,0.8)";
+    context.strokeStyle = "rgba(226,206,255,0.8)";
     context.lineWidth = 1.5;
     for (let arm = 0; arm < 3; arm += 1) {
       const angle = (arm / 3) * TAU;

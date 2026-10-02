@@ -31,8 +31,8 @@ export function createDeathStabResources() {
     context.bezierCurveTo(size * 0.99, size * 0.01, size * 0.98, size * 0.77, size * 0.08, size * 0.68);
     context.fill();
   });
-  const material = (map: typeof atlas, additive = false) => new MeshBasicMaterial({
-    map, color: 0xffffff, transparent: true, depthWrite: false, depthTest: true,
+  const material = (map: typeof atlas, color: number, additive = false) => new MeshBasicMaterial({
+    map, color, transparent: true, depthWrite: false, depthTest: true,
     side: DoubleSide, blending: additive ? AdditiveBlending : NormalBlending,
     toneMapped: false,
   });
@@ -54,9 +54,9 @@ export function createDeathStabResources() {
   second.dispose();
   return {
     atlas, stroke, curl, wave, needle, shard,
-    windMaterial: material(atlas), strokeMaterial: material(stroke),
-    curlMaterial: material(curl), flashMaterial: material(stroke, true),
-    shardMaterial: new MeshBasicMaterial({ color: 0xffffff, transparent: true,
+    windMaterial: material(atlas, 0xc9e5ee), strokeMaterial: material(stroke, 0x79aec4),
+    curlMaterial: material(curl, 0x9dc6d4), flashMaterial: material(stroke, 0xf0f3e6, true),
+    shardMaterial: new MeshBasicMaterial({ color: 0xa8c5d1, transparent: true,
       depthWrite: false, side: DoubleSide, toneMapped: false }),
   };
 }

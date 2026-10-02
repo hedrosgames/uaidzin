@@ -159,11 +159,11 @@ class FuryCast {
       const slash = this.slashes[index]!;
       const stagger = index * Math.PI * 2 / 3;
       const wave = 0.5 + 0.5 * Math.sin(this.elapsed * 4 + stagger);
-      const scale = this.config.ringRadius * (0.76 + reveal * 0.24 + wave * 0.045);
+      const scale = this.config.ringRadius * (index === 2 ? 0.88 : 0.52) * (0.76 + reveal * 0.24 + wave * 0.045);
       slash.scale.setScalar(scale);
       slash.rotation.set(0.12 * Math.sin(stagger), -this.elapsed * (1.6 + index * 0.17) + stagger, 0.09 * Math.cos(stagger));
-      slash.position.y = 0.34 + index * 0.34 + wave * 0.07;
-      slash.material.opacity = reveal * fade * (index === 2 ? 0.15 + beat * 0.08 : 0.28 + wave * 0.19);
+      slash.position.set(index === 2 ? 0 : (index === 0 ? -0.42 : 0.42), index === 2 ? 0.66 : 1.02 + wave * 0.07, 0);
+      slash.material.opacity = reveal * fade * (index === 2 ? 0.12 + beat * 0.08 : 0.5 + wave * 0.2);
     }
     if (this.light) {
       this.light.intensity = this.config.lightPeak * fade * (
