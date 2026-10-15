@@ -25,43 +25,43 @@ Create a production game VFX sprite atlas for Tiro Certeiro physical piercing ar
 Create a production game VFX sprite atlas for Pes Ligeiros (Wind Walk / Swift Feet) buff effect for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Upward and swirling radial movement. Hand-painted stylized cartoon fantasy game VFX. Color palette: silver, cold pale green, desaturated cyan, dark violet accents. Agile wind wisps and spiraling autumn-like stylized sharp leaves. Frames 1-2 faint pale silver wind ribbons spiraling up; frames 3-5 expanding swirling breeze curves with crisp stylized leaves caught in the draft; frames 6-9 peak double helix wind vortex with luminous green-cyan aura wisps and sharp leaf particles; frames 10-12 widening ring dissipating outward; frames 13-15 scattered fading motes and leaf fragments; frame 16 completely empty black. Keep centered in cell. Solid black background.
 ```
 
-### `ht_fis_mira_aguia` — Mira de Águia
-- **Status:** Pronto para gerar assim que a cota da API resetar
+### `ht_fis_mira_aguia` — Mira de Águia (Concluído)
+- **Status:** Gerado e integrado em `game/public/assets/vfx/spritesheets/skills/HT/ht_fis_mira_aguia.png`
 - **Prompt:**
 ```text
 Create a production game VFX sprite atlas for Mira de Aguia (Eagle Eye / Hunter Vision) aim buff for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Hand-painted stylized cartoon fantasy game VFX. Color palette: silver, cold green, desaturated cyan, gold accents. Eagle feather motifs and geometric sharp hunting reticle. Frames 1-2 faint curved silver eagle feathers floating inward; frames 3-5 sharp feathers aligning into circular crosshair sight with gold glint; frames 6-9 peak focused eagle eye reticle with glowing predatory pupil, crisp silver cross-lines and ambient glowing feather motes; frames 10-12 sight pulsing and expanding outward in fine luminous rings; frames 13-15 dissipating sharp spark shards; frame 16 completely empty black. Keep centered in cell. Solid black background.
 ```
 
-### `ht_fis_tiro_congelante` — Tiro Congelante
-- **Status:** Pronto para gerar
+### `ht_fis_tiro_congelante` — Tiro Congelante (Concluído)
+- **Status:** Gerado e integrado em `game/public/assets/vfx/spritesheets/skills/HT/ht_fis_tiro_congelante.png`
 - **Prompt:**
 ```text
 Create a production game VFX sprite atlas for Tiro Congelante (Freezing Arrow) for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Direction of movement towards RIGHT. Hand-painted stylized cartoon fantasy game VFX. Color palette: ice cyan, frost blue, crisp white, deep glacial navy. Ice arrow projectile leaving frost needles and bursting into a frost ring. Frames 1-2 condensed crystal frost glint; frames 3-5 jagged crystalline ice arrowhead flying with sharp frost vapour trails; frames 6-9 peak speed ice comet arrow with frozen spike halo; frames 10-12 impact collar shattering into six sharp ice spikes and frosty needles; frames 13-15 disintegrating ice dust crystals; frame 16 completely empty black. Keep centered in cell. Solid black background.
 ```
 
-### `ht_fis_sentinela` — Sentinela
-- **Status:** Pronto para gerar
+### `ht_fis_sentinela` — Sentinela (Concluído)
+- **Status:** Gerado e integrado em `game/public/assets/vfx/spritesheets/skills/HT/ht_fis_sentinela.png`
 - **Prompt:**
 ```text
 Create a production game VFX sprite atlas for Sentinela (Sentinel Ward) perception buff for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Radial outward scanning wave. Hand-painted stylized cartoon fantasy game VFX. Color palette: silver, pale emerald green, cold cyan. Low sweeping ground sonar ring and floating vigilance feather sigil. Frames 1-2 central emerald feather sigil appearing; frames 3-5 circular radar pulse ripple expanding across ground; frames 6-9 peak wide glowing scanner perimeter ring with floating detection runes and glowing perimeter compass ticks; frames 10-12 ring diffusing outward into thin boundary arcs; frames 13-15 fading signal motes; frame 16 completely empty black. Keep centered in cell. Solid black background.
 ```
 
-### `ht_fis_flecha_rasante` — Flecha Rasante
-- **Status:** Pronto para gerar
+### `ht_fis_flecha_rasante` — Flecha Rasante (Concluído)
+- **Status:** Gerado e integrado em `game/public/assets/vfx/spritesheets/skills/HT/ht_fis_flecha_rasante.png`
 - **Prompt:**
 ```text
 Create a production game VFX sprite atlas for Flecha Rasante (Ground Skimmer Arrow) piercing line attack for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Direction of movement towards RIGHT. Hand-painted stylized cartoon fantasy game VFX. Color palette: steel silver, cold forest green, desaturated cyan, dusty gray. Heavy low-flying arrow carving a trench, kicking up dirt wisps and piercing cleanly through. Frames 1-2 heavy barbed broadhead arrowhead pointing right; frames 3-5 low trajectory projectile skimming ground with high-speed side wake wisps; frames 6-9 peak velocity piercing bolt with stylized sharp ground dust waves and trench streaks; frames 10-12 directional exit shockwave, razor slipstream trails; frames 13-15 fading gravel motes and dust puffs; frame 16 completely empty black. Keep centered in cell. Solid black background.
 ```
 
-### `ht_fis_instinto` — Instinto de Caça
-- **Status:** Pronto para gerar
+### `ht_fis_instinto` — Instinto de Caça (Concluído)
+- **Status:** Gerado e integrado em `game/public/assets/vfx/spritesheets/skills/HT/ht_fis_instinto.png`
 - **Prompt:**
 ```text
 Create a production game VFX sprite atlas for Instinto de Caca (Hunter Instinct) passive proc mark for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Hand-painted stylized cartoon fantasy game VFX. Color palette: silver, crimson accent, cold cyan, shadow violet. Predatory crescent instinct mark snapping onto isolated target. Frames 1-2 faint crescent silhouette in shadow; frames 3-5 sharp hunting claws forming a target crest; frames 6-9 peak razor-sharp instinct crest snapping shut with brilliant focus glint and crimson pinpoint; frames 10-12 crest fracturing into stylized chevron shards; frames 13-15 dissolving focus particles; frame 16 completely empty black. Keep centered in cell. Solid black background.
 ```
 
-### `ht_fis_rapid_hit` — Rapid Hit
-- **Status:** Pronto para gerar
+### `ht_fis_rapid_hit` — Rapid Hit (Concluído)
+- **Status:** Gerado e integrado em `game/public/assets/vfx/spritesheets/skills/HT/ht_fis_rapid_hit.png`
 - **Prompt:**
 ```text
 Create a production game VFX sprite atlas for Rapid Hit (Multi-Shot Barrage) physical attack for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Direction of movement towards RIGHT. Hand-painted stylized cartoon fantasy game VFX. Color palette: silver, cold green, piercing white, dark violet. Rapid sequential needle arrows stitching a single puncture point. Frames 1-2 first needle arrow shooting across; frames 3-5 rapid volley of three staggered razor arrows with parallel speed lines; frames 6-9 dense cluster of overlapping piercing arrow heads striking simultaneously with multi-hit flash sparks; frames 10-12 cross-hatching slash impact cracks and split needle points; frames 13-15 dissipating flight sparks; frame 16 completely empty black. Keep centered in cell. Solid black background.
@@ -71,36 +71,36 @@ Create a production game VFX sprite atlas for Rapid Hit (Multi-Shot Barrage) phy
 
 ## 2. Árvore Capture (Controle)
 
-### `ht_ctrl_garra` — Garra Cortante
-- **Status:** Pronto para gerar
+### `ht_ctrl_garra` — Garra Cortante (Concluído)
+- **Status:** Gerado e integrado em `game/public/assets/vfx/spritesheets/skills/HT/ht_ctrl_garra.png`
 - **Prompt:**
 ```text
 Create a production game VFX sprite atlas for Garra Cortante (Ripping Claw) attack for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Curved diagonal slash movement. Hand-painted stylized cartoon fantasy game VFX. Color palette: polished steel, emerald green, bronze, dark violet. Curved hooked beast claw slash tearing through target. Frames 1-2 curled silver-green claw tip starting stroke; frames 3-5 explosive curved triple claw arc tearing downward-right with sharp hollow slash ribbons; frames 6-9 peak three thick hooked claw streaks with blood-red and bronze friction embers; frames 10-12 claw lacerations separating into jagged metal splinters; frames 13-15 dissipating claw ribbons; frame 16 completely empty black. Keep centered in cell. Solid black background.
 ```
 
-### `ht_ctrl_mais_um_golpe` — Mais Um Golpe
-- **Status:** Pronto para gerar
+### `ht_ctrl_mais_um_golpe` — Mais Um Golpe (Concluído)
+- **Status:** Gerado e integrado em `game/public/assets/vfx/spritesheets/skills/HT/ht_ctrl_mais_um_golpe.png`
 - **Prompt:**
 ```text
 Create a production game VFX sprite atlas for Mais Um Golpe (Echo Strike / Double Beat) attack buff for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Hand-painted stylized cartoon fantasy game VFX. Color palette: silver, pale cyan, amber gold, dark violet. Twin rhythmic slash arcs echoing one another with temporal ghosting. Frames 1-2 primary white slash ribbon curving down; frames 3-5 primary slash reaches peak as secondary ghosted amber slash follows in identical path; frames 6-9 twin interwoven slash crescents clashing together with harmonic flash corona; frames 10-12 outer slash dissipates while inner core rings pulse; frames 13-15 fading cadence wisps; frame 16 completely empty black. Keep centered in cell. Solid black background.
 ```
 
-### `ht_ctrl_presa_ferida` — Presa Ferida
-- **Status:** Pronto para gerar
+### `ht_ctrl_presa_ferida` — Presa Ferida (Concluído)
+- **Status:** Gerado e integrado em `game/public/assets/vfx/spritesheets/skills/HT/ht_ctrl_presa_ferida.png`
 - **Prompt:**
 ```text
 Create a production game VFX sprite atlas for Presa Ferida (Wounded Prey) bleed debuff for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Downward dripping bleed flow. Hand-painted stylized cartoon fantasy game VFX. Color palette: rust crimson, deep burgundy, stylized silver claw edges, dark violet. Stylized laceration dripping glowing venomous crimson droplets. Frames 1-2 cross-slit puncture wound glowing red; frames 3-5 crimson teardrop droplets tearing free from jagged slash rift; frames 6-9 peak vicious bleeding cut with dripping molten crimson ribbons and radiating pain wisps; frames 10-12 droplet splatter impact pool forming below; frames 13-15 fading blood-ember droplets; frame 16 completely empty black. Keep centered in cell. Solid black background.
 ```
 
-### `ht_ctrl_dodge` — Dodge
-- **Status:** Pronto para gerar
+### `ht_ctrl_dodge` — Dodge (Concluído)
+- **Status:** Gerado e integrado em `game/public/assets/vfx/spritesheets/skills/HT/ht_ctrl_dodge.png`
 - **Prompt:**
 ```text
 Create a production game VFX sprite atlas for Dodge (Evasive Afterimage) passive proc for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Lateral ghost displacement. Hand-painted stylized cartoon fantasy game VFX. Color palette: translucent silver, pale teal, phantom cyan, deep violet. Two translucent silhouette echoes shifting sideways and recombining into the hunter. Frames 1-2 single solid silver silhouette; frames 3-5 silhouette splits into twin ghosted phantom outlines shifting left and right; frames 6-9 peak dodge displacement with translucent ethereal ripples, motion feathers and evasive vapor ribbons; frames 10-12 twin phantoms collapsing back toward the center; frames 13-15 dissolving shadow feathers; frame 16 completely empty black. Keep centered in cell. Solid black background.
 ```
 
 ### `ht_ctrl_rugido` — Rugido Selvagem
-- **Status:** Pronto para gerar
+- **Status:** Pronto para gerar assim que a cota da API resetar
 - **Prompt:**
 ```text
 Create a production game VFX sprite atlas for Rugido Selvagem (Savage Roar) buff for Huntress RPG class. Exactly 4 columns x 4 rows, 16 equal square cells, solid pitch black background (#000000), no checkerboard, no grid, no borders, no text, no backdrop. Each cell contains the SAME animation evolving left to right top to bottom, centered at same cell center with generous clear padding. Radial conical roar shockwave. Hand-painted stylized cartoon fantasy game VFX. Color palette: feral amber, warm gold, roaring crimson, smoky violet. Acoustic shockwave rings radiating with spectral beast fangs. Frames 1-2 compressed golden sonic orb in center; frames 3-5 concentric sharp sound shockwave rings expanding outward; frames 6-9 peak feral roar wave flanked by ghostly amber beast claws and low dust blast ring; frames 10-12 sound pressure rings tearing and widening outward; frames 13-15 dispersing acoustic motes and dust embers; frame 16 completely empty black. Keep centered in cell. Solid black background.

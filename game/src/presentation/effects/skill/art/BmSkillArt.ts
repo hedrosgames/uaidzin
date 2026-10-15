@@ -10,7 +10,7 @@ export const BM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   bm_fis_furia_selvagem: {
     motif: "claw", color: 0xb7673c, accent: 0xe4b765, count: 4, scale: 0.58, spread: 0.46,
     spin: 0.45, lift: 0.87, motion: "ward", layout: "arms", particleRate: 22,
-    secondary: { motif: "leaf", color: 0x88764a, accent: 0xc4aa64, count: 6, scale: 0.24, spread: 0.8, spin: 1.8, lift: 0.17, motion: "orbit", particleRate: 0 },
+    secondary: { motif: "flame", color: 0xdf5b2e, accent: 0xffaa42, count: 6, scale: 0.32, spread: 0.72, spin: 1.6, lift: 0.45, motion: "orbit", particleRate: 0 },
   },
   bm_fis_investida: { motif: "wolf", color: 0x877d5b, accent: 0xd9c484, count: 1, scale: 0.98, spread: 0, spin: 0, lift: 0, motion: "charge", opacity: 0.78, particleRate: 24 },
   bm_fis_garra_brutal: {
@@ -32,7 +32,7 @@ export const BM_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   bm_mag_dardo_igneo: {
     motif: "orb", color: 0xae5427, accent: 0xeaa64c, count: 1, scale: 0.92, spread: 0,
     spin: 1.4, lift: 0, motion: "trail", size: [0.65, 1.2, 0.65], particleRate: 24,
-    secondary: { motif: "petal", color: 0xd27532, accent: 0xf2bd67, count: 3, scale: 0.42, spread: 0.22, spin: 0.5, lift: 0, motion: "trail", particleRate: 0 },
+    secondary: { motif: "flame", color: 0xd27532, accent: 0xf2bd67, count: 3, scale: 0.38, spread: 0.18, spin: 0.5, lift: 0, motion: "trail", particleRate: 0 },
   },
   bm_mag_fenda_glacial: { motif: "crystal", color: 0x578c9b, accent: 0xb7d6d5, count: 5, scale: 0.78, spread: 0.18, spin: 0, lift: 0.18, motion: "charge", particleRate: 20 },
   bm_mag_escarpa: {

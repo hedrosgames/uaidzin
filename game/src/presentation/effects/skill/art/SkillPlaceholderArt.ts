@@ -1,7 +1,7 @@
 import type { BeastSilhouette } from "../../vfxKit/beastSilhouetteGeometry";
 
 export interface SkillPlaceholderArt {
-  motif: "fang" | "claw" | "wing" | "shield" | "crystal" | "arrow" | "blade" | "orb" | "star" | "rune" | "leaf" | "bolt" | "spiral" | "arc" | "petal" | "rock" | BeastSilhouette;
+  motif: "fang" | "claw" | "flame" | "wing" | "shield" | "crystal" | "arrow" | "blade" | "orb" | "star" | "rune" | "leaf" | "bolt" | "spiral" | "arc" | "petal" | "rock" | BeastSilhouette;
   color: number;
   accent: number;
   count: number;

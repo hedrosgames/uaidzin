@@ -66,6 +66,16 @@ export class SkillArtworkResources {
     } else if (motif === "claw") {
       geometry = createTaperedArcGeometry(0.86, 0.18, Math.PI * 0.68, 0.045, 18);
       geometry.translate(-0.65, 0, 0);
+    } else if (motif === "flame") {
+      geometry = extrude([
+        [0, 0.82], [0.18, 0.42], [0.09, 0.28], [0.22, 0.08], [0.15, -0.28],
+        [0, -0.45], [-0.15, -0.28], [-0.22, 0.08], [-0.09, 0.28], [-0.18, 0.42],
+      ], 0.045);
+    } else if (motif === "fang") {
+      geometry = extrude([
+        [0, 0.72], [0.14, 0.38], [0.2, 0.04], [0.17, -0.34], [0.08, -0.46],
+        [-0.08, -0.44], [-0.07, -0.16], [-0.02, 0.18],
+      ], 0.05);
     } else {
       geometry = new ConeGeometry(0.17, 0.85, 5);
       geometry.rotateZ(0.28);

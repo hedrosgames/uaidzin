@@ -5,21 +5,59 @@ from PIL import Image
 def process_atlas(input_path: str, output_path: str) -> None:
     img = Image.open(input_path)
     w, h = img.size
+    cw, ch = w // 4, h // 4
 
-    if img.mode == 'RGBA':
-        arr = np.array(img).copy()
-        arr[arr[:, :, 3] < 10] = 0
+    rgb = np.array(img.convert('RGB'), dtype=np.float32)
+
+    corner_samples = []
+    for r in range(4):
+        for c in range(4):
+            if r == 3 and c == 3: continue
+            corner_samples.extend([
+                rgb[r*ch + 8, c*cw + 8],
+                rgb[r*ch + 8, (c+1)*cw - 9],
+                rgb[(r+1)*ch - 9, c*cw + 8],
+                rgb[(r+1)*ch - 9, (c+1)*cw - 9],
+            ])
+    bg_median = np.median(corner_samples, axis=0)
+    bg_brightness = np.mean(bg_median)
+
+    if bg_brightness > 128.0:
+        diff = np.linalg.norm(rgb - bg_median, axis=2)
+        sat = np.max(rgb, axis=2) - np.min(rgb, axis=2)
+        if np.max(sat) < 30.0:
+            intensity = np.clip((diff - 16.0) / max(1.0, bg_median[0] - 16.0), 0.0, 1.0)
+            arr = np.zeros((h, w, 4), dtype=np.uint8)
+            arr[:, :, :3] = np.clip(intensity[:, :, None] * 255.0, 0, 255).astype(np.uint8)
+            arr[:, :, 3] = np.clip(intensity * 255.0, 0, 255).astype(np.uint8)
+        else:
+            low = 35.0
+            high = 95.0
+            alpha = np.clip((diff - low) / (high - low) * 255.0, 0.0, 255.0)
+            alpha[diff <= low] = 0
+            arr = np.zeros((h, w, 4), dtype=np.uint8)
+            arr[:, :, :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+            arr[:, :, 3] = alpha.astype(np.uint8)
+    elif bg_brightness > 25.0:
+        diff = np.linalg.norm(rgb - bg_median, axis=2)
+        low = 22.0
+        high = 85.0
+        alpha = np.clip((diff - low) / (high - low) * 255.0, 0.0, 255.0)
+        alpha[diff <= low] = 0
+        arr = np.zeros((h, w, 4), dtype=np.uint8)
+        arr[:, :, :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+        arr[:, :, 3] = alpha.astype(np.uint8)
     else:
-        rgb = np.array(img.convert('RGB'), dtype=np.float32)
         max_c = np.max(rgb, axis=2)
-        bg_low = 12.0
-        bg_high = 250.0
-        alpha = np.clip((max_c - bg_low) / (bg_high - bg_low) * 255.0, 0, 255)
+        bg_low = 14.0
+        bg_high = 245.0
+        alpha = np.clip((max_c - bg_low) / (bg_high - bg_low) * 255.0, 0.0, 255.0)
         alpha[max_c <= bg_low] = 0
         arr = np.zeros((h, w, 4), dtype=np.uint8)
         arr[:, :, :3] = np.clip(rgb, 0, 255).astype(np.uint8)
         arr[:, :, 3] = alpha.astype(np.uint8)
-        arr[arr[:, :, 3] == 0] = 0
+
+    arr[arr[:, :, 3] == 0] = 0
 
     for i in [1, 2, 3]:
         gx = int(w * i / 4)

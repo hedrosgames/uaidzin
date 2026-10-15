@@ -55,7 +55,7 @@ export const HT_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
     spin: 0, lift: 0, motion: "burst", layout: "fan", particleRate: 20,
     secondary: { motif: "blade", color: 0x8f5949, accent: 0xbd8765, count: 3, scale: 0.33, spread: 0.19, spin: 0, lift: 0, motion: "rain", size: [0.5, 1.8, 0.7], particleRate: 0 },
   },
-  ht_ctrl_dodge: { motif: "petal", color: 0x8caaa7, accent: 0xc2d6cc, count: 2, scale: 0.72, spread: 0.34, spin: 0.15, lift: 0.86, motion: "ward", layout: "arms", size: [0.65, 1.8, 0.6], opacity: 0.28, particleRate: 6 },
+  ht_ctrl_dodge: { motif: "wing", color: 0x8caaa7, accent: 0xc2d6cc, count: 2, scale: 0.62, spread: 0.38, spin: 0.15, lift: 0.86, motion: "ward", layout: "arms", size: [0.65, 1.4, 0.6], opacity: 0.36, particleRate: 8 },
   ht_ctrl_rugido: {
     motif: "arc", color: 0xb08d55, accent: 0xdfc585, count: 1, scale: 1.25, spread: 0,
     spin: 0, lift: 0.93, motion: "burst", layout: "focus", particleRate: 22,
@@ -81,8 +81,8 @@ export const HT_SKILL_ART: Readonly<Record<string, SkillPlaceholderArt>> = {
   ht_mag_flecha_ignea: {
     motif: "arrow", color: 0xb26e3e, accent: 0xf0bc75, count: 1, scale: 0.9, spread: 0,
     spin: 0, lift: 0, motion: "trail", particleRate: 24,
-    secondary: { motif: "petal", color: 0xc9813d, accent: 0xefbb6d, count: 3, scale: 0.28, spread: 0.15, spin: 0, lift: 0, motion: "trail", particleRate: 0 },
-    impact: { motif: "petal", color: 0xd58a47, accent: 0xf0c17c, count: 3, scale: 0.52, spread: 0.34, spin: 0, lift: 0.1, motion: "burst", layout: "petals", particleRate: 0 },
+    secondary: { motif: "flame", color: 0xc9813d, accent: 0xefbb6d, count: 3, scale: 0.3, spread: 0.15, spin: 0, lift: 0, motion: "trail", particleRate: 0 },
+    impact: { motif: "flame", color: 0xd58a47, accent: 0xf0c17c, count: 4, scale: 0.55, spread: 0.36, spin: 0, lift: 0.1, motion: "burst", layout: "petals", particleRate: 0 },
   },
   ht_mag_flecha_glacial: {
     motif: "arrow", color: 0x73aeba, accent: 0xd3e8df, count: 1, scale: 0.9, spread: 0,
